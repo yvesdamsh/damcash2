@@ -326,35 +326,54 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="space-y-8">
-                    {(activeGames.length > 0 || invitations.length > 0) && (
-                        <div className="grid md:grid-cols-2 gap-8">
-                             {activeGames.length > 0 && (
-                                <Card className="bg-white/90 border-[#6b5138] shadow-lg">
-                                    <CardHeader className="pb-2"><CardTitle className="text-lg text-[#4a3728] flex items-center gap-2"><PlayCircle className="w-5 h-5" /> Vos parties en cours</CardTitle></CardHeader>
-                                    <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                                        {activeGames.map(g => (
-                                            <div key={g.id} className="flex justify-between items-center p-3 bg-[#f5f0e6] rounded-lg border border-[#e8dcc5] hover:bg-[#e8dcc5] transition-colors cursor-pointer" onClick={() => navigate(`/Game?id=${g.id}`)}>
-                                                <div><div className="font-bold text-[#4a3728]">{g.game_type === 'chess' ? 'Échecs' : 'Dames'}</div><div className="text-xs text-[#6b5138]">vs {g.white_player_id === user.id ? g.black_player_name : g.white_player_name}</div></div>
-                                                <Button size="sm" className="bg-[#6b5138] h-8">Reprendre</Button>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                             )}
-                             {invitations.length > 0 && (
-                                <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
-                                    <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> Invitations reçues</CardTitle></CardHeader>
-                                    <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                                        {invitations.map(inv => (
-                                            <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] rounded-lg border border-[#dde6d5]">
-                                                <div><div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div><div className="text-xs text-[#5c6e46]">invite aux {inv.game_type === 'chess' ? 'Échecs' : 'Dames'}</div></div>
-                                                <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">Accepter</Button>
-                                            </div>
-                                        ))}
-                                    </CardContent>
-                                </Card>
-                             )}
+                    {/* Baba Sy Featured Section */}
+                    <Card className="mb-8 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
+                        <div className="flex flex-col md:flex-row">
+                            <div className="w-full h-80 md:w-2/5 md:h-auto relative group shrink-0">
+                                <img 
+                                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg" 
+                                    alt="Baba Sy" 
+                                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 block"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]/10" />
+                                <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
+                                    <h3 className="text-xl font-bold">Baba Sy</h3>
+                                    <p className="text-xs opacity-90">Légende du Jeu</p>
+                                </div>
+                            </div>
+                            <div className="p-6 md:w-3/5 flex flex-col justify-center relative">
+                                <div className="hidden md:block mb-3">
+                                    <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">Légende du Jeu</Badge>
+                                    <h3 className="text-3xl font-black text-[#4a3728] mb-1">Baba Sy</h3>
+                                    <p className="text-sm text-[#8c6b4a] font-serif italic">"Le grand maître sénégalais"</p>
+                                </div>
+                                <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base">
+                                    Découvrez l'histoire fascinante de <strong>Baba Sy</strong> (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.
+                                </p>
+                                <div className="flex gap-3">
+                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open('https://fr.wikipedia.org/wiki/Baba_Sy', '_blank')}>
+                                        <BookOpen className="w-4 h-4 mr-2" />
+                                        Lire sa biographie
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
+                    </Card>
+
+                    {invitations.length > 0 && (
+                    <div className="mb-8">
+                        <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
+                            <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> Invitations reçues</CardTitle></CardHeader>
+                            <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                                {invitations.map(inv => (
+                                    <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] rounded-lg border border-[#dde6d5]">
+                                        <div><div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div><div className="text-xs text-[#5c6e46]">invite aux {inv.game_type === 'chess' ? 'Échecs' : 'Dames'}</div></div>
+                                        <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">Accepter</Button>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    </div>
                     )}
 
                     <div className="grid md:grid-cols-2 gap-8">
@@ -410,40 +429,7 @@ export default function Home() {
                 </div>
                 )}
 
-                {gameType === 'checkers' && (
-                <Card className="mt-12 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
-                    <div className="flex flex-col md:flex-row">
-                        <div className="w-full h-80 md:w-2/5 md:h-auto relative group shrink-0">
-                            <img 
-                                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg" 
-                                alt="Baba Sy" 
-                                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 block"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]/10" />
-                            <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
-                                <h3 className="text-xl font-bold">Baba Sy</h3>
-                                <p className="text-xs opacity-90">Légende du Jeu</p>
-                            </div>
-                        </div>
-                        <div className="p-6 md:w-3/5 flex flex-col justify-center relative">
-                            <div className="hidden md:block mb-3">
-                                <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">Légende du Jeu</Badge>
-                                <h3 className="text-3xl font-black text-[#4a3728] mb-1">Baba Sy</h3>
-                                <p className="text-sm text-[#8c6b4a] font-serif italic">"Le grand maître sénégalais"</p>
-                            </div>
-                            <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base">
-                                Découvrez l'histoire fascinante de <strong>Baba Sy</strong> (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.
-                            </p>
-                            <div className="flex gap-3">
-                                <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open('https://fr.wikipedia.org/wiki/Baba_Sy', '_blank')}>
-                                    <BookOpen className="w-4 h-4 mr-2" />
-                                    Lire sa biographie
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </Card>
-                )}
+
                 </div>
                 );
                 }
