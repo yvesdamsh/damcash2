@@ -115,7 +115,6 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
-                                                onDragStart={() => onSquareClick(r, c)}
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
                                                 boardRef={boardRef}

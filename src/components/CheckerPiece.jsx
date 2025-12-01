@@ -27,8 +27,8 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     return (
         <motion.div
             drag={canDrag}
+            drag={canDrag}
             dragMomentum={false}
-            onDragStart={onDragStart}
             onDragEnd={props.onDragEnd}
             whileDrag={{ scale: 1.2, zIndex: 100, cursor: 'grabbing' }}
             dragSnapToOrigin
