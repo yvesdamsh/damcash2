@@ -17,7 +17,7 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
             {/* Board Frame with coordinate labels */}
             <div className="bg-[#4a3728] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
                 
-                <div className="grid grid-cols-8 gap-0 aspect-square w-full max-w-[600px] mx-auto bg-[#2c1e12] border-2 border-[#5c4430]">
+                <div className="grid grid-cols-10 gap-0 aspect-square w-full max-w-[600px] mx-auto bg-[#2c1e12] border-2 border-[#5c4430]">
                     {board.map((row, r) => (
                         row.map((piece, c) => {
                             const isDark = (r + c) % 2 !== 0;
@@ -29,8 +29,6 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                 ? 'bg-[#5c4430] hover:bg-[#6b5138]' // Dark wood
                                 : 'bg-[#e8dcc5]'; // Light wood
 
-                            // Highlight for last move or valid target could go here
-                            
                             return (
                                 <div
                                     key={`${r}-${c}`}
@@ -48,12 +46,12 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                     )}
 
                                     {/* Coordinates (Only show on edges) */}
-                                    {c === 7 && isDark && (
+                                    {c === 9 && isDark && (
                                         <span className="absolute right-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
                                             {r + 1}
                                         </span>
                                     )}
-                                    {r === 7 && isDark && (
+                                    {r === 9 && isDark && (
                                         <span className="absolute left-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
                                             {String.fromCharCode(65 + c)}
                                         </span>

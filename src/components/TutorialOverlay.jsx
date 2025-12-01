@@ -6,7 +6,7 @@ import { ChevronRight, ChevronLeft, X, CheckCircle } from 'lucide-react';
 const tutorialSteps = [
     {
         title: "Bienvenue sur Dames Master !",
-        content: "Ce tutoriel rapide vous guidera à travers les règles du jeu de dames international (sur plateau 8x8) et l'interface.",
+        content: "Ce tutoriel rapide vous guidera à travers les règles du jeu de dames international (sur plateau 10x10) et l'interface.",
         position: "center"
     },
     {

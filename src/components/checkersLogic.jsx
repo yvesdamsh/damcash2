@@ -5,12 +5,12 @@
 // - Prise multiple prioritaire (optionnel, ici on force juste la prise si disponible).
 
 export const initializeBoard = () => {
-    const board = Array(8).fill(null).map(() => Array(8).fill(0));
-    for (let row = 0; row < 8; row++) {
-        for (let col = 0; col < 8; col++) {
+    const board = Array(10).fill(null).map(() => Array(10).fill(0));
+    for (let row = 0; row < 10; row++) {
+        for (let col = 0; col < 10; col++) {
             if ((row + col) % 2 !== 0) {
-                if (row < 3) board[row][col] = 2; // Noir
-                if (row > 4) board[row][col] = 1; // Blanc
+                if (row < 4) board[row][col] = 2; // Noir (4 rangées)
+                if (row > 5) board[row][col] = 1; // Blanc (4 rangées)
             }
         }
     }
@@ -19,7 +19,7 @@ export const initializeBoard = () => {
 
 // --- Helpers ---
 
-const isValidPos = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+const isValidPos = (r, c) => r >= 0 && r < 10 && c >= 0 && c < 10;
 
 const getPiece = (board, r, c) => isValidPos(r, c) ? board[r][c] : null;
 
@@ -43,8 +43,8 @@ export const getValidMoves = (board, turn) => {
     let moves = [];
     let captureMoves = [];
 
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
             const piece = board[r][c];
             if (isOwnPiece(piece, turn)) {
                 const pieceMoves = getMovesForPiece(board, r, c, piece);
@@ -182,7 +182,7 @@ export const executeMove = (board, from, to, captured) => {
     if (piece === 1 && toRow === 0) {
         newBoard[toRow][toCol] = 3;
         promoted = true;
-    } else if (piece === 2 && toRow === 7) {
+    } else if (piece === 2 && toRow === 9) {
         newBoard[toRow][toCol] = 4;
         promoted = true;
     }
