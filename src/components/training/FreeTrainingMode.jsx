@@ -12,7 +12,8 @@ export default function FreeTrainingMode() {
     const [board, setBoard] = useState(initializeBoard()); // Start with checkers default
     const [turn, setTurn] = useState('white');
     const [selectedSquare, setSelectedSquare] = useState(null);
-    const [mode, setMode] = useState('play'); // 'play' or 'edit' (edit not fully impl for now, just play)
+    const [mode, setMode] = useState('play'); // 'play' or 'edit'
+    const [selectedEditPiece, setSelectedEditPiece] = useState(null);
 
     const resetBoard = () => {
         if (gameType === 'checkers') {
@@ -34,10 +35,16 @@ export default function FreeTrainingMode() {
 
     const handleSquareClick = async (r, c) => {
         if (mode === 'edit') {
-            // Simple toggle/cycle for edit mode?
-            // This requires complex UI to select pieces. 
-            // For "Free Training" usually means playing both sides.
-            // Let's stick to Play Mode for MVP.
+            const newBoard = [...board.map(row => [...row])];
+            if (selectedEditPiece === 'clear') {
+                newBoard[r][c] = gameType === 'checkers' ? 0 : null;
+            } else if (selectedEditPiece) {
+                newBoard[r][c] = selectedEditPiece;
+            } else {
+                // If no tool selected, clear on click
+                newBoard[r][c] = gameType === 'checkers' ? 0 : null;
+            }
+            setBoard(newBoard);
             return;
         }
 
@@ -104,25 +111,83 @@ export default function FreeTrainingMode() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                    <Select value={gameType} onValueChange={(v) => { setGameType(v); if(v==='chess') setBoard(initializeChessBoard()); else setBoard(initializeBoard()); setTurn('white'); }}>
-                        <SelectTrigger className="w-full sm:w-[180px]">
-                            <SelectValue placeholder="Jeu" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="checkers">Dames</SelectItem>
-                            <SelectItem value="chess">Échecs</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <div className="flex items-center justify-center px-3 py-2 bg-gray-100 rounded-md text-sm font-medium">
-                        Trait aux : <span className="ml-2 font-bold capitalize text-[#6b5138]">{turn === 'white' ? 'Blancs' : 'Noirs'}</span>
+            <div className="flex flex-col gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                        <Select value={gameType} onValueChange={(v) => { setGameType(v); if(v==='chess') setBoard(initializeChessBoard()); else setBoard(initializeBoard()); setTurn('white'); }}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Jeu" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="checkers">Dames</SelectItem>
+                                <SelectItem value="chess">Échecs</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <div className="flex items-center justify-center px-3 py-2 bg-gray-100 rounded-md text-sm font-medium">
+                            <span className="mr-2">Mode:</span>
+                            <div className="flex bg-gray-200 rounded p-1">
+                                <button 
+                                    onClick={() => setMode('play')} 
+                                    className={`px-3 py-1 rounded text-xs font-bold transition-colors ${mode === 'play' ? 'bg-white shadow text-[#4a3728]' : 'text-gray-500'}`}
+                                >
+                                    JOUER
+                                </button>
+                                <button 
+                                    onClick={() => setMode('edit')} 
+                                    className={`px-3 py-1 rounded text-xs font-bold transition-colors ${mode === 'edit' ? 'bg-white shadow text-[#4a3728]' : 'text-gray-500'}`}
+                                >
+                                    ÉDITER
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 w-full md:w-auto justify-end">
+                        <Button variant="outline" size="sm" onClick={resetBoard} title="Réinitialiser"><RotateCcw className="w-4 h-4 mr-2" /> Reset</Button>
+                        <Button variant="outline" size="sm" onClick={clearBoard} title="Vider"><Eraser className="w-4 h-4 mr-2" /> Vider</Button>
                     </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto justify-end">
-                    <Button variant="outline" className="flex-1 md:flex-none" onClick={resetBoard} title="Réinitialiser"><RotateCcw className="w-4 h-4 mr-2 md:mr-0" /><span className="md:hidden">Reset</span></Button>
-                    <Button variant="outline" className="flex-1 md:flex-none" onClick={clearBoard} title="Vider le plateau"><Eraser className="w-4 h-4 mr-2 md:mr-0" /><span className="md:hidden">Vider</span></Button>
-                </div>
+
+                {/* Edit Toolbar */}
+                {mode === 'edit' && (
+                    <div className="border-t pt-4 flex flex-wrap gap-2 items-center justify-center">
+                        <span className="text-xs font-bold uppercase text-gray-400 mr-2">Outils:</span>
+                        <Button 
+                            variant={selectedEditPiece === 'clear' ? 'default' : 'outline'} 
+                            size="sm" 
+                            onClick={() => setSelectedEditPiece('clear')}
+                            className="h-8 w-8 p-0"
+                            title="Gomme"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                        
+                        <div className="w-px h-6 bg-gray-300 mx-2" />
+
+                        {gameType === 'chess' ? (
+                            <>
+                                {['P', 'N', 'B', 'R', 'Q', 'K'].map(p => (
+                                    <button key={p} onClick={() => setSelectedEditPiece(p)} className={`w-8 h-8 text-xl bg-white border rounded hover:bg-gray-50 ${selectedEditPiece === p ? 'ring-2 ring-blue-500' : ''}`}>
+                                        {p === 'K' ? '♔' : p === 'Q' ? '♕' : p === 'R' ? '♖' : p === 'B' ? '♗' : p === 'N' ? '♘' : '♙'}
+                                    </button>
+                                ))}
+                                <div className="w-px h-6 bg-gray-300 mx-2" />
+                                {['p', 'n', 'b', 'r', 'q', 'k'].map(p => (
+                                    <button key={p} onClick={() => setSelectedEditPiece(p)} className={`w-8 h-8 text-xl bg-black text-white border border-gray-600 rounded hover:bg-gray-800 ${selectedEditPiece === p ? 'ring-2 ring-blue-500' : ''}`}>
+                                        {p === 'k' ? '♚' : p === 'q' ? '♛' : p === 'r' ? '♜' : p === 'b' ? '♝' : p === 'n' ? '♞' : '♟'}
+                                    </button>
+                                ))}
+                            </>
+                        ) : (
+                            <>
+                                <button onClick={() => setSelectedEditPiece(1)} className={`w-8 h-8 rounded-full border-2 bg-[#e8dcc5] border-[#4a3728] ${selectedEditPiece === 1 ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`} />
+                                <button onClick={() => setSelectedEditPiece(3)} className={`w-8 h-8 rounded-full border-2 bg-[#e8dcc5] border-[#4a3728] flex items-center justify-center font-bold text-[#4a3728] ${selectedEditPiece === 3 ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}>K</button>
+                                <div className="w-px h-6 bg-gray-300 mx-2" />
+                                <button onClick={() => setSelectedEditPiece(2)} className={`w-8 h-8 rounded-full border-2 bg-[#4a3728] border-black ${selectedEditPiece === 2 ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`} />
+                                <button onClick={() => setSelectedEditPiece(4)} className={`w-8 h-8 rounded-full border-2 bg-[#4a3728] border-black flex items-center justify-center font-bold text-[#e8dcc5] ${selectedEditPiece === 4 ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}>K</button>
+                            </>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-center">
