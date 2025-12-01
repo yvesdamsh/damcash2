@@ -13,7 +13,7 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ username: '', full_name: '', avatar_url: '' });
+    const [editForm, setEditForm] = useState({ username: '', full_name: '', avatar_url: '', bio: '' });
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
