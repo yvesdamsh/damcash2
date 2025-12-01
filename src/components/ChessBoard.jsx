@@ -15,7 +15,14 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
     return (
         <div className="relative select-none">
             <div className="bg-[#3d2b1f] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
-                <div className="grid grid-cols-8 gap-0 aspect-square w-full max-w-[600px] mx-auto bg-[#F0E7D5] border-4 border-[#3d2b1f] shadow-inner">
+                <div 
+                    className="grid gap-0 w-full max-w-[600px] mx-auto bg-[#F0E7D5] border-4 border-[#3d2b1f] shadow-inner"
+                    style={{ 
+                        gridTemplateColumns: 'repeat(8, 1fr)', 
+                        gridTemplateRows: 'repeat(8, 1fr)',
+                        aspectRatio: '1/1'
+                    }}
+                >
                     {board.map((row, r) => (
                         row.map((piece, c) => {
                             const isDark = (r + c) % 2 !== 0;
@@ -35,6 +42,7 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                 <div
                                     key={`${r}-${c}`}
                                     onClick={() => onSquareClick(r, c)}
+                                    style={{ aspectRatio: '1/1' }}
                                     className={`
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
