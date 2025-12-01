@@ -15,8 +15,9 @@ import {
   Flag,
   Eye
   } from 'lucide-react';
+  import Notifications from '@/components/Notifications';
 
-export default function Layout({ children }) {
+  export default function Layout({ children }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
     const location = useLocation();
@@ -123,14 +124,17 @@ export default function Layout({ children }) {
                                         {item.label}
                                     </Link>
                                 );
-                            })}
-                            <button 
+                                })}
+
+                                {user && <Notifications />}
+
+                                <button 
                                 onClick={toggleSound}
                                 className="p-2 rounded-full hover:bg-[#5c4430] text-[#d4c5b0] transition-colors"
-                            >
+                                >
                                 {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                            </button>
-                            {user && (
+                                </button>
+                                {user && (
                                 <button
                                     onClick={handleLogout}
                                     className="px-3 py-2 rounded-md text-sm font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2 transition-colors"

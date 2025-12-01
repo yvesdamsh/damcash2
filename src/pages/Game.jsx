@@ -362,6 +362,18 @@ export default function Game() {
     const handleOfferDraw = async () => {
         if (!game || !currentUser) return;
         await base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id });
+        
+        const opponentId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+        if (opponentId) {
+            await base44.entities.Notification.create({
+                recipient_id: opponentId,
+                type: "info",
+                title: "Proposition de nulle",
+                message: `${currentUser.full_name || currentUser.username} propose une nulle.`,
+                link: `/Game?id=${game.id}`
+            });
+        }
+        
         toast.success("Nulle proposée");
     };
 

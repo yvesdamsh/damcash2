@@ -68,6 +68,28 @@ export default async function handler(req) {
                 else if (scoreB === 0) blackUpdates.losses_checkers = (blackUser.losses_checkers || 0) + 1;
             }
             await base44.asServiceRole.entities.User.update(blackId, blackUpdates);
+            
+            // Notifications for result
+            if (whiteId && blackId && whiteId !== blackId) {
+                const whiteMsg = winnerId === whiteId ? "Vous avez gagné la partie !" : (winnerId ? "Vous avez perdu la partie." : "Match nul.");
+                const blackMsg = winnerId === blackId ? "Vous avez gagné la partie !" : (winnerId ? "Vous avez perdu la partie." : "Match nul.");
+                
+                await base44.asServiceRole.entities.Notification.create({
+                    recipient_id: whiteId,
+                    type: "game",
+                    title: "Fin de partie",
+                    message: `${whiteMsg} vs ${game.black_player_name}`,
+                    link: `/Game?id=${gameId}`
+                });
+                
+                await base44.asServiceRole.entities.Notification.create({
+                    recipient_id: blackId,
+                    type: "game",
+                    title: "Fin de partie",
+                    message: `${blackMsg} vs ${game.white_player_name}`,
+                    link: `/Game?id=${gameId}`
+                });
+            }
         }
     }
 
