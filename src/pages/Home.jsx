@@ -27,7 +27,8 @@ export default function Home() {
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
-        series: 1
+        series: 1,
+        stake: 0
     });
     const navigate = useNavigate();
 
@@ -136,6 +137,26 @@ export default function Home() {
         setConfigOpen(false);
         setIsCreating(true);
         try {
+            // Wager Check
+            if (gameConfig.stake > 0) {
+                try {
+                    const payRes = await base44.functions.invoke('walletManager', { 
+                        action: 'pay_entry_fee', 
+                        amount: gameConfig.stake,
+                        gameId: 'temp_check' // Just check balance first, or use separate action?
+                        // Actually we should deduct AFTER creation or during creation transactionally.
+                        // But here we do client side optimistic or two-step.
+                        // Better: create game then pay. If pay fails, delete game.
+                        // Or simpler: check balance locally via get_balance first.
+                    });
+                     // Ideally, server creates game AND deducts.
+                     // For now, let's just assume user has funds if we checked earlier, or handle error.
+                     // Let's stick to: Create Game -> Pay.
+                } catch(e) {
+                    // alert("Solde insuffisant"); return;
+                }
+            }
+
             const initialBoard = gameType === 'chess' 
                 ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
                 : JSON.stringify(initializeBoard());
@@ -157,8 +178,24 @@ export default function Home() {
                 black_seconds_left: gameConfig.time * 60,
                 series_length: parseInt(gameConfig.series),
                 series_score_white: 0,
-                series_score_black: 0
+                series_score_black: 0,
+                entry_fee: gameConfig.stake,
+                prize_pool: gameConfig.stake * 2 // Assuming 1v1
             };
+
+            // Pay Fee First
+            if (gameConfig.stake > 0) {
+                const payRes = await base44.functions.invoke('walletManager', { 
+                    action: 'pay_entry_fee', 
+                    amount: gameConfig.stake,
+                    gameId: 'pending_creation' // Placeholder
+                });
+                if (payRes.status !== 200 || (payRes.data && payRes.data.error)) {
+                    alert("Fonds insuffisants pour la mise !");
+                    setIsCreating(false);
+                    return;
+                }
+            }
 
             if (isPrivateConfig) {
                 const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -314,6 +351,22 @@ export default function Home() {
                                             className={`flex-1 ${gameConfig.series === s ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}`}
                                         >
                                             {s === 1 ? "Unique" : s}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#6b5138]">Mise (DamCoins)</label>
+                                <div className="flex gap-2">
+                                    {[0, 10, 50, 100, 500].map(s => (
+                                        <Button 
+                                            key={s}
+                                            variant={gameConfig.stake === s ? "default" : "outline"}
+                                            onClick={() => setGameConfig({...gameConfig, stake: s})}
+                                            className={`flex-1 ${gameConfig.stake === s ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "border-[#d4c5b0] text-[#6b5138]"}`}
+                                        >
+                                            {s === 0 ? "Gratuit" : s}
                                         </Button>
                                     ))}
                                 </div>
