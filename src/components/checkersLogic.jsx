@@ -218,3 +218,24 @@ export const checkWinner = (board) => {
     if (blackCount === 0 || !blackMoves) return 'white';
     return null;
 };
+
+export const getCheckersPositionId = (board, turn) => {
+    const boardStr = board.map(row => row.join('')).join('');
+    return `${boardStr}-${turn}`;
+};
+
+export const checkCheckersStatus = (board, turn, halfMoveClock = 0, positionHistory = {}) => {
+    // 1. Check Win/Loss
+    const winner = checkWinner(board);
+    if (winner) return { status: 'finished', winner };
+
+    // 2. 50-Move Rule (100 half-moves without capture)
+    // Standard rule varies, but 50 moves without capture is a safe generic implementation
+    if (halfMoveClock >= 100) return { status: 'finished', result: 'draw_50_moves' };
+
+    // 3. Threefold Repetition
+    const currentPos = getCheckersPositionId(board, turn);
+    if (positionHistory[currentPos] >= 3) return { status: 'finished', result: 'draw_repetition' };
+
+    return { status: 'playing' };
+};

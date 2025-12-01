@@ -265,11 +265,39 @@ export const isInCheck = (board, color) => {
     return isCurrentInCheck(board, color);
 };
 
-export const checkChessStatus = (board, turn, lastMove, castlingRights) => {
+export const getPositionId = (board, turn, castlingRights, lastMove) => {
+    const boardStr = board.map(r => r.map(p => p || '-').join('')).join('/');
+    const castling = [
+        castlingRights.wK ? 'K' : '',
+        castlingRights.wQ ? 'Q' : '',
+        castlingRights.bK ? 'k' : '',
+        castlingRights.bQ ? 'q' : ''
+    ].join('') || '-';
+    
+    let ep = '-';
+    if (lastMove && lastMove.piece.toLowerCase() === 'p' && Math.abs(lastMove.from.r - lastMove.to.r) === 2) {
+        const r = (lastMove.from.r + lastMove.to.r) / 2;
+        const c = lastMove.from.c;
+        ep = `${r},${c}`;
+    }
+
+    return `${boardStr} ${turn} ${castling} ${ep}`;
+};
+
+export const checkChessStatus = (board, turn, lastMove, castlingRights, halfMoveClock = 0, positionHistory = {}) => {
+    // 1. Check Checkmate/Stalemate
     const validMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
     if (validMoves.length === 0) {
         if (isInCheck(board, turn)) return 'checkmate';
         return 'stalemate';
     }
+
+    // 2. 50-Move Rule (100 half-moves)
+    if (halfMoveClock >= 100) return 'draw_50_moves';
+
+    // 3. Threefold Repetition
+    const currentPos = getPositionId(board, turn, castlingRights, lastMove);
+    if (positionHistory[currentPos] >= 3) return 'draw_repetition';
+
     return 'playing';
 };

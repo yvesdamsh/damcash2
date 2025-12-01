@@ -145,9 +145,14 @@ export default function Game() {
             try {
                 const parsed = JSON.parse(fetchedGame.board_state);
                 setBoard(Array.isArray(parsed.board) ? parsed.board : []);
-                setChessState({ castlingRights: parsed.castlingRights || {}, lastMove: parsed.lastMove || null });
-            } catch (e) { setBoard([]); }
-        } else {
+                setChessState({ 
+                    castlingRights: parsed.castlingRights || {}, 
+                    lastMove: parsed.lastMove || null,
+                    halfMoveClock: parsed.halfMoveClock || 0,
+                    positionHistory: parsed.positionHistory || {}
+                });
+                } catch (e) { setBoard([]); }
+                } else {
             try {
                 const parsed = JSON.parse(fetchedGame.board_state);
                 setBoard(Array.isArray(parsed) ? parsed : []);
@@ -400,9 +405,13 @@ export default function Game() {
     };
 
     const executeChessMoveFinal = async (move) => {
+        // Import helper to calculate position ID
+        const { getPositionId } = await import('@/components/chessLogic');
+
         const { board: newBoard, piece: movedPiece, promoted } = executeChessMove(board, move);
         const playerColor = game.current_turn;
         
+        // Update Castling Rights
         const newCastling = { ...chessState.castlingRights };
         if (movedPiece.toLowerCase() === 'k') {
             if (playerColor === 'white') { newCastling.wK = false; newCastling.wQ = false; }
@@ -414,28 +423,62 @@ export default function Game() {
             if (move.from.r === 0 && move.from.c === 0) newCastling.bQ = false;
             if (move.from.r === 0 && move.from.c === 7) newCastling.bK = false;
         }
+        // If rook captured, update opponent castling rights
+        if (move.captured) {
+             // Logic to remove castling right if a specific rook is captured could be added here, 
+             // but standard logic usually relies on the rook moving or king moving.
+             // Technically if A captures B's rook at h8, B can't castle kingside.
+             // Let's keep it simple for now or add:
+             if (move.to.r === 0 && move.to.c === 0) newCastling.bQ = false;
+             if (move.to.r === 0 && move.to.c === 7) newCastling.bK = false;
+             if (move.to.r === 7 && move.to.c === 0) newCastling.wQ = false;
+             if (move.to.r === 7 && move.to.c === 7) newCastling.wK = false;
+        }
 
         const nextTurn = playerColor === 'white' ? 'black' : 'white';
-        const gameStatus = checkChessStatus(newBoard, nextTurn, move, newCastling);
+
+        // Update Counters
+        const isCapture = !!move.captured;
+        const isPawn = movedPiece.toLowerCase() === 'p';
+        const newHalfMoveClock = (isCapture || isPawn) ? 0 : (chessState.halfMoveClock || 0) + 1;
+
+        // Update Position History
+        const newPosId = getPositionId(newBoard, nextTurn, newCastling, move);
+        const newHistory = { ...(chessState.positionHistory || {}) };
+        newHistory[newPosId] = (newHistory[newPosId] || 0) + 1;
+
+        // Check Status
+        const gameStatus = checkChessStatus(newBoard, nextTurn, move, newCastling, newHalfMoveClock, newHistory);
         
         let status = game.status;
         let winnerId = null;
-        if (gameStatus === 'checkmate') {
+        
+        if (['checkmate'].includes(gameStatus)) {
             status = 'finished';
             winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
             soundManager.play('win');
-        } else if (gameStatus === 'stalemate') {
+        } else if (['stalemate', 'draw_50_moves', 'draw_repetition'].includes(gameStatus)) {
             status = 'finished';
+            soundManager.play('win'); // or draw sound
+            toast.info(gameStatus === 'stalemate' ? "Pat (Stalemate)" : gameStatus === 'draw_50_moves' ? "Nulle (50 coups)" : "Nulle (Répétition)");
         } else {
             if (isInCheck(newBoard, nextTurn)) soundManager.play('check');
             else soundManager.play(move.captured ? 'capture' : 'move');
         }
 
-        await updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
+        const newStateObj = { 
+            board: newBoard, 
+            castlingRights: newCastling, 
+            lastMove: move,
+            halfMoveClock: newHalfMoveClock,
+            positionHistory: newHistory
+        };
+
+        await updateGameOnMove(newStateObj, nextTurn, status, winnerId, {
             type: 'chess', from: move.from, to: move.to,
             piece: movedPiece, captured: !!move.captured,
             promotion: move.promotion,
-            board: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move })
+            board: JSON.stringify(newStateObj)
         });
 
         if (status === 'finished') {
@@ -443,7 +486,7 @@ export default function Game() {
         }
 
         setBoard(newBoard);
-        setChessState({ castlingRights: newCastling, lastMove: move });
+        setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
         setPromotionPending(null);
