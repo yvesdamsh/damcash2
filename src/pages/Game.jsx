@@ -355,9 +355,9 @@ export default function Game() {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#f0e6d2] overflow-hidden">
-            {/* 1. Video Chat Top */}
-            <div className="w-full bg-black/5 border-b border-[#d4c5b0]">
+        <div className="min-h-screen bg-[#f0e6d2] pb-10">
+            {/* 1. Video Chat Top (Fixed or Scrollable? Let's keep it at top flow) */}
+            <div className="w-full bg-black/5 border-b border-[#d4c5b0] sticky top-0 z-50 backdrop-blur-sm">
                  <VideoChat 
                     gameId={game.id} 
                     currentUser={currentUser} 
@@ -365,118 +365,103 @@ export default function Game() {
                 />
             </div>
 
-            <div className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full overflow-hidden">
+            <div className="max-w-4xl mx-auto w-full p-2 md:p-4 space-y-4">
                 
-                {/* Left/Top: Game Area */}
-                <div className="flex-1 flex flex-col relative">
-                    
-                    {/* Top Player Info */}
-                    <div className="flex justify-between items-center p-3 bg-white/80 border-b border-[#d4c5b0]">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
-                                {topPlayer.info?.avatar_url ? <img src={topPlayer.info.avatar_url} className="w-full h-full rounded-full object-cover" /> : <User className="w-6 h-6" />}
-                            </div>
-                            <div>
-                                <div className="font-bold text-gray-800 flex items-center gap-2">
-                                    {topPlayer.name || 'En attente...'}
-                                    <span className="text-xs bg-gray-200 px-1 rounded text-gray-600">{getElo(topPlayer.info, game.game_type)}</span>
-                                </div>
-                                {game.winner_id === topPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
-                            </div>
+                {/* Top Player Info */}
+                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0]">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
+                            {topPlayer.info?.avatar_url ? <img src={topPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
                         </div>
-                        <GameTimer 
-                            initialSeconds={topPlayer.timeLeft} 
-                            isActive={game.status === 'playing' && game.current_turn === topPlayer.color} 
-                        />
-                    </div>
-
-                    {/* Board Area */}
-                    <div className="flex-1 flex items-center justify-center bg-[#e6d6bc] p-2 relative overflow-auto">
-                        <div className="relative shadow-2xl rounded-lg">
-                             {game.game_type === 'checkers' 
-                                ? <CheckerBoard board={displayBoard} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={null} />
-                                : <ChessBoard board={displayBoard} onSquareClick={handleChessClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={chessState.lastMove} />
-                            }
+                        <div>
+                            <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+                                {topPlayer.name || 'En attente...'}
+                                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(topPlayer.info, game.game_type)}</span>
+                            </div>
+                            {game.winner_id === topPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
                         </div>
                     </div>
+                    <GameTimer 
+                        initialSeconds={topPlayer.timeLeft} 
+                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color} 
+                    />
+                </div>
 
-                    {/* Bottom Player Info */}
-                    <div className="flex justify-between items-center p-3 bg-white/80 border-t border-[#d4c5b0]">
-                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
-                                {bottomPlayer.info?.avatar_url ? <img src={bottomPlayer.info.avatar_url} className="w-full h-full rounded-full object-cover" /> : <User className="w-6 h-6" />}
-                            </div>
-                            <div>
-                                <div className="font-bold text-gray-800 flex items-center gap-2">
-                                    {bottomPlayer.name || 'Moi'}
-                                    <span className="text-xs bg-gray-200 px-1 rounded text-gray-600">{getElo(bottomPlayer.info, game.game_type)}</span>
-                                </div>
-                                {game.winner_id === bottomPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
-                            </div>
-                        </div>
-                        <GameTimer 
-                            initialSeconds={bottomPlayer.timeLeft} 
-                            isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color} 
-                        />
-                    </div>
-
-                    {/* Mobile Chat Toggle */}
-                    <div className="md:hidden absolute bottom-20 right-4 z-10">
-                         <Button onClick={() => setShowChat(!showChat)} className="rounded-full w-12 h-12 shadow-xl bg-[#4a3728] hover:bg-[#3d2b1f]">
-                            <MessageSquare className="w-6 h-6" />
-                         </Button>
+                {/* Board Area - Centered and Natural Size */}
+                <div className="flex justify-center py-2">
+                    <div className="relative shadow-2xl rounded-lg overflow-hidden">
+                            {game.game_type === 'checkers' 
+                            ? <CheckerBoard board={displayBoard} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={null} />
+                            : <ChessBoard board={displayBoard} onSquareClick={handleChessClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={chessState.lastMove} />
+                        }
                     </div>
                 </div>
 
-                {/* Right/Bottom: Chat & Controls (Desktop: Side, Mobile: Overlay/Bottom) */}
-                <div className={`
-                    ${showChat ? 'flex' : 'hidden'} md:flex 
-                    md:w-80 flex-col border-l border-[#d4c5b0] bg-white z-20
-                    fixed md:relative inset-0 md:inset-auto top-[200px] md:top-0
-                `}>
-                    <div className="flex justify-between items-center p-3 border-b md:hidden">
-                        <span className="font-bold">Chat & Historique</span>
-                        <Button variant="ghost" size="sm" onClick={() => setShowChat(false)}>Fermer</Button>
-                    </div>
-
-                    <div className="flex-1 overflow-hidden bg-[#fcfcfc]">
-                        <GameChat gameId={game.id} currentUser={currentUser} />
-                    </div>
-
-                    <div className="p-4 border-t border-[#d4c5b0] bg-white space-y-2">
-                         {/* Replay Controls */}
-                        {game.moves && JSON.parse(game.moves).length > 0 && (
-                             <div className="flex justify-center gap-1 mb-2">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                                <span className="flex items-center px-1 text-xs font-mono">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                {/* Bottom Player Info */}
+                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0]">
+                        <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
+                            {bottomPlayer.info?.avatar_url ? <img src={bottomPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
+                        </div>
+                        <div>
+                            <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
+                                {bottomPlayer.name || 'Moi'}
+                                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(bottomPlayer.info, game.game_type)}</span>
                             </div>
-                        )}
+                            {game.winner_id === bottomPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
+                        </div>
+                    </div>
+                    <GameTimer 
+                        initialSeconds={bottomPlayer.timeLeft} 
+                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color} 
+                    />
+                </div>
 
+                {/* Controls & Replay */}
+                <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0]">
+                    {game.moves && JSON.parse(game.moves).length > 0 && (
+                        <div className="flex justify-center gap-1 mb-4">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
+                            <span className="flex items-center px-1 text-xs font-mono">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                        </div>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 justify-center">
                         {game.is_private && game.status === 'waiting' && (
-                            <div className="flex items-center gap-2 justify-between bg-gray-100 p-2 rounded">
-                                <span className="text-xs font-mono">{game.access_code}</span>
+                            <div className="flex items-center gap-2 justify-between bg-gray-100 p-2 rounded flex-grow max-w-xs">
+                                <span className="text-xs font-mono font-bold">{game.access_code}</span>
                                 <Button size="sm" variant="ghost" className="h-6 px-2" onClick={copyInviteCode}>{inviteCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</Button>
                             </div>
                         )}
-
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate('/')}>
-                                <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
-                            </Button>
-                            {game.status === 'playing' && (
-                                <Button variant="outline" size="sm" className="flex-1 border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
-                                    if(confirm("Abandonner la partie ?")) {
-                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
-                                        soundManager.play('loss');
-                                    }
-                                }}><Flag className="w-4 h-4 mr-2" /> Abandonner</Button>
-                            )}
-                        </div>
+                        
+                        <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+                            <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
+                        </Button>
+                        
+                        {game.status === 'playing' && (
+                            <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
+                                if(confirm("Abandonner la partie ?")) {
+                                    await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
+                                    soundManager.play('loss');
+                                }
+                            }}><Flag className="w-4 h-4 mr-2" /> Abandonner</Button>
+                        )}
                     </div>
                 </div>
+
+                {/* Chat Spectateur (Bottom) */}
+                <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-96">
+                    <div className="bg-[#4a3728] text-[#e8dcc5] p-2 px-4 font-bold text-sm flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4" /> Chat Spectateur
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                        <GameChat gameId={game.id} currentUser={currentUser} />
+                    </div>
+                </div>
+
             </div>
         </div>
     );
