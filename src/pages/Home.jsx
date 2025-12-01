@@ -316,12 +316,12 @@ export default function Home() {
 
             {gameType === 'checkers' && (
                 <Card className="mb-12 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
-                    <div className="md:flex">
-                        <div className="md:w-2/5 h-64 md:h-auto relative group">
+                    <div className="flex flex-col md:flex-row">
+                        <div className="w-full h-80 md:w-2/5 md:h-auto relative group shrink-0">
                             <img 
                                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/9a126e851_1764571213479.jpg" 
                                 alt="Baba Sy" 
-                                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 block"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]/10" />
                             <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">

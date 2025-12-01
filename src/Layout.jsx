@@ -78,7 +78,7 @@ import {
     }, []);
 
     return (
-        <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative overflow-x-hidden">
+        <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative">
             {/* Background Wood Texture */}
             <div 
                 className="fixed inset-0 z-0 opacity-40 pointer-events-none"
