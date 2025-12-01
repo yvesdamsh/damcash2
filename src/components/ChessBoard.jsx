@@ -2,10 +2,8 @@ import React from 'react';
 import ChessPiece from './ChessPiece';
 import { motion } from 'framer-motion';
 
-export default function ChessBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard' }) {
+export default function ChessBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', onDrop }) {
     
-    const isMyTurn = currentTurn === playerColor;
-
     // Theme Configuration
     const themes = {
         standard: { dark: 'bg-[#6B8E4E]', light: 'bg-[#F0E7D5]', border: 'border-[#3d2b1f]', bg: 'bg-[#3d2b1f]', textDark: 'text-[#F0E7D5]', textLight: 'text-[#6B8E4E]' },
@@ -41,14 +39,16 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                             return (
                                 <div
                                     key={`${r}-${c}`}
+                                    data-row={r}
+                                    data-col={c}
                                     onClick={() => onSquareClick(r, c)}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
-                                        relative w-full h-full flex items-center justify-center
+                                        relative w-full h-full flex items-center justify-center board-square
                                         ${squareColor}
                                         ${isLastMove ? 'after:absolute after:inset-0 after:bg-yellow-400/30' : ''}
                                         ${isSelected ? 'bg-yellow-200/50 ring-inset ring-4 ring-yellow-400' : ''}
-                                        ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
+                                        ${isTarget ? 'cursor-pointer' : ''}
                                     `}
                                 >
                                     {/* Coordinates */}
@@ -66,7 +66,7 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                     {/* Valid Move Indicator */}
                                     {isTarget && isMyTurn && (
                                         <div className={`
-                                            absolute z-10 rounded-full pointer-events-none
+                                            absolute z-0 rounded-full pointer-events-none
                                             ${piece ? 'inset-0 border-[6px] border-black/10' : 'w-3 h-3 md:w-4 md:h-4 bg-black/10'}
                                         `} />
                                     )}
@@ -77,6 +77,19 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                             type={piece} 
                                             isSelected={isSelected}
                                             set={pieceSet}
+                                            onDragEnd={(e, info) => {
+                                                if(!onDrop) return;
+                                                // Hide element to get element below
+                                                const target = document.elementFromPoint(info.point.x, info.point.y);
+                                                const square = target?.closest('.board-square');
+                                                if (square) {
+                                                    const tr = parseInt(square.dataset.row);
+                                                    const tc = parseInt(square.dataset.col);
+                                                    if (!isNaN(tr) && !isNaN(tc) && !(tr === r && tc === c)) {
+                                                        onDrop({ r, c }, { r: tr, c: tc });
+                                                    }
+                                                }
+                                            }}
                                             animateFrom={
                                                 lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                 ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }

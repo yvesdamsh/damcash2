@@ -14,6 +14,7 @@ import VideoChat from '@/components/VideoChat';
 import GameTimer from '@/components/GameTimer';
 import MoveHistory from '@/components/MoveHistory';
 import AnalysisPanel from '@/components/AnalysisPanel';
+import PromotionSelect from '@/components/PromotionSelect';
 import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
@@ -35,6 +36,8 @@ export default function Game() {
     const [showResult, setShowResult] = useState(false);
     const [activeTab, setActiveTab] = useState('chat'); // chat, moves, analysis
     const [isSaved, setIsSaved] = useState(false);
+    const [promotionPending, setPromotionPending] = useState(null);
+    const [premove, setPremove] = useState(null);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -112,6 +115,24 @@ export default function Game() {
                 if (game && game.current_turn !== fetchedGame.current_turn) {
                     soundManager.play('move');
                     if (document.hidden) soundManager.play('notify');
+                    
+                    // Premove execution check
+                    // If it is now MY turn, and I have a premove
+                    const amIWhite = currentUser?.id === fetchedGame.white_player_id;
+                    const amIBlack = currentUser?.id === fetchedGame.black_player_id;
+                    const isMyTurnNow = (fetchedGame.current_turn === 'white' && amIWhite) || (fetchedGame.current_turn === 'black' && amIBlack);
+                    
+                    if (isMyTurnNow && premove) {
+                        // Validate and Execute Premove
+                        // Need to use the LATEST board state (from fetchedGame or parsed)
+                        // We have setBoard above, but might not be updated in state yet?
+                        // Safe to use `parsed` logic again or just rely on next render?
+                        // Better to use effect on game/board change.
+                        // We will handle this in a separate useEffect or here if we have the board data.
+                        
+                        // Actually, simpler to let the user see the move happen.
+                        // We can use a short timeout or useEffect dependent on game.current_turn
+                    }
                 }
 
                 setLoading(false);
@@ -149,6 +170,26 @@ export default function Game() {
             toast.error("Erreur lors de la sauvegarde");
         }
     };
+
+    // Premove Execution Effect
+    useEffect(() => {
+        if (!game || !currentUser || !premove) return;
+        
+        const isMyTurn = (game.current_turn === 'white' && currentUser.id === game.white_player_id) ||
+                         (game.current_turn === 'black' && currentUser.id === game.black_player_id);
+        
+        if (isMyTurn) {
+            // Execute Premove
+            if (game.game_type === 'chess') {
+                handleChessClick(premove.to.r, premove.to.c, premove.from);
+            } else {
+                // Checkers premove not requested but easy to add if needed.
+                // For now chess only.
+                // We need to verify validity first.
+            }
+            setPremove(null);
+        }
+    }, [game?.current_turn, game?.id]); // Run when turn changes
 
     // Calculate real-time clock
     const getTimeLeft = (color) => {
@@ -249,20 +290,65 @@ export default function Game() {
         }
     };
 
-    const handleChessClick = async (r, c) => {
+    const handleChessClick = async (r, c, overrideFrom = null) => {
+        const isMyTurn = (game.current_turn === 'white' && currentUser.id === game.white_player_id) ||
+                         (game.current_turn === 'black' && currentUser.id === game.black_player_id);
+        const isSolo = game.white_player_id === game.black_player_id;
+        
+        // Premove Logic
+        if (!isMyTurn && !isSolo) {
+             if (overrideFrom) return; // Don't recursive premove
+             
+             // If clicking own piece
+             const piece = board[r][c];
+             const amIWhite = currentUser.id === game.white_player_id;
+             const isWhitePiece = piece && piece === piece.toUpperCase();
+             const isMyPiece = piece && (amIWhite ? isWhitePiece : !isWhitePiece);
+
+             if (isMyPiece) {
+                 setSelectedSquare({r, c});
+                 // We can calculate potential moves purely client side for highlighting?
+                 // Yes, but without valid context (board might change)
+                 // For now, just highlight selected.
+                 setPremove(null);
+             } else if (selectedSquare) {
+                 // Register Premove
+                 setPremove({ from: selectedSquare, to: {r, c} });
+                 setSelectedSquare(null);
+                 toast.info("Coup anticipé enregistré");
+             }
+             return;
+        }
+
         const playerColor = game.current_turn;
+        const fromSquare = overrideFrom || selectedSquare;
+        
+        // Selection Logic
         const piece = board[r][c];
         const isWhitePiece = piece && piece === piece.toUpperCase();
         const isMyPiece = piece && (playerColor === 'white' ? isWhitePiece : !isWhitePiece);
 
-        if (isMyPiece) {
+        if (isMyPiece && !overrideFrom) {
             setSelectedSquare({r, c});
+            setPremove(null); // Clear premove if selecting new piece
             const moves = getValidChessMoves(board, playerColor, chessState.lastMove, chessState.castlingRights);
             setValidMoves(moves.filter(m => m.from.r === r && m.from.c === c));
-        } else if (selectedSquare) {
-            const move = validMoves.find(m => m.to.r === r && m.to.c === c);
+        } else if (fromSquare) {
+            const moves = overrideFrom 
+                ? getValidChessMoves(board, playerColor, chessState.lastMove, chessState.castlingRights).filter(m => m.from.r === fromSquare.r && m.from.c === fromSquare.c)
+                : validMoves;
+                
+            const move = moves.find(m => m.to.r === r && m.to.c === c);
+            
             if (move) {
-                const { board: newBoard, piece: movedPiece, promoted } = executeChessMove(board, move);
+                // Promotion Check
+                const movingPiece = board[move.from.r][move.from.c];
+                if (movingPiece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7) && !move.promotion) {
+                    setPromotionPending(move);
+                    return;
+                }
+
+                const { board: newBoard, piece: movedPiece } = executeChessMove(board, move);
                 
                 const newCastling = { ...chessState.castlingRights };
                 if (movedPiece.toLowerCase() === 'k') {
@@ -294,7 +380,7 @@ export default function Game() {
 
                 await updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
                     type: 'chess', from: move.from, to: move.to,
-                    piece: movedPiece, captured: !!move.captured,
+                    piece: movedPiece, captured: !!move.captured, promotion: move.promotion,
                     board: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move })
                 });
 
@@ -307,10 +393,87 @@ export default function Game() {
                 setSelectedSquare(null);
                 setValidMoves([]);
             } else {
-                setSelectedSquare(null);
-                setValidMoves([]);
+                if (!overrideFrom) {
+                    setSelectedSquare(null);
+                    setValidMoves([]);
+                }
             }
         }
+    };
+
+    const handlePromotionSelect = async (pieceType) => {
+        if (!promotionPending) return;
+        const move = { ...promotionPending, promotion: pieceType };
+        setPromotionPending(null);
+        // Execute the move with promotion
+        // We need to call logic again or just reuse logic?
+        // Reusing logic is cleaner but requires refactoring handleChessClick to be purely about execution if valid.
+        // But since we're here, let's just execute.
+        
+        // But wait, handleChessClick is async and handles DB update.
+        // Let's just call handleChessClick again? 
+        // Problem: handleChessClick re-verifies move validity, which includes generation.
+        // Our getValidMoves generator doesn't know about promotion *types*.
+        // We need to inject the promotion choice into the execution.
+        
+        // Easy fix: Add `promotion` field to the move object we pass to executeChessMove.
+        // Then manually call the update part logic.
+        // Or better: make handleChessClick accept the move object directly?
+        
+        // Let's duplicate the execution block for safety/speed for now or refactor into `executeAndSaveChessMove`.
+        // Refactoring into helper is best.
+        
+        executeAndSaveChessMove(move);
+    };
+
+    const executeAndSaveChessMove = async (move) => {
+        const playerColor = game.current_turn;
+        const { board: newBoard, piece: movedPiece } = executeChessMove(board, move);
+        
+        // ... (same logic as above)
+        const newCastling = { ...chessState.castlingRights };
+        // ... (update castling rights)
+        if (movedPiece.toLowerCase() === 'k') {
+            if (playerColor === 'white') { newCastling.wK = false; newCastling.wQ = false; }
+            else { newCastling.bK = false; newCastling.bQ = false; }
+        }
+        if (movedPiece.toLowerCase() === 'r') {
+            if (move.from.r === 7 && move.from.c === 0) newCastling.wQ = false;
+            if (move.from.r === 7 && move.from.c === 7) newCastling.wK = false;
+            if (move.from.r === 0 && move.from.c === 0) newCastling.bQ = false;
+            if (move.from.r === 0 && move.from.c === 7) newCastling.bK = false;
+        }
+
+        const nextTurn = playerColor === 'white' ? 'black' : 'white';
+        const gameStatus = checkChessStatus(newBoard, nextTurn, move, newCastling);
+        
+        let status = game.status;
+        let winnerId = null;
+        if (gameStatus === 'checkmate') {
+            status = 'finished';
+            winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
+            soundManager.play('win');
+        } else if (gameStatus === 'stalemate') {
+            status = 'finished';
+        } else {
+            if (isInCheck(newBoard, nextTurn)) soundManager.play('check');
+            else soundManager.play(move.captured ? 'capture' : 'move');
+        }
+
+        await updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
+            type: 'chess', from: move.from, to: move.to,
+            piece: movedPiece, captured: !!move.captured, promotion: move.promotion,
+            board: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move })
+        });
+
+        if (status === 'finished') {
+            base44.functions.invoke('processGameResult', { gameId: game.id });
+        }
+
+        setBoard(newBoard);
+        setChessState({ castlingRights: newCastling, lastMove: move });
+        setSelectedSquare(null);
+        setValidMoves([]);
     };
 
     const updateGameOnMove = async (boardStateObj, nextTurn, status, winnerId, moveData) => {
@@ -596,6 +759,9 @@ export default function Game() {
                                 lastMove={null}
                                 theme={currentUser?.preferences?.checkers_theme}
                                 pieceDesign={currentUser?.preferences?.checkers_pieces}
+                                onDrop={(from, to) => {
+                                    handleSquareClick(to.r, to.c, from);
+                                }}
                               />
                             : <ChessBoard 
                                 board={displayBoard} 
@@ -607,8 +773,23 @@ export default function Game() {
                                 lastMove={chessState.lastMove}
                                 theme={currentUser?.preferences?.chess_theme}
                                 pieceSet={currentUser?.preferences?.chess_pieces}
+                                onDrop={(from, to) => {
+                                    // Handle Drop as a click on target
+                                    // Need to handle selection of 'from' then 'to'
+                                    // handleChessClick logic handles "if selected square -> move"
+                                    // So we can simulate this by:
+                                    // 1. Ensure logic knows we want to move from->to
+                                    handleChessClick(to.r, to.c, from);
+                                }}
                               />
                         }
+                        {promotionPending && (
+                            <PromotionSelect 
+                                color={game.current_turn} 
+                                theme={currentUser?.preferences?.chess_pieces}
+                                onSelect={handlePromotionSelect} 
+                            />
+                        )}
                     </div>
                 </div>
 

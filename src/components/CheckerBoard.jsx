@@ -2,7 +2,7 @@ import React from 'react';
 import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard' }) {
+export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', onDrop }) {
     
     const isValidTarget = (r, c) => {
         if (!selectedSquare) return false;
@@ -64,10 +64,12 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                             return (
                                 <div
                                     key={`${r}-${c}`}
+                                    data-row={r}
+                                    data-col={c}
                                     onClick={() => onSquareClick(r, c)}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
-                                        relative w-full h-full flex items-center justify-center
+                                        relative w-full h-full flex items-center justify-center board-square
                                         ${squareColor}
                                         ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
                                         ${(isTarget && isMyTurn) || (isMyPiece && isMyTurn) ? 'cursor-pointer' : ''}
@@ -108,6 +110,18 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
+                                                onDragEnd={(e, info) => {
+                                                    if(!onDrop) return;
+                                                    const target = document.elementFromPoint(info.point.x, info.point.y);
+                                                    const square = target?.closest('.board-square');
+                                                    if (square) {
+                                                        const tr = parseInt(square.dataset.row);
+                                                        const tc = parseInt(square.dataset.col);
+                                                        if (!isNaN(tr) && !isNaN(tc) && !(tr === r && tc === c)) {
+                                                            onDrop({ r, c }, { r: tr, c: tc });
+                                                        }
+                                                    }
+                                                }}
                                                 animateFrom={
                                                     lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                     ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }

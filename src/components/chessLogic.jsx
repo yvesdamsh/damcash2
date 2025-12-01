@@ -159,10 +159,11 @@ export const executeChessMove = (board, move) => {
         }
     }
 
-    // Promotion (auto queen for now)
+    // Promotion
     let promoted = false;
     if (piece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
-        newBoard[move.to.r][move.to.c] = getColor(piece) === 'white' ? 'Q' : 'q';
+        const promoType = move.promotion || 'q';
+        newBoard[move.to.r][move.to.c] = getColor(piece) === 'white' ? promoType.toUpperCase() : promoType.toLowerCase();
         promoted = true;
     }
 
