@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
+import VideoChat from '@/components/VideoChat';
 import { initializeBoard, getValidMoves, validateMove, executeMove, checkWinner } from '@/components/checkersLogic';
 import { initializeChessBoard, getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager, calculateElo } from '@/components/SoundManager';
@@ -357,6 +358,12 @@ export default function Game() {
                         {game.winner_id === game.black_player_id && <div className="mt-2 flex items-center justify-end text-green-600 font-bold"><Trophy className="w-4 h-4 mr-2" /> Vainqueur</div>}
                     </div>
                     
+                    <VideoChat 
+                        gameId={game.id} 
+                        currentUser={currentUser} 
+                        opponentId={currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
+                    />
+
                     <div className="flex-1 overflow-hidden rounded-xl shadow-inner border border-[#d4c5b0] bg-[#fcfcfc]">
                         <GameChat gameId={game.id} currentUser={currentUser} />
                     </div>
