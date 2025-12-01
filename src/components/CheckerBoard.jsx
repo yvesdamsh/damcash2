@@ -66,7 +66,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     const currentTheme = themes[theme] || themes.standard;
 
     return (
-        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none' }}>
+        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}>
             <div className={`${currentTheme.frame} p-0.5 md:p-1 rounded-md md:rounded-lg shadow-xl md:shadow-2xl border-2 md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
