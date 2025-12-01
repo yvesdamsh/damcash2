@@ -129,10 +129,19 @@ export default function Game() {
 
         const isWhitePlayer = game.white_player_id === currentUser.id;
         const isBlackPlayer = game.black_player_id === currentUser.id;
-        if (!isWhitePlayer && !isBlackPlayer) return;
+        
+        if (!isWhitePlayer && !isBlackPlayer) {
+            toast.error("Vous êtes spectateur.");
+            return;
+        }
 
         const playerColor = isWhitePlayer ? 'white' : 'black';
-        if (game.current_turn !== playerColor) return;
+        if (game.current_turn !== playerColor) {
+             // Optional: Allow selecting pieces even if not turn to see moves? 
+             // For now strict turn order.
+             toast.warning("Ce n'est pas votre tour !");
+             return;
+        }
 
         // --- CHESS LOGIC DISPATCH ---
         if (game.game_type === 'chess') {
@@ -430,8 +439,9 @@ export default function Game() {
     const opponentName = playerColor === 'white' ? game?.black_player_name : game?.white_player_name;
 
     return (
-        <div className="w-[95%] max-w-[1800px] mx-auto pb-4">
-            <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0]">
+        <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
+            <div className="w-full max-w-[1800px] mx-auto pb-4">
+            <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0] mx-2 md:mx-0">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                     <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${game.status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
