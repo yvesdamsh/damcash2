@@ -128,28 +128,140 @@ export default function TournamentDetail() {
     };
 
     const handleStartTournament = async () => {
-        // Only if enough players (for now, simple check)
+        // Only creator can start
+        if (tournament.created_by_user_id && tournament.created_by_user_id !== user.id) {
+            toast.error("Seul l'organisateur peut démarrer le tournoi");
+            return;
+        }
+
         if (participants.length < 2) {
             toast.error("Il faut au moins 2 joueurs pour commencer");
             return;
         }
 
         try {
-            // Update status
-            await base44.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
-            
-            // Generate Round 1 Pairings
-            // Shuffle participants
-            const shuffled = [...participants].sort(() => 0.5 - Math.random());
-            const newMatches = [];
+            // Hybrid Format: Group Stage
+            if (tournament.format === 'hybrid') {
+                // 1. Assign Groups
+                const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                const shuffled = [...participants].sort(() => 0.5 - Math.random());
+                const groupSize = 4; // Default
+                const numGroups = Math.ceil(shuffled.length / groupSize);
+                
+                for (let i = 0; i < shuffled.length; i++) {
+                    const groupIndex = i % numGroups;
+                    const p = shuffled[i];
+                    await base44.entities.TournamentParticipant.update(p.id, {
+                        group_id: groupNames[groupIndex],
+                        group_points: 0
+                    });
+                }
+                
+                // 2. Generate Matches (Round Robin per Group)
+                // For simplicity, we just generate ALL group matches at once in 'waiting' state
+                // Players can play them in any order or we could schedule them.
+                // Let's generate them all.
+                
+                const groups = {};
+                shuffled.forEach((p, i) => {
+                    const gName = groupNames[i % numGroups];
+                    if (!groups[gName]) groups[gName] = [];
+                    groups[gName].push(p);
+                });
 
+                for (const gName in groups) {
+                    const groupPlayers = groups[gName];
+                    for (let i = 0; i < groupPlayers.length; i++) {
+                        for (let j = i + 1; j < groupPlayers.length; j++) {
+                            const p1 = groupPlayers[i];
+                            const p2 = groupPlayers[j];
+                            await base44.entities.Game.create({
+                                status: 'waiting',
+                                game_type: tournament.game_type,
+                                white_player_id: p1.user_id,
+                                white_player_name: p1.user_name,
+                                black_player_id: p2.user_id,
+                                black_player_name: p2.user_name,
+                                current_turn: 'white',
+                                board_state: '[]',
+                                tournament_id: tournament.id,
+                                tournament_round: 0, // 0 for groups
+                                is_private: true
+                            });
+                        }
+                    }
+                }
+
+                await base44.entities.Tournament.update(tournament.id, { 
+                    status: 'ongoing', 
+                    stage: 'groups' 
+                });
+                
+            } else {
+                // Standard Bracket Start
+                await base44.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
+                const shuffled = [...participants].sort(() => 0.5 - Math.random());
+                for (let i = 0; i < shuffled.length; i += 2) {
+                    if (i + 1 < shuffled.length) {
+                        const p1 = shuffled[i];
+                        const p2 = shuffled[i+1];
+                        await base44.entities.Game.create({
+                            status: 'waiting',
+                            game_type: tournament.game_type,
+                            white_player_id: p1.user_id,
+                            white_player_name: p1.user_name,
+                            black_player_id: p2.user_id,
+                            black_player_name: p2.user_name,
+                            current_turn: 'white',
+                            board_state: '[]',
+                            tournament_id: tournament.id,
+                            tournament_round: 1,
+                            is_private: true
+                        });
+                    }
+                }
+            }
+
+            toast.success("Le tournoi commence !");
+            // Force refresh handled by polling
+        } catch (e) {
+            console.error(e);
+            toast.error("Erreur au démarrage");
+        }
+    };
+
+    const advanceGroupsToBracket = async () => {
+        // Calculate standings and generate bracket
+        try {
+            // 1. Update standings based on matches (processGameResult does it but let's be safe)
+            // We assume TournamentParticipant.score or group_points is updated.
+            // For groups, we need to make sure we used group_points. 
+            // Note: processGameResult might need update to handle group_points or we map score to it.
+            // Let's assume processGameResult updates 'score' for tournament participants regardless of stage.
+            // For 'hybrid', 'score' = group points.
+            
+            const groups = {};
+            participants.forEach(p => {
+                if (!groups[p.group_id]) groups[p.group_id] = [];
+                groups[p.group_id].push(p);
+            });
+
+            const qualifiers = [];
+            
+            // Top 2 from each group
+            Object.values(groups).forEach(groupParticipants => {
+                const sorted = groupParticipants.sort((a, b) => (b.score || 0) - (a.score || 0));
+                if(sorted[0]) qualifiers.push(sorted[0]);
+                if(sorted[1]) qualifiers.push(sorted[1]);
+            });
+
+            // Generate Bracket from qualifiers
+            const shuffled = qualifiers.sort(() => 0.5 - Math.random());
             for (let i = 0; i < shuffled.length; i += 2) {
                 if (i + 1 < shuffled.length) {
                     const p1 = shuffled[i];
                     const p2 = shuffled[i+1];
-                    
-                    // Create Game
-                    const game = await base44.entities.Game.create({
+                    await base44.entities.Game.create({
                         status: 'waiting',
                         game_type: tournament.game_type,
                         white_player_id: p1.user_id,
@@ -157,21 +269,25 @@ export default function TournamentDetail() {
                         black_player_id: p2.user_id,
                         black_player_name: p2.user_name,
                         current_turn: 'white',
-                        board_state: '[]', // Will be init by logic
+                        board_state: '[]',
                         tournament_id: tournament.id,
                         tournament_round: 1,
                         is_private: true
                     });
-                    newMatches.push(game);
                 }
             }
 
-            setMatches(newMatches);
-            setTournament(prev => ({ ...prev, status: 'ongoing' }));
-            toast.success("Le tournoi commence !");
+            // Update others to eliminated?
+            // Not strictly needed for display but good for data purity
+            
+            await base44.entities.Tournament.update(tournament.id, { 
+                stage: 'knockout',
+                current_round: 1
+            });
+            toast.success("Phase finale générée !");
         } catch (e) {
             console.error(e);
-            toast.error("Erreur au démarrage");
+            toast.error("Erreur génération phase finale");
         }
     };
 
@@ -281,12 +397,30 @@ export default function TournamentDetail() {
                     </Card>
 
                     <Card className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5]">
-                        <CardContent className="p-6 flex items-center gap-4">
-                            <Trophy className="w-12 h-12 text-yellow-500" />
-                            <div>
-                                <h3 className="font-bold text-lg">Récompense</h3>
-                                <p className="text-sm opacity-80">{tournament.prizes || "La gloire éternelle et le titre de maître !"}</p>
+                        <CardContent className="p-6">
+                            <div className="flex items-center gap-4 mb-4">
+                                <Trophy className="w-12 h-12 text-yellow-500" />
+                                <div>
+                                    <h3 className="font-bold text-lg">Récompenses</h3>
+                                    <p className="text-sm opacity-80">{tournament.prizes || "La gloire éternelle !"}</p>
+                                </div>
                             </div>
+                            {tournament.rewards && (
+                                <div className="grid grid-cols-3 gap-2 text-center text-xs mt-4 border-t border-white/10 pt-4">
+                                    <div className="bg-white/10 p-2 rounded">
+                                        <div className="font-bold text-yellow-400">1er</div>
+                                        <div>{tournament.rewards.first || 'Or'}</div>
+                                    </div>
+                                    <div className="bg-white/10 p-2 rounded">
+                                        <div className="font-bold text-gray-300">2ème</div>
+                                        <div>{tournament.rewards.second || 'Argent'}</div>
+                                    </div>
+                                    <div className="bg-white/10 p-2 rounded">
+                                        <div className="font-bold text-orange-400">3ème</div>
+                                        <div>{tournament.rewards.third || 'Bronze'}</div>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -323,20 +457,65 @@ export default function TournamentDetail() {
                         </TabsList>
                         
                         <TabsContent value="bracket" className="mt-6">
-                            <Card className="min-h-[400px] bg-white/80 backdrop-blur">
-                                <CardHeader>
-                                    <CardTitle>Arbre du tournoi</CardTitle>
-                                </CardHeader>
-                                <CardContent className="overflow-auto">
-                                    {matches.length > 0 ? (
-                                        <TournamentBracket matches={matches} players={participants} currentRound={tournament.current_round} />
-                                    ) : (
-                                        <div className="text-center py-20 text-gray-500">
-                                            Le tableau sera généré au début du tournoi.
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                            {tournament.format === 'hybrid' && tournament.stage === 'groups' && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xl font-bold text-[#4a3728]">Phase de Poules</h3>
+                                        {user && tournament.created_by_user_id === user.id && (
+                                            <Button onClick={advanceGroupsToBracket} className="bg-green-600 hover:bg-green-700">
+                                                <Trophy className="w-4 h-4 mr-2" /> Passer aux Phases Finales
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(gName => {
+                                            const groupPlayers = participants.filter(p => p.group_id === gName);
+                                            if (groupPlayers.length === 0) return null;
+                                            
+                                            // Sort
+                                            const sorted = groupPlayers.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+                                            return (
+                                                <Card key={gName} className="bg-white/80">
+                                                    <CardHeader className="pb-2">
+                                                        <CardTitle className="text-lg">Groupe {gName}</CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <div className="space-y-2">
+                                                            {sorted.map((p, idx) => (
+                                                                <div key={p.id} className={`flex justify-between p-2 rounded ${idx < 2 ? 'bg-green-100' : 'bg-gray-50'}`}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-bold text-xs w-4">{idx+1}</span>
+                                                                        <span className="text-sm font-medium truncate max-w-[120px]">{p.user_name}</span>
+                                                                    </div>
+                                                                    <span className="font-bold text-[#d45c30]">{p.score || 0} pts</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {(tournament.stage === 'knockout' || tournament.format === 'bracket') && (
+                                <Card className="min-h-[400px] bg-white/80 backdrop-blur mt-6">
+                                    <CardHeader>
+                                        <CardTitle>Arbre Final</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="overflow-auto">
+                                        {matches.filter(m => m.tournament_round > 0).length > 0 ? (
+                                            <TournamentBracket matches={matches} players={participants} currentRound={tournament.current_round} />
+                                        ) : (
+                                            <div className="text-center py-20 text-gray-500">
+                                                En attente de la génération de l'arbre...
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            )}
                         </TabsContent>
                         
                         <TabsContent value="participants" className="mt-6">

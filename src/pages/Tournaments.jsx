@@ -19,9 +19,13 @@ export default function Tournaments() {
     const [newTournament, setNewTournament] = useState({
         name: '',
         game_type: 'checkers',
+        format: 'bracket',
         max_players: '8',
-        start_date: ''
+        start_date: '',
+        is_private: false,
+        access_code: ''
     });
+    const [accessCodeInput, setAccessCodeInput] = useState('');
 
     useEffect(() => {
         const init = async () => {
@@ -52,7 +56,9 @@ export default function Tournaments() {
             await base44.entities.Tournament.create({
                 ...newTournament,
                 max_players: parseInt(newTournament.max_players),
-                status: 'open'
+                status: 'open',
+                stage: newTournament.format === 'hybrid' ? 'groups' : 'knockout',
+                created_by_user_id: user.id
             });
             toast.success("Tournoi créé !");
             setIsCreateOpen(false);
@@ -119,6 +125,7 @@ export default function Tournaments() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="bracket">Arbre (Bracket)</SelectItem>
+                                        <SelectItem value="hybrid">Poules + Arbre</SelectItem>
                                         <SelectItem value="swiss">Suisse</SelectItem>
                                         <SelectItem value="arena">Arène</SelectItem>
                                     </SelectContent>
@@ -161,6 +168,29 @@ export default function Tournaments() {
                                     className="border-[#d4c5b0]"
                                 />
                             </div>
+                            
+                            <div className="flex items-center gap-2 border-t pt-4 mt-2">
+                                <input 
+                                    type="checkbox" 
+                                    id="is_private" 
+                                    checked={newTournament.is_private}
+                                    onChange={e => setNewTournament({...newTournament, is_private: e.target.checked})}
+                                    className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
+                                />
+                                <Label htmlFor="is_private" className="font-bold text-[#4a3728]">Tournoi Privé (Code requis)</Label>
+                            </div>
+                            
+                            {newTournament.is_private && (
+                                <div className="grid gap-2 pl-6">
+                                    <Label>Code d'accès</Label>
+                                    <Input 
+                                        value={newTournament.access_code || ''} 
+                                        onChange={e => setNewTournament({...newTournament, access_code: e.target.value.toUpperCase()})}
+                                        placeholder="Ex: SECRET123"
+                                        className="border-[#d4c5b0] uppercase"
+                                    />
+                                </div>
+                            )}
                         </div>
                         <DialogFooter>
                             <Button onClick={handleCreate} className="bg-[#4a3728] hover:bg-[#2c1e12]">Créer</Button>
@@ -169,9 +199,39 @@ export default function Tournaments() {
                 </Dialog>
             </div>
 
+            <div className="mb-8 bg-white/50 p-4 rounded-xl border border-[#d4c5b0]">
+                <div className="flex gap-4 items-end">
+                    <div className="flex-1 max-w-xs">
+                        <Label className="mb-2 block font-bold text-[#4a3728]">Rejoindre un tournoi privé</Label>
+                        <Input 
+                            placeholder="Code d'accès..." 
+                            value={accessCodeInput}
+                            onChange={e => setAccessCodeInput(e.target.value.toUpperCase())}
+                            className="bg-white border-[#d4c5b0]"
+                        />
+                    </div>
+                    <Button 
+                        onClick={async () => {
+                            if (!accessCodeInput) return;
+                            const res = await base44.entities.Tournament.list(); // Inefficient but works for small scale
+                            const target = res.find(t => t.access_code === accessCodeInput && t.status !== 'finished');
+                            if (target) {
+                                window.location.href = `/TournamentDetail?id=${target.id}`;
+                            } else {
+                                toast.error("Code invalide ou tournoi terminé");
+                            }
+                        }}
+                        className="bg-[#6b5138] hover:bg-[#5c4430]"
+                    >
+                        Rejoindre
+                    </Button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tournaments.map(t => (
-                    <Card key={t.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group">
+                {tournaments.filter(t => !t.is_private || (user && t.created_by_user_id === user.id)).map(t => (
+                    <Card key={t.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
+                         {t.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
                                 <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-2 inline-block ${
