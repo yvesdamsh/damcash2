@@ -27,6 +27,8 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                             );
                             
                             // Colors from prompt
+                            // A1 (7,0) must be Green. 7+0=7 (odd) -> isDark=true -> Green.
+                            // A8 (0,0) must be Beige. 0+0=0 (even) -> isDark=false -> Beige.
                             const squareColor = isDark 
                                 ? 'bg-[#6B8E4E]' // Green
                                 : 'bg-[#F0E7D5]'; // Beige
