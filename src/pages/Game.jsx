@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell, ChevronLeft, ChevronRight, Play, SkipBack, SkipForward } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
 import VideoChat from '@/components/VideoChat';
-import { initializeBoard, getValidMoves, validateMove, executeMove, checkWinner } from '@/components/checkersLogic';
-import { initializeChessBoard, getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
-import { soundManager, calculateElo } from '@/components/SoundManager';
+import GameTimer from '@/components/GameTimer';
+import { executeMove, checkWinner } from '@/components/checkersLogic';
+import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
+import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
+import { soundManager } from '@/components/SoundManager';
 
 export default function Game() {
     const [game, setGame] = useState(null);
@@ -23,6 +25,8 @@ export default function Game() {
     const [inviteCopied, setInviteCopied] = useState(false);
     const [chessState, setChessState] = useState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
     const [replayIndex, setReplayIndex] = useState(-1);
+    const [playersInfo, setPlayersInfo] = useState({ white: null, black: null });
+    const [showChat, setShowChat] = useState(false);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -45,6 +49,24 @@ export default function Game() {
         };
         checkAuth();
     }, []);
+
+    // Fetch Players Info (ELO)
+    useEffect(() => {
+        if (game && (!playersInfo.white || !playersInfo.black)) {
+            const fetchPlayers = async () => {
+                try {
+                    const [white, black] = await Promise.all([
+                        game.white_player_id ? base44.entities.User.get(game.white_player_id).catch(() => null) : null,
+                        game.black_player_id ? base44.entities.User.get(game.black_player_id).catch(() => null) : null
+                    ]);
+                    setPlayersInfo({ white, black });
+                } catch (e) {
+                    console.error("Error fetching players", e);
+                }
+            };
+            fetchPlayers();
+        }
+    }, [game?.white_player_id, game?.black_player_id]);
 
     useEffect(() => {
         if (!id) return;
@@ -90,6 +112,17 @@ export default function Game() {
         return () => clearInterval(interval);
     }, [id, game?.current_turn]);
 
+    // Calculate real-time clock
+    const getTimeLeft = (color) => {
+        if (!game) return 600;
+        const baseTime = color === 'white' ? (game.white_seconds_left || 600) : (game.black_seconds_left || 600);
+        if (game.status === 'playing' && game.current_turn === color && game.last_move_at) {
+            const elapsed = (Date.now() - new Date(game.last_move_at).getTime()) / 1000;
+            return Math.max(0, baseTime - elapsed);
+        }
+        return baseTime;
+    };
+
     const handleSquareClick = async (r, c) => {
         if (!game || game.status !== 'playing' || replayIndex !== -1) return;
         const isSoloMode = game.white_player_id === game.black_player_id;
@@ -109,19 +142,14 @@ export default function Game() {
         const playerColor = game.current_turn;
         const piece = board[r][c];
 
-        // If force continue sequence
         if (mustContinueWith) {
             if (selectedSquare && selectedSquare[0] === mustContinueWith.r && selectedSquare[1] === mustContinueWith.c) {
                 const move = validMoves.find(m => m.to.r === r && m.to.c === c);
                 if (move) executeCheckersMove(move);
-            } else if (r === mustContinueWith.r && c === mustContinueWith.c) {
-                 // Clicking on the forced piece is fine
-                 return;
             }
             return; 
         }
 
-        // Selection
         const isMyPiece = piece !== 0 && (
             (playerColor === 'white' && (piece === 1 || piece === 3)) ||
             (playerColor === 'black' && (piece === 2 || piece === 4))
@@ -129,8 +157,7 @@ export default function Game() {
 
         if (isMyPiece) {
             setSelectedSquare([r, c]);
-            const moves = getValidMoves(board, playerColor);
-            // Filter moves for this piece
+            const moves = (await import('@/components/checkersLogic')).getValidMoves(board, playerColor);
             const pieceMoves = moves.filter(m => m.from.r === r && m.from.c === c);
             setValidMoves(pieceMoves);
         } else if (selectedSquare) {
@@ -143,7 +170,6 @@ export default function Game() {
     const executeCheckersMove = async (move) => {
         const { newBoard, promoted } = executeMove(board, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
         
-        // Check multi-jump
         let mustContinue = false;
         if (move.captured && !promoted) {
             const { captures } = (await import('@/components/checkersLogic')).getMovesForPiece(newBoard, move.to.r, move.to.c, newBoard[move.to.r][move.to.c], true);
@@ -159,23 +185,13 @@ export default function Game() {
             status = 'finished';
             winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
             soundManager.play(winnerId === currentUser.id ? 'win' : 'loss');
-            // Update ELO logic here ideally
         } else {
             soundManager.play(move.captured ? 'capture' : 'move');
         }
 
-        // Record move
-        const currentMoves = game.moves ? JSON.parse(game.moves) : [];
-        const newMoveData = { 
+        updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
             type: 'checkers', from: move.from, to: move.to, 
             captured: !!move.captured, board: JSON.stringify(newBoard) 
-        };
-
-        await base44.entities.Game.update(game.id, {
-            board_state: JSON.stringify(newBoard),
-            current_turn: nextTurn,
-            status, winner_id: winnerId,
-            moves: JSON.stringify([...currentMoves, newMoveData])
         });
 
         setBoard(newBoard);
@@ -206,7 +222,6 @@ export default function Game() {
             if (move) {
                 const { board: newBoard, piece: movedPiece, promoted } = executeChessMove(board, move);
                 
-                // Update castling rights
                 const newCastling = { ...chessState.castlingRights };
                 if (movedPiece.toLowerCase() === 'k') {
                     if (playerColor === 'white') { newCastling.wK = false; newCastling.wQ = false; }
@@ -218,8 +233,6 @@ export default function Game() {
                     if (move.from.r === 0 && move.from.c === 0) newCastling.bQ = false;
                     if (move.from.r === 0 && move.from.c === 7) newCastling.bK = false;
                 }
-                // Castling rook moved logic is simpler: if rook moves or is captured, update rights.
-                // For simplicity, assuming standard updates.
 
                 const nextTurn = playerColor === 'white' ? 'black' : 'white';
                 const gameStatus = checkChessStatus(newBoard, nextTurn, move, newCastling);
@@ -237,18 +250,10 @@ export default function Game() {
                     else soundManager.play(move.captured ? 'capture' : 'move');
                 }
 
-                const currentMoves = game.moves ? JSON.parse(game.moves) : [];
-                const moveData = {
+                updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
                     type: 'chess', from: move.from, to: move.to,
                     piece: movedPiece, captured: !!move.captured,
                     board: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move })
-                };
-
-                await base44.entities.Game.update(game.id, {
-                    board_state: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move }),
-                    current_turn: nextTurn,
-                    status, winner_id: winnerId,
-                    moves: JSON.stringify([...currentMoves, moveData])
                 });
 
                 setBoard(newBoard);
@@ -260,6 +265,35 @@ export default function Game() {
                 setValidMoves([]);
             }
         }
+    };
+
+    const updateGameOnMove = async (boardStateObj, nextTurn, status, winnerId, moveData) => {
+        const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+        const now = new Date().toISOString();
+        
+        // Calculate time deduction
+        let updateData = {
+            board_state: JSON.stringify(boardStateObj),
+            current_turn: nextTurn,
+            status, 
+            winner_id: winnerId,
+            moves: JSON.stringify([...currentMoves, moveData]),
+            last_move_at: now
+        };
+
+        if (game.last_move_at) {
+            const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
+            if (game.current_turn === 'white') {
+                updateData.white_seconds_left = Math.max(0, (game.white_seconds_left || 600) - elapsed);
+            } else {
+                updateData.black_seconds_left = Math.max(0, (game.black_seconds_left || 600) - elapsed);
+            }
+        } else {
+            // First move, just set timestamp
+             updateData.last_move_at = now;
+        }
+
+        await base44.entities.Game.update(game.id, updateData);
     };
 
     const copyInviteCode = () => {
@@ -283,99 +317,165 @@ export default function Game() {
     }
     if (!Array.isArray(displayBoard)) displayBoard = [];
 
+    // Orientation: if I am Black, I want to be at bottom.
+    // However, standard usually puts "Opponent" at top, "Self" at bottom.
+    // If I am spectator, maybe White bottom.
+    const isAmBlack = currentUser?.id === game.black_player_id;
+    const topPlayer = isAmBlack ? { 
+        id: game.white_player_id, 
+        name: game.white_player_name, 
+        color: 'white',
+        info: playersInfo.white,
+        timeLeft: getTimeLeft('white')
+    } : { 
+        id: game.black_player_id, 
+        name: game.black_player_name, 
+        color: 'black',
+        info: playersInfo.black,
+        timeLeft: getTimeLeft('black')
+    };
+
+    const bottomPlayer = isAmBlack ? { 
+        id: game.black_player_id, 
+        name: game.black_player_name, 
+        color: 'black',
+        info: playersInfo.black,
+        timeLeft: getTimeLeft('black')
+    } : { 
+        id: game.white_player_id, 
+        name: game.white_player_name, 
+        color: 'white',
+        info: playersInfo.white,
+        timeLeft: getTimeLeft('white')
+    };
+
+    const getElo = (info, type) => {
+        if (!info) return 1200;
+        return type === 'chess' ? (info.elo_chess || 1200) : (info.elo_checkers || 1200);
+    };
+
     return (
-        <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
-            <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0] mx-2 md:mx-0">
-                <div className="flex items-center gap-4 mb-2 md:mb-0">
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/')}><ChevronLeft className="w-5 h-5 mr-1" /> Quitter</Button>
-                    <div className="flex flex-col">
-                        <h1 className="text-xl font-bold text-[#4a3728]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'}</h1>
-                        <span className="text-xs text-[#6b5138]">ID: {game.id.slice(0,8)}</span>
-                    </div>
-                </div>
-                {game.status === 'playing' && (
-                    <div className="flex items-center gap-3 bg-[#f5f0e6] px-4 py-2 rounded-full border border-[#e8dcc5]">
-                        <span className={`w-3 h-3 rounded-full ${game.current_turn === 'white' ? 'bg-white border border-gray-400' : 'bg-black'} shadow-sm`}></span>
-                        <span className="font-bold text-[#4a3728] uppercase text-sm">
-                            Au tour des {game.current_turn === 'white' ? 'Blancs' : 'Noirs'}
-                        </span>
-                    </div>
-                )}
-                {game.is_private && game.status === 'waiting' && (
-                    <div className="flex items-center gap-2">
-                        <div className="bg-[#e8dcc5] px-3 py-1 rounded-lg font-mono font-bold text-[#4a3728] border border-[#d4c5b0]">{game.access_code}</div>
-                        <Button size="sm" variant="outline" onClick={copyInviteCode}>{inviteCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}</Button>
-                    </div>
-                )}
+        <div className="flex flex-col h-screen bg-[#f0e6d2] overflow-hidden">
+            {/* 1. Video Chat Top */}
+            <div className="w-full bg-black/5 border-b border-[#d4c5b0]">
+                 <VideoChat 
+                    gameId={game.id} 
+                    currentUser={currentUser} 
+                    opponentId={currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
+                />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_320px] gap-4 h-[calc(100vh-140px)]">
-                {/* Player Left (White) */}
-                <div className="order-2 lg:order-1 flex flex-col gap-4">
-                    <div className={`bg-white/90 p-4 rounded-xl shadow-md border-l-4 ${game.current_turn === 'white' ? 'border-green-500 ring-2 ring-green-200' : 'border-transparent'}`}>
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"><User className="w-6 h-6 text-gray-500" /></div>
-                            <div><div className="font-bold text-gray-800">{game.white_player_name}</div><div className="text-xs text-gray-500">Blancs</div></div>
+            <div className="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full overflow-hidden">
+                
+                {/* Left/Top: Game Area */}
+                <div className="flex-1 flex flex-col relative">
+                    
+                    {/* Top Player Info */}
+                    <div className="flex justify-between items-center p-3 bg-white/80 border-b border-[#d4c5b0]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                                {topPlayer.info?.avatar_url ? <img src={topPlayer.info.avatar_url} className="w-full h-full rounded-full object-cover" /> : <User className="w-6 h-6" />}
+                            </div>
+                            <div>
+                                <div className="font-bold text-gray-800 flex items-center gap-2">
+                                    {topPlayer.name || 'En attente...'}
+                                    <span className="text-xs bg-gray-200 px-1 rounded text-gray-600">{getElo(topPlayer.info, game.game_type)}</span>
+                                </div>
+                                {game.winner_id === topPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
+                            </div>
                         </div>
-                        {game.winner_id === game.white_player_id && <div className="mt-2 flex items-center text-green-600 font-bold"><Trophy className="w-4 h-4 mr-2" /> Vainqueur</div>}
+                        <GameTimer 
+                            initialSeconds={topPlayer.timeLeft} 
+                            isActive={game.status === 'playing' && game.current_turn === topPlayer.color} 
+                        />
                     </div>
-                    <div className="hidden lg:block flex-1 bg-white/50 rounded-xl p-4"><h3 className="font-bold text-[#4a3728] mb-2 opacity-50 uppercase text-xs tracking-widest">Captures</h3>{/* Placeholder */}</div>
+
+                    {/* Board Area */}
+                    <div className="flex-1 flex items-center justify-center bg-[#e6d6bc] p-2 relative overflow-auto">
+                        <div className="relative shadow-2xl rounded-lg">
+                             {game.game_type === 'checkers' 
+                                ? <CheckerBoard board={displayBoard} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={null} />
+                                : <ChessBoard board={displayBoard} onSquareClick={handleChessClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={chessState.lastMove} />
+                            }
+                        </div>
+                    </div>
+
+                    {/* Bottom Player Info */}
+                    <div className="flex justify-between items-center p-3 bg-white/80 border-t border-[#d4c5b0]">
+                         <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                                {bottomPlayer.info?.avatar_url ? <img src={bottomPlayer.info.avatar_url} className="w-full h-full rounded-full object-cover" /> : <User className="w-6 h-6" />}
+                            </div>
+                            <div>
+                                <div className="font-bold text-gray-800 flex items-center gap-2">
+                                    {bottomPlayer.name || 'Moi'}
+                                    <span className="text-xs bg-gray-200 px-1 rounded text-gray-600">{getElo(bottomPlayer.info, game.game_type)}</span>
+                                </div>
+                                {game.winner_id === bottomPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
+                            </div>
+                        </div>
+                        <GameTimer 
+                            initialSeconds={bottomPlayer.timeLeft} 
+                            isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color} 
+                        />
+                    </div>
+
+                    {/* Mobile Chat Toggle */}
+                    <div className="md:hidden absolute bottom-20 right-4 z-10">
+                         <Button onClick={() => setShowChat(!showChat)} className="rounded-full w-12 h-12 shadow-xl bg-[#4a3728] hover:bg-[#3d2b1f]">
+                            <MessageSquare className="w-6 h-6" />
+                         </Button>
+                    </div>
                 </div>
 
-                {/* Board Center */}
-                <div className="order-1 lg:order-2 flex flex-col items-center justify-center bg-[#2c1e12]/5 rounded-xl p-2 md:p-6 relative">
-                    {game.game_type === 'checkers' 
-                        ? <CheckerBoard board={displayBoard} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={currentUser.id === game.black_player_id ? 'black' : 'white'} lastMove={null} />
-                        : <ChessBoard board={displayBoard} onSquareClick={handleChessClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={currentUser.id === game.black_player_id ? 'black' : 'white'} lastMove={chessState.lastMove} />
-                    }
-                    
-                    {/* Replay Controls */}
-                    {game.moves && JSON.parse(game.moves).length > 0 && (
-                         <div className="mt-4 flex gap-2 bg-white/90 p-2 rounded-full shadow-lg border border-[#d4c5b0]">
-                            <Button variant="ghost" size="icon" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => setReplayIndex(prev => {
-                                if (prev === -1) return movesList.length - 2;
-                                return Math.max(0, prev - 1);
-                            })} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                            <span className="flex items-center px-2 text-xs font-mono">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
-                            <Button variant="ghost" size="icon" onClick={() => setReplayIndex(prev => {
-                                if (prev === -1) return -1;
-                                if (prev >= movesList.length - 1) return -1;
-                                return prev + 1;
-                            })} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Player Right (Black) & Chat */}
-                <div className="order-3 flex flex-col gap-4 h-full overflow-hidden">
-                    <div className={`bg-white/90 p-4 rounded-xl shadow-md border-r-4 ${game.current_turn === 'black' ? 'border-green-500 ring-2 ring-green-200' : 'border-transparent'}`}>
-                         <div className="flex items-center gap-3 mb-2 justify-end text-right">
-                            <div><div className="font-bold text-gray-800">{game.black_player_name || 'En attente...'}</div><div className="text-xs text-gray-500">Noirs</div></div>
-                            <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center"><User className="w-6 h-6 text-white" /></div>
-                        </div>
-                        {game.winner_id === game.black_player_id && <div className="mt-2 flex items-center justify-end text-green-600 font-bold"><Trophy className="w-4 h-4 mr-2" /> Vainqueur</div>}
+                {/* Right/Bottom: Chat & Controls (Desktop: Side, Mobile: Overlay/Bottom) */}
+                <div className={`
+                    ${showChat ? 'flex' : 'hidden'} md:flex 
+                    md:w-80 flex-col border-l border-[#d4c5b0] bg-white z-20
+                    fixed md:relative inset-0 md:inset-auto top-[200px] md:top-0
+                `}>
+                    <div className="flex justify-between items-center p-3 border-b md:hidden">
+                        <span className="font-bold">Chat & Historique</span>
+                        <Button variant="ghost" size="sm" onClick={() => setShowChat(false)}>Fermer</Button>
                     </div>
-                    
-                    <VideoChat 
-                        gameId={game.id} 
-                        currentUser={currentUser} 
-                        opponentId={currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
-                    />
 
-                    <div className="flex-1 overflow-hidden rounded-xl shadow-inner border border-[#d4c5b0] bg-[#fcfcfc]">
+                    <div className="flex-1 overflow-hidden bg-[#fcfcfc]">
                         <GameChat gameId={game.id} currentUser={currentUser} />
                     </div>
 
-                    {game.status === 'playing' && (
-                        <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
-                             if(confirm("Abandonner la partie ?")) {
-                                 await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
-                                 soundManager.play('loss');
-                             }
-                        }}><Flag className="w-4 h-4 mr-2" /> Abandonner</Button>
-                    )}
+                    <div className="p-4 border-t border-[#d4c5b0] bg-white space-y-2">
+                         {/* Replay Controls */}
+                        {game.moves && JSON.parse(game.moves).length > 0 && (
+                             <div className="flex justify-center gap-1 mb-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
+                                <span className="flex items-center px-1 text-xs font-mono">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                            </div>
+                        )}
+
+                        {game.is_private && game.status === 'waiting' && (
+                            <div className="flex items-center gap-2 justify-between bg-gray-100 p-2 rounded">
+                                <span className="text-xs font-mono">{game.access_code}</span>
+                                <Button size="sm" variant="ghost" className="h-6 px-2" onClick={copyInviteCode}>{inviteCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</Button>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => navigate('/')}>
+                                <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
+                            </Button>
+                            {game.status === 'playing' && (
+                                <Button variant="outline" size="sm" className="flex-1 border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
+                                    if(confirm("Abandonner la partie ?")) {
+                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
+                                        soundManager.play('loss');
+                                    }
+                                }}><Flag className="w-4 h-4 mr-2" /> Abandonner</Button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
