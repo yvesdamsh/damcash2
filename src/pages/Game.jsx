@@ -5,10 +5,10 @@ import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
-import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
-import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
+import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece, initializeBoard } from '@/components/checkersLogic';
+import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck, initializeChessBoard } from '@/components/chessLogic';
 import { soundManager, calculateElo } from '@/components/SoundManager'; 
-import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell, ChevronLeft, ChevronRight, Play, SkipBack, SkipForward } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Game() {

@@ -342,6 +342,13 @@ export default function Home() {
 
                     <div className="grid md:grid-cols-2 gap-8">
                     <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02]">
+                        <div className="absolute top-4 right-4">
+                            <Link to="/GameHistory">
+                                <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
+                                    <History className="w-4 h-4 mr-2" /> Historique
+                                </Button>
+                            </Link>
+                        </div>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-2xl">
                                 <Sword className="w-8 h-8" />
