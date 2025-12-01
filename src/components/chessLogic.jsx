@@ -141,6 +141,9 @@ export const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
 export const executeChessMove = (board, move) => {
     const newBoard = board.map(row => [...row]);
     const piece = newBoard[move.from.r][move.from.c];
+
+    if (!piece) return { board: newBoard, piece: null, promoted: false };
+
     newBoard[move.from.r][move.from.c] = null;
     newBoard[move.to.r][move.to.c] = piece;
 

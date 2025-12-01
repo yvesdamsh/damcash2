@@ -453,6 +453,9 @@ export default function Game() {
         const { getPositionId } = await import('@/components/chessLogic');
 
         const { board: newBoard, piece: movedPiece, promoted } = executeChessMove(board, move);
+        
+        if (!movedPiece) return; // Safety check for sync issues
+
         const playerColor = game.current_turn;
         
         // Update Castling Rights
