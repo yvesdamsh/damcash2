@@ -285,10 +285,33 @@ export default function TournamentDetail() {
                             <Trophy className="w-12 h-12 text-yellow-500" />
                             <div>
                                 <h3 className="font-bold text-lg">Récompense</h3>
-                                <p className="text-sm opacity-80">La gloire éternelle et le titre de maître !</p>
+                                <p className="text-sm opacity-80">{tournament.prizes || "La gloire éternelle et le titre de maître !"}</p>
                             </div>
                         </CardContent>
                     </Card>
+
+                    {tournament.winner_id && (
+                        <Card className="mt-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-xl animate-in fade-in zoom-in duration-500">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-white">
+                                    <Crown className="w-6 h-6" /> Vainqueur
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="flex items-center gap-4">
+                                    <div className="text-2xl font-black">
+                                        {participants.find(p => p.user_id === tournament.winner_id)?.user_name || 'Champion'}
+                                    </div>
+                                    <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold backdrop-blur-sm">
+                                        🏆 Champion
+                                    </div>
+                                </div>
+                                <p className="mt-2 text-white/80 text-sm">
+                                    A remporté le badge "Vainqueur {tournament.name}"
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 {/* Right Content Area */}

@@ -137,9 +137,20 @@ export default function Tournaments() {
                                             <SelectItem value="4">4</SelectItem>
                                             <SelectItem value="8">8</SelectItem>
                                             <SelectItem value="16">16</SelectItem>
+                                            <SelectItem value="32">32</SelectItem>
+                                            <SelectItem value="100">100 (Arena)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label>Prix / Récompenses</Label>
+                                <Input 
+                                    value={newTournament.prizes || ''} 
+                                    onChange={e => setNewTournament({...newTournament, prizes: e.target.value})}
+                                    placeholder="Ex: Badge Or + 500 points"
+                                    className="border-[#d4c5b0]"
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label>Date de début</Label>

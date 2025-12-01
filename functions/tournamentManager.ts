@@ -62,7 +62,48 @@ export default async function handler(req) {
         // If found, update status if needed
         if (found) {
             if (now >= end && found.status !== 'finished') {
-                 await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
+                 // Calculate Winner for Arena
+                 if (found.format === 'arena') {
+                     const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: found.id });
+                     if (participants.length > 0) {
+                         // Sort by score desc, then games played desc (or other tie break)
+                         const sorted = participants.sort((a, b) => (b.score || 0) - (a.score || 0));
+                         const winner = sorted[0];
+                         
+                         if (winner && winner.score > 0) {
+                             await base44.asServiceRole.entities.Tournament.update(found.id, { 
+                                 status: 'finished',
+                                 winner_id: winner.user_id 
+                             });
+                             
+                             // Award Badge
+                             const badgeName = `Vainqueur ${found.name}`;
+                             await base44.asServiceRole.entities.UserBadge.create({
+                                 user_id: winner.user_id,
+                                 tournament_id: found.id,
+                                 name: badgeName,
+                                 icon: 'Trophy',
+                                 awarded_at: new Date().toISOString()
+                             });
+
+                             // Notify Winner
+                             await base44.asServiceRole.entities.Notification.create({
+                                 recipient_id: winner.user_id,
+                                 type: "success",
+                                 title: "Victoire en Tournoi !",
+                                 message: `Félicitations ! Vous avez remporté le tournoi ${found.name}. Un badge a été ajouté à votre profil.`,
+                                 link: `/TournamentDetail?id=${found.id}`
+                             });
+                         } else {
+                             await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
+                         }
+                     } else {
+                         await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
+                     }
+                 } else {
+                     await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
+                 }
+
             } else if (now >= start && now < end && found.status === 'open') {
                  await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'ongoing' });
                  
