@@ -11,8 +11,9 @@ import {
   X,
   Volume2,
   VolumeX,
-  Home
-} from 'lucide-react';
+  Home,
+  Flag
+  } from 'lucide-react';
 
 export default function Layout({ children }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
