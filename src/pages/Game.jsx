@@ -907,7 +907,7 @@ export default function Game() {
                     </div>
                     <GameTimer 
                         initialSeconds={topPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color} 
+                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color && !!game.last_move_at} 
                     />
                 </div>
 
@@ -1025,7 +1025,7 @@ export default function Game() {
                     </div>
                     <GameTimer 
                         initialSeconds={bottomPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color} 
+                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color && !!game.last_move_at} 
                     />
                 </div>
 
