@@ -13,7 +13,8 @@ import {
   VolumeX,
   Home,
   Flag,
-  Eye
+  Eye,
+  Brain
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
   import FriendsManager from '@/components/FriendsManager';
@@ -57,6 +58,7 @@ import {
     const navItems = [
         { label: 'Accueil', path: '/Home', icon: Home },
         { label: 'Tournois', path: '/Tournaments', icon: Flag },
+        { label: 'Entraînement', path: '/Training', icon: Brain },
         { label: 'Damcash TV', path: '/Spectate', icon: Eye },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
