@@ -103,6 +103,24 @@ export default function TournamentDetail() {
         }
 
         try {
+            if (tournament.entry_fee > 0) {
+                const toastId = toast.loading("Paiement des frais d'inscription...");
+                const res = await base44.functions.invoke('walletManager', {
+                    action: 'pay_entry_fee',
+                    userId: user.id,
+                    amount: tournament.entry_fee,
+                    gameId: tournament.id 
+                });
+                
+                if (res.data.error) {
+                    toast.dismiss(toastId);
+                    toast.error(`Erreur: ${res.data.error === 'Insufficient funds' ? 'Fonds insuffisants' : res.data.error}`);
+                    return;
+                }
+                toast.dismiss(toastId);
+                toast.success("Paiement accepté !");
+            }
+
             await base44.entities.TournamentParticipant.create({
                 tournament_id: tournament.id,
                 user_id: user.id,
@@ -112,10 +130,11 @@ export default function TournamentDetail() {
                 score: 0,
                 games_played: 0
             });
-            toast.success("Vous avez rejoint l'arène !");
+            toast.success("Inscription confirmée !");
             // Force refresh
             base44.functions.invoke('tournamentManager', {}); 
         } catch (e) {
+            console.error(e);
             toast.error("Erreur inscription");
         }
     };
@@ -337,6 +356,19 @@ export default function TournamentDetail() {
                                 <div>
                                     <p className="text-xs text-gray-500 uppercase">Participants</p>
                                     <p className="font-medium">{participants.length} / {tournament.max_players}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 text-gray-700">
+                                <div className="w-8 h-8 rounded-full bg-[#f0e6d2] flex items-center justify-center">
+                                    <Trophy className="w-4 h-4 text-[#6b5138]" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 uppercase">Frais / Cagnotte</p>
+                                    <p className="font-medium">
+                                        {tournament.entry_fee > 0 ? `$${tournament.entry_fee}` : 'Gratuit'} / 
+                                        <span className="text-green-600 font-bold ml-1">${tournament.prize_pool || 0}</span>
+                                    </p>
                                 </div>
                             </div>
 

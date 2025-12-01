@@ -23,7 +23,11 @@ export default function Tournaments() {
         max_players: '8',
         start_date: '',
         is_private: false,
-        access_code: ''
+        access_code: '',
+        entry_fee: 0,
+        prize_pool: 0,
+        rounds: 3,
+        time_control: '5+0'
     });
     const [accessCodeInput, setAccessCodeInput] = useState('');
 
@@ -56,6 +60,9 @@ export default function Tournaments() {
             await base44.entities.Tournament.create({
                 ...newTournament,
                 max_players: parseInt(newTournament.max_players),
+                entry_fee: parseFloat(newTournament.entry_fee),
+                prize_pool: parseFloat(newTournament.prize_pool),
+                rounds: parseInt(newTournament.rounds),
                 status: 'open',
                 stage: newTournament.format === 'hybrid' ? 'groups' : 'knockout',
                 created_by_user_id: user.id
@@ -146,12 +153,67 @@ export default function Tournaments() {
                                             <SelectItem value="16">16</SelectItem>
                                             <SelectItem value="32">32</SelectItem>
                                             <SelectItem value="100">100 (Arena)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>Prix / Récompenses</Label>
+                                            </SelectContent>
+                                            </Select>
+                                            </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                            <Label>Frais d'entrée ($)</Label>
+                                            <Input 
+                                                type="number"
+                                                min="0"
+                                                value={newTournament.entry_fee} 
+                                                onChange={e => setNewTournament({...newTournament, entry_fee: e.target.value})}
+                                                className="border-[#d4c5b0]"
+                                            />
+                                            </div>
+                                            <div className="grid gap-2">
+                                            <Label>Cagnotte ($)</Label>
+                                            <Input 
+                                                type="number"
+                                                min="0"
+                                                value={newTournament.prize_pool} 
+                                                onChange={e => setNewTournament({...newTournament, prize_pool: e.target.value})}
+                                                className="border-[#d4c5b0]"
+                                            />
+                                            </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                            <Label>Rounds</Label>
+                                            <Input 
+                                                type="number"
+                                                min="1"
+                                                value={newTournament.rounds} 
+                                                onChange={e => setNewTournament({...newTournament, rounds: e.target.value})}
+                                                className="border-[#d4c5b0]"
+                                            />
+                                            </div>
+                                            <div className="grid gap-2">
+                                            <Label>Cadence</Label>
+                                            <Select 
+                                                value={newTournament.time_control} 
+                                                onValueChange={v => setNewTournament({...newTournament, time_control: v})}
+                                            >
+                                                <SelectTrigger className="border-[#d4c5b0]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="1+0">1+0 (Bullet)</SelectItem>
+                                                    <SelectItem value="3+0">3+0 (Blitz)</SelectItem>
+                                                    <SelectItem value="3+2">3+2 (Blitz)</SelectItem>
+                                                    <SelectItem value="5+0">5+0 (Blitz)</SelectItem>
+                                                    <SelectItem value="10+0">10+0 (Rapid)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            </div>
+                                            </div>
+
+                                            <div className="grid gap-2">
+                                            <Label>Description des prix (Texte)</Label>
                                 <Input 
                                     value={newTournament.prizes || ''} 
                                     onChange={e => setNewTournament({...newTournament, prizes: e.target.value})}
@@ -241,7 +303,8 @@ export default function Tournaments() {
                                     {t.status === 'open' ? 'Inscriptions ouvertes' : 
                                      t.status === 'ongoing' ? 'En cours' : 'Terminé'}
                                 </div>
-                                <div className="text-[#8c7b6a]">
+                                <div className="text-[#8c7b6a] flex gap-2">
+                                    {t.entry_fee > 0 && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">${t.entry_fee}</span>}
                                     {t.game_type === 'chess' ? <Crown className="w-5 h-5" /> : <Gamepad2 className="w-5 h-5" />}
                                 </div>
                             </div>
