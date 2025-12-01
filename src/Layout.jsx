@@ -78,10 +78,10 @@ import {
     }, []);
 
     return (
-        <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative overflow-hidden">
+        <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative overflow-x-hidden">
             {/* Background Wood Texture */}
             <div 
-                className="absolute inset-0 z-0 opacity-40 pointer-events-none"
+                className="fixed inset-0 z-0 opacity-40 pointer-events-none"
                 style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1575018288729-6e0993577181?q=80&w=2574&auto=format&fit=crop')`,
                     backgroundSize: 'cover',
