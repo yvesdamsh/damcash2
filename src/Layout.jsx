@@ -19,6 +19,14 @@ export default function Layout({ children }) {
     const location = useLocation();
     const [user, setUser] = React.useState(null);
 
+    // Sync with SoundManager on mount
+    React.useEffect(() => {
+        // Import dynamically or assume global if we could, but better to use the file logic
+        // For now we just init state from localStorage logic which SoundManager uses
+        const saved = localStorage.getItem('soundEnabled');
+        setSoundEnabled(saved !== 'false');
+    }, []);
+
     React.useEffect(() => {
         const checkUser = async () => {
             try {
@@ -32,7 +40,14 @@ export default function Layout({ children }) {
     }, []);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-    const toggleSound = () => setSoundEnabled(!soundEnabled);
+    
+    const toggleSound = () => {
+        // We need to update the manager and state
+        import('@/utils/sounds').then(({ soundManager }) => {
+            const newState = soundManager.toggle();
+            setSoundEnabled(newState);
+        });
+    };
 
     const navItems = [
         { label: 'Jouer', path: '/', icon: Gamepad2 },

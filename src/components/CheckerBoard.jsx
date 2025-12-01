@@ -1,6 +1,6 @@
 import React from 'react';
 import CheckerPiece from './CheckerPiece';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor }) {
     
@@ -67,7 +67,11 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                     )}
 
                                     {/* The Piece */}
-                                    <CheckerPiece type={piece} isSelected={isSelected} />
+                                    <AnimatePresence mode='popLayout'>
+                                        {piece !== 0 && (
+                                            <CheckerPiece key={`piece-${r}-${c}`} type={piece} isSelected={isSelected} />
+                                        )}
+                                    </AnimatePresence>
                                 </div>
                             );
                         })

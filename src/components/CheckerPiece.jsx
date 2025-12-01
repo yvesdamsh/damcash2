@@ -22,8 +22,10 @@ export default function CheckerPiece({ type, isSelected }) {
 
     return (
         <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="relative w-[80%] h-[80%] m-auto rounded-full"
         >
             <div 

@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, Smile } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+const QUICK_REPLIES = ["Bien joué ! 👏", "Merci !", "Oups... 😅", "Belle partie !", "🤔 Réfléchis...", "Vite ! ⏰"];
+const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
 export default function GameChat({ gameId, currentUser }) {
     const [messages, setMessages] = useState([]);
@@ -85,17 +89,53 @@ export default function GameChat({ gameId, currentUser }) {
                 })}
             </div>
 
-            <form onSubmit={handleSend} className="p-2 border-t border-[#d4c5b0] bg-white flex gap-2">
-                <Input 
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Message..."
-                    className="h-8 text-sm"
-                />
-                <Button type="submit" size="sm" className="h-8 w-8 p-0 bg-[#6b5138] hover:bg-[#5c4430]">
-                    <Send className="w-4 h-4" />
-                </Button>
-            </form>
+            <div className="p-2 bg-[#f8f4eb] border-t border-[#d4c5b0]">
+                {/* Quick Replies */}
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-1 no-scrollbar">
+                    {QUICK_REPLIES.map(reply => (
+                        <button
+                            key={reply}
+                            onClick={() => setNewMessage(reply)}
+                            className="whitespace-nowrap px-2 py-1 rounded-full bg-[#e8dcc5] text-[#4a3728] text-[10px] hover:bg-[#d4c5b0] transition-colors"
+                        >
+                            {reply}
+                        </button>
+                    ))}
+                </div>
+
+                <form onSubmit={handleSend} className="flex gap-2">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-[#6b5138]">
+                                <Smile className="w-5 h-5" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-2">
+                            <div className="grid grid-cols-5 gap-2">
+                                {EMOJIS.map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => setNewMessage(prev => prev + emoji)}
+                                        className="text-xl hover:bg-slate-100 rounded p-1"
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+
+                    <Input 
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Message..."
+                        className="h-8 text-sm"
+                    />
+                    <Button type="submit" size="sm" className="h-8 w-8 p-0 bg-[#6b5138] hover:bg-[#5c4430]">
+                        <Send className="w-4 h-4" />
+                    </Button>
+                </form>
+            </div>
         </div>
     );
 }

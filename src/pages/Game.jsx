@@ -5,7 +5,8 @@ import CheckerBoard from '@/components/CheckerBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
 import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
-import { Loader2, User, Trophy, Flag, Copy, Check, Share2 } from 'lucide-react';
+import { soundManager } from '@/utils/sounds';
+import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Game() {
@@ -27,6 +28,11 @@ export default function Game() {
         const gameId = urlParams.get('id');
         if (gameId) setId(gameId);
         else navigate('/');
+
+        // Request notification permission
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
     }, []);
 
     useEffect(() => {
@@ -53,6 +59,29 @@ export default function Game() {
                             setBoard(JSON.parse(gameData.board_state));
                             setMustContinueWith(null); // Reset on external update (simple approach)
                         }
+                        
+                        // Notifications and Sounds for opponent moves
+                        if (prev && currentUser) {
+                            // If turn changed to me
+                            if (prev.current_turn !== gameData.current_turn && 
+                                gameData.current_turn === (gameData.white_player_id === currentUser.id ? 'white' : 'black')) {
+                                
+                                soundManager.play('notify');
+                                if (document.hidden && Notification.permission === 'granted') {
+                                    new Notification("C'est à vous !", {
+                                        body: "Votre adversaire a joué. À vous de jouer !",
+                                        icon: "/favicon.ico" // fallback
+                                    });
+                                }
+                            }
+                            
+                            // Game End Sound
+                            if (gameData.status === 'finished' && prev.status !== 'finished') {
+                                const isWinner = gameData.winner_id === currentUser.id;
+                                soundManager.play(isWinner ? 'win' : 'loss');
+                            }
+                        }
+
                         return gameData;
                     }
                     return prev;
@@ -85,6 +114,7 @@ export default function Game() {
 
         // 1. SELECTING A PIECE
         if (isMyPiece) {
+            soundManager.play('move'); // Click sound
             // If we are in a multi-jump sequence, we can ONLY select the piece that must continue
             if (mustContinueWith) {
                 if (row !== mustContinueWith.r || col !== mustContinueWith.c) {
@@ -140,6 +170,10 @@ export default function Game() {
             if (validation.valid) {
                 const { newBoard, promoted } = executeMove(board, selectedSquare, [row, col], validation.captured);
                 
+                // Sound Effects
+                if (validation.captured) soundManager.play('capture');
+                else soundManager.play('move');
+
                 // Multi-jump Logic
                 let nextTurn = playerColor === 'white' ? 'black' : 'white';
                 let continueTurn = false;
