@@ -10,6 +10,7 @@ import Training from './pages/Training';
 import Leagues from './pages/Leagues';
 import LeagueDetail from './pages/LeagueDetail';
 import Wallet from './pages/Wallet';
+import Lobby from './pages/Lobby';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +27,7 @@ export const PAGES = {
     "Leagues": Leagues,
     "LeagueDetail": LeagueDetail,
     "Wallet": Wallet,
+    "Lobby": Lobby,
 }
 
 export const pagesConfig = {

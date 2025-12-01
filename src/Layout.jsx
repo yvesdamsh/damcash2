@@ -15,7 +15,8 @@ import {
   Flag,
   Eye,
   Brain,
-  Shield
+  Shield,
+  Users
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
           import FriendsManager from '@/components/FriendsManager';
@@ -26,6 +27,22 @@ import {
     const [soundEnabled, setSoundEnabled] = React.useState(true);
     const location = useLocation();
     const [user, setUser] = React.useState(null);
+
+    // Heartbeat for Online Status
+    React.useEffect(() => {
+        const heartbeat = async () => {
+            try {
+                const me = await base44.auth.me();
+                if (me) {
+                    await base44.auth.updateMe({ last_seen: new Date().toISOString() });
+                }
+            } catch(e) {}
+        };
+
+        heartbeat(); // Initial call
+        const interval = setInterval(heartbeat, 60000); // Every minute
+        return () => clearInterval(interval);
+    }, []);
 
     // Sync with SoundManager on mount
     React.useEffect(() => {
@@ -59,10 +76,10 @@ import {
 
     const navItems = [
         { label: 'Accueil', path: '/Home', icon: Home },
+        { label: 'Salon', path: '/Lobby', icon: Users },
         { label: 'Ligues', path: '/Leagues', icon: Shield },
         { label: 'Tournois', path: '/Tournaments', icon: Flag },
         { label: 'Entraînement', path: '/Training', icon: Brain },
-        { label: 'Damcash TV', path: '/Spectate', icon: Eye },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
     ];
