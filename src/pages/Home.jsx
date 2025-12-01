@@ -129,11 +129,15 @@ export default function Home() {
                 ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
                 : JSON.stringify(initializeBoard());
 
+            const userStats = await base44.entities.User.get(user.id);
+            const myElo = gameType === 'chess' ? (userStats?.elo_chess || 1200) : (userStats?.elo_checkers || 1200);
+
             const commonGameData = {
                 status: 'waiting',
                 game_type: gameType,
                 white_player_id: user.id,
                 white_player_name: user.full_name || 'Joueur 1',
+                white_player_elo: myElo,
                 current_turn: 'white',
                 board_state: initialBoard,
                 initial_time: gameConfig.time,
@@ -157,8 +161,9 @@ export default function Home() {
             } else {
                 // Matchmaking logic
                 const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+
                 // Filter by game type AND config
-                const candidates = waitingGames.filter(g => 
+                let candidates = waitingGames.filter(g => 
                     g.white_player_id !== user.id && 
                     (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
                     g.initial_time === gameConfig.time &&
@@ -166,11 +171,20 @@ export default function Home() {
                     g.series_length === gameConfig.series
                 );
 
+                // Sort by ELO proximity
                 if (candidates.length > 0) {
+                    candidates.sort((a, b) => {
+                        const eloA = a.white_player_elo || 1200;
+                        const eloB = b.white_player_elo || 1200;
+                        return Math.abs(eloA - myElo) - Math.abs(eloB - myElo);
+                    });
+
+                    // Pick best match
                     const joinableGame = candidates[0];
                     await base44.entities.Game.update(joinableGame.id, {
                         black_player_id: user.id,
                         black_player_name: user.full_name || 'Joueur 2',
+                        black_player_elo: myElo,
                         status: 'playing'
                     });
                     navigate(`/Game?id=${joinableGame.id}`);
