@@ -64,7 +64,7 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
             <img 
                 src={PIECE_IMAGES[type]} 
                 alt={type} 
-                className={`w-[90%] h-[90%] select-none transition-transform duration-200 ${isSelected ? '-translate-y-2 scale-110' : ''}`}
+                className={`w-[90%] h-[90%] select-none ${isSelected ? '-translate-y-2 scale-110' : ''}`}
                 draggable={false}
             />
         </motion.div>

@@ -78,6 +78,8 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                             (lastMove.from.r === r && lastMove.from.c === c) || 
                             (lastMove.to.r === r && lastMove.to.c === c)
                         );
+                        
+                        const isLastMoveTarget = lastMove && lastMove.to.r === r && lastMove.to.c === c;
                             
                             // Premove Highlight
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
@@ -101,6 +103,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                         ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
                                         ${isPremoveTarget ? 'bg-red-400/40' : ''}
                                         ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
+                                        ${isLastMoveTarget ? 'z-30' : (piece ? 'z-20' : 'z-auto')}
                                     `}
                                 >
                                     {/* Coordinates */}
