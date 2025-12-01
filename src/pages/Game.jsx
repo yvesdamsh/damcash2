@@ -5,7 +5,7 @@ import CheckerBoard from '@/components/CheckerBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
 import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
-import { soundManager } from '@/components/SoundManager';
+import { soundManager } from '@/components/SoundManager'; // Fix import path
 import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
