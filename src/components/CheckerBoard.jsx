@@ -40,10 +40,15 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                 if (isValidMove) {
                     // Prevent snap-back glitch by hiding the piece instantly before unmount
                     // We use native DOM manipulation for speed
-                    const pieceEl = e.target ? (e.target.closest ? e.target.closest('.checker-piece') : null) : null;
-                    // Fallback if event target is weird (sometimes on touch)
-                    if (pieceEl) {
-                        pieceEl.style.opacity = '0';
+                    try {
+                        // Try to find the piece element via the event target
+                        let pieceEl = e.target ? (e.target.closest ? e.target.closest('.checker-piece') : null) : null;
+                        if (pieceEl) {
+                            pieceEl.style.opacity = '0';
+                            pieceEl.style.visibility = 'hidden'; // Double assurance
+                        }
+                    } catch(err) {
+                        // Ignore DOM errors during drag end
                     }
                 }
 
@@ -92,7 +97,9 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                             return (
                                 <div
                                     key={`${r}-${c}`}
-                                    onClick={() => onSquareClick(r, c)}
+                                    // Only handle click on square if it's empty (move destination)
+                                    // If occupied, the piece handles the tap (selection)
+                                    onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
                                         relative w-full h-full flex items-center justify-center
@@ -134,7 +141,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
-                                                // onDragStart removed to prevent state updates causing re-renders that break iOS gestures
+                                                onPieceClick={() => onSquareClick(r, c)}
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
                                                 boardRef={boardRef}
