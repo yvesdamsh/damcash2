@@ -115,40 +115,6 @@ export default function Game() {
                 }
 
                 setLoading(false);
-                } catch (e) {
-                console.error("Error fetching game", e);
-                setLoading(false);
-                }
-                };
-
-                fetchGame();
-                interval = setInterval(fetchGame, 1000);
-                return () => clearInterval(interval);
-                }, [id, game?.current_turn]);
-
-                useEffect(() => {
-                if (currentUser && currentUser.favorite_games) {
-                setIsSaved(currentUser.favorite_games.includes(id));
-                }
-                }, [currentUser, id]);
-
-                const toggleSaveGame = async () => {
-                if (!currentUser) return;
-                try {
-                let newFavs = currentUser.favorite_games || [];
-                if (isSaved) {
-                newFavs = newFavs.filter(g => g !== id);
-                toast.success("Partie retirée des favoris");
-                } else {
-                newFavs = [...newFavs, id];
-                toast.success("Partie sauvegardée pour analyse");
-                }
-                await base44.auth.updateMe({ favorite_games: newFavs });
-                setIsSaved(!isSaved);
-                } catch (e) {
-                toast.error("Erreur lors de la sauvegarde");
-                }
-                };
             } catch (e) {
                 console.error("Error fetching game", e);
                 setLoading(false);
@@ -159,6 +125,30 @@ export default function Game() {
         interval = setInterval(fetchGame, 1000);
         return () => clearInterval(interval);
     }, [id, game?.current_turn]);
+
+    useEffect(() => {
+        if (currentUser && currentUser.favorite_games) {
+            setIsSaved(currentUser.favorite_games.includes(id));
+        }
+    }, [currentUser, id]);
+
+    const toggleSaveGame = async () => {
+        if (!currentUser) return;
+        try {
+            let newFavs = currentUser.favorite_games || [];
+            if (isSaved) {
+                newFavs = newFavs.filter(g => g !== id);
+                toast.success("Partie retirée des favoris");
+            } else {
+                newFavs = [...newFavs, id];
+                toast.success("Partie sauvegardée pour analyse");
+            }
+            await base44.auth.updateMe({ favorite_games: newFavs });
+            setIsSaved(!isSaved);
+        } catch (e) {
+            toast.error("Erreur lors de la sauvegarde");
+        }
+    };
 
     // Calculate real-time clock
     const getTimeLeft = (color) => {
