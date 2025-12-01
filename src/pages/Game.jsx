@@ -403,6 +403,8 @@ export default function Game() {
         }
 
         setBoard(newBoard);
+        setGame(prev => ({ ...prev, current_turn: nextTurn, status, winner_id: winnerId }));
+
         if (mustContinue) {
             setMustContinueWith({ r: move.to.r, c: move.to.c });
             setSelectedSquare([move.to.r, move.to.c]);
@@ -528,6 +530,7 @@ export default function Game() {
         }
 
         setBoard(newBoard);
+        setGame(prev => ({ ...prev, current_turn: nextTurn, status, winner_id: winnerId }));
         setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
