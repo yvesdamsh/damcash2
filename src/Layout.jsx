@@ -18,9 +18,10 @@ import {
   Shield
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
-  import FriendsManager from '@/components/FriendsManager';
+          import FriendsManager from '@/components/FriendsManager';
+          import WalletBalance from '@/components/WalletBalance';
 
-  export default function Layout({ children }) {
+          export default function Layout({ children }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
     const location = useLocation();

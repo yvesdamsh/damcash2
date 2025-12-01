@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
@@ -34,6 +35,12 @@ export default function GameSettings({ user, onUpdate }) {
             toast.error("Erreur lors de la sauvegarde");
         }
     };
+
+    // Wager logic (passed from parent usually, but here we are in settings - assume this component is ALSO used for Create Game?)
+    // If this component is strictly "Preferences", I should create a "CreateGameModal" or modify where game creation happens.
+    // The user asked to modify "Home" or "GameSettings". Let's assume Game Creation is not in "GameSettings" (which looks like user prefs).
+    // I will look at Home.js to see how games are created.
+    // But wait, I'm in tool call. I will finish editing Layout/etc and then check Home.js.
 
     return (
         <div className="space-y-6 py-4">
