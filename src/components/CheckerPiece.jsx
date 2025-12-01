@@ -30,13 +30,13 @@ export default function CheckerPiece({ type, isSelected, animateFrom }) {
             animate={animate}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative w-[80%] h-[80%] m-auto rounded-full"
+            className="relative w-[85%] h-[85%] m-auto rounded-full pointer-events-none z-10"
         >
             <div 
                 className={`
                     w-full h-full rounded-full 
                     ${baseColor} 
-                    border-2 ${borderColor}
+                    border-2 md:border-4 ${borderColor}
                     flex items-center justify-center
                     transition-transform duration-200
                     ${isSelected ? '-translate-y-1' : ''}
@@ -44,8 +44,8 @@ export default function CheckerPiece({ type, isSelected, animateFrom }) {
                 style={shadowStyle}
             >
                 {/* Inner grooves for realism */}
-                <div className={`w-[70%] h-[70%] rounded-full border-4 ${innerRing} opacity-50`} />
-                <div className={`absolute w-[40%] h-[40%] rounded-full border-2 ${innerRing} opacity-50`} />
+                <div className={`w-[70%] h-[70%] rounded-full border md:border-4 ${innerRing} opacity-50`} />
+                <div className={`absolute w-[40%] h-[40%] rounded-full border md:border-2 ${innerRing} opacity-50`} />
                 
                 {/* King Crown Icon */}
                 {isKing && (
