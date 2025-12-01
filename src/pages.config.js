@@ -3,6 +3,8 @@ import Leaderboard from './pages/Leaderboard';
 import GameHistory from './pages/GameHistory';
 import Game from './pages/Game';
 import Home from './pages/Home';
+import Tournaments from './pages/Tournaments';
+import TournamentDetail from './pages/TournamentDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -12,6 +14,8 @@ export const PAGES = {
     "GameHistory": GameHistory,
     "Game": Game,
     "Home": Home,
+    "Tournaments": Tournaments,
+    "TournamentDetail": TournamentDetail,
 }
 
 export const pagesConfig = {
