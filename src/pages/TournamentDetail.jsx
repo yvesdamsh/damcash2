@@ -147,7 +147,6 @@ export default function TournamentDetail() {
     };
 
     const handleStartTournament = async () => {
-        // Only creator can start
         if (tournament.created_by_user_id && tournament.created_by_user_id !== user.id) {
             toast.error("Seul l'organisateur peut démarrer le tournoi");
             return;
@@ -159,90 +158,12 @@ export default function TournamentDetail() {
         }
 
         try {
-            // Hybrid Format: Group Stage
-            if (tournament.format === 'hybrid') {
-                // 1. Assign Groups
-                const groupNames = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-                const shuffled = [...participants].sort(() => 0.5 - Math.random());
-                const groupSize = 4; // Default
-                const numGroups = Math.ceil(shuffled.length / groupSize);
-                
-                for (let i = 0; i < shuffled.length; i++) {
-                    const groupIndex = i % numGroups;
-                    const p = shuffled[i];
-                    await base44.entities.TournamentParticipant.update(p.id, {
-                        group_id: groupNames[groupIndex],
-                        group_points: 0
-                    });
-                }
-                
-                // 2. Generate Matches (Round Robin per Group)
-                // For simplicity, we just generate ALL group matches at once in 'waiting' state
-                // Players can play them in any order or we could schedule them.
-                // Let's generate them all.
-                
-                const groups = {};
-                shuffled.forEach((p, i) => {
-                    const gName = groupNames[i % numGroups];
-                    if (!groups[gName]) groups[gName] = [];
-                    groups[gName].push(p);
-                });
-
-                for (const gName in groups) {
-                    const groupPlayers = groups[gName];
-                    for (let i = 0; i < groupPlayers.length; i++) {
-                        for (let j = i + 1; j < groupPlayers.length; j++) {
-                            const p1 = groupPlayers[i];
-                            const p2 = groupPlayers[j];
-                            await base44.entities.Game.create({
-                                status: 'waiting',
-                                game_type: tournament.game_type,
-                                white_player_id: p1.user_id,
-                                white_player_name: p1.user_name,
-                                black_player_id: p2.user_id,
-                                black_player_name: p2.user_name,
-                                current_turn: 'white',
-                                board_state: '[]',
-                                tournament_id: tournament.id,
-                                tournament_round: 0, // 0 for groups
-                                is_private: true
-                            });
-                        }
-                    }
-                }
-
-                await base44.entities.Tournament.update(tournament.id, { 
-                    status: 'ongoing', 
-                    stage: 'groups' 
-                });
-                
+            const res = await base44.functions.invoke('startTournament', { tournamentId: tournament.id });
+            if (res.data.error) {
+                toast.error(`Erreur: ${res.data.error}`);
             } else {
-                // Standard Bracket Start
-                await base44.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
-                const shuffled = [...participants].sort(() => 0.5 - Math.random());
-                for (let i = 0; i < shuffled.length; i += 2) {
-                    if (i + 1 < shuffled.length) {
-                        const p1 = shuffled[i];
-                        const p2 = shuffled[i+1];
-                        await base44.entities.Game.create({
-                            status: 'waiting',
-                            game_type: tournament.game_type,
-                            white_player_id: p1.user_id,
-                            white_player_name: p1.user_name,
-                            black_player_id: p2.user_id,
-                            black_player_name: p2.user_name,
-                            current_turn: 'white',
-                            board_state: '[]',
-                            tournament_id: tournament.id,
-                            tournament_round: 1,
-                            is_private: true
-                        });
-                    }
-                }
+                toast.success("Le tournoi commence !");
             }
-
-            toast.success("Le tournoi commence !");
-            // Force refresh handled by polling
         } catch (e) {
             console.error(e);
             toast.error("Erreur au démarrage");
@@ -404,13 +325,9 @@ export default function TournamentDetail() {
                                 )}
 
                                 {/* Admin Start Button */}
-                                {tournament.status === 'open' && participants.length >= 2 && (
-                                    <Button onClick={tournament.format === 'swiss' ? async () => {
-                                        await base44.functions.invoke('swissPairing', { tournamentId: tournament.id });
-                                        setTournament({...tournament, status: 'ongoing', current_round: 1});
-                                        toast.success("Tournoi Suisse démarré !");
-                                    } : handleStartTournament} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
-                                        <Play className="w-4 h-4 mr-2" /> Démarrer (Admin)
+                                {tournament.status === 'open' && participants.length >= 2 && user && tournament.created_by_user_id === user.id && (
+                                    <Button onClick={handleStartTournament} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
+                                        <Play className="w-4 h-4 mr-2" /> Démarrer le Tournoi (Admin)
                                     </Button>
                                 )}
 

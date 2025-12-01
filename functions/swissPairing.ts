@@ -99,6 +99,12 @@ export default async function handler(req) {
         // Alternate colors if possible? Random for now
         const isP1White = Math.random() > 0.5;
         
+        // Parse time control
+        const parts = (tournament.time_control || "5+0").split('+');
+        const mins = parseInt(parts[0]) || 5;
+        const timeSeconds = mins * 60;
+        const increment = parseInt(parts[1]) || 0;
+
         const game = await base44.asServiceRole.entities.Game.create({
             status: 'playing',
             game_type: tournament.game_type,
@@ -110,8 +116,9 @@ export default async function handler(req) {
             board_state: boardState,
             tournament_id: tournament.id,
             tournament_round: newRound,
-            white_seconds_left: 300, // Default or parse from time_control
-            black_seconds_left: 300,
+            white_seconds_left: timeSeconds,
+            black_seconds_left: timeSeconds,
+            increment: increment,
             is_private: true
         });
         
