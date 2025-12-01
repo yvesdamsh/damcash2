@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
@@ -1027,6 +1028,16 @@ export default function Game() {
                         isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color} 
                     />
                 </div>
+
+                {/* Wager Info (if active) */}
+                {game.prize_pool > 0 && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 flex justify-between items-center text-[#6b5138]">
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                            <Coins className="w-4 h-4 text-yellow-600" /> Pot Total:
+                        </div>
+                        <div className="text-lg font-black text-yellow-700">{game.prize_pool} D$</div>
+                    </div>
+                )}
 
                 {/* Controls & Replay (Simplified as actions are now above) */}
                 <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0]">
