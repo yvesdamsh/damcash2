@@ -92,7 +92,16 @@ export default async function handler(req) {
             const ratingA = type === 'chess' ? (whiteUser.elo_chess || 1200) : (whiteUser.elo_checkers || 1200);
             const ratingB = type === 'chess' ? (blackUser.elo_chess || 1200) : (blackUser.elo_checkers || 1200);
             
-            const K = 32;
+            // Dynamic K-factor based on games played
+            const getK = (games) => {
+                if (!games || games < 30) return 40; // Provisional rating (placement) - moves fast
+                if (games > 100) return 20; // Established rating - moves normally
+                return 32; // Intermediate
+            };
+
+            const KA = getK(whiteUser.games_played);
+            const KB = getK(blackUser.games_played);
+
             const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
             const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
             
@@ -101,8 +110,8 @@ export default async function handler(req) {
             if (winnerId === whiteId) { scoreA = 1; scoreB = 0; }
             else if (winnerId === blackId) { scoreA = 0; scoreB = 1; }
             
-            const newRatingA = Math.round(ratingA + K * (scoreA - expectedA));
-            const newRatingB = Math.round(ratingB + K * (scoreB - expectedB));
+            const newRatingA = Math.round(ratingA + KA * (scoreA - expectedA));
+            const newRatingB = Math.round(ratingB + KB * (scoreB - expectedB));
             
             // Update White
             const whiteUpdates = { games_played: (whiteUser.games_played || 0) + 1 };

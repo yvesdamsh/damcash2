@@ -17,6 +17,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [gameType, setGameType] = useState('checkers');
     const [activeGames, setActiveGames] = useState([]);
@@ -28,7 +29,8 @@ export default function Home() {
         time: 10,
         increment: 0,
         series: 1,
-        stake: 0
+        stake: 0,
+        difficulty: 'any' // any, easy, medium, hard
     });
     const navigate = useNavigate();
 
@@ -154,7 +156,13 @@ export default function Home() {
 
     const handleStartGame = async () => {
         setConfigOpen(false);
-        setIsCreating(true);
+        
+        if (!isPrivateConfig) {
+            setIsSearching(true);
+        } else {
+            setIsCreating(true);
+        }
+
         try {
             // Wager Check
             if (gameConfig.stake > 0) {
@@ -226,36 +234,61 @@ export default function Home() {
                 });
                 navigate(`/Game?id=${newGame.id}`);
             } else {
-                // Matchmaking logic
-                const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+                // Matchmaking Pool Logic
+                let matchFound = null;
+                
+                // Try to find a match for 5 seconds (simulation of pool)
+                const attempts = 5;
+                for (let i = 0; i < attempts; i++) {
+                    // Fetch fresh waiting games
+                    const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+                    
+                    // Filter candidates
+                    let candidates = waitingGames.filter(g => 
+                        g.white_player_id !== user.id && 
+                        (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
+                        g.initial_time === gameConfig.time &&
+                        g.increment === gameConfig.increment &&
+                        g.series_length === gameConfig.series
+                    );
 
-                // Filter by game type AND config
-                let candidates = waitingGames.filter(g => 
-                    g.white_player_id !== user.id && 
-                    (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
-                    g.initial_time === gameConfig.time &&
-                    g.increment === gameConfig.increment &&
-                    g.series_length === gameConfig.series
-                );
+                    // Apply Difficulty Filter
+                    if (gameConfig.difficulty !== 'any') {
+                        candidates = candidates.filter(g => {
+                            const oppElo = g.white_player_elo || 1200;
+                            const diff = oppElo - myElo;
+                            if (gameConfig.difficulty === 'similar') return Math.abs(diff) <= 200;
+                            if (gameConfig.difficulty === 'harder') return diff > 100;
+                            if (gameConfig.difficulty === 'easier') return diff < -100;
+                            return true;
+                        });
+                    }
 
-                // Sort by ELO proximity
-                if (candidates.length > 0) {
-                    candidates.sort((a, b) => {
-                        const eloA = a.white_player_elo || 1200;
-                        const eloB = b.white_player_elo || 1200;
-                        return Math.abs(eloA - myElo) - Math.abs(eloB - myElo);
-                    });
+                    if (candidates.length > 0) {
+                        // Sort by ELO proximity
+                        candidates.sort((a, b) => {
+                            const eloA = a.white_player_elo || 1200;
+                            const eloB = b.white_player_elo || 1200;
+                            return Math.abs(eloA - myElo) - Math.abs(eloB - myElo);
+                        });
+                        matchFound = candidates[0];
+                        break;
+                    }
+                    
+                    // Wait 1s before next attempt if not last
+                    if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000));
+                }
 
-                    // Pick best match
-                    const joinableGame = candidates[0];
-                    await base44.entities.Game.update(joinableGame.id, {
+                if (matchFound) {
+                    await base44.entities.Game.update(matchFound.id, {
                         black_player_id: user.id,
                         black_player_name: user.full_name || 'Joueur 2',
                         black_player_elo: myElo,
                         status: 'playing'
                     });
-                    navigate(`/Game?id=${joinableGame.id}`);
+                    navigate(`/Game?id=${matchFound.id}`);
                 } else {
+                    // Create new game if no match found in pool
                     const newGame = await base44.entities.Game.create({
                         ...commonGameData,
                         is_private: false
@@ -265,8 +298,10 @@ export default function Home() {
             }
         } catch (error) {
             console.error("Game start failed", error);
-        } finally {
+            setIsSearching(false);
             setIsCreating(false);
+        } finally {
+            // setIsSearching(false); // Don't disable here, let navigation handle unmount or do it before nav
         }
     };
 
@@ -318,6 +353,24 @@ export default function Home() {
     return (
         <div className="max-w-4xl mx-auto">
             <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+
+            {/* Searching Overlay */}
+            {isSearching && (
+                <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in">
+                    <div className="w-24 h-24 mb-8 relative">
+                        <div className="absolute inset-0 border-4 border-t-[#b8860b] border-r-[#b8860b]/50 border-b-[#b8860b]/20 border-l-[#b8860b]/50 rounded-full animate-spin"></div>
+                        <div className="absolute inset-2 border-4 border-t-[#e8dcc5] border-r-[#e8dcc5]/50 border-b-[#e8dcc5]/20 border-l-[#e8dcc5]/50 rounded-full animate-spin reverse-spin duration-700"></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Sword className="w-8 h-8 text-[#b8860b] animate-pulse" />
+                        </div>
+                    </div>
+                    <h2 className="text-2xl font-bold text-[#e8dcc5] mb-2">Recherche d'adversaire...</h2>
+                    <p className="text-[#e8dcc5]/70 mb-8 text-center max-w-xs">Nous parcourons le lobby pour trouver le meilleur match pour vous.</p>
+                    <Button variant="outline" onClick={() => { setIsSearching(false); setIsCreating(false); }} className="border-[#e8dcc5]/30 text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728]">
+                        Annuler
+                    </Button>
+                </div>
+            )}
 
             {/* Game Config Dialog */}
             {configOpen && (
@@ -390,6 +443,29 @@ export default function Home() {
                                     ))}
                                 </div>
                             </div>
+
+                            {!isPrivateConfig && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-[#6b5138]">Niveau Préféré</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { id: 'any', label: 'Tout niveau' },
+                                            { id: 'similar', label: 'Similaire (+/- 200)' },
+                                            { id: 'harder', label: 'Plus fort' },
+                                            { id: 'easier', label: 'Moins fort' }
+                                        ].map(opt => (
+                                            <Button 
+                                                key={opt.id}
+                                                variant={gameConfig.difficulty === opt.id ? "default" : "outline"}
+                                                onClick={() => setGameConfig({...gameConfig, difficulty: opt.id})}
+                                                className={gameConfig.difficulty === opt.id ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                            >
+                                                {opt.label}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 pt-4">
                                 <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
