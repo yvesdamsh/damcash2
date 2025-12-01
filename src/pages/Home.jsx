@@ -334,10 +334,10 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="space-y-8">
-                    <ActivityFeed />
-
-                    {/* Baba Sy Featured Section */}
-                    <Card className="mb-8 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
+                    <div className="grid md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2">
+                             {/* Baba Sy Featured Section */}
+                            <Card className="mb-8 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
                         <div className="flex flex-col md:flex-row">
                             <div className="w-full h-80 md:w-2/5 md:h-auto relative group shrink-0">
                                 <img 
@@ -364,13 +364,18 @@ export default function Home() {
                                     <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open('https://fr.wikipedia.org/wiki/Baba_Sy', '_blank')}>
                                         <BookOpen className="w-4 h-4 mr-2" />
                                         Lire sa biographie
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
+                                        </Button>
+                                        </div>
+                                        </div>
+                                        </div>
+                                        </Card>
+                                        </div>
+                                        <div className="md:col-span-1">
+                                        <ActivityFeed />
+                                        </div>
+                                        </div>
 
-                    {invitations.length > 0 && (
+                                        {invitations.length > 0 && (
                     <div className="mb-8">
                         <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
                             <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> Invitations reçues</CardTitle></CardHeader>
