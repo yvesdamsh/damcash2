@@ -145,15 +145,36 @@ export default function LeaguesPage() {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {leagues.map(league => (
-                    <LeagueCard 
-                        key={league.id} 
-                        league={league} 
-                        onJoin={handleJoin}
-                        isJoined={myParticipations.some(p => p.league_id === league.id)}
-                    />
-                ))}
+            <div className="space-y-8">
+                {['active', 'upcoming', 'completed'].map(status => {
+                    const filteredLeagues = leagues.filter(l => l.status === status);
+                    if (filteredLeagues.length === 0) return null;
+                    
+                    const titles = {
+                        active: "Saisons en cours",
+                        upcoming: "À venir",
+                        completed: "Archives"
+                    };
+
+                    return (
+                        <div key={status}>
+                            <h2 className="text-2xl font-bold text-[#6b5138] mb-4 border-b border-[#d4c5b0] pb-2 capitalize flex items-center gap-2">
+                                {status === 'active' && <Crown className="w-5 h-5" />}
+                                {titles[status]}
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredLeagues.map(league => (
+                                    <LeagueCard 
+                                        key={league.id} 
+                                        league={league} 
+                                        onJoin={handleJoin}
+                                        isJoined={myParticipations.some(p => p.league_id === league.id)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {leagues.length === 0 && !loading && (

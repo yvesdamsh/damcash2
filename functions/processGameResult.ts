@@ -161,14 +161,39 @@ export default async function handler(req) {
                     const updateParticipant = async (p, isWinner, isDraw) => {
                         if (!p) return;
                         const points = isWinner ? 3 : (isDraw ? 1 : 0); // 3 points for win, 1 for draw
-                        const tier = (p.points + points) > 100 ? 'silver' : (p.points + points) > 300 ? 'gold' : p.rank_tier;
+                        const newPoints = (p.points || 0) + points;
+                        
+                        // Advanced tier calculation
+                        let tier = p.rank_tier;
+                        if (newPoints < 100) tier = 'bronze';
+                        else if (newPoints < 250) tier = 'silver';
+                        else if (newPoints < 500) tier = 'gold';
+                        else if (newPoints < 800) tier = 'diamond';
+                        else tier = 'master';
+
+                        // Check for badges
+                        if (tier !== p.rank_tier && tier === 'gold') {
+                            await base44.asServiceRole.entities.UserBadge.create({
+                                user_id: p.user_id,
+                                name: "Promotion Or",
+                                icon: "Crown",
+                                awarded_at: new Date().toISOString()
+                            });
+                        }
+                        if (tier !== p.rank_tier && tier === 'master') {
+                            await base44.asServiceRole.entities.UserBadge.create({
+                                user_id: p.user_id,
+                                name: "Maître de la Ligue",
+                                icon: "Trophy",
+                                awarded_at: new Date().toISOString()
+                            });
+                        }
                         
                         await base44.asServiceRole.entities.LeagueParticipant.update(p.id, {
-                            points: (p.points || 0) + points,
+                            points: newPoints,
                             wins: (p.wins || 0) + (isWinner ? 1 : 0),
                             losses: (p.losses || 0) + (isWinner || isDraw ? 0 : 1),
                             draws: (p.draws || 0) + (isDraw ? 1 : 0),
-                            // Simple tier logic for now
                             rank_tier: tier
                         });
                     };
