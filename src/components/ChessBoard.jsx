@@ -1,6 +1,6 @@
 import React from 'react';
 import ChessPiece from './ChessPiece';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getValidChessMoves } from '@/components/chessLogic';
 
 export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false }) {
@@ -128,8 +128,10 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                     )}
 
                                     {/* The Piece */}
+                                    <AnimatePresence mode='popLayout'>
                                     {piece && (
                                         <ChessPiece 
+                                            key={`piece-${r}-${c}`}
                                             type={piece} 
                                             isSelected={isSelected}
                                             set={pieceSet}
@@ -147,6 +149,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                             }
                                         />
                                     )}
+                                    </AnimatePresence>
                                 </div>
                             );
                         })
