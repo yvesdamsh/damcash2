@@ -463,11 +463,11 @@ export default function Game() {
         
         // Update Castling Rights
         const newCastling = { ...chessState.castlingRights };
-        if (movedPiece.toLowerCase() === 'k') {
+        if (movedPiece && movedPiece.toLowerCase() === 'k') {
             if (playerColor === 'white') { newCastling.wK = false; newCastling.wQ = false; }
             else { newCastling.bK = false; newCastling.bQ = false; }
         }
-        if (movedPiece.toLowerCase() === 'r') {
+        if (movedPiece && movedPiece.toLowerCase() === 'r') {
             if (move.from.r === 7 && move.from.c === 0) newCastling.wQ = false;
             if (move.from.r === 7 && move.from.c === 7) newCastling.wK = false;
             if (move.from.r === 0 && move.from.c === 0) newCastling.bQ = false;
@@ -489,7 +489,7 @@ export default function Game() {
 
         // Update Counters
         const isCapture = !!move.captured;
-        const isPawn = movedPiece.toLowerCase() === 'p';
+        const isPawn = movedPiece && movedPiece.toLowerCase() === 'p';
         const newHalfMoveClock = (isCapture || isPawn) ? 0 : (chessState.halfMoveClock || 0) + 1;
 
         // Update Position History

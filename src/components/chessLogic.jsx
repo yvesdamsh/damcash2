@@ -49,6 +49,7 @@ export const getValidChessMoves = (board, turn, lastMove = null, castlingRights 
 };
 
 export const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
+    if (!piece) return [];
     const moves = [];
     const type = piece.toLowerCase();
     const color = getColor(piece);
