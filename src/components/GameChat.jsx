@@ -1,35 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, MessageSquare, Smile } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
-const QUICK_REPLIES = ["Bien joué ! 👏", "Merci !", "Oups... 😅", "Belle partie !", "🤔 Réfléchis...", "Vite ! ⏰"];
-const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
+import { Send, MessageSquare } from 'lucide-react';
+import { format } from 'date-fns';
 
 export default function GameChat({ gameId, currentUser, socket }) {
     const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState("");
+    const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef(null);
 
-    // Initial fetch
+    // Fetch history on mount
     useEffect(() => {
-        if (!gameId) return;
-        const fetchMessages = async () => {
+        const fetchHistory = async () => {
             try {
-                const msgs = await base44.entities.ChatMessage.filter({
-                   "game_id": gameId 
-                }, "created_date", 50);
-                setMessages(msgs);
-            } catch (error) {
-                console.error("Error fetching messages", error);
+                const history = await base44.entities.ChatMessage.list({ game_id: gameId }, { created_date: 1 }, 50);
+                setMessages(history);
+            } catch (e) {
+                console.error("Failed to load chat history", e);
             }
         };
-        fetchMessages();
+        if (gameId) fetchHistory();
     }, [gameId]);
 
-    // Listen to socket
+    // Handle Socket Messages
     useEffect(() => {
         if (!socket) return;
 
@@ -37,10 +31,14 @@ export default function GameChat({ gameId, currentUser, socket }) {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'CHAT_UPDATE') {
-                    setMessages(prev => [...prev, data.payload]);
+                    setMessages(prev => {
+                        // Dedup check
+                        if (prev.some(m => m.id === data.payload.id)) return prev;
+                        return [...prev, data.payload];
+                    });
                 }
             } catch (e) {
-                // ignore
+                console.error(e);
             }
         };
 
@@ -57,107 +55,81 @@ export default function GameChat({ gameId, currentUser, socket }) {
 
     const handleSend = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() || !currentUser) return;
+
+        const content = newMessage.trim();
+        setNewMessage('');
 
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
-                type: 'CHAT',
-                payload: { content: newMessage.trim() }
+                type: 'CHAT_MESSAGE',
+                payload: {
+                    sender_id: currentUser.id,
+                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
+                    content
+                }
             }));
-            setNewMessage("");
         } else {
-            // Fallback
+            // Fallback HTTP
             try {
-                await base44.entities.ChatMessage.create({
+                const msg = await base44.entities.ChatMessage.create({
                     game_id: gameId,
                     sender_id: currentUser.id,
-                    sender_name: currentUser.full_name || currentUser.email.split('@')[0],
-                    content: newMessage.trim()
+                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
+                    content
                 });
-                setNewMessage("");
-            } catch (error) {
-                console.error("Error sending message", error);
+                setMessages(prev => [...prev, msg]);
+            } catch (e) {
+                console.error("Send error", e);
             }
         }
     };
 
+    if (!currentUser) return <div className="p-4 text-center text-gray-500 text-sm">Connectez-vous pour chatter</div>;
+
     return (
-        <div className="bg-[#fff8f0] rounded-lg border-2 border-[#d4c5b0] shadow-md flex flex-col h-[300px] md:h-[400px]">
-            <div className="bg-[#e8dcc5] p-3 border-b border-[#d4c5b0] flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#5c4430]" />
-                <h3 className="font-bold text-[#5c4430] text-sm">Chat en direct</h3>
-            </div>
-            
-            <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-3 bg-white/50">
+        <div className="flex flex-col h-full bg-[#fdfbf7]">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3" ref={scrollRef}>
                 {messages.length === 0 && (
-                    <p className="text-center text-gray-400 text-xs italic mt-4">Aucun message. Dites bonjour !</p>
+                    <div className="text-center text-gray-400 text-xs italic mt-4">
+                        <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-20" />
+                        Début de la discussion...
+                    </div>
                 )}
                 {messages.map((msg) => {
                     const isMe = msg.sender_id === currentUser.id;
                     return (
-                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`
-                                max-w-[80%] rounded-lg p-2 text-xs md:text-sm
-                                ${isMe 
-                                    ? 'bg-[#6b5138] text-white rounded-br-none' 
-                                    : 'bg-[#e8dcc5] text-[#4a3728] rounded-bl-none'
-                                }
-                            `}>
-                                <p className="font-bold text-[10px] opacity-70 mb-0.5">{msg.sender_name}</p>
-                                <p>{msg.content}</p>
+                        <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                            <div className={`flex items-end gap-2 max-w-[85%] ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <div 
+                                    className={`px-3 py-2 rounded-lg text-sm shadow-sm break-words ${
+                                        isMe 
+                                            ? 'bg-[#6b5138] text-[#e8dcc5]' 
+                                            : 'bg-white border border-[#d4c5b0] text-gray-800'
+                                    }`}
+                                >
+                                    {!isMe && <div className="text-[10px] font-bold opacity-70 mb-0.5 text-[#4a3728]">{msg.sender_name}</div>}
+                                    {msg.content}
+                                </div>
+                                <span className="text-[10px] text-gray-400 min-w-[30px] text-center">
+                                    {msg.created_date ? format(new Date(msg.created_date), 'HH:mm') : ''}
+                                </span>
                             </div>
                         </div>
                     );
                 })}
             </div>
-
-            <div className="p-2 bg-[#f8f4eb] border-t border-[#d4c5b0]">
-                {/* Quick Replies */}
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-1 no-scrollbar">
-                    {QUICK_REPLIES.map(reply => (
-                        <button
-                            key={reply}
-                            onClick={() => setNewMessage(reply)}
-                            className="whitespace-nowrap px-2 py-1 rounded-full bg-[#e8dcc5] text-[#4a3728] text-[10px] hover:bg-[#d4c5b0] transition-colors"
-                        >
-                            {reply}
-                        </button>
-                    ))}
-                </div>
-
-                <form onSubmit={handleSend} className="flex gap-2">
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-[#6b5138]">
-                                <Smile className="w-5 h-5" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-2">
-                            <div className="grid grid-cols-5 gap-2">
-                                {EMOJIS.map(emoji => (
-                                    <button
-                                        key={emoji}
-                                        onClick={() => setNewMessage(prev => prev + emoji)}
-                                        className="text-xl hover:bg-slate-100 rounded p-1"
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    <Input 
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Message..."
-                        className="h-8 text-sm"
-                    />
-                    <Button type="submit" size="sm" className="h-8 w-8 p-0 bg-[#6b5138] hover:bg-[#5c4430]">
-                        <Send className="w-4 h-4" />
-                    </Button>
-                </form>
-            </div>
+            <form onSubmit={handleSend} className="p-2 border-t border-[#d4c5b0] bg-white flex gap-2">
+                <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Message..."
+                    className="flex-1 border-[#d4c5b0] focus-visible:ring-[#4a3728] h-9 text-sm"
+                />
+                <Button type="submit" size="icon" className="bg-[#4a3728] hover:bg-[#2c1e12] h-9 w-9 shrink-0">
+                    <Send className="w-4 h-4 text-[#e8dcc5]" />
+                </Button>
+            </form>
         </div>
     );
 }
