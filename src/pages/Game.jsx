@@ -456,6 +456,9 @@ export default function Game() {
         
         if (!movedPiece) return; // Safety check for sync issues
 
+        // Create complete move object with the piece info for history and logic checks
+        const completedMove = { ...move, piece: movedPiece };
+
         const playerColor = game.current_turn;
         
         // Update Castling Rights
@@ -490,12 +493,12 @@ export default function Game() {
         const newHalfMoveClock = (isCapture || isPawn) ? 0 : (chessState.halfMoveClock || 0) + 1;
 
         // Update Position History
-        const newPosId = getPositionId(newBoard, nextTurn, newCastling, move);
+        const newPosId = getPositionId(newBoard, nextTurn, newCastling, completedMove);
         const newHistory = { ...(chessState.positionHistory || {}) };
         newHistory[newPosId] = (newHistory[newPosId] || 0) + 1;
 
         // Check Status
-        const gameStatus = checkChessStatus(newBoard, nextTurn, move, newCastling, newHalfMoveClock, newHistory);
+        const gameStatus = checkChessStatus(newBoard, nextTurn, completedMove, newCastling, newHalfMoveClock, newHistory);
         
         let status = game.status;
         let winnerId = null;
@@ -516,15 +519,15 @@ export default function Game() {
         const newStateObj = { 
             board: newBoard, 
             castlingRights: newCastling, 
-            lastMove: move,
+            lastMove: completedMove,
             halfMoveClock: newHalfMoveClock,
             positionHistory: newHistory
         };
 
         await updateGameOnMove(newStateObj, nextTurn, status, winnerId, {
-            type: 'chess', from: move.from, to: move.to,
-            piece: movedPiece, captured: !!move.captured,
-            promotion: move.promotion,
+            type: 'chess', from: completedMove.from, to: completedMove.to,
+            piece: movedPiece, captured: !!completedMove.captured,
+            promotion: completedMove.promotion,
             board: JSON.stringify(newStateObj)
         });
 

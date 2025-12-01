@@ -83,7 +83,7 @@ export const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
                     moves.push({ from: { r, c }, to: { r: tr, c: tc }, captured: target });
                 }
                 // En Passant
-                if (!target && lastMove && 
+                if (!target && lastMove && lastMove.piece && 
                     lastMove.piece.toLowerCase() === 'p' &&
                     Math.abs(lastMove.from.r - lastMove.to.r) === 2 &&
                     lastMove.to.r === r && lastMove.to.c === tc) {
@@ -278,7 +278,7 @@ export const getPositionId = (board, turn, castlingRights, lastMove) => {
     ].join('') || '-';
     
     let ep = '-';
-    if (lastMove && lastMove.piece.toLowerCase() === 'p' && Math.abs(lastMove.from.r - lastMove.to.r) === 2) {
+    if (lastMove && lastMove.piece && lastMove.piece.toLowerCase() === 'p' && Math.abs(lastMove.from.r - lastMove.to.r) === 2) {
         const r = (lastMove.from.r + lastMove.to.r) / 2;
         const c = lastMove.from.c;
         ep = `${r},${c}`;
