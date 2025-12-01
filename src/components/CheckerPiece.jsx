@@ -16,8 +16,8 @@ export default function CheckerPiece({ type, isSelected }) {
     // Realistic shadow for 3D effect
     const shadowStyle = {
         boxShadow: isSelected 
-            ? '0 10px 20px rgba(0,0,0,0.4), 0 6px 6px rgba(0,0,0,0.3)' 
-            : '0 4px 0 ' + (isWhite ? '#cbbba4' : '#111') + ', 0 5px 5px rgba(0,0,0,0.3)'
+            ? '0 8px 16px rgba(0,0,0,0.4), 0 4px 4px rgba(0,0,0,0.3)' 
+            : '0 3px 0 ' + (isWhite ? '#cbbba4' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
     return (
@@ -43,7 +43,7 @@ export default function CheckerPiece({ type, isSelected }) {
                 
                 {/* King Crown Icon */}
                 {isKing && (
-                    <div className="absolute text-2xl select-none">
+                    <div className="absolute text-lg md:text-2xl select-none drop-shadow-md">
                         👑
                     </div>
                 )}

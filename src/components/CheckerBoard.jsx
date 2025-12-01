@@ -17,7 +17,7 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
             {/* Board Frame with coordinate labels */}
             <div className="bg-[#4a3728] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
                 
-                <div className="grid grid-cols-10 gap-0 aspect-square w-full max-w-[600px] mx-auto bg-[#2c1e12] border-2 border-[#5c4430]">
+                <div className="grid grid-cols-10 gap-0 aspect-square w-full max-w-[800px] mx-auto bg-[#2c1e12] border-4 border-[#5c4430] shadow-inner">
                     {board.map((row, r) => (
                         row.map((piece, c) => {
                             const isDark = (r + c) % 2 !== 0;
