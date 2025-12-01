@@ -1,6 +1,7 @@
 import React from 'react';
 import ChessPiece from './ChessPiece';
 import { motion } from 'framer-motion';
+import { getValidChessMoves } from '@/components/chessLogic';
 
 export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove }) {
     
@@ -17,30 +18,60 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
     const currentTheme = themes[theme] || themes.standard;
 
     const handleDragEnd = (e, info, r, c) => {
-        if (!boardRef.current) return;
-        const boardRect = boardRef.current.getBoundingClientRect();
-        const squareSize = boardRect.width / 8;
-        
-        // Calculate drop coordinates relative to board
-        const dropX = info.point.x - boardRect.left;
-        const dropY = info.point.y - boardRect.top;
-        
-        const targetC = Math.floor(dropX / squareSize);
-        const targetR = Math.floor(dropY / squareSize);
+        // Robust coordinate extraction for Mobile/Desktop
+        const clientX = info.point.x || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
+        const clientY = info.point.y || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
 
-        if (targetR >= 0 && targetR < 8 && targetC >= 0 && targetC < 8) {
-            if (targetR !== r || targetC !== c) {
-                onPieceDrop(r, c, targetR, targetC);
+        // Use elementsFromPoint to find the square under the finger directly
+        const elements = document.elementsFromPoint(clientX, clientY);
+        const targetSquare = elements.find(el => el.classList.contains('board-square'));
+
+        if (targetSquare) {
+            const targetR = parseInt(targetSquare.dataset.r);
+            const targetC = parseInt(targetSquare.dataset.c);
+
+            if (!isNaN(targetR) && !isNaN(targetC)) {
+                if (targetR !== r || targetC !== c) {
+                    // Calculate valid moves locally
+                    // Note: Chess logic requires castling rights and last move. 
+                    // We might not have them perfectly in sync here without prop drilling more state,
+                    // but we can fallback to basic validation or trust the drop.
+                    // Actually, let's trust the drop event filtering done by Game.js, 
+                    // BUT to prevent the snap-back glitch we need to know if it's valid here?
+                    // In CheckerBoard we checked validity to hide the piece.
+                    
+                    // For Chess, fetching exact valid moves locally is harder because we need castlingRights etc.
+                    // Let's assume validMoves prop is up to date enough or just hide the piece optimistically if it's a different square.
+                    // Or better: check against validMoves prop.
+                    
+                    const isValidMove = validMoves.some(m => 
+                        m.from.r === r && m.from.c === c && 
+                        m.to.r === targetR && m.to.c === targetC
+                    );
+
+                    if (isValidMove) {
+                        // Prevent snap-back glitch
+                        try {
+                            const pieceEl = elements.find(el => el.classList.contains('chess-piece'));
+                            if (pieceEl) {
+                                pieceEl.style.opacity = '0';
+                                pieceEl.style.visibility = 'hidden';
+                            }
+                        } catch(err) {}
+                    }
+
+                    onPieceDrop(r, c, targetR, targetC);
+                }
             }
         }
     };
 
     return (
-        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none' }}>
-            <div className={`${currentTheme.bg} p-0.5 md:p-1 rounded-md md:rounded-lg shadow-xl md:shadow-2xl border-2 md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
+        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}>
+            <div className={`${currentTheme.bg} p-0 md:p-1 rounded-none md:rounded-lg shadow-none md:shadow-2xl border-0 md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
-                    className={`grid gap-0 w-full h-full ${currentTheme.light} border md:border-2 ${currentTheme.border} shadow-inner rounded-sm md:rounded`}
+                    className={`grid gap-0 w-full h-full ${currentTheme.light} border-0 md:border-2 ${currentTheme.border} shadow-inner rounded-none md:rounded`}
                     style={{ 
                         gridTemplateColumns: 'repeat(8, 1fr)', 
                         gridTemplateRows: 'repeat(8, 1fr)',
@@ -66,9 +97,12 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                             return (
                                 <div
                                     key={`${r}-${c}`}
+                                    data-r={r}
+                                    data-c={c}
                                     onClick={() => onSquareClick(r, c)}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
+                                        board-square
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
                                         ${isLastMove ? 'after:absolute after:inset-0 after:bg-yellow-400/30' : ''}
