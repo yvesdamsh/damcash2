@@ -49,6 +49,7 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                     className={`
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
+                                        ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
                                         ${(isTarget && isMyTurn) || (isMyPiece && isMyTurn) ? 'cursor-pointer' : ''}
                                         transition-colors duration-150
                                     `}

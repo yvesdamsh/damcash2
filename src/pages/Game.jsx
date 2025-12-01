@@ -125,7 +125,10 @@ export default function Game() {
 
     const handleSquareClick = async (row, col) => {
         if (!game || !currentUser) return;
-        if (game.status !== 'playing') return;
+        if (game.status !== 'playing') {
+            if (game.status === 'waiting') toast.info("En attente d'un adversaire...");
+            return;
+        }
 
         const isWhitePlayer = game.white_player_id === currentUser.id;
         const isBlackPlayer = game.black_player_id === currentUser.id;
@@ -156,7 +159,6 @@ export default function Game() {
 
         // 1. SELECTING A PIECE
         if (isMyPiece) {
-            soundManager.play('move'); // Click sound
             // If we are in a multi-jump sequence, we can ONLY select the piece that must continue
             if (mustContinueWith) {
                 if (row !== mustContinueWith.r || col !== mustContinueWith.c) {
@@ -175,12 +177,13 @@ export default function Game() {
 
             // Filter: if capture exists globally, this piece MUST capture
             if (hasCapture) {
-                myMoves = myMoves.filter(m => m.captured !== null);
-                if (myMoves.length === 0) {
-                    // This piece cannot capture but others can
-                    // Only warn if not forced (to avoid spamming toast on missclick)
-                    // But visual feedback is handled by 'validTargetMoves' being empty
+                const canCapture = myMoves.some(m => m.captured !== null);
+                if (!canCapture) {
+                    toast.warning("Prise obligatoire avec une autre pièce !");
                 }
+                myMoves = myMoves.filter(m => m.captured !== null);
+            } else if (myMoves.length === 0) {
+                 // toast.info("Aucun déplacement possible.");
             }
 
             setSelectedSquare([row, col]);
