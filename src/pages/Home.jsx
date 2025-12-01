@@ -16,6 +16,8 @@ export default function Home() {
     const [isCreating, setIsCreating] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [gameType, setGameType] = useState('checkers'); // 'checkers' | 'chess'
+    const [activeGames, setActiveGames] = useState([]);
+    const [invitations, setInvitations] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -48,6 +50,17 @@ export default function Home() {
                         default_game: 'checkers'
                     });
                 }
+
+                // Fetch active games and invitations
+                const [myGamesWhite, myGamesBlack, myInvites] = await Promise.all([
+                    base44.entities.Game.list({ white_player_id: currentUser.id, status: 'playing' }),
+                    base44.entities.Game.list({ black_player_id: currentUser.id, status: 'playing' }),
+                    base44.entities.Invitation.list({ to_user_email: currentUser.email, status: 'pending' })
+                ]);
+                
+                setActiveGames([...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date)));
+                setInvitations(myInvites);
+
             } catch (e) {
                 // Not logged in
             } finally {
@@ -56,6 +69,27 @@ export default function Home() {
         };
         init();
     }, []);
+
+    const handleAcceptInvite = async (invite) => {
+        try {
+            await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
+            // Join the game if not already in it (Invitation usually implies we need to join)
+            // But we need to check if we are already added. 
+            // The invite flow in handleCreatePrivate didn't add the player ID to the game yet.
+            
+            const game = await base44.entities.Game.get(invite.game_id);
+            if (game && !game.black_player_id) {
+                 await base44.entities.Game.update(game.id, {
+                    black_player_id: user.id,
+                    black_player_name: user.full_name || 'Invité',
+                    status: 'playing'
+                });
+            }
+            navigate(`/Game?id=${invite.game_id}`);
+        } catch (e) {
+            console.error("Error accepting invite", e);
+        }
+    };
 
     const saveGameTypePref = (type) => {
         setGameType(type);
@@ -231,7 +265,55 @@ export default function Home() {
                     </div>
                 </div>
             ) : (
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                    {/* Active Games & Invitations Section */}
+                    {(activeGames.length > 0 || invitations.length > 0) && (
+                        <div className="grid md:grid-cols-2 gap-8">
+                             {activeGames.length > 0 && (
+                                <Card className="bg-white/90 border-[#6b5138] shadow-lg">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
+                                            <PlayCircle className="w-5 h-5" /> Vos parties en cours
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                                        {activeGames.map(g => (
+                                            <div key={g.id} className="flex justify-between items-center p-3 bg-[#f5f0e6] rounded-lg border border-[#e8dcc5] hover:bg-[#e8dcc5] transition-colors cursor-pointer" onClick={() => navigate(`/Game?id=${g.id}`)}>
+                                                <div>
+                                                    <div className="font-bold text-[#4a3728]">{g.game_type === 'chess' ? 'Échecs' : 'Dames'}</div>
+                                                    <div className="text-xs text-[#6b5138]">vs {g.white_player_id === user.id ? g.black_player_name : g.white_player_name}</div>
+                                                </div>
+                                                <Button size="sm" className="bg-[#6b5138] h-8">Reprendre</Button>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                             )}
+                             
+                             {invitations.length > 0 && (
+                                <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2">
+                                            <Users className="w-5 h-5" /> Invitations reçues
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                                        {invitations.map(inv => (
+                                            <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] rounded-lg border border-[#dde6d5]">
+                                                <div>
+                                                    <div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div>
+                                                    <div className="text-xs text-[#5c6e46]">vous invite à jouer aux {inv.game_type === 'chess' ? 'Échecs' : 'Dames'}</div>
+                                                </div>
+                                                <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">Accepter</Button>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                             )}
+                        </div>
+                    )}
+
+                    <div className="grid md:grid-cols-2 gap-8">
                     <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02]">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3 text-2xl">
