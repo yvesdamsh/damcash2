@@ -250,15 +250,21 @@ export default function Game() {
         return baseTime;
     };
 
-    const handlePieceDrop = (fromR, fromC, toR, toC) => {
+    const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || game.status !== 'playing') return;
         
+        // If drop on same square, treat as click (selection)
+        if (fromR === toR && fromC === toC) {
+            if (game.game_type === 'chess') handleChessClick(fromR, fromC);
+            else handleSquareClick(fromR, fromC);
+            return;
+        }
+
         const isMyTurn = (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
                          (game.current_turn === 'black' && currentUser?.id === game.black_player_id) || 
                          (game.white_player_id === game.black_player_id);
 
         if (!isMyTurn) {
-            // Premove Logic on Drop
             if (!isSoloMode && currentUser) {
                 setPremove({ from: {r: fromR, c: fromC}, to: {r: toR, c: toC} });
                 toast.info("Coup anticipé programmé");
@@ -266,17 +272,34 @@ export default function Game() {
             return;
         }
 
-        // Simulate click sequence
+        // Direct Execution Logic to avoid state async issues
         if (game.game_type === 'chess') {
-            // Select the piece first
-            handleChessClick(fromR, fromC).then(() => {
-                // Then click target
-                handleChessClick(toR, toC);
-            });
+            const moves = getValidChessMoves(board, game.current_turn, chessState.lastMove, chessState.castlingRights);
+            const validMove = moves.find(m => m.from.r === fromR && m.from.c === fromC && m.to.r === toR && m.to.c === toC);
+            
+            if (validMove) {
+                const movingPiece = board[fromR][fromC];
+                if (movingPiece && movingPiece.toLowerCase() === 'p' && (toR === 0 || toR === 7)) {
+                    setPromotionPending(validMove);
+                    return;
+                }
+                await executeChessMoveFinal(validMove);
+            } else {
+                // Invalid move - maybe reset selection
+                setSelectedSquare(null);
+                setValidMoves([]);
+            }
         } else {
-            handleSquareClick(fromR, fromC).then(() => {
-                handleSquareClick(toR, toC);
-            });
+            // Checkers
+            const moves = getCheckersValidMoves(board, game.current_turn);
+            const validMove = moves.find(m => m.from.r === fromR && m.from.c === fromC && m.to.r === toR && m.to.c === toC);
+            
+            if (validMove) {
+                executeCheckersMove(validMove);
+            } else {
+                setSelectedSquare(null);
+                setValidMoves([]);
+            }
         }
     };
     
@@ -807,7 +830,7 @@ export default function Game() {
 
                 {/* Board Area - Centered and Natural Size */}
                 <div className="flex justify-center py-2 w-full">
-                    <div className="relative shadow-2xl rounded-lg overflow-hidden w-full max-w-[90vw] md:max-w-[600px] aspect-square">
+                    <div className="relative shadow-2xl rounded-lg w-full max-w-[90vw] md:max-w-[600px] aspect-square z-0">
                             {game.game_type === 'checkers' 
                             ? <CheckerBoard 
                                 board={displayBoard} 
