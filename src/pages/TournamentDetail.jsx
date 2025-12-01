@@ -53,6 +53,9 @@ export default function TournamentDetail() {
         return () => clearInterval(interval);
     }, [id]);
 
+    const isParticipant = participants.some(p => p.user_id === user?.id);
+    const canJoin = tournament && tournament.status === 'open' && participants.length < tournament.max_players;
+
     // Arena Pairing Logic Trigger
     useEffect(() => {
         if (tournament && tournament.format === 'arena' && tournament.status === 'ongoing' && isParticipant) {
@@ -234,9 +237,6 @@ export default function TournamentDetail() {
     if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
     if (!tournament) return <div className="text-center p-10">Tournoi introuvable</div>;
 
-    const isParticipant = participants.some(p => p.user_id === user?.id);
-    const canJoin = tournament.status === 'open' && participants.length < tournament.max_players;
-    
     return (
         <div className="max-w-6xl mx-auto p-4">
             <div className="mb-6">
