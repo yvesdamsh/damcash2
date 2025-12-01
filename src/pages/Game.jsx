@@ -136,6 +136,12 @@ export default function Game() {
     }, [id]);
 
     const updateGameState = (fetchedGame) => {
+        // Check if turn changed for sound
+        if (game && game.current_turn !== fetchedGame.current_turn) {
+            soundManager.play('move');
+            if (document.hidden) soundManager.play('notify');
+        }
+
         setGame(fetchedGame);
         
         if (fetchedGame.status === 'finished') setShowResult(true);
@@ -158,58 +164,55 @@ export default function Game() {
                 setBoard(Array.isArray(parsed) ? parsed : []);
             } catch (e) { setBoard([]); }
         }
-
-        // Handle Turn Change & Premoves
-        if (game && game.current_turn !== fetchedGame.current_turn) {
-            soundManager.play('move');
-            if (document.hidden) soundManager.play('notify');
-            
-            // Execute Premove logic...
-            checkPremove(fetchedGame);
-        }
     };
 
-    const checkPremove = (fetchedGame) => {
-        const isMyTurnNow = (fetchedGame.current_turn === 'white' && currentUser?.id === fetchedGame.white_player_id) ||
-                            (fetchedGame.current_turn === 'black' && currentUser?.id === fetchedGame.black_player_id);
-        
-        if (isMyTurnNow && premove) {
-            setTimeout(() => {
-                executePremove(premove, parsedBoard(fetchedGame), fetchedGame.current_turn);
+    // Effect to handle Premove execution when state updates
+    useEffect(() => {
+        if (!game || !currentUser || !premove || game.status !== 'playing') return;
+
+        const isMyTurnNow = (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
+                            (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
+
+        if (isMyTurnNow) {
+            // Small delay to ensure UI renders the new board before moving again
+            const timer = setTimeout(() => {
+                executePremove(premove);
                 setPremove(null);
-            }, 200);
+            }, 300);
+            return () => clearTimeout(timer);
         }
-    };
+    }, [game, currentUser, premove]);
 
-    // Helper for parsed board in effect
-    const parsedBoard = (g) => {
-        if (!g) return [];
-        const parsed = JSON.parse(g.board_state);
-        return g.game_type === 'chess' ? (parsed.board || []) : parsed;
-    };
-    
-    const executePremove = async (move, currentBoard, turn) => {
+    const executePremove = async (move) => {
         if (game.game_type === 'chess') {
             const { getValidChessMoves } = await import('@/components/chessLogic');
-            const castling = game.moves ? JSON.parse(game.board_state).castlingRights : { wK: true, wQ: true, bK: true, bQ: true };
-            const lastM = game.moves ? JSON.parse(game.board_state).lastMove : null;
-            
-            const valid = getValidChessMoves(currentBoard, turn, lastM, castling);
+            // Use current state variables which should be up to date due to useEffect dependency
+            const valid = getValidChessMoves(board, game.current_turn, chessState.lastMove, chessState.castlingRights);
             const validMove = valid.find(m => m.from.r === move.from.r && m.from.c === move.from.c && m.to.r === move.to.r && m.to.c === move.to.c);
+            
             if (validMove) {
-                handleChessClick(move.to.r, move.to.c, true, validMove); // Pass validMove to bypass validation calc
+                // Execute
+                // Check promotion
+                const movingPiece = board[move.from.r][move.from.c];
+                if (movingPiece && movingPiece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
+                     // Auto-queen for premove to avoid stuck state? Or just cancel?
+                     // Usually premove auto-queens.
+                     executeChessMoveFinal({ ...validMove, promotion: 'q' });
+                } else {
+                     executeChessMoveFinal(validMove);
+                }
             } else {
-                toast.error("Premove invalide");
+                toast.error("Coup anticipé impossible");
                 setPremove(null);
             }
         } else {
             const { getValidMoves } = await import('@/components/checkersLogic');
-            const valid = getValidMoves(currentBoard, turn);
+            const valid = getValidMoves(board, game.current_turn);
             const validMove = valid.find(m => m.from.r === move.from.r && m.from.c === move.from.c && m.to.r === move.to.r && m.to.c === move.to.c);
             if (validMove) {
                 executeCheckersMove(validMove);
             } else {
-                toast.error("Premove invalide");
+                toast.error("Coup anticipé impossible");
                 setPremove(null);
             }
         }
@@ -266,6 +269,16 @@ export default function Game() {
 
         if (!isMyTurn) {
             if (!isSoloMode && currentUser) {
+                // If dropping on same square, just cancel premove
+                if (fromR === toR && fromC === toC) {
+                    if (premove) {
+                        setPremove(null);
+                        toast.info("Coup anticipé annulé");
+                    }
+                    return;
+                }
+                
+                // Set new premove
                 setPremove({ from: {r: fromR, c: fromC}, to: {r: toR, c: toC} });
                 toast.info("Coup anticipé programmé");
             }
@@ -312,9 +325,10 @@ export default function Game() {
                                        (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
 
         if (!isMyTurn) {
-             // Handle Click Premove: if I click my piece then target
-             // This is harder to track statefully without messing up `selectedSquare` logic.
-             // Drag drop premove is easier. We'll skip click-based premove for now or implement later.
+             if (premove) {
+                 setPremove(null);
+                 toast.info("Coup anticipé annulé");
+             }
              return;
         }
 
