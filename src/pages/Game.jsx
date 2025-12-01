@@ -991,7 +991,8 @@ export default function Game() {
                                 theme={currentUser?.preferences?.chess_theme}
                                 pieceSet={currentUser?.preferences?.chess_pieces}
                                 premove={premove}
-                              />
+                                isSoloMode={isSoloMode}
+                                />
                         }
                     </div>
                 </div>

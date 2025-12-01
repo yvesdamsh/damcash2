@@ -16,7 +16,7 @@ const PIECE_IMAGES = {
     'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
 };
 
-export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragStart, onDragEnd, dragConstraints }) {
+export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragStart, onDragEnd, dragConstraints, canDrag = true }) {
     if (!type) return null;
 
     // Map for unicode pieces
@@ -29,14 +29,14 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
     const dragProps = {
-        drag: true,
+        drag: canDrag,
         dragConstraints: dragConstraints,
         dragMomentum: false,
         dragElastic: 0.1,
-        onDragStart: onDragStart,
-        onDragEnd: onDragEnd,
+        onDragStart: canDrag ? onDragStart : undefined,
+        onDragEnd: canDrag ? onDragEnd : undefined,
         whileDrag: { scale: 1.2, zIndex: 100, cursor: 'grabbing' },
-        className: `chess-piece w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : 'cursor-grab'}`,
+        className: `chess-piece w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : (canDrag ? 'cursor-grab' : 'cursor-default')}`,
         initial,
         animate
     };

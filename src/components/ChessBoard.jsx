@@ -3,9 +3,10 @@ import ChessPiece from './ChessPiece';
 import { motion } from 'framer-motion';
 import { getValidChessMoves } from '@/components/chessLogic';
 
-export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove }) {
+export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false }) {
     
-    const isMyTurn = currentTurn === playerColor;
+    const canInteract = isSoloMode || (currentTurn === playerColor);
+    const isMyTurn = canInteract; // Backward compatibility or just alias
     const boardRef = React.useRef(null);
 
     // Theme Configuration
@@ -135,6 +136,10 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                             onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                             onDragStart={() => onSquareClick(r, c)}
                                             dragConstraints={boardRef}
+                                            canDrag={canInteract && (
+                                                (currentTurn === 'white' && piece === piece.toUpperCase()) ||
+                                                (currentTurn === 'black' && piece === piece.toLowerCase())
+                                            )}
                                             animateFrom={
                                                 lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                 ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
