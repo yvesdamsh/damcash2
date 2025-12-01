@@ -210,9 +210,12 @@ export default function Home() {
             <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
             <div className="text-center mb-8 space-y-4">
-                <h1 className="text-5xl md:text-6xl font-bold text-[#4a3728] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
-                    {gameType === 'checkers' ? 'Dames Master 3D' : 'Échecs Master'}
+                <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
+                    DAMCASH
                 </h1>
+                <h2 className="text-3xl font-bold text-[#6b5138] mt-2">
+                    {gameType === 'checkers' ? 'Dames 3D' : 'Échecs'}
+                </h2>
                 <p className="text-xl text-[#6b5138] font-medium">
                     {gameType === 'checkers' ? "L'expérience ultime du jeu de dames en ligne" : "Le jeu des rois, stratégie pure"}
                 </p>
