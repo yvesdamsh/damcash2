@@ -20,6 +20,8 @@ export default function TournamentDetail() {
     const [matches, setMatches] = useState([]);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [countdown, setCountdown] = useState("");
+    const [pairingInterval, setPairingInterval] = useState(null);
 
     useEffect(() => {
         if (!id) return;
@@ -36,7 +38,7 @@ export default function TournamentDetail() {
                 ]);
 
                 if (tData.length) setTournament(tData[0]);
-                setParticipants(pData);
+                setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0))); // Sort by score for Arena
                 setMatches(mData);
             } catch (e) {
                 console.error(e);
@@ -45,18 +47,57 @@ export default function TournamentDetail() {
             }
         };
         init();
+        
+        // Polling for updates
+        const interval = setInterval(init, 5000);
+        return () => clearInterval(interval);
     }, [id]);
+
+    // Arena Pairing Logic Trigger
+    useEffect(() => {
+        if (tournament && tournament.format === 'arena' && tournament.status === 'ongoing' && isParticipant) {
+             const myParticipant = participants.find(p => p.user_id === user.id);
+             // If I am active and not playing, trigger pairing attempt
+             if (myParticipant && !myParticipant.current_game_id) {
+                 const pair = async () => {
+                     await base44.functions.invoke('arenaPairing', { tournamentId: tournament.id });
+                 };
+                 // Try to pair every 10 seconds if waiting
+                 const pid = setInterval(pair, 10000);
+                 setPairingInterval(pid);
+                 return () => clearInterval(pid);
+             }
+        }
+    }, [tournament, participants, isParticipant]);
+
+    // Countdown Timer
+    useEffect(() => {
+        if (!tournament) return;
+        const timer = setInterval(() => {
+            const now = new Date();
+            const start = new Date(tournament.start_date);
+            const end = new Date(tournament.end_date || start.getTime() + 57*60000);
+
+            if (now < start) {
+                const diff = start - now;
+                setCountdown(`Démarre dans ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
+            } else if (now < end) {
+                const diff = end - now;
+                setCountdown(`Fin dans ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
+            } else {
+                setCountdown("Terminé");
+            }
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [tournament]);
 
     const handleJoin = async () => {
         if (!user || !tournament) return;
         
-        // Check if already joined
-        if (participants.some(p => p.user_id === user.id)) {
-            toast.warning("Vous êtes déjà inscrit !");
-            return;
-        }
+        if (participants.some(p => p.user_id === user.id)) return;
 
-        if (participants.length >= tournament.max_players) {
+        // For Arena, unlimited players
+        if (tournament.format !== 'arena' && participants.length >= tournament.max_players) {
             toast.error("Le tournoi est complet !");
             return;
         }
@@ -67,15 +108,22 @@ export default function TournamentDetail() {
                 user_id: user.id,
                 user_name: user.full_name || user.username || 'Joueur',
                 avatar_url: user.avatar_url,
-                status: 'active'
+                status: 'active',
+                score: 0,
+                games_played: 0
             });
-            
-            // Refresh
-            const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
-            setParticipants(pData);
-            toast.success("Inscription validée !");
+            toast.success("Vous avez rejoint l'arène !");
+            // Force refresh
+            base44.functions.invoke('tournamentManager', {}); 
         } catch (e) {
-            toast.error("Erreur lors de l'inscription");
+            toast.error("Erreur inscription");
+        }
+    };
+
+    const handleEnterGame = () => {
+        const myParticipant = participants.find(p => p.user_id === user?.id);
+        if (myParticipant && myParticipant.current_game_id) {
+            window.location.href = `/Game?id=${myParticipant.current_game_id}`;
         }
     };
 
@@ -176,28 +224,35 @@ export default function TournamentDetail() {
                                 </div>
                             </div>
 
-                            <div className="pt-4 border-t border-gray-100">
-                                {tournament.status === 'open' ? (
-                                    canJoin ? (
-                                        <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md">
-                                            Rejoindre le tournoi
-                                        </Button>
-                                    ) : (
-                                        <Button disabled className="w-full opacity-80">
-                                            {isParticipant ? "Inscrit" : "Complet"}
-                                        </Button>
-                                    )
-                                ) : (
-                                    <div className="text-center font-bold text-[#6b5138] py-2 bg-[#f5f0e6] rounded-lg">
-                                        Tournoi en cours
+                            <div className="pt-4 border-t border-gray-100 space-y-3">
+                                <div className="text-center font-mono font-bold text-xl text-[#d45c30]">
+                                    {countdown}
+                                </div>
+
+                                {tournament.format === 'arena' && isParticipant && (
+                                    <div className="p-3 bg-blue-50 rounded-lg text-center">
+                                        {participants.find(p => p.user_id === user?.id)?.current_game_id ? (
+                                            <Button onClick={handleEnterGame} className="w-full bg-green-600 hover:bg-green-700 animate-pulse">
+                                                PARTIE EN COURS ! REJOINDRE
+                                            </Button>
+                                        ) : (
+                                            <div className="text-sm text-blue-800 font-bold flex items-center justify-center gap-2">
+                                                <Loader2 className="animate-spin w-4 h-4" /> Recherche d'adversaire...
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                                
-                                {/* Admin Start Button (Simplified: anyone can start for now if creating matches logic allows) */}
-                                {tournament.status === 'open' && participants.length >= 2 && (
-                                    <Button onClick={handleStartTournament} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
-                                        <Play className="w-4 h-4 mr-2" /> Démarrer (Admin)
-                                    </Button>
+
+                                {tournament.status === 'open' || (tournament.status === 'ongoing' && tournament.format === 'arena') ? (
+                                    !isParticipant ? (
+                                        <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md text-lg font-bold">
+                                            {tournament.format === 'arena' ? 'Rejoindre l\'Arène' : 'S\'inscrire'}
+                                        </Button>
+                                    ) : (
+                                        tournament.format !== 'arena' && <Button disabled className="w-full opacity-80">Inscrit</Button>
+                                    )
+                                ) : (
+                                    <div className="text-center font-bold text-gray-500">Tournoi terminé</div>
                                 )}
                             </div>
                         </CardContent>
@@ -241,20 +296,38 @@ export default function TournamentDetail() {
                         
                         <TabsContent value="participants" className="mt-6">
                              <Card>
+                                <CardHeader>
+                                    <CardTitle>{tournament.format === 'arena' ? 'Classement' : 'Participants'}</CardTitle>
+                                </CardHeader>
                                 <CardContent className="p-0">
+                                    <div className="grid grid-cols-12 gap-2 p-2 bg-gray-100 font-bold text-xs text-gray-500 uppercase">
+                                        <div className="col-span-1">#</div>
+                                        <div className="col-span-5">Joueur</div>
+                                        <div className="col-span-2 text-center">Pts</div>
+                                        <div className="col-span-2 text-center">Jouées</div>
+                                        <div className="col-span-2 text-center">État</div>
+                                    </div>
                                     {participants.map((p, i) => (
-                                        <div key={p.id} className="flex items-center gap-4 p-4 border-b last:border-0 hover:bg-gray-50">
-                                            <span className="text-gray-400 font-mono w-6">{i + 1}</span>
-                                            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
-                                                {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover"/> : <Users className="w-full h-full p-2 text-gray-500"/>}
+                                        <div key={p.id} className={`grid grid-cols-12 gap-2 items-center p-3 border-b last:border-0 hover:bg-gray-50 ${p.user_id === user?.id ? 'bg-yellow-50' : ''}`}>
+                                            <div className="col-span-1 font-mono font-bold text-[#4a3728]">{i + 1}</div>
+                                            <div className="col-span-5 flex items-center gap-3 overflow-hidden">
+                                                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                                    {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover"/> : <Users className="w-full h-full p-2 text-gray-500"/>}
+                                                </div>
+                                                <span className="truncate font-medium">{p.user_name}</span>
                                             </div>
-                                            <div className="font-medium text-[#4a3728]">{p.user_name}</div>
-                                            <div className={`ml-auto text-xs px-2 py-1 rounded ${p.status === 'eliminated' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                                                {p.status === 'eliminated' ? 'Éliminé' : 'Actif'}
+                                            <div className="col-span-2 text-center font-bold text-lg text-[#d45c30]">{p.score || 0}</div>
+                                            <div className="col-span-2 text-center text-gray-600">{p.games_played || 0}</div>
+                                            <div className="col-span-2 flex justify-center">
+                                                 {p.current_game_id ? (
+                                                     <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" title="En jeu"></span>
+                                                 ) : (
+                                                     <span className="w-3 h-3 rounded-full bg-gray-300" title="En attente"></span>
+                                                 )}
                                             </div>
                                         </div>
                                     ))}
-                                    {participants.length === 0 && <div className="p-8 text-center text-gray-500">Aucun inscrit</div>}
+                                    {participants.length === 0 && <div className="p-8 text-center text-gray-500">L'arène est vide...</div>}
                                 </CardContent>
                             </Card>
                         </TabsContent>

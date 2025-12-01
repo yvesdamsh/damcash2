@@ -28,6 +28,8 @@ export default function Tournaments() {
             try {
                 const u = await base44.auth.me();
                 setUser(u);
+                // Ensure tournaments exist
+                await base44.functions.invoke('tournamentManager', {});
                 fetchTournaments();
             } catch (e) {
                 console.error(e);
