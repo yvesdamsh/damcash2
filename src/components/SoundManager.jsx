@@ -21,8 +21,12 @@ class SoundManager {
         // Preload sounds
         if (typeof window !== 'undefined') {
             Object.keys(SOUNDS).forEach(key => {
-                this.audioCache[key] = new Audio(SOUNDS[key]);
-                this.audioCache[key].volume = 0.5;
+                try {
+                    this.audioCache[key] = new Audio(SOUNDS[key]);
+                    this.audioCache[key].volume = 0.5;
+                } catch (e) {
+                    console.log("Audio preload failed", e);
+                }
             });
         }
     }

@@ -42,8 +42,12 @@ export default function Game() {
         else navigate('/');
 
         // Request notification permission
-        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-            Notification.requestPermission();
+        try {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission().catch(e => console.log("Notification permission error", e));
+            }
+        } catch (e) {
+            console.log("Notification API not available");
         }
     }, []);
 
@@ -138,11 +142,15 @@ export default function Game() {
                                 gameData.current_turn === (gameData.white_player_id === currentUser.id ? 'white' : 'black')) {
                                 
                                 soundManager.play('notify');
-                                if (document.hidden && Notification.permission === 'granted') {
-                                    new Notification("C'est à vous !", {
-                                        body: "Votre adversaire a joué. À vous de jouer !",
-                                        icon: "/favicon.ico" // fallback
-                                    });
+                                if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                                    try {
+                                        new Notification("C'est à vous !", {
+                                            body: "Votre adversaire a joué. À vous de jouer !",
+                                            icon: "/favicon.ico" // fallback
+                                        });
+                                    } catch (e) {
+                                        console.log("Notification creation failed", e);
+                                    }
                                 }
                             }
                             
