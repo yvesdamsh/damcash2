@@ -254,6 +254,28 @@ export default function TournamentDetail() {
                                 ) : (
                                     <div className="text-center font-bold text-gray-500">Tournoi terminé</div>
                                 )}
+
+                                {/* Admin Start Button */}
+                                {tournament.status === 'open' && participants.length >= 2 && (
+                                    <Button onClick={tournament.format === 'swiss' ? async () => {
+                                        await base44.functions.invoke('swissPairing', { tournamentId: tournament.id });
+                                        setTournament({...tournament, status: 'ongoing', current_round: 1});
+                                        toast.success("Tournoi Suisse démarré !");
+                                    } : handleStartTournament} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
+                                        <Play className="w-4 h-4 mr-2" /> Démarrer (Admin)
+                                    </Button>
+                                )}
+
+                                {/* Next Round Swiss */}
+                                {tournament.status === 'ongoing' && tournament.format === 'swiss' && (
+                                    <Button onClick={async () => {
+                                        await base44.functions.invoke('swissPairing', { tournamentId: tournament.id });
+                                        toast.success("Nouveau round généré !");
+                                        // Reload data
+                                    }} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
+                                        <Play className="w-4 h-4 mr-2" /> Round Suivant (Admin)
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
