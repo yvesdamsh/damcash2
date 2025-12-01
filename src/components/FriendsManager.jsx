@@ -25,6 +25,25 @@ export default function FriendsManager() {
     const [challengeConfig, setChallengeConfig] = useState({ time: 10, increment: 0, gameType: 'checkers' });
     const navigate = useNavigate();
 
+    // Listen for open-chat events from Notifications
+    useEffect(() => {
+        const handleOpenChat = (e) => {
+            const { senderId } = e.detail;
+            if (senderId) {
+                // We need to fetch the user details to open chat
+                base44.entities.User.get(senderId).then(user => {
+                    if (user) {
+                        setActiveChatFriend(user);
+                        setIsOpen(false); // Close list if open
+                    }
+                });
+            }
+        };
+
+        window.addEventListener('open-chat', handleOpenChat);
+        return () => window.removeEventListener('open-chat', handleOpenChat);
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
             loadData();

@@ -99,6 +99,16 @@ export default function DirectChat({ friend, onClose, currentUser }) {
                 last_message_preview: newMessage
             });
 
+            // Send Notification to friend
+            await base44.entities.Notification.create({
+                recipient_id: friend.id,
+                type: 'message',
+                sender_id: currentUser.id,
+                title: 'Nouveau message',
+                message: `${currentUser.username || currentUser.full_name}: ${newMessage.substring(0, 30)}${newMessage.length > 30 ? '...' : ''}`,
+                read: false
+            });
+
             setNewMessage("");
             // Optimistic update
             setMessages(prev => [...prev, {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Bell, Check, Trash2, ExternalLink } from 'lucide-react';
+import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -75,7 +75,12 @@ export default function Notifications() {
 
     const handleNotificationClick = async (n) => {
         if (!n.read) await markAsRead(n.id);
-        if (n.link) {
+        
+        if (n.type === 'message' && n.sender_id) {
+            // Dispatch event to open chat
+            window.dispatchEvent(new CustomEvent('open-chat', { detail: { senderId: n.sender_id } }));
+            setIsOpen(false);
+        } else if (n.link) {
             navigate(n.link);
             setIsOpen(false);
         }
@@ -119,6 +124,12 @@ export default function Notifications() {
                                     className={`p-4 cursor-pointer hover:bg-[#f0e6d2] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6]' : ''}`}
                                 >
                                     <div className="flex justify-between items-start gap-2">
+                                        <div className="mt-1">
+                                            {notification.type === 'message' && <MessageSquare className="w-4 h-4 text-blue-500" />}
+                                            {notification.type === 'game' && <Gamepad2 className="w-4 h-4 text-green-500" />}
+                                            {notification.type === 'forum' && <ThumbsUp className="w-4 h-4 text-pink-500" />}
+                                            {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
+                                        </div>
                                         <div className="flex-1">
                                             <h5 className={`text-sm mb-1 text-[#4a3728] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
                                                 {notification.title}

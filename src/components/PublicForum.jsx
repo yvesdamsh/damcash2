@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, MessageCircle, User } from 'lucide-react';
+import { Send, MessageCircle, User, Heart } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -50,10 +50,40 @@ export default function PublicForum() {
                 author_id: user.id,
                 author_name: user.full_name || user.username || "Anonyme",
                 author_avatar: user.avatar_url,
-                content: newPost.trim()
+                content: newPost.trim(),
+                liked_by: []
             });
             setNewPost("");
             fetchPosts();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleLike = async (post) => {
+        if (!user) return;
+        const likedBy = post.liked_by || [];
+        if (likedBy.includes(user.id)) return; // Already liked
+
+        try {
+            // Optimistic update
+            setPosts(posts.map(p => p.id === post.id ? { ...p, likes: (p.likes || 0) + 1, liked_by: [...likedBy, user.id] } : p));
+            
+            await base44.entities.ForumPost.update(post.id, {
+                likes: (post.likes || 0) + 1,
+                liked_by: [...likedBy, user.id]
+            });
+
+            // Notify author if not self
+            if (post.author_id !== user.id) {
+                await base44.entities.Notification.create({
+                    recipient_id: post.author_id,
+                    type: 'forum',
+                    title: 'Nouveau Like',
+                    message: `${user.full_name || user.username} a aimé votre message sur le forum.`,
+                    read: false
+                });
+            }
         } catch (e) {
             console.error(e);
         }
@@ -81,8 +111,22 @@ export default function PublicForum() {
                                         {formatDistanceToNow(new Date(post.created_date), { addSuffix: true, locale: fr })}
                                     </span>
                                 </div>
-                                <div className={`px-3 py-2 rounded-lg text-sm shadow-sm ${isMe ? 'bg-[#6b5138] text-white rounded-tr-none' : 'bg-white border border-[#d4c5b0] text-gray-800 rounded-tl-none'}`}>
+                                <div className={`px-3 py-2 rounded-lg text-sm shadow-sm group relative ${isMe ? 'bg-[#6b5138] text-white rounded-tr-none' : 'bg-white border border-[#d4c5b0] text-gray-800 rounded-tl-none'}`}>
                                     {post.content}
+                                    <div className={`absolute -bottom-3 ${isMe ? '-left-2' : '-right-2'}`}>
+                                        <button 
+                                            onClick={() => handleLike(post)}
+                                            disabled={!user || (post.liked_by || []).includes(user?.id)}
+                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] shadow-sm transition-colors ${
+                                                (post.liked_by || []).includes(user?.id) 
+                                                    ? 'bg-red-100 text-red-500' 
+                                                    : 'bg-white text-gray-400 hover:text-red-400'
+                                            }`}
+                                        >
+                                            <Heart className={`w-3 h-3 ${(post.liked_by || []).includes(user?.id) ? 'fill-current' : ''}`} />
+                                            <span>{post.likes || 0}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
