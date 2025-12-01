@@ -37,6 +37,7 @@ export default function Game() {
     const [isSaved, setIsSaved] = useState(false);
     const [promotionPending, setPromotionPending] = useState(null);
     const [premove, setPremove] = useState(null);
+    const [socket, setSocket] = useState(null);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -78,69 +79,102 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id]);
 
+    // WebSocket Connection
     useEffect(() => {
         if (!id) return;
-        let interval;
 
+        // Initial Fetch
         const fetchGame = async () => {
             try {
                 const fetchedGame = await base44.entities.Game.get(id);
-                setGame(fetchedGame);
-                
-                if (fetchedGame.status === 'finished') setShowResult(true);
-                else setShowResult(false);
-                
-                if (fetchedGame.game_type === 'chess') {
-                    try {
-                        const parsed = JSON.parse(fetchedGame.board_state);
-                        setBoard(Array.isArray(parsed.board) ? parsed.board : []);
-                        setChessState({ castlingRights: parsed.castlingRights || {}, lastMove: parsed.lastMove || null });
-                    } catch (e) { setBoard([]); }
-                } else {
-                    try {
-                        const parsed = JSON.parse(fetchedGame.board_state);
-                        setBoard(Array.isArray(parsed) ? parsed : []);
-                    } catch (e) { setBoard([]); }
-                }
-
-                // Handle Turn Change & Premoves
-                if (game && game.current_turn !== fetchedGame.current_turn) {
-                    soundManager.play('move');
-                    if (document.hidden) soundManager.play('notify');
-                    
-                    // Execute Premove if it's now my turn
-                    const isMyTurnNow = (fetchedGame.current_turn === 'white' && currentUser?.id === fetchedGame.white_player_id) ||
-                                        (fetchedGame.current_turn === 'black' && currentUser?.id === fetchedGame.black_player_id);
-                    
-                    if (isMyTurnNow && premove) {
-                        // Validate and execute premove
-                        // Small delay to ensure state is updated
-                        setTimeout(() => {
-                            if (fetchedGame.game_type === 'chess') {
-                                // Need to re-import logic here or access from scope? 
-                                // Better to trigger a function. We'll use a ref or just call click handler logic
-                                executePremove(premove, parsedBoard(fetchedGame), fetchedGame.current_turn);
-                            } else {
-                                executePremove(premove, parsedBoard(fetchedGame), fetchedGame.current_turn);
-                            }
-                            setPremove(null);
-                        }, 200);
-                    } else if (!isMyTurnNow) {
-                        // Clear premove if turn changed but not to me (shouldn't happen in 1v1 usually unless aborted)
-                    }
-                }
-
+                updateGameState(fetchedGame);
                 setLoading(false);
             } catch (e) {
                 console.error("Error fetching game", e);
                 setLoading(false);
             }
         };
-
         fetchGame();
-        interval = setInterval(fetchGame, 1000);
-        return () => clearInterval(interval);
-    }, [id, game?.current_turn]);
+
+        // Initialize WebSocket
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/functions/gameSocket?gameId=${id}`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            console.log('Connected to Game WebSocket');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'GAME_UPDATE') {
+                    // Re-fetch game to ensure full consistency or use payload if complete
+                    // For now, using payload to patch would be faster, but fetching ensures data integrity
+                    // If payload contains full game update data, we can use it.
+                    // Our backend sends { ...updateData, user_id }
+                    // Ideally we should merge this, but let's just fetch the fresh game to be safe and simple for now,
+                    // OR better: We construct the new state from payload to be "instant"
+                    // let's try fetching first for reliability, or just refetching if easy.
+                    // Actually, to be "Realtime" we should minimize RTT.
+                    // But base44.entities.Game.get is fast.
+                    // Optimization: The payload HAS the updateData. We can merge it.
+                    // Let's just refetch for now to guarantee we have the server-side computed fields (like updated_date etc)
+                    // But to make it FEEL instant, we can assume the state.
+                    fetchGame(); 
+                }
+            } catch (e) {
+                console.error("WS Message Error", e);
+            }
+        };
+
+        setSocket(ws);
+
+        return () => {
+            if (ws) ws.close();
+        };
+    }, [id]);
+
+    const updateGameState = (fetchedGame) => {
+        setGame(fetchedGame);
+        
+        if (fetchedGame.status === 'finished') setShowResult(true);
+        else setShowResult(false);
+        
+        if (fetchedGame.game_type === 'chess') {
+            try {
+                const parsed = JSON.parse(fetchedGame.board_state);
+                setBoard(Array.isArray(parsed.board) ? parsed.board : []);
+                setChessState({ castlingRights: parsed.castlingRights || {}, lastMove: parsed.lastMove || null });
+            } catch (e) { setBoard([]); }
+        } else {
+            try {
+                const parsed = JSON.parse(fetchedGame.board_state);
+                setBoard(Array.isArray(parsed) ? parsed : []);
+            } catch (e) { setBoard([]); }
+        }
+
+        // Handle Turn Change & Premoves
+        if (game && game.current_turn !== fetchedGame.current_turn) {
+            soundManager.play('move');
+            if (document.hidden) soundManager.play('notify');
+            
+            // Execute Premove logic...
+            checkPremove(fetchedGame);
+        }
+    };
+
+    const checkPremove = (fetchedGame) => {
+        const isMyTurnNow = (fetchedGame.current_turn === 'white' && currentUser?.id === fetchedGame.white_player_id) ||
+                            (fetchedGame.current_turn === 'black' && currentUser?.id === fetchedGame.black_player_id);
+        
+        if (isMyTurnNow && premove) {
+            setTimeout(() => {
+                executePremove(premove, parsedBoard(fetchedGame), fetchedGame.current_turn);
+                setPremove(null);
+            }, 200);
+        }
+    };
 
     // Helper for parsed board in effect
     const parsedBoard = (g) => {
@@ -450,7 +484,19 @@ export default function Game() {
              updateData.last_move_at = now;
         }
 
-        await base44.entities.Game.update(game.id, updateData);
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'MOVE',
+                payload: { updateData }
+            }));
+            // Optimistic Local Update (Optional, but makes it instant)
+            // But waiting for socket bounce is usually fast enough and safer for consistency.
+            // If we update local state here, we must be careful not to duplicate effect when message comes back.
+            // We'll rely on the immediate fetch/message from socket.
+        } else {
+            // Fallback if socket failed
+            await base44.entities.Game.update(game.id, updateData);
+        }
     };
 
     const handleRematch = async () => {
@@ -866,7 +912,7 @@ export default function Game() {
                         </Button>
                     </div>
                     <div className="flex-1 overflow-hidden bg-[#fdfbf7]">
-                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} />}
+                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} socket={socket} />}
                         {activeTab === 'moves' && (
                             <MoveHistory 
                                 moves={movesList} 

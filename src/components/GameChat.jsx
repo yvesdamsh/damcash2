@@ -8,18 +8,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 const QUICK_REPLIES = ["Bien joué ! 👏", "Merci !", "Oups... 😅", "Belle partie !", "🤔 Réfléchis...", "Vite ! ⏰"];
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
-export default function GameChat({ gameId, currentUser }) {
+export default function GameChat({ gameId, currentUser, socket }) {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState("");
     const scrollRef = useRef(null);
 
-    // Polling for messages
+    // Initial fetch
     useEffect(() => {
         if (!gameId) return;
-
         const fetchMessages = async () => {
             try {
-                // Sorting by created_date is automatic usually, but let's ensure
                 const msgs = await base44.entities.ChatMessage.list({
                    "game_id": gameId 
                 }, { "created_date": 1 }, 50);
@@ -28,11 +26,27 @@ export default function GameChat({ gameId, currentUser }) {
                 console.error("Error fetching messages", error);
             }
         };
-
         fetchMessages();
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
     }, [gameId]);
+
+    // Listen to socket
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleMessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'CHAT_UPDATE') {
+                    setMessages(prev => [...prev, data.payload]);
+                }
+            } catch (e) {
+                // ignore
+            }
+        };
+
+        socket.addEventListener('message', handleMessage);
+        return () => socket.removeEventListener('message', handleMessage);
+    }, [socket]);
 
     // Auto-scroll
     useEffect(() => {
@@ -45,17 +59,25 @@ export default function GameChat({ gameId, currentUser }) {
         e.preventDefault();
         if (!newMessage.trim()) return;
 
-        try {
-            await base44.entities.ChatMessage.create({
-                game_id: gameId,
-                sender_id: currentUser.id,
-                sender_name: currentUser.full_name || currentUser.email.split('@')[0],
-                content: newMessage.trim()
-            });
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'CHAT',
+                payload: { content: newMessage.trim() }
+            }));
             setNewMessage("");
-            // Optimistic update could happen here but polling will catch it
-        } catch (error) {
-            console.error("Error sending message", error);
+        } else {
+            // Fallback
+            try {
+                await base44.entities.ChatMessage.create({
+                    game_id: gameId,
+                    sender_id: currentUser.id,
+                    sender_name: currentUser.full_name || currentUser.email.split('@')[0],
+                    content: newMessage.trim()
+                });
+                setNewMessage("");
+            } catch (error) {
+                console.error("Error sending message", error);
+            }
         }
     };
 
