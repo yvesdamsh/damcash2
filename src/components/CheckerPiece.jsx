@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag }) {
+export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, ...props }) {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
@@ -24,48 +24,22 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
-    const handleDragStart = (e) => {
-        if (!canDrag) {
-            e.preventDefault();
-            return;
-        }
-        
-        // IMPORTANT : On définit le mode de transfert
-        e.dataTransfer.effectAllowed = 'move';
-        
-        // On s'assure que l'image fantôme est bien capturée AVANT de changer l'opacité
-        // setTimeout déplace l'action à la fin de la stack d'exécution
-        setTimeout(() => {
-            if(e.target) e.target.style.opacity = '0.4'; 
-        }, 0);
-
-        if (onDragStart) onDragStart(e);
-    };
-
-    const handleDragEnd = (e) => {
-        e.target.style.opacity = '1';
-    };
-
     return (
-        /* CORRECTION : On utilise une div standard pour le Drag.
-           On retire 'motion' du wrapper draggable pour éviter les conflits d'événements.
-        */
-        <div
-            draggable={canDrag}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            className={`
-                relative w-[85%] h-[85%] m-auto rounded-full z-10 
-                ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
-            `}
-            // On s'assure que le drag n'interfère pas avec le layout flex parent
-            style={{ touchAction: 'none' }} 
+        <motion.div
+            drag={canDrag}
+            dragMomentum={false}
+            dragElastic={0.1}
+            onDragStart={onDragStart}
+            onDragEnd={props.onDragEnd}
+            whileDrag={{ scale: 1.2, zIndex: 100, cursor: 'grabbing' }}
+            dragSnapToOrigin
+            initial={initial}
+            animate={animate}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className={`relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+            style={{ touchAction: 'none' }}
         >
-            {/* L'animation est gérée ici, à l'intérieur, purement visuelle */}
-            <motion.div 
-                initial={initial}
-                animate={animate}
-                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            <div 
                 className={`
                     w-full h-full rounded-full 
                     ${baseColor} 
@@ -88,7 +62,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
                         👑
                     </div>
                 )}
-            </motion.div>
-        </div>
+            </div>
+        </motion.div>
     );
 }

@@ -11,32 +11,25 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     const canInteract = isSoloMode || (currentTurn === playerColor);
     const boardRef = React.useRef(null);
 
-    const handleDragStart = (e, r, c) => {
-        e.dataTransfer.setData('origin', JSON.stringify({ r, c }));
-        e.dataTransfer.effectAllowed = 'move';
-        // Trigger selection on drag start
-        if (onSquareClick) onSquareClick(r, c);
-    };
+    // Framer Motion Drag Handler
+    const handleDragEnd = (e, info, r, c) => {
+        if (!boardRef.current) return;
+        
+        const boardRect = boardRef.current.getBoundingClientRect();
+        const squareSize = boardRect.width / 10; // 10x10 board
+        
+        // Calculate relative coordinates
+        const dropX = info.point.x - boardRect.left;
+        const dropY = info.point.y - boardRect.top;
+        
+        const targetC = Math.floor(dropX / squareSize);
+        const targetR = Math.floor(dropY / squareSize);
 
-    const handleDragOver = (e) => {
-        e.preventDefault(); // Mandatory for drop to work
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDrop = (e, targetR, targetC) => {
-        e.preventDefault();
-        e.stopPropagation(); // Stop bubbling
-        try {
-            const rawData = e.dataTransfer.getData('origin');
-            if (!rawData) return;
-            
-            const origin = JSON.parse(rawData);
-            // Only drop if it's a different square
-            if (origin.r !== targetR || origin.c !== targetC) {
-                if (onPieceDrop) onPieceDrop(origin.r, origin.c, targetR, targetC);
+        // Check bounds
+        if (targetR >= 0 && targetR < 10 && targetC >= 0 && targetC < 10) {
+            if (targetR !== r || targetC !== c) {
+                if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
             }
-        } catch (err) {
-            console.error("Drop error", err);
         }
     };
 
@@ -81,8 +74,6 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                 <div
                                     key={`${r}-${c}`}
                                     onClick={() => onSquareClick(r, c)}
-                                    onDragOver={handleDragOver}
-                                    onDrop={(e) => handleDrop(e, r, c)}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
                                         relative w-full h-full flex items-center justify-center
@@ -124,8 +115,10 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
-                                                onDragStart={(e) => handleDragStart(e, r, c)}
+                                                onDragStart={() => onSquareClick(r, c)}
+                                                onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
+                                                boardRef={boardRef}
                                                 animateFrom={
                                                     lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                     ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
