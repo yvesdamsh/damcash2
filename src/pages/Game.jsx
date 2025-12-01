@@ -55,11 +55,20 @@ export default function Game() {
                 setGame(fetchedGame);
                 
                 if (fetchedGame.game_type === 'chess') {
-                    const parsed = JSON.parse(fetchedGame.board_state);
-                    setBoard(parsed.board);
-                    setChessState({ castlingRights: parsed.castlingRights, lastMove: parsed.lastMove });
+                    try {
+                        const parsed = JSON.parse(fetchedGame.board_state);
+                        setBoard(Array.isArray(parsed.board) ? parsed.board : []);
+                        setChessState({ castlingRights: parsed.castlingRights || {}, lastMove: parsed.lastMove || null });
+                    } catch (e) {
+                        setBoard([]);
+                    }
                 } else {
-                    setBoard(JSON.parse(fetchedGame.board_state));
+                    try {
+                        const parsed = JSON.parse(fetchedGame.board_state);
+                        setBoard(Array.isArray(parsed) ? parsed : []);
+                    } catch (e) {
+                        setBoard([]);
+                    }
                 }
 
                 // Play sounds if turn changed
@@ -262,9 +271,16 @@ export default function Game() {
     if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
     const movesList = game?.moves ? JSON.parse(game.moves) : [];
-    const displayBoard = replayIndex !== -1 
-        ? (game.game_type === 'chess' ? JSON.parse(movesList[replayIndex].board).board : JSON.parse(movesList[replayIndex].board))
-        : board;
+    let displayBoard = board;
+    if (replayIndex !== -1 && movesList[replayIndex]) {
+        try {
+            const parsedMove = JSON.parse(movesList[replayIndex].board);
+            displayBoard = game.game_type === 'chess' ? (parsedMove.board || []) : parsedMove;
+        } catch (e) {
+            displayBoard = [];
+        }
+    }
+    if (!Array.isArray(displayBoard)) displayBoard = [];
 
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
