@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen } from 'lucide-react';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye } from 'lucide-react';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import ActivityFeed from '@/components/ActivityFeed';
+import PublicForum from '@/components/PublicForum';
 
 export default function Home() {
     const [user, setUser] = useState(null);
@@ -19,6 +20,7 @@ export default function Home() {
     const [showTutorial, setShowTutorial] = useState(false);
     const [gameType, setGameType] = useState('checkers');
     const [activeGames, setActiveGames] = useState([]);
+    const [featuredGames, setFeaturedGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
     const [configOpen, setConfigOpen] = useState(false);
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
@@ -43,12 +45,21 @@ export default function Home() {
                 if (savedGameType) setGameType(savedGameType);
 
                 // Parallel fetching for better performance
-                const [stats, myGamesWhite, myGamesBlack, myInvites] = await Promise.all([
+                const [stats, myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
                     base44.entities.User.list(),
                     base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
                     base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                    base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' })
+                    base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
+                    base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
                 ]);
+
+                // Logic for featured games (Proxy "Most Followed" by ELO average)
+                const sortedFeatured = topGames.sort((a, b) => {
+                    const eloA = ((a.white_player_elo || 1200) + (a.black_player_elo || 1200)) / 2;
+                    const eloB = ((b.white_player_elo || 1200) + (b.black_player_elo || 1200)) / 2;
+                    return eloB - eloA;
+                }).slice(0, 2);
+                setFeaturedGames(sortedFeatured);
 
                 const myStats = stats.find(s => s.created_by === currentUser.email);
                 
@@ -384,8 +395,28 @@ export default function Home() {
                                         </div>
                                         </Card>
                                         </div>
-                                        <div className="md:col-span-1">
-                                        <ActivityFeed />
+                                        <div className="md:col-span-1 space-y-6">
+                                            <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
+                                                <div className="bg-[#4a3728] p-3 flex items-center gap-2 text-[#e8dcc5]">
+                                                    <Eye className="w-5 h-5" />
+                                                    <h3 className="font-bold">À la une - Top Parties</h3>
+                                                </div>
+                                                <div className="p-4 space-y-3 bg-[#fdfbf7]">
+                                                    {featuredGames.length > 0 ? featuredGames.map(g => (
+                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white border border-[#e8dcc5] rounded-lg hover:border-[#b8860b] transition-colors cursor-pointer" onClick={() => navigate(`/Game?id=${g.id}`)}>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-[#4a3728]">{g.white_player_name} vs {g.black_player_name}</div>
+                                                                <div className="text-xs text-[#6b5138] capitalize">{g.game_type} • ELO Moy: {Math.round(((g.white_player_elo||1200)+(g.black_player_elo||1200))/2)}</div>
+                                                            </div>
+                                                            <Button size="sm" variant="ghost" className="text-[#b8860b]"><Eye className="w-4 h-4" /></Button>
+                                                        </div>
+                                                    )) : (
+                                                        <div className="text-center text-sm text-gray-400 italic">Aucune partie majeure en cours.</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <ActivityFeed />
+                                            <PublicForum />
                                         </div>
                                         </div>
 
