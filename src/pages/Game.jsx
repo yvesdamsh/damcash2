@@ -497,8 +497,8 @@ export default function Game() {
                 {/* Chat Spectateur (Bottom) */}
                 <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-96">
                     <div className="bg-[#4a3728] text-[#e8dcc5] p-2 px-4 font-bold text-sm flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4" /> Chat Spectateur
-                    </div>
+                        <MessageSquare className="w-4 h-4" /> Chat de la partie
+                        </div>
                     <div className="flex-1 overflow-hidden">
                         <GameChat gameId={game.id} currentUser={currentUser} />
                     </div>

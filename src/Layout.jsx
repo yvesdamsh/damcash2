@@ -12,7 +12,8 @@ import {
   Volume2,
   VolumeX,
   Home,
-  Flag
+  Flag,
+  Eye
   } from 'lucide-react';
 
 export default function Layout({ children }) {
@@ -54,6 +55,7 @@ export default function Layout({ children }) {
     const navItems = [
         { label: 'Accueil', path: '/Home', icon: Home },
         { label: 'Tournois', path: '/Tournaments', icon: Flag },
+        { label: 'Damcash TV', path: '/Spectate', icon: Eye },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
     ];
