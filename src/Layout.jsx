@@ -16,6 +16,7 @@ import {
   Eye
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
+  import FriendsManager from '@/components/FriendsManager';
 
   export default function Layout({ children }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -127,9 +128,10 @@ import {
                                 })}
 
                                 {user && <Notifications />}
+                                {user && <FriendsManager />}
 
                                 <button 
-                                onClick={toggleSound}
+                                    onClick={toggleSound}
                                 className="p-2 rounded-full hover:bg-[#5c4430] text-[#d4c5b0] transition-colors"
                                 >
                                 {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
