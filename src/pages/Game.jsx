@@ -933,7 +933,7 @@ export default function Game() {
                 )}
             </AnimatePresence>
 
-            <div className="max-w-4xl mx-auto w-full p-2 md:p-4 space-y-4">
+            <div className="max-w-4xl mx-auto w-full p-1.5 md:p-4 space-y-4">
                 
                 {/* Top Player Info */}
                 <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0]">
@@ -956,8 +956,8 @@ export default function Game() {
                 </div>
 
                 {/* Board Area - Centered and Natural Size */}
-                <div className="flex justify-center py-2 w-full">
-                    <div className="relative shadow-2xl rounded-lg w-full max-w-[95vw] md:max-w-[600px] aspect-square z-0">
+                <div className="flex justify-center py-1 w-full">
+                    <div className="relative shadow-2xl rounded-lg w-full md:max-w-[600px] aspect-square z-0">
                             {game.game_type === 'checkers' 
                             ? <CheckerBoard 
                                 board={displayBoard} 
