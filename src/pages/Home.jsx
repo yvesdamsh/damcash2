@@ -20,6 +20,7 @@ export default function Home() {
     const [activeGames, setActiveGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
     const [configOpen, setConfigOpen] = useState(false);
+    const [isPrivateConfig, setIsPrivateConfig] = useState(false);
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
@@ -107,66 +108,33 @@ export default function Home() {
         }
     };
 
-    const handleQuickMatch = async () => {
+    const handleQuickMatch = () => {
         if (!user) return base44.auth.redirectToLogin();
-        setIsCreating(true);
-        try {
-            const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
-            let candidates = waitingGames.filter(g => 
-                g.white_player_id !== user.id && 
-                (g.game_type === gameType || (!g.game_type && gameType === 'checkers'))
-            );
-            const joinableGame = candidates[0];
-
-            if (joinableGame) {
-                await base44.entities.Game.update(joinableGame.id, {
-                    black_player_id: user.id,
-                    black_player_name: user.full_name || 'Joueur 2',
-                    status: 'playing'
-                });
-                navigate(`/Game?id=${joinableGame.id}`);
-            } else {
-                const initialBoard = gameType === 'chess' 
-                    ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
-                    : JSON.stringify(initializeBoard());
-                    
-                const newGame = await base44.entities.Game.create({
-                    status: 'waiting', game_type: gameType,
-                    white_player_id: user.id, white_player_name: user.full_name || 'Joueur 1',
-                    current_turn: 'white', board_state: initialBoard, is_private: false
-                });
-                navigate(`/Game?id=${newGame.id}`);
-            }
-        } catch (error) {
-            console.error("Matchmaking failed", error);
-        } finally {
-            setIsCreating(false);
-        }
+        setIsPrivateConfig(false);
+        setConfigOpen(true);
     };
 
     const handleCreatePrivate = () => {
         if (!user) return base44.auth.redirectToLogin();
+        setIsPrivateConfig(true);
         setConfigOpen(true);
     };
 
-    const confirmCreatePrivate = async () => {
+    const handleStartGame = async () => {
         setConfigOpen(false);
         setIsCreating(true);
         try {
-            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
             const initialBoard = gameType === 'chess' 
                 ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
                 : JSON.stringify(initializeBoard());
 
-            const newGame = await base44.entities.Game.create({
-                status: 'waiting', 
+            const commonGameData = {
+                status: 'waiting',
                 game_type: gameType,
-                white_player_id: user.id, 
-                white_player_name: user.full_name || 'Hôte',
-                current_turn: 'white', 
+                white_player_id: user.id,
+                white_player_name: user.full_name || 'Joueur 1',
+                current_turn: 'white',
                 board_state: initialBoard,
-                is_private: true, 
-                access_code: code,
                 initial_time: gameConfig.time,
                 increment: gameConfig.increment,
                 white_seconds_left: gameConfig.time * 60,
@@ -174,10 +142,47 @@ export default function Home() {
                 series_length: parseInt(gameConfig.series),
                 series_score_white: 0,
                 series_score_black: 0
-            });
-            navigate(`/Game?id=${newGame.id}`);
+            };
+
+            if (isPrivateConfig) {
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const newGame = await base44.entities.Game.create({
+                    ...commonGameData,
+                    is_private: true,
+                    access_code: code,
+                    white_player_name: user.full_name || 'Hôte'
+                });
+                navigate(`/Game?id=${newGame.id}`);
+            } else {
+                // Matchmaking logic
+                const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+                // Filter by game type AND config
+                const candidates = waitingGames.filter(g => 
+                    g.white_player_id !== user.id && 
+                    (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
+                    g.initial_time === gameConfig.time &&
+                    g.increment === gameConfig.increment &&
+                    g.series_length === gameConfig.series
+                );
+
+                if (candidates.length > 0) {
+                    const joinableGame = candidates[0];
+                    await base44.entities.Game.update(joinableGame.id, {
+                        black_player_id: user.id,
+                        black_player_name: user.full_name || 'Joueur 2',
+                        status: 'playing'
+                    });
+                    navigate(`/Game?id=${joinableGame.id}`);
+                } else {
+                    const newGame = await base44.entities.Game.create({
+                        ...commonGameData,
+                        is_private: false
+                    });
+                    navigate(`/Game?id=${newGame.id}`);
+                }
+            }
         } catch (error) {
-            console.error("Creation failed", error);
+            console.error("Game start failed", error);
         } finally {
             setIsCreating(false);
         }
@@ -290,7 +295,9 @@ export default function Home() {
 
                             <div className="flex gap-3 pt-4">
                                 <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
-                                <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={confirmCreatePrivate}>Créer</Button>
+                                <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={handleStartGame}>
+                                    {isPrivateConfig ? "Créer Privée" : "Jouer"}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
