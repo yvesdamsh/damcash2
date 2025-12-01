@@ -43,7 +43,7 @@ export default function Layout({ children }) {
     
     const toggleSound = () => {
         // We need to update the manager and state
-        import('@/utils/sounds').then(({ soundManager }) => {
+        import('@/components/SoundManager').then(({ soundManager }) => {
             const newState = soundManager.toggle();
             setSoundEnabled(newState);
         });
