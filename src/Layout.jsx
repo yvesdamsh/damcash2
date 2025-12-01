@@ -90,12 +90,13 @@ export default function Layout({ children }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <Link to="/Home" className="flex-shrink-0 flex items-center gap-2">
-                                <div className="w-8 h-8 bg-[#e8dcc5] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] flex items-center justify-center">
-                                    <div className="w-6 h-6 bg-[#2c1e12] rounded-full border-2 border-[#e8dcc5]" />
+                            <Link to="/Home" className="flex-shrink-0 flex items-center gap-2 group">
+                                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full shadow-lg border-2 border-[#e8dcc5] flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                                    <span className="text-[#2c1e12] font-black text-lg">D</span>
+                                    <span className="text-[#e8dcc5] font-black text-lg -ml-1">$</span>
                                 </div>
-                                <span className="font-bold text-xl tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
-                                    DAMES MASTER
+                                <span className="font-black text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#e8dcc5] to-yellow-500 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                                    DAMCASH
                                 </span>
                             </Link>
                         </div>
