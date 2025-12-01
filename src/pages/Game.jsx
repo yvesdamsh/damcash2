@@ -933,10 +933,10 @@ export default function Game() {
                 )}
             </AnimatePresence>
 
-            <div className="max-w-4xl mx-auto w-full p-1.5 md:p-4 space-y-4">
+            <div className="max-w-4xl mx-auto w-full p-0 md:p-4 space-y-2 md:space-y-4">
                 
                 {/* Top Player Info */}
-                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0]">
+                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
                             {topPlayer.info?.avatar_url ? <img src={topPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
@@ -956,8 +956,8 @@ export default function Game() {
                 </div>
 
                 {/* Board Area - Centered and Natural Size */}
-                <div className="flex justify-center py-1 w-full">
-                    <div className="relative shadow-2xl rounded-lg w-full md:max-w-[600px] aspect-square z-0">
+                <div className="flex justify-center w-full">
+                    <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0">
                             {game.game_type === 'checkers' 
                             ? <CheckerBoard 
                                 board={displayBoard} 
@@ -991,7 +991,7 @@ export default function Game() {
                 </div>
 
                 {/* Quick Actions Bar */}
-                <div className="flex justify-center items-center gap-2 md:gap-4 py-1">
+                <div className="flex justify-center items-center gap-2 md:gap-4 py-2 mx-2 md:mx-0">
                     {game.status === 'playing' && (
                         <>
                             {/* UNDO ACTIONS */}
@@ -1049,7 +1049,7 @@ export default function Game() {
                 </div>
 
                 {/* Bottom Player Info */}
-                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0]">
+                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
                         <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
                             {bottomPlayer.info?.avatar_url ? <img src={bottomPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
@@ -1079,7 +1079,7 @@ export default function Game() {
                 )}
 
                 {/* Controls & Replay (Simplified as actions are now above) */}
-                <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0]">
+                <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0] mx-2 md:mx-0">
                     <div className="flex justify-between items-center">
                         <div className="flex gap-1">
                             <Button variant="ghost" size="sm" onClick={toggleSaveGame} className={isSaved ? "text-yellow-500 bg-yellow-50" : "text-gray-400"}>
@@ -1115,7 +1115,7 @@ export default function Game() {
                 </div>
 
                 {/* Tabs Area (Chat, Moves, Analysis) */}
-                <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-[500px]">
+                <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-[500px] mx-2 md:mx-0 mb-4 md:mb-0">
                     <div className="bg-[#4a3728] text-[#e8dcc5] p-1 px-2 font-bold text-sm flex items-center gap-1">
                         <Button 
                             variant="ghost" 

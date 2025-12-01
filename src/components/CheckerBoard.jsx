@@ -71,10 +71,10 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
 
     return (
         <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}>
-            <div className={`${currentTheme.frame} p-0.5 md:p-1 rounded-md md:rounded-lg shadow-xl md:shadow-2xl border-2 md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
+            <div className={`${currentTheme.frame} p-0 md:p-1 rounded-none md:rounded-lg shadow-none md:shadow-2xl border-0 md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
-                    className={`grid gap-0 w-full h-full ${currentTheme.light} border md:border-2 ${currentTheme.border} shadow-inner rounded-sm md:rounded`}
+                    className={`grid gap-0 w-full h-full ${currentTheme.light} border-0 md:border-2 ${currentTheme.border} shadow-inner rounded-none md:rounded`}
                     style={{ 
                         gridTemplateColumns: 'repeat(10, 1fr)', 
                         gridTemplateRows: 'repeat(10, 1fr)',
