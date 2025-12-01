@@ -93,25 +93,24 @@ Deno.serve(async (req) => {
             } else if (data.type === 'CHAT') {
                 if (!user) return;
 
-                const chatMsg = {
+                const chatInput = {
                     game_id: gameId,
                     sender_id: user.id,
                     sender_name: user.full_name || user.email?.split('@')[0] || "Anonyme",
-                    content: data.payload.content,
-                    created_date: new Date().toISOString() // approx
+                    content: data.payload.content
                 };
 
-                // Persist
-                await base44.entities.ChatMessage.create(chatMsg);
+                // Persist and use the result (with real id and created_date)
+                const createdMsg = await base44.entities.ChatMessage.create(chatInput);
 
                 // Broadcast
-                const msgPayload = { gameId, type: 'CHAT_UPDATE', payload: chatMsg };
+                const msgPayload = { gameId, type: 'CHAT_UPDATE', payload: createdMsg };
                 channel.postMessage(msgPayload);
                 
                 const clients = connections.get(gameId);
                 if (clients) {
                     for (const client of clients) {
-                        client.send(JSON.stringify({ type: 'CHAT_UPDATE', payload: chatMsg }));
+                        client.send(JSON.stringify({ type: 'CHAT_UPDATE', payload: createdMsg }));
                     }
                 }
             }

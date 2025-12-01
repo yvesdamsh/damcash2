@@ -18,9 +18,9 @@ export default function GameChat({ gameId, currentUser, socket }) {
         if (!gameId) return;
         const fetchMessages = async () => {
             try {
-                const msgs = await base44.entities.ChatMessage.list({
+                const msgs = await base44.entities.ChatMessage.filter({
                    "game_id": gameId 
-                }, { "created_date": 1 }, 50);
+                }, "created_date", 50);
                 setMessages(msgs);
             } catch (error) {
                 console.error("Error fetching messages", error);
