@@ -5,10 +5,10 @@ import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
-import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece, initializeBoard } from '@/components/checkersLogic';
-import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck, initializeChessBoard } from '@/components/chessLogic';
+import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
+import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager, calculateElo } from '@/components/SoundManager'; 
-import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell, ChevronLeft, ChevronRight, Play, SkipBack, SkipForward } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Game() {
@@ -25,10 +25,6 @@ export default function Game() {
     // New states for Multi-jump logic (Checkers)
     const [mustContinueWith, setMustContinueWith] = useState(null); 
     
-    // Replay State
-    const [replayIndex, setReplayIndex] = useState(-1);
-    const [replayBoard, setReplayBoard] = useState(null);
-
     // Chess specific states
     const [chessState, setChessState] = useState({
         castlingRights: { wK: true, wQ: true, bK: true, bQ: true },
@@ -42,12 +38,8 @@ export default function Game() {
         else navigate('/');
 
         // Request notification permission
-        try {
-            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-                Notification.requestPermission().catch(e => console.log("Notification permission error", e));
-            }
-        } catch (e) {
-            console.log("Notification API not available");
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
         }
     }, []);
 
@@ -62,47 +54,6 @@ export default function Game() {
         };
         init();
     }, []);
-
-    useEffect(() => {
-        if (replayIndex === -1 || !game || !game.moves) {
-            setReplayBoard(null);
-            return;
-        }
-        
-        try {
-            const moves = JSON.parse(game.moves);
-            let currentBoard;
-            
-            if (game.game_type === 'chess') {
-                // Deep copy initial board to avoid mutation issues
-                const initial = initializeChessBoard();
-                currentBoard = initial.map(row => [...row]);
-            } else {
-                const initial = initializeBoard();
-                currentBoard = initial.map(row => [...row]);
-            }
-
-            for (let i = 0; i <= replayIndex; i++) {
-                if (i >= moves.length) break;
-                const move = moves[i];
-                if (game.game_type === 'chess') {
-                    const { board } = executeChessMove(currentBoard, move);
-                    currentBoard = board;
-                } else {
-                    // For checkers moves from history might store captured differently?
-                    // In handleSquareClick we stored: { ...checkersLastMove, captured: validation.captured, ... }
-                    // executeMove takes (board, from, to, captured)
-                    // move.from and move.to are stored in checkersLastMove format {r, c}
-                    const { newBoard } = executeMove(currentBoard, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
-                    currentBoard = newBoard;
-                }
-            }
-            setReplayBoard(currentBoard);
-        } catch (e) {
-            console.error("Replay error", e);
-        }
-
-    }, [replayIndex, game]);
 
     useEffect(() => {
         if (!id) return;
@@ -142,15 +93,11 @@ export default function Game() {
                                 gameData.current_turn === (gameData.white_player_id === currentUser.id ? 'white' : 'black')) {
                                 
                                 soundManager.play('notify');
-                                if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                                    try {
-                                        new Notification("C'est à vous !", {
-                                            body: "Votre adversaire a joué. À vous de jouer !",
-                                            icon: "/favicon.ico" // fallback
-                                        });
-                                    } catch (e) {
-                                        console.log("Notification creation failed", e);
-                                    }
+                                if (document.hidden && Notification.permission === 'granted') {
+                                    new Notification("C'est à vous !", {
+                                        body: "Votre adversaire a joué. À vous de jouer !",
+                                        icon: "/favicon.ico" // fallback
+                                    });
                                 }
                             }
                             
@@ -324,13 +271,8 @@ export default function Game() {
                 }
 
                 try {
-                    const currentMoves = game.moves ? JSON.parse(game.moves) : [];
-                    const moveData = { ...checkersLastMove, captured: validation.captured, player: playerColor, timestamp: Date.now() };
-                    const newMoves = [...currentMoves, moveData];
-
                     await base44.entities.Game.update(game.id, {
                         board_state: JSON.stringify({ board: newBoard, lastMove: checkersLastMove }), // Store lastMove for opponents
-                        moves: JSON.stringify(newMoves),
                         current_turn: nextTurn,
                         status: newStatus,
                         winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
@@ -462,17 +404,12 @@ export default function Game() {
                 }));
 
                 try {
-                    const currentMoves = game.moves ? JSON.parse(game.moves) : [];
-                    const moveData = { ...move, piece: board[fromR][fromC], player: playerColor, timestamp: Date.now(), castlingRights: newCastlingRights };
-                    const newMoves = [...currentMoves, moveData];
-
                     await base44.entities.Game.update(game.id, {
                         board_state: JSON.stringify({ 
                             board: newBoard, 
                             castlingRights: newCastlingRights, 
                             lastMove: newLastMove 
                         }),
-                        moves: JSON.stringify(newMoves),
                         current_turn: nextTurn,
                         status: finalStatus,
                         winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
@@ -509,9 +446,6 @@ export default function Game() {
     let playerColor = game?.white_player_id === currentUser.id ? 'white' : 'black';
     if (isSolo) playerColor = game?.current_turn || 'white';
     const opponentName = isSolo ? "Moi-même (Test)" : (playerColor === 'white' ? game?.black_player_name : game?.white_player_name);
-
-    const displayBoard = (replayIndex !== -1 && replayBoard) ? replayBoard : board;
-    const movesList = game?.moves ? JSON.parse(game.moves) : [];
 
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
@@ -581,10 +515,10 @@ export default function Game() {
                     )}
                 </div>
 
-                <div className="order-1 lg:order-2 flex flex-col justify-center items-center h-full w-full">
+                <div className="order-1 lg:order-2 flex justify-center items-center h-full w-full">
                     {game.game_type === 'chess' ? (
                          <ChessBoard 
-                            board={displayBoard}
+                            board={board}
                             onSquareClick={handleSquareClick}
                             selectedSquare={selectedSquare}
                             validMoves={validTargetMoves.map(m => ({r: m.r, c: m.c}))}
@@ -595,7 +529,7 @@ export default function Game() {
                     ) : (
                         <>
                             <CheckerBoard 
-                                board={displayBoard}
+                                board={board}
                                 onSquareClick={handleSquareClick}
                                 selectedSquare={selectedSquare}
                                 validMoves={validTargetMoves}
@@ -609,27 +543,6 @@ export default function Game() {
                                 </div>
                             )}
                         </>
-                    )}
-
-                    {/* Replay Controls */}
-                    {game.status === 'finished' && movesList.length > 0 && (
-                        <div className="mt-4 bg-white/90 p-3 rounded-xl shadow-lg border border-[#d4c5b0] flex items-center gap-4">
-                            <div className="text-sm font-bold text-[#4a3728] mr-2">
-                                Replay: {replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}
-                            </div>
-                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(-100)} disabled={replayIndex === -1 && false}>
-                                <SkipBack className="w-4 h-4" />
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(prev => (prev === -1 ? movesList.length - 2 : Math.max(-1, prev - 1)))}>
-                                <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(prev => (prev === -1 ? -1 : (prev >= movesList.length - 1 ? -1 : prev + 1)))}>
-                                <ChevronRight className="w-4 h-4" />
-                            </Button>
-                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(-1)}>
-                                <SkipForward className="w-4 h-4" />
-                            </Button>
-                        </div>
                     )}
                 </div>
 

@@ -18,8 +18,13 @@ class SoundManager {
         }
         this.audioCache = {};
         
-        // Preload removed to prevent Illegal Constructor errors in some environments
-        // Sounds will be lazy-loaded in play()
+        // Preload sounds
+        if (typeof window !== 'undefined') {
+            Object.keys(SOUNDS).forEach(key => {
+                this.audioCache[key] = new Audio(SOUNDS[key]);
+                this.audioCache[key].volume = 0.5;
+            });
+        }
     }
 
     toggle() {
@@ -38,10 +43,7 @@ class SoundManager {
         if (!this.enabled || !SOUNDS[name]) return;
         
         try {
-            if (typeof Audio === 'undefined') return;
             const audio = this.audioCache[name] || new Audio(SOUNDS[name]);
-            this.audioCache[name] = audio; // Cache it for next time
-            audio.volume = 0.5;
             audio.currentTime = 0;
             audio.play().catch(e => {
                 console.debug("Sound play failed", e);
