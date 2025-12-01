@@ -1,6 +1,7 @@
 import React from 'react';
 import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getValidMoves as getCheckersMoves } from '@/components/checkersLogic';
 
 export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false }) {
     
@@ -28,16 +29,22 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
         // Check bounds
         if (targetR >= 0 && targetR < 10 && targetC >= 0 && targetC < 10) {
             if (targetR !== r || targetC !== c) {
-                // Check if it's a valid move based on current validMoves rules
-                const isValidMove = validMoves.some(m => 
+                // Calculate valid moves locally to avoid depending on state updates for the visual hack
+                // This ensures we know if it's valid even if onDragStart didn't fire (iOS fix)
+                const possibleMoves = getCheckersMoves(board, currentTurn);
+                const isValidMove = possibleMoves.some(m => 
                     m.from.r === r && m.from.c === c && 
                     m.to.r === targetR && m.to.c === targetC
                 );
 
                 if (isValidMove) {
                     // Prevent snap-back glitch by hiding the piece instantly before unmount
-                    const pieceEl = e.target.closest('.checker-piece');
-                    if (pieceEl) pieceEl.style.opacity = '0';
+                    // We use native DOM manipulation for speed
+                    const pieceEl = e.target ? (e.target.closest ? e.target.closest('.checker-piece') : null) : null;
+                    // Fallback if event target is weird (sometimes on touch)
+                    if (pieceEl) {
+                        pieceEl.style.opacity = '0';
+                    }
                 }
 
                 if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
@@ -127,7 +134,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
-                                                onDragStart={() => onSquareClick(r, c)}
+                                                // onDragStart removed to prevent state updates causing re-renders that break iOS gestures
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
                                                 boardRef={boardRef}
