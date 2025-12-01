@@ -84,7 +84,7 @@ export default function Layout({ children }) {
             />
 
             {/* Navbar */}
-            <nav className="relative z-50 bg-[#4a3728] text-[#e8dcc5] shadow-lg border-b-4 border-[#2c1e12]">
+            <nav className="relative z-[100] bg-[#4a3728] text-[#e8dcc5] shadow-lg border-b-4 border-[#2c1e12]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">

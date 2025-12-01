@@ -29,7 +29,8 @@ export default function Home() {
                 const savedGameType = localStorage.getItem('defaultGameType');
                 if (savedGameType) setGameType(savedGameType);
                 else {
-                     const stats = await base44.entities.User.filter({ email: currentUser.email });
+                     // Use list instead of filter for User entity to ensure compatibility
+                     const stats = await base44.entities.User.list();
                      const myStats = stats.find(s => s.created_by === currentUser.email);
                      if (myStats && myStats.default_game) setGameType(myStats.default_game);
                 }
