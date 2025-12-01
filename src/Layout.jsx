@@ -88,14 +88,14 @@ export default function Layout({ children }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <Link to="/" className="flex-shrink-0 flex items-center gap-2">
+                            <a href="/" className="flex-shrink-0 flex items-center gap-2">
                                 <div className="w-8 h-8 bg-[#e8dcc5] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] flex items-center justify-center">
                                     <div className="w-6 h-6 bg-[#2c1e12] rounded-full border-2 border-[#e8dcc5]" />
                                 </div>
                                 <span className="font-bold text-xl tracking-wider" style={{ fontFamily: 'Georgia, serif' }}>
                                     DAMES MASTER
                                 </span>
-                            </Link>
+                            </a>
                         </div>
 
                         {/* Desktop Nav */}
@@ -105,9 +105,9 @@ export default function Layout({ children }) {
                                 // Case insensitive check for active route
                                 const isActive = location.pathname.toLowerCase() === item.path.toLowerCase();
                                 return (
-                                    <Link
+                                    <a
                                         key={item.path}
-                                        to={item.path}
+                                        href={item.path}
                                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2
                                             ${isActive 
                                                 ? 'bg-[#6b5138] text-white shadow-inner' 
@@ -116,7 +116,7 @@ export default function Layout({ children }) {
                                     >
                                         <Icon className="w-4 h-4" />
                                         {item.label}
-                                    </Link>
+                                    </a>
                                 );
                             })}
                             <button 
@@ -161,15 +161,15 @@ export default function Layout({ children }) {
                                 {navItems.map((item) => {
                                     const Icon = item.icon;
                                     return (
-                                        <Link
+                                        <a
                                             key={item.path}
-                                            to={item.path}
+                                            href={item.path}
                                             onClick={() => setIsMenuOpen(false)}
                                             className="block px-3 py-2 rounded-md text-base font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
                                         >
                                             <Icon className="w-5 h-5" />
                                             {item.label}
-                                        </Link>
+                                        </a>
                                     );
                                 })}
                                 <button
