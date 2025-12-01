@@ -16,7 +16,7 @@ const PIECE_IMAGES = {
     'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
 };
 
-export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragStart, onDragEnd }) {
+export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragStart, onDragEnd, dragConstraints }) {
     if (!type) return null;
 
     // Map for unicode pieces
@@ -30,6 +30,7 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
 
     const dragProps = {
         drag: true,
+        dragConstraints: dragConstraints,
         dragMomentum: false,
         dragElastic: 0.1,
         onDragStart: onDragStart,

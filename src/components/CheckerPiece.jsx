@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, onDragEnd }) {
+export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, onDragEnd, dragConstraints }) {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
@@ -26,6 +26,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     return (
         <motion.div
             drag
+            dragConstraints={dragConstraints}
             dragMomentum={false}
             dragElastic={0.1}
             onDragStart={onDragStart}

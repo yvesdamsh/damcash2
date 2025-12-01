@@ -106,6 +106,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                             set={pieceSet}
                                             onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                             onDragStart={() => onSquareClick(r, c)}
+                                            dragConstraints={boardRef}
                                             animateFrom={
                                                 lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                 ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
