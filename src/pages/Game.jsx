@@ -440,7 +440,6 @@ export default function Game() {
 
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
-            <div className="w-full max-w-[1800px] mx-auto pb-4">
             <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0] mx-2 md:mx-0">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                     <div className="flex items-center gap-2">
