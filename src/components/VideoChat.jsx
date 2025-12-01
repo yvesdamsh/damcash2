@@ -22,6 +22,7 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
     const localVideoRef = useRef(null);
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
+    const pendingOffer = useRef(null);
     const signalingInterval = useRef(null);
     const processedSignals = useRef(new Set());
 
@@ -67,9 +68,11 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
         }
-        if (peerConnection.current) {
+        if (peerConnection.current && typeof peerConnection.current.close === 'function') {
             peerConnection.current.close();
         }
+        peerConnection.current = null;
+        pendingOffer.current = null;
         setLocalStream(null);
         setRemoteStream(null);
         setIsCallActive(false);
@@ -145,7 +148,7 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
             if (status === 'connected' || status === 'calling') return; 
             setStatus('incoming');
             // Store offer data to answer later
-            peerConnection.current = { pendingOffer: data }; 
+            pendingOffer.current = data;
         } else if (msg.type === 'answer') {
             if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
                 await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data));
@@ -176,7 +179,7 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
 
     const answerCall = async () => {
         try {
-            const offer = peerConnection.current?.pendingOffer;
+            const offer = pendingOffer.current;
             if (!offer) return;
 
             setStatus('connected');
