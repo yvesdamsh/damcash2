@@ -2,30 +2,33 @@ import React from 'react';
 import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard' }) {
+export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove }) {
     
-    const isValidTarget = (r, c) => {
-        if (!selectedSquare) return false;
-        return validMoves.some(move => move.from.r === r && move.from.c === c) || 
-               validMoves.some(move => move.to.r === r && move.to.c === c); 
-        // Note: Original Logic was using validMoves to check target squares for highlighting valid moves.
-        // Actually, in CheckerBoard.js context, `validMoves` usually contains full move objects.
-        // The `isValidTarget` function implementation was `return validMoves.some(move => move.row === r && move.col === c);`
-        // But `move` object structure in `checkersLogic` is `{from: {r,c}, to: {r,c}}`. 
-        // So the original code `move.row` likely was wrong or referring to a flattened structure?
-        // Let's look at `checkersLogic.getValidMoves` -> returns `{from, to, captured}`.
-        // So `isValidTarget` should check `move.to.r` and `move.to.c`.
-        // Let's fix this bug while we are here if needed, but primarily handle theme.
-    };
-    
-    // Correction for highlighting targets
     const isMoveTarget = (r, c) => {
         return validMoves.some(m => m.to.r === r && m.to.c === c);
     }
 
     const isMyTurn = currentTurn === playerColor;
+    const boardRef = React.useRef(null);
 
-    // Theme Config
+    const handleDragEnd = (e, info, r, c) => {
+        if (!boardRef.current) return;
+        const boardRect = boardRef.current.getBoundingClientRect();
+        const squareSize = boardRect.width / 10;
+        
+        const dropX = info.point.x - boardRect.left;
+        const dropY = info.point.y - boardRect.top;
+        
+        const targetC = Math.floor(dropX / squareSize);
+        const targetR = Math.floor(dropY / squareSize);
+
+        if (targetR >= 0 && targetR < 10 && targetC >= 0 && targetC < 10) {
+            if (targetR !== r || targetC !== c) {
+                if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
+            }
+        }
+    };
+
     const themes = {
         standard: { dark: 'bg-[#5c4430]', light: 'bg-[#e8dcc5]', border: 'border-[#5c4430]', frame: 'bg-[#4a3728]' },
         classic: { dark: 'bg-black', light: 'bg-[#cc0000]', border: 'border-black', frame: 'bg-[#1a1a1a]' },
@@ -36,10 +39,9 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
 
     return (
         <div className="relative select-none w-full h-full flex justify-center items-center">
-            {/* Board Frame with coordinate labels */}
             <div className={`${currentTheme.frame} md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
-                
                 <div 
+                    ref={boardRef}
                     className={`grid gap-0 w-full h-full ${currentTheme.light} md:border-2 ${currentTheme.border} shadow-inner`}
                     style={{ 
                         gridTemplateColumns: 'repeat(10, 1fr)', 
@@ -55,11 +57,14 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                             
                             const squareColor = isDark ? currentTheme.dark : currentTheme.light;
 
-                            // Check if piece belongs to current player for cursor styling
                             const isMyPiece = piece !== 0 && (
                                 (playerColor === 'white' && (piece === 1 || piece === 3)) ||
                                 (playerColor === 'black' && (piece === 2 || piece === 4))
                             );
+
+                            // Premove Highlight
+                            const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
+                            const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
                             return (
                                 <div
@@ -70,16 +75,16 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
                                         ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
+                                        ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
+                                        ${isPremoveTarget ? 'bg-red-400/40' : ''}
                                         ${(isTarget && isMyTurn) || (isMyPiece && isMyTurn) ? 'cursor-pointer' : ''}
                                         transition-colors duration-150
                                     `}
                                 >
-                                    {/* Board Texture Overlay */}
                                     {isDark && (
                                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                                     )}
 
-                                    {/* Coordinates (Only show on edges) */}
                                     {c === 9 && isDark && (
                                         <span className="absolute right-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
                                             {r + 1}
@@ -91,7 +96,6 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                         </span>
                                     )}
 
-                                    {/* Valid Move Indicator */}
                                     {isTarget && isMyTurn && (
                                         <motion.div 
                                             initial={{ scale: 0 }}
@@ -100,7 +104,6 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                         />
                                     )}
 
-                                    {/* The Piece */}
                                     <AnimatePresence mode='popLayout'>
                                         {piece !== 0 && (
                                             <CheckerPiece 
@@ -108,6 +111,8 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                                 type={piece} 
                                                 isSelected={isSelected} 
                                                 design={pieceDesign}
+                                                onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
+                                                onDragStart={() => onSquareClick(r, c)}
                                                 animateFrom={
                                                     lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                     ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
