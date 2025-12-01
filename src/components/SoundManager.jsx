@@ -5,7 +5,9 @@ const SOUNDS = {
     start: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3", // Game start
     win: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3", // Success/Win
     loss: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3", // Fail/Loss
-    notify: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" // Notification bell
+    notify: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3", // Notification bell
+    check: "https://assets.mixkit.co/active_storage/sfx/2452/2452-preview.mp3", // Tension/Check
+    castle: "https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3" // Slide sound
 };
 
 class SoundManager {
@@ -44,7 +46,6 @@ class SoundManager {
             const audio = this.audioCache[name] || new Audio(SOUNDS[name]);
             audio.currentTime = 0;
             audio.play().catch(e => {
-                // Ignore autoplay errors
                 console.debug("Sound play failed", e);
             });
         } catch (e) {
@@ -54,3 +55,8 @@ class SoundManager {
 }
 
 export const soundManager = new SoundManager();
+
+export const calculateElo = (ratingA, ratingB, actualScore, kFactor = 32) => {
+    const expectedScore = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+    return Math.round(ratingA + kFactor * (actualScore - expectedScore));
+};

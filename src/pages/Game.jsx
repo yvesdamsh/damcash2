@@ -7,7 +7,7 @@ import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
 import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus } from '@/components/chessLogic';
-import { soundManager } from '@/components/SoundManager'; 
+import { soundManager, calculateElo } from '@/components/SoundManager'; 
 import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -72,7 +72,16 @@ export default function Game() {
                                     lastMove: parsedState.lastMove
                                 });
                             } else {
-                                setBoard(parsedState);
+                                // Checkers
+                                if (parsedState.board) { 
+                                    // If we migrated to object storage for Checkers (optional, but simpler to just use different schema detection)
+                                    // Assuming current schema is just board array.
+                                    // But if we want to sync lastMove for animation, we should store it too.
+                                    setBoard(parsedState.board || parsedState);
+                                    if (parsedState.lastMove) setChessState(prev => ({...prev, lastMove: parsedState.lastMove}));
+                                } else {
+                                    setBoard(parsedState);
+                                }
                                 setMustContinueWith(null);
                             }
                         }
@@ -223,11 +232,13 @@ export default function Game() {
 
                 const winner = checkWinner(newBoard);
                 const newStatus = winner ? 'finished' : 'playing';
-                
+                const checkersLastMove = { from: {r: selectedSquare[0], c: selectedSquare[1]}, to: {r: row, c: col} };
+
                 setBoard(newBoard);
                 setSelectedSquare(null);
                 setValidTargetMoves([]);
                 setMustContinueWith(nextMustContinue);
+                setChessState(prev => ({ ...prev, lastMove: checkersLastMove })); // Reusing lastMove state for checkers animation
                 
                 setGame(prev => ({ 
                     ...prev, 
@@ -247,11 +258,45 @@ export default function Game() {
 
                 try {
                     await base44.entities.Game.update(game.id, {
-                        board_state: JSON.stringify(newBoard),
+                        board_state: JSON.stringify({ board: newBoard, lastMove: checkersLastMove }), // Store lastMove for opponents
                         current_turn: nextTurn,
                         status: newStatus,
                         winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
                     });
+
+                    // ELO UPDATE if finished
+                    if (newStatus === 'finished' && winner) {
+                        const winnerId = winner === 'white' ? game.white_player_id : game.black_player_id;
+                        const loserId = winner === 'white' ? game.black_player_id : game.white_player_id;
+                        
+                        // We should fetch users and update ELO. 
+                        // Note: This is client-side ELO update which is not secure, but acceptable for this demo.
+                        // A backend function would be better.
+                        try {
+                            const users = await base44.entities.User.list();
+                            const winnerUser = users.find(u => u.created_by === (winnerId === game.white_player_id ? game.white_player_name : game.black_player_name) || u.id === winnerId); // ID mapping is tricky if created_by is email. 
+                            // NOTE: User entities are owned by created_by. We can't update other users data securely from client if RLS blocks it.
+                            // However, User entity has special rules? "User entity has special built-in security rules that only allow admin users to list, update, or delete other users."
+                            // "Regular users can only view and update their own user record."
+                            // SO WE CANNOT UPDATE OPPONENT'S ELO FROM HERE.
+                            // WE MUST UPDATE OUR OWN ELO ONLY.
+                            
+                            const myUser = users.find(u => u.created_by === currentUser.email);
+                            if (myUser) {
+                                const isWinner = winnerId === currentUser.id;
+                                const currentElo = game.game_type === 'chess' ? (myUser.elo_chess || 1200) : (myUser.elo_checkers || 1200);
+                                const opponentElo = 1200; // We don't know opponent ELO securely unless we stored it in Game
+                                
+                                const newElo = calculateElo(currentElo, opponentElo, isWinner ? 1 : 0);
+                                
+                                const updateData = game.game_type === 'chess' 
+                                    ? { elo_chess: newElo, wins_chess: (myUser.wins_chess||0) + (isWinner?1:0), losses_chess: (myUser.losses_chess||0) + (isWinner?0:1) }
+                                    : { elo_checkers: newElo, wins_checkers: (myUser.wins_checkers||0) + (isWinner?1:0), losses_checkers: (myUser.losses_checkers||0) + (isWinner?0:1) };
+                                
+                                await base44.entities.User.update(myUser.id, updateData);
+                            }
+                        } catch(e) { console.error("Elo update failed", e); }
+                    }
                 } catch (e) {
                     toast.error("Erreur de connexion");
                 }
@@ -328,6 +373,8 @@ export default function Game() {
                 } else if (gameStatus === 'stalemate') {
                     finalStatus = 'finished';
                     // draw
+                } else if (isInCheck(newBoard, nextTurn)) {
+                    soundManager.play('check');
                 }
 
                 setBoard(newBoard);

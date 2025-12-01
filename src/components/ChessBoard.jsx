@@ -65,7 +65,15 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
 
                                     {/* The Piece */}
                                     {piece && (
-                                        <ChessPiece type={piece} isSelected={isSelected} />
+                                        <ChessPiece 
+                                            type={piece} 
+                                            isSelected={isSelected}
+                                            animateFrom={
+                                                lastMove && lastMove.to.r === r && lastMove.to.c === c
+                                                ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
+                                                : null
+                                            }
+                                        />
                                     )}
                                 </div>
                             );

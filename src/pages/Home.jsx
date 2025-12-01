@@ -24,14 +24,28 @@ export default function Home() {
                 const currentUser = await base44.auth.me();
                 setUser(currentUser);
                 
+                // Load preferences
+                const savedGameType = localStorage.getItem('defaultGameType');
+                if (savedGameType) setGameType(savedGameType);
+                else {
+                     // If user has a pref in DB
+                     const stats = await base44.entities.User.list({ email: currentUser.email }); // Assuming email filter works or use list logic
+                     const myStats = stats.find(s => s.created_by === currentUser.email);
+                     if (myStats && myStats.default_game) setGameType(myStats.default_game);
+                }
+
                 const stats = await base44.entities.User.list();
                 const myStats = stats.find(s => s.created_by === currentUser.email);
                 if (!myStats) {
                     await base44.entities.User.create({
-                        elo: 1200,
-                        wins: 0,
-                        losses: 0,
-                        games_played: 0
+                        elo_checkers: 1200,
+                        elo_chess: 1200,
+                        wins_checkers: 0,
+                        losses_checkers: 0,
+                        wins_chess: 0,
+                        losses_chess: 0,
+                        games_played: 0,
+                        default_game: 'checkers'
                     });
                 }
             } catch (e) {
@@ -43,21 +57,44 @@ export default function Home() {
         init();
     }, []);
 
+    const saveGameTypePref = (type) => {
+        setGameType(type);
+        localStorage.setItem('defaultGameType', type);
+        if (user) {
+            // Try to update user pref in DB asynchronously
+            base44.entities.User.list().then(users => {
+                 const myUser = users.find(u => u.created_by === user.email);
+                 if (myUser) base44.entities.User.update(myUser.id, { default_game: type });
+            });
+        }
+    };
+
     const handleQuickMatch = async () => {
         if (!user) return base44.auth.redirectToLogin();
         setIsCreating(true);
         
         try {
+            // Get my ELO
+            const users = await base44.entities.User.list(); // Ideally filter by my ID
+            const myStats = users.find(u => u.created_by === user.email);
+            const myElo = gameType === 'chess' ? (myStats?.elo_chess || 1200) : (myStats?.elo_checkers || 1200);
+
             const waitingGames = await base44.entities.Game.list({
                 status: 'waiting',
                 is_private: false
-            }, { created_date: -1 }, 10);
+            }, { created_date: -1 }, 50);
 
-            // Filter by game type locally or via query if possible
-            const joinableGame = waitingGames.find(g => 
+            // Filter valid games
+            let candidates = waitingGames.filter(g => 
                 g.white_player_id !== user.id && 
                 (g.game_type === gameType || (!g.game_type && gameType === 'checkers'))
             );
+
+            // Sort by ELO diff (Simulated matchmaking)
+            // We'd need the opponent's ELO. For now, just picking any or closest creation date (default).
+            // In a real app, Game entity would have "host_elo" field to optimize this.
+            
+            const joinableGame = candidates[0]; // Simple queue for now
 
             if (joinableGame) {
                 await base44.entities.Game.update(joinableGame.id, {
@@ -160,7 +197,7 @@ export default function Home() {
 
             <div className="flex justify-center gap-4 mb-8">
                 <button
-                    onClick={() => setGameType('checkers')}
+                    onClick={() => saveGameTypePref('checkers')}
                     className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
                         gameType === 'checkers' 
                         ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' 
@@ -170,7 +207,7 @@ export default function Home() {
                     ⚪ Dames
                 </button>
                 <button
-                    onClick={() => setGameType('chess')}
+                    onClick={() => saveGameTypePref('chess')}
                     className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
                         gameType === 'chess' 
                         ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' 

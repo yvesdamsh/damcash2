@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected }) {
+export default function CheckerPiece({ type, isSelected, animateFrom }) {
     // type: 1 = white man, 2 = black man, 3 = white king, 4 = black king
     
     if (type === 0) return null;
@@ -20,12 +20,16 @@ export default function CheckerPiece({ type, isSelected }) {
             : '0 3px 0 ' + (isWhite ? '#cbbba4' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
+    // Animation logic
+    const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
+    const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
+
     return (
         <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={initial}
+            animate={animate}
             exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className="relative w-[80%] h-[80%] m-auto rounded-full"
         >
             <div 

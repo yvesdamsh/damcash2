@@ -2,9 +2,8 @@ import React from 'react';
 import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor }) {
+export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove }) {
     
-    // Helper to check if a move is valid for a specific square
     const isValidTarget = (r, c) => {
         if (!selectedSquare) return false;
         return validMoves.some(move => move.row === r && move.col === c);
@@ -69,7 +68,16 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                     {/* The Piece */}
                                     <AnimatePresence mode='popLayout'>
                                         {piece !== 0 && (
-                                            <CheckerPiece key={`piece-${r}-${c}`} type={piece} isSelected={isSelected} />
+                                            <CheckerPiece 
+                                                key={`piece-${r}-${c}`} 
+                                                type={piece} 
+                                                isSelected={isSelected} 
+                                                animateFrom={
+                                                    lastMove && lastMove.to.r === r && lastMove.to.c === c
+                                                    ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
+                                                    : null
+                                                }
+                                            />
                                         )}
                                     </AnimatePresence>
                                 </div>

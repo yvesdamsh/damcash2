@@ -16,13 +16,18 @@ const PIECE_IMAGES = {
     'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
 };
 
-export default function ChessPiece({ type, isSelected }) {
+export default function ChessPiece({ type, isSelected, animateFrom }) {
     if (!type) return null;
+
+    // Animation logic
+    const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 };
+    const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
     return (
         <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={initial}
+            animate={animate}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className={`w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : ''}`}
         >
             <img 
