@@ -39,6 +39,7 @@ export default function Game() {
     const [isSaved, setIsSaved] = useState(false);
     const [promotionPending, setPromotionPending] = useState(null);
     const [premove, setPremove] = useState(null);
+    const [showResignConfirm, setShowResignConfirm] = useState(false);
     const [socket, setSocket] = useState(null);
 
     const location = useLocation();
@@ -784,6 +785,45 @@ export default function Game() {
                 />
             </div>
 
+            {/* Resign Confirmation Overlay */}
+            <AnimatePresence>
+                {showResignConfirm && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-[#fdfbf7] border border-[#d4c5b0] rounded-xl p-6 shadow-2xl max-w-sm w-full"
+                        >
+                            <h3 className="text-xl font-bold text-[#4a3728] mb-2">Abandonner la partie ?</h3>
+                            <p className="text-[#6b5138] mb-6">Vous perdrez cette partie et des points ELO.</p>
+                            <div className="flex gap-3 justify-end">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setShowResignConfirm(false)}
+                                    className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
+                                >
+                                    Annuler
+                                </Button>
+                                <Button 
+                                    onClick={async () => {
+                                        setShowResignConfirm(false);
+                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
+                                        base44.functions.invoke('processGameResult', { gameId: game.id });
+                                        soundManager.play('loss');
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                    Abandonner
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Promotion Overlay */}
             <AnimatePresence>
                 {promotionPending && (
@@ -990,13 +1030,7 @@ export default function Game() {
                             )}
 
                             {/* RESIGN */}
-                            <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 bg-white/80 hover:bg-red-50 border-red-200 text-red-600" onClick={async () => {
-                                if(confirm("Abandonner la partie ?")) {
-                                    await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
-                                    base44.functions.invoke('processGameResult', { gameId: game.id });
-                                    soundManager.play('loss');
-                                }
-                            }} title="Abandonner">
+                            <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 bg-white/80 hover:bg-red-50 border-red-200 text-red-600" onClick={() => setShowResignConfirm(true)} title="Abandonner">
                                 <Flag className="w-5 h-5 md:mr-2" /> <span className="hidden md:inline">Abandon</span>
                             </Button>
                         </>
