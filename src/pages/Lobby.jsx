@@ -162,21 +162,21 @@ export default function Lobby() {
             </div>
 
             <Tabs defaultValue="checkers" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-[#e8dcc5] p-1 rounded-xl mb-8 h-auto">
-                    <TabsTrigger value="checkers" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] text-[#6b5138] font-bold py-3 text-lg rounded-lg transition-all">
+                <TabsList className="flex flex-col md:grid md:grid-cols-2 w-full bg-transparent md:bg-[#e8dcc5] p-0 md:p-1 gap-2 md:gap-0 rounded-xl mb-8 h-auto">
+                    <TabsTrigger value="checkers" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 md:py-3 text-base md:text-lg rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Circle className="w-5 h-5" />
                             <span>Joueurs de Dames</span>
-                            <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                            <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {users.filter(u => (u.default_game || 'checkers') === 'checkers').length}
                             </span>
                         </div>
                     </TabsTrigger>
-                    <TabsTrigger value="chess" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] text-[#6b5138] font-bold py-3 text-lg rounded-lg transition-all">
+                    <TabsTrigger value="chess" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 md:py-3 text-base md:text-lg rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Gamepad2 className="w-5 h-5" />
                             <span>Joueurs d'Échecs</span>
-                            <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded-full">
+                            <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {users.filter(u => u.default_game === 'chess').length}
                             </span>
                         </div>
