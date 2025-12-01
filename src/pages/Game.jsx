@@ -432,8 +432,8 @@ export default function Game() {
     const opponentName = playerColor === 'white' ? game?.black_player_name : game?.white_player_name;
 
     return (
-        <div className="max-w-5xl mx-auto pb-12">
-            <div className="mb-6 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-4 shadow-lg border border-[#d4c5b0]">
+        <div className="w-[95%] max-w-[1800px] mx-auto pb-4">
+            <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0]">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                     <div className="flex items-center gap-2">
                         <div className={`w-3 h-3 rounded-full ${game.status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
@@ -458,9 +458,9 @@ export default function Game() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="space-y-6 order-2 lg:order-1">
-                    <div className="bg-white/80 rounded-xl p-6 shadow-md border border-[#d4c5b0]">
+            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 items-start h-[85vh]">
+                <div className="space-y-4 order-2 lg:order-1 h-full overflow-y-auto">
+                    <div className="bg-white/80 rounded-xl p-4 shadow-md border border-[#d4c5b0]">
                         <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2">
                             <User className="w-5 h-5" /> Adversaire
                         </h3>
@@ -488,8 +488,8 @@ export default function Game() {
                     </div>
 
                     {game.status === 'finished' && (
-                        <div className="bg-gradient-to-br from-yellow-100 to-amber-100 border-2 border-yellow-400 p-6 rounded-xl text-center shadow-xl animate-in fade-in zoom-in">
-                            <Trophy className="w-12 h-12 mx-auto text-yellow-600 mb-2" />
+                        <div className="bg-gradient-to-br from-yellow-100 to-amber-100 border-2 border-yellow-400 p-4 rounded-xl text-center shadow-xl animate-in fade-in zoom-in">
+                            <Trophy className="w-8 h-8 mx-auto text-yellow-600 mb-2" />
                             <h2 className="text-2xl font-bold text-[#4a3728] mb-1">Partie Terminée !</h2>
                             <p className="text-lg mb-4">
                                 {game.winner_id === currentUser.id ? "🎉 Victoire !" : "Bien joué !"}
@@ -501,7 +501,7 @@ export default function Game() {
                     )}
                 </div>
 
-                <div className="lg:col-span-2 order-1 lg:order-2">
+                <div className="order-1 lg:order-2 flex justify-center items-center h-full w-full">
                     {game.game_type === 'chess' ? (
                          <ChessBoard 
                             board={board}

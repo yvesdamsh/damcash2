@@ -13,10 +13,10 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
     };
 
     return (
-        <div className="relative select-none">
-            <div className="bg-[#3d2b1f] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
+        <div className="relative select-none w-full h-full flex justify-center items-center">
+            <div className="bg-[#3d2b1f] p-1 rounded-lg shadow-2xl border-4 border-[#2c1e12] max-h-[85vh] aspect-square w-full max-w-[85vh]">
                 <div 
-                    className="grid gap-0 w-full max-w-[600px] mx-auto bg-[#F0E7D5] border-4 border-[#3d2b1f] shadow-inner"
+                    className="grid gap-0 w-full h-full bg-[#F0E7D5] border-2 border-[#3d2b1f] shadow-inner"
                     style={{ 
                         gridTemplateColumns: 'repeat(8, 1fr)', 
                         gridTemplateRows: 'repeat(8, 1fr)',

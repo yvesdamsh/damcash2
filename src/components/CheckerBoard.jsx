@@ -12,11 +12,11 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
     const isMyTurn = currentTurn === playerColor;
 
     return (
-        <div className="relative select-none">
+        <div className="relative select-none w-full h-full flex justify-center items-center">
             {/* Board Frame with coordinate labels */}
-            <div className="bg-[#4a3728] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
+            <div className="bg-[#4a3728] p-1 rounded-lg shadow-2xl border-4 border-[#2c1e12] max-h-[85vh] aspect-square w-full max-w-[85vh]">
                 
-                <div className="grid grid-cols-10 gap-0 aspect-square w-full max-w-[800px] mx-auto bg-[#2c1e12] border-4 border-[#5c4430] shadow-inner">
+                <div className="grid grid-cols-10 gap-0 aspect-square w-full h-full bg-[#2c1e12] border-2 border-[#5c4430] shadow-inner">
                     {board.map((row, r) => (
                         row.map((piece, c) => {
                             const isDark = (r + c) % 2 !== 0;
