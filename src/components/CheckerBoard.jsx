@@ -1,0 +1,81 @@
+import React from 'react';
+import CheckerPiece from './CheckerPiece';
+import { motion } from 'framer-motion';
+
+export default function CheckerBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor }) {
+    
+    // Helper to check if a move is valid for a specific square
+    const isValidTarget = (r, c) => {
+        if (!selectedSquare) return false;
+        return validMoves.some(move => move.row === r && move.col === c);
+    };
+
+    const isMyTurn = currentTurn === playerColor;
+
+    return (
+        <div className="relative select-none">
+            {/* Board Frame with coordinate labels */}
+            <div className="bg-[#4a3728] p-2 md:p-4 rounded-lg shadow-2xl border-4 border-[#2c1e12]">
+                
+                <div className="grid grid-cols-8 gap-0 aspect-square w-full max-w-[600px] mx-auto bg-[#2c1e12] border-2 border-[#5c4430]">
+                    {board.map((row, r) => (
+                        row.map((piece, c) => {
+                            const isDark = (r + c) % 2 !== 0;
+                            const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
+                            const isTarget = isValidTarget(r, c);
+                            
+                            // Wood texture colors
+                            const squareColor = isDark 
+                                ? 'bg-[#5c4430] hover:bg-[#6b5138]' // Dark wood
+                                : 'bg-[#e8dcc5]'; // Light wood
+
+                            // Highlight for last move or valid target could go here
+                            
+                            return (
+                                <div
+                                    key={`${r}-${c}`}
+                                    onClick={() => onSquareClick(r, c)}
+                                    className={`
+                                        relative w-full h-full flex items-center justify-center
+                                        ${squareColor}
+                                        ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
+                                        transition-colors duration-150
+                                    `}
+                                >
+                                    {/* Board Texture Overlay */}
+                                    {isDark && (
+                                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
+                                    )}
+
+                                    {/* Coordinates (Only show on edges) */}
+                                    {c === 7 && isDark && (
+                                        <span className="absolute right-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
+                                            {r + 1}
+                                        </span>
+                                    )}
+                                    {r === 7 && isDark && (
+                                        <span className="absolute left-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
+                                            {String.fromCharCode(65 + c)}
+                                        </span>
+                                    )}
+
+                                    {/* Valid Move Indicator */}
+                                    {isTarget && isMyTurn && (
+                                        <motion.div 
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            className="absolute w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 opacity-50 z-10 pointer-events-none" 
+                                        />
+                                    )}
+
+                                    {/* The Piece */}
+                                    <CheckerPiece type={piece} isSelected={isSelected} />
+                                </div>
+                            );
+                        })
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
