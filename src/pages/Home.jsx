@@ -32,6 +32,34 @@ export default function Home() {
     });
     const navigate = useNavigate();
 
+    const fetchData = async (currentUser) => {
+        if (!currentUser) return;
+        try {
+            // Parallel fetching for games
+            const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
+                base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
+                base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
+                base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
+                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
+            ]);
+
+            // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
+            // Actually, just showing the highest rated active games is good.
+            // Increased limit to 5 to ensure visibility.
+            const sortedFeatured = topGames.sort((a, b) => {
+                const eloA = ((a.white_player_elo || 1200) + (a.black_player_elo || 1200)) / 2;
+                const eloB = ((b.white_player_elo || 1200) + (b.black_player_elo || 1200)) / 2;
+                return eloB - eloA;
+            }).slice(0, 5);
+            setFeaturedGames(sortedFeatured);
+            
+            setActiveGames([...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date)));
+            setInvitations(myInvites);
+        } catch(e) {
+            console.error("Refresh error", e);
+        }
+    };
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -45,23 +73,8 @@ export default function Home() {
                 const savedGameType = localStorage.getItem('defaultGameType');
                 if (savedGameType) setGameType(savedGameType);
 
-                // Parallel fetching for better performance
-                const [stats, myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
-                    base44.entities.User.list(),
-                    base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
-                    base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                    base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
-                    base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
-                ]);
-
-                // Logic for featured games (Proxy "Most Followed" by ELO average)
-                const sortedFeatured = topGames.sort((a, b) => {
-                    const eloA = ((a.white_player_elo || 1200) + (a.black_player_elo || 1200)) / 2;
-                    const eloB = ((b.white_player_elo || 1200) + (b.black_player_elo || 1200)) / 2;
-                    return eloB - eloA;
-                }).slice(0, 2);
-                setFeaturedGames(sortedFeatured);
-
+                // Initial full load (with user stats check)
+                const stats = await base44.entities.User.list(); // Should be optimized in future
                 const myStats = stats.find(s => s.created_by === currentUser.email);
                 
                 if (myStats && myStats.default_game && !savedGameType) {
@@ -81,8 +94,7 @@ export default function Home() {
                     }
                 }
                 
-                setActiveGames([...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date)));
-                setInvitations(myInvites);
+                await fetchData(currentUser);
 
             } catch (e) {
                 console.error("Home init error:", e);
@@ -91,6 +103,13 @@ export default function Home() {
             }
         };
         init();
+        
+        // Refresh interval
+        const interval = setInterval(async () => {
+            const u = await base44.auth.me().catch(()=>null);
+            if (u) fetchData(u);
+        }, 5000);
+        return () => clearInterval(interval);
     }, []);
 
     const handleAcceptInvite = async (invite) => {
@@ -456,15 +475,22 @@ export default function Home() {
                                                 </div>
                                                 <div className="p-4 space-y-3 bg-[#fdfbf7]">
                                                     {featuredGames.length > 0 ? featuredGames.map(g => (
-                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white border border-[#e8dcc5] rounded-lg hover:border-[#b8860b] transition-colors cursor-pointer" onClick={() => navigate(`/Game?id=${g.id}`)}>
+                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white border border-[#e8dcc5] rounded-lg hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
                                                             <div>
-                                                                <div className="text-sm font-bold text-[#4a3728]">{g.white_player_name} vs {g.black_player_name}</div>
-                                                                <div className="text-xs text-[#6b5138] capitalize">{g.game_type} • ELO Moy: {Math.round(((g.white_player_elo||1200)+(g.black_player_elo||1200))/2)}</div>
+                                                                <div className="text-sm font-bold text-[#4a3728] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>
+                                                                <div className="text-xs text-[#6b5138] capitalize flex items-center gap-2">
+                                                                    <span>{g.game_type === 'chess' ? '♟️' : '⚪'} {g.game_type}</span>
+                                                                    {g.prize_pool > 0 && <span className="text-yellow-600 font-bold flex items-center gap-0.5"><span className="text-[10px]">D$</span>{g.prize_pool}</span>}
+                                                                </div>
                                                             </div>
                                                             <Button size="sm" variant="ghost" className="text-[#b8860b]"><Eye className="w-4 h-4" /></Button>
                                                         </div>
                                                     )) : (
-                                                        <div className="text-center text-sm text-gray-400 italic">Aucune partie majeure en cours.</div>
+                                                        <div className="text-center text-sm text-gray-400 italic py-4">
+                                                            Aucune partie publique en cours.
+                                                            <br/>
+                                                            <span className="text-xs">Créez-en une pour apparaître ici !</span>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
