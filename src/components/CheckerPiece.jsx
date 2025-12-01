@@ -13,13 +13,14 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     
     const isFlat = design === 'flat';
 
-    // Realistic shadow for 3D effect
+    // Style de l'ombre
     const shadowStyle = isFlat ? {} : {
         boxShadow: isSelected 
             ? '0 8px 16px rgba(0,0,0,0.4), 0 4px 4px rgba(0,0,0,0.3)' 
             : '0 3px 0 ' + (isWhite ? '#555' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
+    // Animation settings
     const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
@@ -28,28 +29,43 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
             e.preventDefault();
             return;
         }
-        e.target.style.opacity = '0.4'; // Visual feedback
+        
+        // IMPORTANT : On définit le mode de transfert
+        e.dataTransfer.effectAllowed = 'move';
+        
+        // On s'assure que l'image fantôme est bien capturée AVANT de changer l'opacité
+        // setTimeout déplace l'action à la fin de la stack d'exécution
+        setTimeout(() => {
+            if(e.target) e.target.style.opacity = '0.4'; 
+        }, 0);
+
         if (onDragStart) onDragStart(e);
     };
 
     const handleDragEnd = (e) => {
-        e.target.style.opacity = '1'; // Reset visual
+        e.target.style.opacity = '1';
     };
 
     return (
-        <motion.div
+        /* CORRECTION : On utilise une div standard pour le Drag.
+           On retire 'motion' du wrapper draggable pour éviter les conflits d'événements.
+        */
+        <div
             draggable={canDrag}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
-            initial={initial}
-            animate={animate}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className={`relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
-            // Remove touchAction none to allow native drag on some devices, or keep it if using Pointer Events logic elsewhere.
-            // For HTML5 DnD, standard is fine.
+            className={`
+                relative w-[85%] h-[85%] m-auto rounded-full z-10 
+                ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
+            `}
+            // On s'assure que le drag n'interfère pas avec le layout flex parent
+            style={{ touchAction: 'none' }} 
         >
-            <div 
+            {/* L'animation est gérée ici, à l'intérieur, purement visuelle */}
+            <motion.div 
+                initial={initial}
+                animate={animate}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 className={`
                     w-full h-full rounded-full 
                     ${baseColor} 
@@ -72,7 +88,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
                         👑
                     </div>
                 )}
-            </div>
-        </motion.div>
+            </motion.div>
+        </div>
     );
 }
