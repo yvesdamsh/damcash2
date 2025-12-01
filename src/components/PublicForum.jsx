@@ -28,7 +28,7 @@ export default function PublicForum() {
 
     const fetchPosts = async () => {
         try {
-            const data = await base44.entities.ForumPost.list({}, { created_date: -1 }, 50);
+            const data = await base44.entities.ForumPost.list('-created_date', 50);
             setPosts(data.reverse()); // Show newest at bottom like chat
         } catch (e) {
             console.error(e);
