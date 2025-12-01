@@ -12,6 +12,8 @@ import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
 import VideoChat from '@/components/VideoChat';
 import GameTimer from '@/components/GameTimer';
+import MoveHistory from '@/components/MoveHistory';
+import AnalysisPanel from '@/components/AnalysisPanel';
 import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
@@ -31,6 +33,8 @@ export default function Game() {
     const [playersInfo, setPlayersInfo] = useState({ white: null, black: null });
     const [showChat, setShowChat] = useState(false);
     const [showResult, setShowResult] = useState(false);
+    const [activeTab, setActiveTab] = useState('chat'); // chat, moves, analysis
+    const [isSaved, setIsSaved] = useState(false);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -111,6 +115,40 @@ export default function Game() {
                 }
 
                 setLoading(false);
+                } catch (e) {
+                console.error("Error fetching game", e);
+                setLoading(false);
+                }
+                };
+
+                fetchGame();
+                interval = setInterval(fetchGame, 1000);
+                return () => clearInterval(interval);
+                }, [id, game?.current_turn]);
+
+                useEffect(() => {
+                if (currentUser && currentUser.favorite_games) {
+                setIsSaved(currentUser.favorite_games.includes(id));
+                }
+                }, [currentUser, id]);
+
+                const toggleSaveGame = async () => {
+                if (!currentUser) return;
+                try {
+                let newFavs = currentUser.favorite_games || [];
+                if (isSaved) {
+                newFavs = newFavs.filter(g => g !== id);
+                toast.success("Partie retirée des favoris");
+                } else {
+                newFavs = [...newFavs, id];
+                toast.success("Partie sauvegardée pour analyse");
+                }
+                await base44.auth.updateMe({ favorite_games: newFavs });
+                setIsSaved(!isSaved);
+                } catch (e) {
+                toast.error("Erreur lors de la sauvegarde");
+                }
+                };
             } catch (e) {
                 console.error("Error fetching game", e);
                 setLoading(false);
@@ -586,15 +624,22 @@ export default function Game() {
 
                 {/* Controls & Replay */}
                 <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0]">
-                    {game.moves && JSON.parse(game.moves).length > 0 && (
-                        <div className="flex justify-center gap-1 mb-4">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                            <span className="flex items-center px-1 text-xs font-mono">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={toggleSaveGame} className={isSaved ? "text-yellow-500 bg-yellow-50" : "text-gray-400"}>
+                                <Star className={cn("w-4 h-4 mr-1", isSaved && "fill-current")} /> {isSaved ? 'Sauvegardée' : 'Sauvegarder'}
+                            </Button>
                         </div>
-                    )}
+                        {game.moves && JSON.parse(game.moves).length > 0 && (
+                            <div className="flex justify-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
+                                <span className="flex items-center px-1 text-xs font-mono min-w-[3rem] justify-center">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="flex flex-wrap gap-2 justify-center">
                         {game.is_private && game.status === 'waiting' && (
@@ -643,17 +688,58 @@ export default function Game() {
                     </div>
                 </div>
 
-                {/* Chat Spectateur (Bottom) */}
-                <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-96">
-                    <div className="bg-[#4a3728] text-[#e8dcc5] p-2 px-4 font-bold text-sm flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4" /> Chat de la partie
-                        </div>
-                    <div className="flex-1 overflow-hidden">
-                        <GameChat gameId={game.id} currentUser={currentUser} />
+                {/* Tabs Area (Chat, Moves, Analysis) */}
+                <div className="bg-white shadow-lg rounded-xl border border-[#d4c5b0] overflow-hidden flex flex-col h-[500px]">
+                    <div className="bg-[#4a3728] text-[#e8dcc5] p-1 px-2 font-bold text-sm flex items-center gap-1">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setActiveTab('chat')}
+                            className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'chat' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
+                        >
+                            <MessageSquare className="w-3 h-3 mr-1" /> Chat
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setActiveTab('moves')}
+                            className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'moves' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
+                        >
+                            <Copy className="w-3 h-3 mr-1" /> Coups
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setActiveTab('analysis')}
+                            className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'analysis' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
+                            disabled={game.status === 'playing'}
+                        >
+                            <Trophy className="w-3 h-3 mr-1" /> Analyse IA
+                        </Button>
+                    </div>
+                    <div className="flex-1 overflow-hidden bg-[#fdfbf7]">
+                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} />}
+                        {activeTab === 'moves' && (
+                            <MoveHistory 
+                                moves={movesList} 
+                                currentIndex={replayIndex === -1 ? movesList.length - 1 : replayIndex}
+                                onSelectMove={(idx) => setReplayIndex(idx)}
+                                gameType={game.game_type}
+                            />
+                        )}
+                        {activeTab === 'analysis' && (
+                            <AnalysisPanel 
+                                gameId={game.id} 
+                                onJumpToMove={(idx) => {
+                                    setActiveTab('moves');
+                                    setReplayIndex(idx);
+                                }} 
+                            />
+                        )}
                     </div>
                 </div>
 
-            </div>
-        </div>
-    );
-}
+                </div>
+                </div>
+                );
+                }

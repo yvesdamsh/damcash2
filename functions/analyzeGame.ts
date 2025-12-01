@@ -1,0 +1,78 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+
+export default async function handler(req) {
+    const base44 = createClientFromRequest(req);
+    const { gameId } = await req.json();
+
+    if (!gameId) return Response.json({ error: 'Missing gameId' }, { status: 400 });
+
+    try {
+        // Check if already analyzed
+        const existing = await base44.asServiceRole.entities.GameAnalysis.filter({ game_id: gameId });
+        if (existing.length > 0) {
+            return Response.json(existing[0]);
+        }
+
+        const game = await base44.asServiceRole.entities.Game.get(gameId);
+        if (!game) return Response.json({ error: 'Game not found' }, { status: 404 });
+
+        const moves = game.moves ? JSON.parse(game.moves) : [];
+        if (moves.length === 0) return Response.json({ error: 'No moves to analyze' }, { status: 400 });
+
+        // Format moves for LLM
+        const moveListString = moves.map((m, i) => {
+            const moveNotation = game.game_type === 'chess' ? 
+                `${i+1}. ${m.piece || ''} ${String.fromCharCode(97+m.from.c)}${8-m.from.r}->${String.fromCharCode(97+m.to.c)}${8-m.to.r}` : 
+                `${i+1}. (${m.from.r},${m.from.c})->(${m.to.r},${m.to.c})`;
+            return moveNotation;
+        }).join('\n');
+
+        const prompt = `
+        Analyze this ${game.game_type} game played between ${game.white_player_name} (White) and ${game.black_player_name} (Black).
+        Winner: ${game.winner_id === game.white_player_id ? 'White' : (game.winner_id ? 'Black' : 'Draw')}.
+        
+        Moves:
+        ${moveListString}
+
+        Provide a JSON response with:
+        1. "summary": A brief 2-3 sentence summary of the game style and turning point.
+        2. "key_moments": An array of objects with "move_index" (0-based), "type" (brilliant, blunder, mistake, good), and "comment" (short explanation).
+        Identify at least 3 key moments.
+        `;
+
+        const response = await base44.integrations.Core.InvokeLLM({
+            prompt: prompt,
+            response_json_schema: {
+                type: "object",
+                properties: {
+                    summary: { type: "string" },
+                    key_moments: { 
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                move_index: { type: "number" },
+                                type: { type: "string", enum: ["brilliant", "blunder", "mistake", "good"] },
+                                comment: { type: "string" }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Save analysis
+        const analysisRecord = await base44.asServiceRole.entities.GameAnalysis.create({
+            game_id: gameId,
+            summary: response.summary,
+            analysis_data: JSON.stringify(response.key_moments)
+        });
+
+        return Response.json(analysisRecord);
+
+    } catch (error) {
+        return Response.json({ error: error.message }, { status: 500 });
+    }
+}
+
+Deno.serve(handler);
