@@ -18,13 +18,8 @@ class SoundManager {
         }
         this.audioCache = {};
         
-        // Preload sounds
-        if (typeof window !== 'undefined') {
-            Object.keys(SOUNDS).forEach(key => {
-                this.audioCache[key] = new Audio(SOUNDS[key]);
-                this.audioCache[key].volume = 0.5;
-            });
-        }
+        // Preload removed to prevent Illegal Constructor errors in some environments
+        // Sounds will be lazy-loaded in play()
     }
 
     toggle() {
@@ -43,7 +38,10 @@ class SoundManager {
         if (!this.enabled || !SOUNDS[name]) return;
         
         try {
+            if (typeof Audio === 'undefined') return;
             const audio = this.audioCache[name] || new Audio(SOUNDS[name]);
+            this.audioCache[name] = audio; // Cache it for next time
+            audio.volume = 0.5;
             audio.currentTime = 0;
             audio.play().catch(e => {
                 console.debug("Sound play failed", e);
@@ -54,7 +52,18 @@ class SoundManager {
     }
 }
 
-export const soundManager = new SoundManager();
+// Lazy singleton to avoid instantiation issues
+let instance;
+const getInstance = () => {
+    if (!instance) instance = new SoundManager();
+    return instance;
+};
+
+export const soundManager = {
+    play: (name) => getInstance().play(name),
+    toggle: () => getInstance().toggle(),
+    isEnabled: () => getInstance().isEnabled()
+};
 
 export const calculateElo = (ratingA, ratingB, actualScore, kFactor = 32) => {
     const expectedScore = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
