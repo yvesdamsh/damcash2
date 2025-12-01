@@ -388,8 +388,8 @@ export default function Game() {
         if (winnerColor) {
             status = 'finished';
             winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
-            soundManager.play(winnerId === currentUser.id ? 'win' : 'loss');
-        } else {
+            soundManager.play(winnerId === currentUser?.id ? 'win' : 'loss');
+            } else {
             soundManager.play(move.captured ? 'capture' : 'move');
         }
 
@@ -810,7 +810,8 @@ export default function Game() {
                                 <Button 
                                     onClick={async () => {
                                         setShowResignConfirm(false);
-                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
+                                        const winnerId = currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId });
                                         base44.functions.invoke('processGameResult', { gameId: game.id });
                                         soundManager.play('loss');
                                     }}
