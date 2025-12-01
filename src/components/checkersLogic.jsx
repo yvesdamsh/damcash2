@@ -174,7 +174,7 @@ export const executeMove = (board, from, to, captured) => {
     newBoard[fromRow][fromCol] = 0;
 
     if (captured) {
-        newBoard[captured.row][captured.col] = 0;
+        newBoard[captured.r][captured.c] = 0;
     }
 
     // Promotion
