@@ -272,6 +272,47 @@ export default function Home() {
                                         <span className="w-full border-t border-gray-300" />
                                     </div>
                                     <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-white px-2 text-gray-500">INVITER UN AMI</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <Input placeholder="Email de l'ami" id="friend-email" />
+                                    <Button onClick={async () => {
+                                        const email = document.getElementById('friend-email').value;
+                                        if(!email || !user) return;
+                                        // Create a private game and invite
+                                        const initialBoard = gameType === 'chess' 
+                                            ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                                            : JSON.stringify(initializeBoard());
+
+                                        const newGame = await base44.entities.Game.create({
+                                            status: 'waiting',
+                                            game_type: gameType,
+                                            white_player_id: user.id,
+                                            white_player_name: user.full_name || 'Hôte',
+                                            current_turn: 'white',
+                                            board_state: initialBoard,
+                                            is_private: true,
+                                        });
+
+                                        await base44.entities.Invitation.create({
+                                            from_user_id: user.id,
+                                            from_user_name: user.full_name || user.email,
+                                            to_user_email: email,
+                                            game_type: gameType,
+                                            game_id: newGame.id,
+                                            status: 'pending'
+                                        });
+                                        navigate(`/Game?id=${newGame.id}`);
+                                    }} className="bg-[#4a3728] hover:bg-[#2c1e12]">Inviter</Button>
+                                </div>
+
+                                <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t border-gray-300" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
                                         <span className="bg-white px-2 text-gray-500">OU REJOINDRE</span>
                                     </div>
                                 </div>
