@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragEnd }) {
+export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard' }) {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
@@ -27,15 +27,9 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
         <motion.div
             initial={initial}
             animate={animate}
-            drag={!!onDragEnd}
-            dragSnapToOrigin
-            dragMomentum={false}
-            dragElastic={0.1}
-            onDragEnd={onDragEnd}
-            whileDrag={{ scale: 1.1, zIndex: 50, cursor: 'grabbing' }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="relative w-[85%] h-[85%] m-auto rounded-full z-10 cursor-grab active:cursor-grabbing touch-none"
+            className="relative w-[85%] h-[85%] m-auto rounded-full pointer-events-none z-10"
         >
             <div 
                 className={`
