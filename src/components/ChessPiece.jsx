@@ -16,7 +16,7 @@ const PIECE_IMAGES = {
     'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
 };
 
-export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard' }) {
+export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragStart, onDragEnd }) {
     if (!type) return null;
 
     // Map for unicode pieces
@@ -28,14 +28,25 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
     const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
+    const dragProps = {
+        drag: true,
+        dragMomentum: false,
+        dragElastic: 0.1,
+        onDragStart: onDragStart,
+        onDragEnd: onDragEnd,
+        whileDrag: { scale: 1.2, zIndex: 100, cursor: 'grabbing' },
+        className: `w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : 'cursor-grab'}`,
+        initial,
+        animate
+    };
+
     if (set === 'unicode') {
         const isWhite = type === type.toUpperCase();
         return (
             <motion.div
-                initial={initial}
-                animate={animate}
+                {...dragProps}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className={`w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl scale-110' : ''}`}
+                className={`${dragProps.className} ${isSelected ? 'scale-110' : ''}`}
             >
                 <span className={`text-4xl md:text-6xl select-none ${isWhite ? 'text-white drop-shadow-md stroke-black' : 'text-black drop-shadow-md'}`} style={{ textShadow: isWhite ? '0 0 2px black' : '0 0 1px white' }}>
                     {UNICODE_PIECES[type]}
@@ -46,10 +57,8 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
 
     return (
         <motion.div
-            initial={initial}
-            animate={animate}
+            {...dragProps}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className={`w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : ''}`}
         >
             <img 
                 src={PIECE_IMAGES[type]} 

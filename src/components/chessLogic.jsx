@@ -159,15 +159,18 @@ export const executeChessMove = (board, move) => {
         }
     }
 
-    // Promotion (auto queen for now)
+    // Promotion
     let promoted = false;
     if (piece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
-        newBoard[move.to.r][move.to.c] = getColor(piece) === 'white' ? 'Q' : 'q';
+        // Use provided promotion type or default to Queen
+        const promoteTo = move.promotion ? move.promotion.toLowerCase() : 'q';
+        const newPieceChar = getColor(piece) === 'white' ? promoteTo.toUpperCase() : promoteTo;
+        newBoard[move.to.r][move.to.c] = newPieceChar;
         promoted = true;
     }
 
     return { board: newBoard, piece, promoted };
-};
+    };
 
 export const isCurrentInCheck = (board, color) => {
     let kingPos;

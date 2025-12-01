@@ -2,9 +2,10 @@ import React from 'react';
 import ChessPiece from './ChessPiece';
 import { motion } from 'framer-motion';
 
-export default function ChessBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard' }) {
+export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove }) {
     
     const isMyTurn = currentTurn === playerColor;
+    const boardRef = React.useRef(null);
 
     // Theme Configuration
     const themes = {
@@ -15,10 +16,30 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
 
     const currentTheme = themes[theme] || themes.standard;
 
+    const handleDragEnd = (e, info, r, c) => {
+        if (!boardRef.current) return;
+        const boardRect = boardRef.current.getBoundingClientRect();
+        const squareSize = boardRect.width / 8;
+        
+        // Calculate drop coordinates relative to board
+        const dropX = info.point.x - boardRect.left;
+        const dropY = info.point.y - boardRect.top;
+        
+        const targetC = Math.floor(dropX / squareSize);
+        const targetR = Math.floor(dropY / squareSize);
+
+        if (targetR >= 0 && targetR < 8 && targetC >= 0 && targetC < 8) {
+            if (targetR !== r || targetC !== c) {
+                onPieceDrop(r, c, targetR, targetC);
+            }
+        }
+    };
+
     return (
         <div className="relative select-none w-full h-full flex justify-center items-center">
             <div className={`${currentTheme.bg} md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
+                    ref={boardRef}
                     className={`grid gap-0 w-full h-full ${currentTheme.light} md:border-2 ${currentTheme.border} shadow-inner`}
                     style={{ 
                         gridTemplateColumns: 'repeat(8, 1fr)', 
@@ -36,6 +57,10 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                 (lastMove.to.r === r && lastMove.to.c === c)
                             );
                             
+                            // Premove Highlight
+                            const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
+                            const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
+
                             const squareColor = isDark ? currentTheme.dark : currentTheme.light;
 
                             return (
@@ -48,6 +73,8 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                         ${squareColor}
                                         ${isLastMove ? 'after:absolute after:inset-0 after:bg-yellow-400/30' : ''}
                                         ${isSelected ? 'bg-yellow-200/50 ring-inset ring-4 ring-yellow-400' : ''}
+                                        ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
+                                        ${isPremoveTarget ? 'bg-red-400/40' : ''}
                                         ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
                                     `}
                                 >
@@ -77,6 +104,8 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                             type={piece} 
                                             isSelected={isSelected}
                                             set={pieceSet}
+                                            onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
+                                            onDragStart={() => onSquareClick(r, c)}
                                             animateFrom={
                                                 lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                 ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
