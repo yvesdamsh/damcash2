@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import CheckerBoard from '@/components/CheckerBoard';
+import ChessBoard from '@/components/ChessBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
 import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
-import { soundManager } from '@/components/SoundManager'; // Fix import path
+import { getValidChessMoves, executeChessMove, checkChessStatus } from '@/components/chessLogic';
+import { soundManager } from '@/components/SoundManager'; 
 import { Loader2, User, Trophy, Flag, Copy, Check, Share2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,8 +22,14 @@ export default function Game() {
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
     
-    // New states for Multi-jump logic
-    const [mustContinueWith, setMustContinueWith] = useState(null); // {r, c} of piece that must continue
+    // New states for Multi-jump logic (Checkers)
+    const [mustContinueWith, setMustContinueWith] = useState(null); 
+    
+    // Chess specific states
+    const [chessState, setChessState] = useState({
+        castlingRights: { wK: true, wQ: true, bK: true, bQ: true },
+        lastMove: null
+    });
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -56,8 +64,17 @@ export default function Game() {
                 setGame(prev => {
                     if (!prev || prev.updated_date !== gameData.updated_date) {
                         if (gameData.board_state) {
-                            setBoard(JSON.parse(gameData.board_state));
-                            setMustContinueWith(null); // Reset on external update (simple approach)
+                            const parsedState = JSON.parse(gameData.board_state);
+                            if (gameData.game_type === 'chess') {
+                                setBoard(parsedState.board);
+                                setChessState({
+                                    castlingRights: parsedState.castlingRights,
+                                    lastMove: parsedState.lastMove
+                                });
+                            } else {
+                                setBoard(parsedState);
+                                setMustContinueWith(null);
+                            }
                         }
                         
                         // Notifications and Sounds for opponent moves
@@ -107,6 +124,13 @@ export default function Game() {
 
         const playerColor = isWhitePlayer ? 'white' : 'black';
         if (game.current_turn !== playerColor) return;
+
+        // --- CHESS LOGIC DISPATCH ---
+        if (game.game_type === 'chess') {
+            handleChessClick(row, col, playerColor);
+            return;
+        }
+        // ----------------------------
 
         const clickedPiece = board[row][col];
         const isMyPiece = (playerColor === 'white' && (clickedPiece === 1 || clickedPiece === 3)) ||
@@ -239,6 +263,107 @@ export default function Game() {
         }
     };
 
+    const handleChessClick = async (row, col, playerColor) => {
+        const clickedPiece = board[row][col];
+        // Chess pieces are strings: P, R, N, B, Q, K (white) / p, r, n, b, q, k (black)
+        const isWhitePiece = clickedPiece && clickedPiece === clickedPiece.toUpperCase();
+        const isBlackPiece = clickedPiece && clickedPiece === clickedPiece.toLowerCase();
+        const isMyPiece = (playerColor === 'white' && isWhitePiece) || (playerColor === 'black' && isBlackPiece);
+
+        // 1. SELECTING PIECE
+        if (isMyPiece) {
+             soundManager.play('move'); 
+             const moves = getValidChessMoves(board, playerColor, chessState.lastMove, chessState.castlingRights);
+             // Filter moves for this specific piece
+             const pieceMoves = moves.filter(m => m.from.r === row && m.from.c === col);
+             
+             setSelectedSquare([row, col]);
+             setValidTargetMoves(pieceMoves.map(m => m.to)); // Store target coords
+             return;
+        }
+
+        // 2. MOVING
+        if (selectedSquare) {
+            const [fromR, fromC] = selectedSquare;
+            // Re-validate to get full move object (with capture/castle info)
+            const moves = getValidChessMoves(board, playerColor, chessState.lastMove, chessState.castlingRights);
+            const move = moves.find(m => 
+                m.from.r === fromR && m.from.c === fromC && 
+                m.to.r === row && m.to.c === col
+            );
+
+            if (move) {
+                const { board: newBoard, promoted } = executeChessMove(board, move);
+                
+                if (move.captured) soundManager.play('capture');
+                else soundManager.play('move');
+
+                const nextTurn = playerColor === 'white' ? 'black' : 'white';
+                
+                // Update castling rights
+                const newCastlingRights = { ...chessState.castlingRights };
+                const pieceType = board[fromR][fromC].toLowerCase();
+                // If King moves, lose both rights
+                if (pieceType === 'k') {
+                    newCastlingRights[playerColor === 'white' ? 'wK' : 'bK'] = false;
+                    newCastlingRights[playerColor === 'white' ? 'wQ' : 'bQ'] = false;
+                }
+                // If Rook moves, lose that side
+                if (pieceType === 'r') {
+                    if (fromC === 0) newCastlingRights[playerColor === 'white' ? 'wQ' : 'bQ'] = false;
+                    if (fromC === 7) newCastlingRights[playerColor === 'white' ? 'wK' : 'bK'] = false;
+                }
+                
+                const newLastMove = { from: move.from, to: move.to, piece: board[fromR][fromC] };
+
+                // Check status (checkmate/stalemate)
+                const gameStatus = checkChessStatus(newBoard, nextTurn, newLastMove, newCastlingRights);
+                let finalStatus = 'playing';
+                let winner = null;
+
+                if (gameStatus === 'checkmate') {
+                    finalStatus = 'finished';
+                    winner = playerColor; // Current player checkmated opponent
+                    soundManager.play('win');
+                } else if (gameStatus === 'stalemate') {
+                    finalStatus = 'finished';
+                    // draw
+                }
+
+                setBoard(newBoard);
+                setChessState({ castlingRights: newCastlingRights, lastMove: newLastMove });
+                setSelectedSquare(null);
+                setValidTargetMoves([]);
+                
+                setGame(prev => ({
+                    ...prev,
+                    current_turn: nextTurn,
+                    status: finalStatus,
+                    winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
+                }));
+
+                try {
+                    await base44.entities.Game.update(game.id, {
+                        board_state: JSON.stringify({ 
+                            board: newBoard, 
+                            castlingRights: newCastlingRights, 
+                            lastMove: newLastMove 
+                        }),
+                        current_turn: nextTurn,
+                        status: finalStatus,
+                        winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
+                    });
+                } catch (e) {
+                    toast.error("Erreur de connexion");
+                }
+
+            } else {
+                 setSelectedSquare(null);
+                 setValidTargetMoves([]);
+            }
+        }
+    };
+
     const copyInviteCode = () => {
         navigator.clipboard.writeText(game.access_code);
         setCopied(true);
@@ -330,19 +455,33 @@ export default function Game() {
                 </div>
 
                 <div className="lg:col-span-2 order-1 lg:order-2">
-                    <CheckerBoard 
-                        board={board}
-                        onSquareClick={handleSquareClick}
-                        selectedSquare={selectedSquare}
-                        validMoves={validTargetMoves}
-                        currentTurn={game.current_turn}
-                        playerColor={playerColor}
-                    />
-                     {/* Mandatory Capture Indicator */}
-                     {mustContinueWith && (
-                        <div className="mt-4 bg-orange-100 text-orange-800 p-3 rounded-lg text-center animate-pulse border border-orange-300 font-bold">
-                            Rafle en cours ! Vous devez continuer à sauter.
-                        </div>
+                    {game.game_type === 'chess' ? (
+                         <ChessBoard 
+                            board={board}
+                            onSquareClick={handleSquareClick}
+                            selectedSquare={selectedSquare}
+                            validMoves={validTargetMoves.map(m => ({r: m.r, c: m.c}))}
+                            currentTurn={game.current_turn}
+                            playerColor={playerColor}
+                            lastMove={chessState.lastMove}
+                        />
+                    ) : (
+                        <>
+                            <CheckerBoard 
+                                board={board}
+                                onSquareClick={handleSquareClick}
+                                selectedSquare={selectedSquare}
+                                validMoves={validTargetMoves}
+                                currentTurn={game.current_turn}
+                                playerColor={playerColor}
+                            />
+                             {/* Mandatory Capture Indicator */}
+                             {mustContinueWith && (
+                                <div className="mt-4 bg-orange-100 text-orange-800 p-3 rounded-lg text-center animate-pulse border border-orange-300 font-bold">
+                                    Rafle en cours ! Vous devez continuer à sauter.
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 

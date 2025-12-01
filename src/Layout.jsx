@@ -50,7 +50,7 @@ export default function Layout({ children }) {
     };
 
     const navItems = [
-        { label: 'Jouer', path: '/', icon: Gamepad2 },
+        { label: 'Jeu de Dames / Échecs', path: '/', icon: Gamepad2 },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
     ];

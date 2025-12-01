@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle } from 'lucide-react';
 import { initializeBoard } from '@/components/checkersLogic';
+import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
 
 export default function Home() {
@@ -14,6 +15,7 @@ export default function Home() {
     const [joinCode, setJoinCode] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
+    const [gameType, setGameType] = useState('checkers'); // 'checkers' | 'chess'
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -51,7 +53,11 @@ export default function Home() {
                 is_private: false
             }, { created_date: -1 }, 10);
 
-            const joinableGame = waitingGames.find(g => g.white_player_id !== user.id);
+            // Filter by game type locally or via query if possible
+            const joinableGame = waitingGames.find(g => 
+                g.white_player_id !== user.id && 
+                (g.game_type === gameType || (!g.game_type && gameType === 'checkers'))
+            );
 
             if (joinableGame) {
                 await base44.entities.Game.update(joinableGame.id, {
@@ -61,12 +67,17 @@ export default function Home() {
                 });
                 navigate(`/Game?id=${joinableGame.id}`);
             } else {
+                const initialBoard = gameType === 'chess' 
+                    ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                    : JSON.stringify(initializeBoard());
+                    
                 const newGame = await base44.entities.Game.create({
                     status: 'waiting',
+                    game_type: gameType,
                     white_player_id: user.id,
                     white_player_name: user.full_name || 'Joueur 1',
                     current_turn: 'white',
-                    board_state: JSON.stringify(initializeBoard()),
+                    board_state: initialBoard,
                     is_private: false
                 });
                 navigate(`/Game?id=${newGame.id}`);
@@ -83,12 +94,17 @@ export default function Home() {
         setIsCreating(true);
         try {
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const initialBoard = gameType === 'chess' 
+                ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                : JSON.stringify(initializeBoard());
+
             const newGame = await base44.entities.Game.create({
                 status: 'waiting',
+                game_type: gameType,
                 white_player_id: user.id,
                 white_player_name: user.full_name || 'Hôte',
                 current_turn: 'white',
-                board_state: JSON.stringify(initializeBoard()),
+                board_state: initialBoard,
                 is_private: true,
                 access_code: code
             });
@@ -133,13 +149,36 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
             <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
 
-            <div className="text-center mb-12 space-y-4">
+            <div className="text-center mb-8 space-y-4">
                 <h1 className="text-5xl md:text-6xl font-bold text-[#4a3728] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
-                    Dames Master 3D
+                    {gameType === 'checkers' ? 'Dames Master 3D' : 'Échecs Master'}
                 </h1>
                 <p className="text-xl text-[#6b5138] font-medium">
-                    L'expérience ultime du jeu de dames en ligne
+                    {gameType === 'checkers' ? "L'expérience ultime du jeu de dames en ligne" : "Le jeu des rois, stratégie pure"}
                 </p>
+            </div>
+
+            <div className="flex justify-center gap-4 mb-8">
+                <button
+                    onClick={() => setGameType('checkers')}
+                    className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
+                        gameType === 'checkers' 
+                        ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' 
+                        : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'
+                    }`}
+                >
+                    ⚪ Dames
+                </button>
+                <button
+                    onClick={() => setGameType('chess')}
+                    className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${
+                        gameType === 'chess' 
+                        ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' 
+                        : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'
+                    }`}
+                >
+                    ♟️ Échecs
+                </button>
             </div>
 
             {!user ? (
