@@ -14,27 +14,26 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     const handleDragStart = (e, r, c) => {
         e.dataTransfer.setData('origin', JSON.stringify({ r, c }));
         e.dataTransfer.effectAllowed = 'move';
-        // Sélectionner la case au début du drag pour montrer les coups possibles
+        // Trigger selection on drag start
         if (onSquareClick) onSquareClick(r, c);
-        
-        // Visuel custom si besoin (optionnel)
-        // const img = new Image(); img.src = '...'; e.dataTransfer.setDragImage(img, 10, 10);
     };
 
     const handleDragOver = (e) => {
-        e.preventDefault(); // CRUCIAL: Permet le Drop
+        e.preventDefault(); // Mandatory for drop to work
         e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = (e, targetR, targetC) => {
         e.preventDefault();
+        e.stopPropagation(); // Stop bubbling
         try {
             const rawData = e.dataTransfer.getData('origin');
             if (!rawData) return;
             
             const origin = JSON.parse(rawData);
-            if (onPieceDrop) {
-                onPieceDrop(origin.r, origin.c, targetR, targetC);
+            // Only drop if it's a different square
+            if (origin.r !== targetR || origin.c !== targetC) {
+                if (onPieceDrop) onPieceDrop(origin.r, origin.c, targetR, targetC);
             }
         } catch (err) {
             console.error("Drop error", err);

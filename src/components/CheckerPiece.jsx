@@ -23,16 +23,31 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
+    const handleDragStart = (e) => {
+        if (!canDrag) {
+            e.preventDefault();
+            return;
+        }
+        e.target.style.opacity = '0.4'; // Visual feedback
+        if (onDragStart) onDragStart(e);
+    };
+
+    const handleDragEnd = (e) => {
+        e.target.style.opacity = '1'; // Reset visual
+    };
+
     return (
         <motion.div
             draggable={canDrag}
-            onDragStart={onDragStart}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             initial={initial}
             animate={animate}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
             className={`relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
-            style={{ touchAction: 'none' }}
+            // Remove touchAction none to allow native drag on some devices, or keep it if using Pointer Events logic elsewhere.
+            // For HTML5 DnD, standard is fine.
         >
             <div 
                 className={`
