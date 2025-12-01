@@ -431,6 +431,58 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="space-y-8">
+                    {/* Game Actions - Moved to Top */}
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
+                            <div className="absolute top-4 right-4">
+                                <Link to="/GameHistory">
+                                    <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
+                                        <History className="w-4 h-4 mr-2" /> Historique
+                                    </Button>
+                                </Link>
+                            </div>
+                            <CardHeader><CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> Partie Rapide</CardTitle></CardHeader>
+                            <CardContent className="space-y-6">
+                                <p className="opacity-90">Affrontez un joueur aléatoire en ligne instantanément.</p>
+                                <div className="flex flex-col gap-3">
+                                    <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
+                                        {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} JOUER MAINTENANT
+                                    </Button>
+                                    <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10">
+                                        <Users className="w-4 h-4 mr-2" /> S'entraîner seul
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <div className="space-y-6">
+                            <Card className="bg-white/80 backdrop-blur border-[#d4c5b0] shadow-lg">
+                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728]"><Users className="w-6 h-6" /> Jouer avec un ami</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Créer une partie privée</Button>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">INVITER UN AMI</span></div></div>
+                                    <div className="flex gap-2">
+                                        <Input placeholder="Email de l'ami" id="friend-email" />
+                                        <Button onClick={async () => {
+                                            const email = document.getElementById('friend-email').value;
+                                            if(!email || !user) return;
+                                            const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
+                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || 'Hôte', current_turn: 'white', board_state: initialBoard, is_private: true });
+                                            await base44.entities.Invitation.create({ from_user_id: user.id, from_user_name: user.full_name || user.email, to_user_email: email, game_type: gameType, game_id: newGame.id, status: 'pending' });
+                                            navigate(`/Game?id=${newGame.id}`);
+                                        }} className="bg-[#4a3728] hover:bg-[#2c1e12]">Inviter</Button>
+                                    </div>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">OU REJOINDRE</span></div></div>
+                                    <form onSubmit={handleJoinByCode} className="flex gap-2">
+                                        <Input placeholder="Code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
+                                        <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
+                                    </form>
+                                </CardContent>
+                            </Card>
+                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> Apprendre à jouer</Button>
+                        </div>
+                    </div>
+
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="md:col-span-2">
                              {/* Baba Sy Featured Section */}
@@ -515,56 +567,7 @@ export default function Home() {
                     </div>
                     )}
 
-                    <div className="grid md:grid-cols-2 gap-8">
-                        <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
-                            <div className="absolute top-4 right-4">
-                                <Link to="/GameHistory">
-                                    <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
-                                        <History className="w-4 h-4 mr-2" /> Historique
-                                    </Button>
-                                </Link>
-                            </div>
-                            <CardHeader><CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> Partie Rapide</CardTitle></CardHeader>
-                            <CardContent className="space-y-6">
-                                <p className="opacity-90">Affrontez un joueur aléatoire en ligne instantanément.</p>
-                                <div className="flex flex-col gap-3">
-                                    <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
-                                        {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} JOUER MAINTENANT
-                                    </Button>
-                                    <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10">
-                                        <Users className="w-4 h-4 mr-2" /> S'entraîner seul
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
 
-                        <div className="space-y-6">
-                            <Card className="bg-white/80 backdrop-blur border-[#d4c5b0] shadow-lg">
-                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728]"><Users className="w-6 h-6" /> Jouer avec un ami</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Créer une partie privée</Button>
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">INVITER UN AMI</span></div></div>
-                                    <div className="flex gap-2">
-                                        <Input placeholder="Email de l'ami" id="friend-email" />
-                                        <Button onClick={async () => {
-                                            const email = document.getElementById('friend-email').value;
-                                            if(!email || !user) return;
-                                            const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
-                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || 'Hôte', current_turn: 'white', board_state: initialBoard, is_private: true });
-                                            await base44.entities.Invitation.create({ from_user_id: user.id, from_user_name: user.full_name || user.email, to_user_email: email, game_type: gameType, game_id: newGame.id, status: 'pending' });
-                                            navigate(`/Game?id=${newGame.id}`);
-                                        }} className="bg-[#4a3728] hover:bg-[#2c1e12]">Inviter</Button>
-                                    </div>
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">OU REJOINDRE</span></div></div>
-                                    <form onSubmit={handleJoinByCode} className="flex gap-2">
-                                        <Input placeholder="Code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
-                                        <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> Apprendre à jouer</Button>
-                        </div>
-                    </div>
                 </div>
                 )}
 
