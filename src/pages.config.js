@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import Tournaments from './pages/Tournaments';
 import TournamentDetail from './pages/TournamentDetail';
 import Spectate from './pages/Spectate';
+import Training from './pages/Training';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Tournaments": Tournaments,
     "TournamentDetail": TournamentDetail,
     "Spectate": Spectate,
+    "Training": Training,
 }
 
 export const pagesConfig = {
