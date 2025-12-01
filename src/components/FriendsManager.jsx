@@ -393,5 +393,6 @@ export default function FriendsManager() {
                 </Tabs>
             </PopoverContent>
         </Popover>
+        </>
     );
 }
