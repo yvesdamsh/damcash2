@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CheckerBoard from '@/components/CheckerBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
-import { validateMove, executeMove, checkWinner } from '@/components/checkersLogic';
+import { validateMove, executeMove, checkWinner, getValidMoves, getMovesForPiece } from '@/components/checkersLogic';
 import { Loader2, User, Trophy, Flag, Copy, Check, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,6 +18,9 @@ export default function Game() {
     const [validTargetMoves, setValidTargetMoves] = useState([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    
+    // New states for Multi-jump logic
+    const [mustContinueWith, setMustContinueWith] = useState(null); // {r, c} of piece that must continue
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -48,6 +51,7 @@ export default function Game() {
                     if (!prev || prev.updated_date !== gameData.updated_date) {
                         if (gameData.board_state) {
                             setBoard(JSON.parse(gameData.board_state));
+                            setMustContinueWith(null); // Reset on external update (simple approach)
                         }
                         return gameData;
                     }
@@ -79,34 +83,109 @@ export default function Game() {
         const isMyPiece = (playerColor === 'white' && (clickedPiece === 1 || clickedPiece === 3)) ||
                           (playerColor === 'black' && (clickedPiece === 2 || clickedPiece === 4));
 
+        // 1. SELECTING A PIECE
         if (isMyPiece) {
-            setSelectedSquare([row, col]);
-            const possibleMoves = [];
-            for (let r = 0; r < 8; r++) {
-                for (let c = 0; c < 8; c++) {
-                    const result = validateMove(board, [row, col], [r, c], playerColor);
-                    if (result.valid) {
-                        possibleMoves.push({ row: r, col: c });
-                    }
+            // If we are in a multi-jump sequence, we can ONLY select the piece that must continue
+            if (mustContinueWith) {
+                if (row !== mustContinueWith.r || col !== mustContinueWith.c) {
+                    toast.warning("Vous devez continuer la rafle avec la même pièce !");
+                    return;
                 }
             }
-            setValidTargetMoves(possibleMoves);
+
+            // Check global mandatory captures
+            const allMoves = getValidMoves(board, playerColor);
+            const hasCapture = allMoves.some(m => m.captured !== null);
+            
+            // Get moves for THIS piece
+            const pieceAnalysis = getMovesForPiece(board, row, col, clickedPiece);
+            let myMoves = pieceAnalysis.moves.concat(pieceAnalysis.captures);
+
+            // Filter: if capture exists globally, this piece MUST capture
+            if (hasCapture) {
+                myMoves = myMoves.filter(m => m.captured !== null);
+                if (myMoves.length === 0) {
+                    // This piece cannot capture but others can
+                    // Only warn if not forced (to avoid spamming toast on missclick)
+                    // But visual feedback is handled by 'validTargetMoves' being empty
+                }
+            }
+
+            setSelectedSquare([row, col]);
+            setValidTargetMoves(myMoves.map(m => m.to));
             return;
         }
 
+        // 2. MOVING TO TARGET
         if (selectedSquare && !isMyPiece) {
-            const validation = validateMove(board, selectedSquare, [row, col], playerColor);
+            const [fromR, fromC] = selectedSquare;
             
+            // Validate specific move via logic
+            // We must pass the 'mustCapture' context if we want strict validation, 
+            // but since we pre-filtered 'validTargetMoves' above based on global rules,
+            // we can just check if the target is in our pre-calculated list + basic validation.
+            
+            const targetMove = validTargetMoves.find(m => m.r === row && m.c === col);
+            if (!targetMove) {
+                setSelectedSquare(null);
+                setValidTargetMoves([]);
+                return;
+            }
+
+            // Execute logic to get details (captured piece etc)
+            // We re-calculate to be safe or use the data if we stored it.
+            // Let's rely on validateMove which now checks global constraints too.
+            const validation = validateMove(board, selectedSquare, [row, col], playerColor);
+
             if (validation.valid) {
-                const newBoard = executeMove(board, selectedSquare, [row, col], validation.captured);
-                const nextTurn = playerColor === 'white' ? 'black' : 'white';
+                const { newBoard, promoted } = executeMove(board, selectedSquare, [row, col], validation.captured);
+                
+                // Multi-jump Logic
+                let nextTurn = playerColor === 'white' ? 'black' : 'white';
+                let continueTurn = false;
+                let nextMustContinue = null;
+
+                if (validation.captured && !promoted) {
+                    // If captured AND not promoted (usually promotion ends turn in International, 
+                    // BUT some rules say if you pass through king row you continue. 
+                    // Standard rule: if you land on king row, stop. 
+                    // We'll assume stop on promotion for simplicity or standard rule).
+                    
+                    // Check if can capture AGAIN from new position [row, col]
+                    const pieceAfter = newBoard[row][col];
+                    const nextMoves = getMovesForPiece(newBoard, row, col, pieceAfter, true); // true = only captures
+                    
+                    if (nextMoves.captures.length > 0) {
+                        continueTurn = true;
+                        nextTurn = playerColor; // Keep turn
+                        nextMustContinue = { r: row, c: col };
+                        toast.info("Encore une prise !");
+                    }
+                }
+
                 const winner = checkWinner(newBoard);
                 const newStatus = winner ? 'finished' : 'playing';
                 
                 setBoard(newBoard);
                 setSelectedSquare(null);
                 setValidTargetMoves([]);
-                setGame(prev => ({ ...prev, current_turn: nextTurn, status: newStatus, winner_id: winner ? currentUser.id : null }));
+                setMustContinueWith(nextMustContinue);
+                
+                setGame(prev => ({ 
+                    ...prev, 
+                    current_turn: nextTurn, 
+                    status: newStatus, 
+                    winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null 
+                }));
+
+                // If continuing turn, auto-select the piece for better UX
+                if (continueTurn) {
+                    setSelectedSquare([row, col]);
+                    // Recalculate targets for this piece immediately
+                    const pieceAfter = newBoard[row][col];
+                    const nextMoves = getMovesForPiece(newBoard, row, col, pieceAfter, true);
+                    setValidTargetMoves(nextMoves.captures.map(m => m.to));
+                }
 
                 try {
                     await base44.entities.Game.update(game.id, {
@@ -119,6 +198,7 @@ export default function Game() {
                     toast.error("Erreur de connexion");
                 }
             } else {
+                if (validation.error) toast.error(validation.error);
                 setSelectedSquare(null);
                 setValidTargetMoves([]);
             }
@@ -224,6 +304,12 @@ export default function Game() {
                         currentTurn={game.current_turn}
                         playerColor={playerColor}
                     />
+                     {/* Mandatory Capture Indicator */}
+                     {mustContinueWith && (
+                        <div className="mt-4 bg-orange-100 text-orange-800 p-3 rounded-lg text-center animate-pulse border border-orange-300 font-bold">
+                            Rafle en cours ! Vous devez continuer à sauter.
+                        </div>
+                    )}
                 </div>
 
                 <div className="order-3 space-y-4">

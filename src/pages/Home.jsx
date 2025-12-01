@@ -4,14 +4,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2 } from 'lucide-react';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle } from 'lucide-react';
 import { initializeBoard } from '@/components/checkersLogic';
+import TutorialOverlay from '@/components/TutorialOverlay';
 
 export default function Home() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+    const [showTutorial, setShowTutorial] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -129,6 +131,8 @@ export default function Home() {
 
     return (
         <div className="max-w-4xl mx-auto">
+            <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+
             <div className="text-center mb-12 space-y-4">
                 <h1 className="text-5xl md:text-6xl font-bold text-[#4a3728] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
                     Dames Master 3D
@@ -144,6 +148,11 @@ export default function Home() {
                     <Button onClick={() => base44.auth.redirectToLogin()} className="w-full bg-[#6b5138] hover:bg-[#5c4430] text-lg h-12">
                         Connexion / Inscription
                     </Button>
+                    <div className="mt-4">
+                         <Button variant="link" onClick={() => setShowTutorial(true)} className="text-[#6b5138]">
+                            <HelpCircle className="w-4 h-4 mr-2" /> Comment jouer ?
+                        </Button>
+                    </div>
                 </div>
             ) : (
                 <div className="grid md:grid-cols-2 gap-8">
@@ -156,14 +165,16 @@ export default function Home() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <p className="opacity-90">Affrontez un joueur aléatoire en ligne instantanément. Matchmaking automatique.</p>
-                            <Button 
-                                onClick={handleQuickMatch} 
-                                disabled={isCreating}
-                                className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg"
-                            >
-                                {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />}
-                                JOUER MAINTENANT
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button 
+                                    onClick={handleQuickMatch} 
+                                    disabled={isCreating}
+                                    className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg"
+                                >
+                                    {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />}
+                                    JOUER
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -203,21 +214,13 @@ export default function Home() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white/80 backdrop-blur border-[#d4c5b0] shadow-lg">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="flex items-center gap-3 text-[#4a3728] text-lg">
-                                    <Trophy className="w-5 h-5" />
-                                    Classement
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-2">
-                                    <Link to="/Leaderboard" className="text-sm text-[#6b5138] hover:underline block text-center pt-2">
-                                        Voir les meilleurs joueurs
-                                    </Link>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <Button 
+                            variant="ghost" 
+                            onClick={() => setShowTutorial(true)}
+                            className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"
+                        >
+                            <HelpCircle className="w-5 h-5 mr-2" /> Apprendre à jouer (Tutoriel)
+                        </Button>
                     </div>
                 </div>
             )}
