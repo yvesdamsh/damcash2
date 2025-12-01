@@ -33,6 +33,7 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
         dragConstraints: dragConstraints,
         dragMomentum: false,
         dragElastic: 0.1,
+        dragSnapToOrigin: true,
         onDragEnd: canDrag ? onDragEnd : undefined,
         whileDrag: { scale: 1.2, zIndex: 100, cursor: 'grabbing' },
         className: `chess-piece w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : (canDrag ? 'cursor-grab' : 'cursor-default')}`,
