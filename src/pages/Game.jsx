@@ -154,8 +154,9 @@ export default function Game() {
         // ----------------------------
 
         const clickedPiece = board[row][col];
-        const isMyPiece = (playerColor === 'white' && (clickedPiece === 1 || clickedPiece === 3)) ||
-                          (playerColor === 'black' && (clickedPiece === 2 || clickedPiece === 4));
+        // Use loose equality to handle potential string/number mismatch from DB/JSON
+        const isMyPiece = (playerColor === 'white' && (clickedPiece == 1 || clickedPiece == 3)) ||
+                          (playerColor === 'black' && (clickedPiece == 2 || clickedPiece == 4));
 
         // 1. SELECTING A PIECE
         if (isMyPiece) {
@@ -183,7 +184,7 @@ export default function Game() {
                 }
                 myMoves = myMoves.filter(m => m.captured !== null);
             } else if (myMoves.length === 0) {
-                 // toast.info("Aucun déplacement possible.");
+                 toast.info("Aucun déplacement possible pour cette pièce.");
             }
 
             setSelectedSquare([row, col]);
