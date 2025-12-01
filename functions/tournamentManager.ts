@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+const channel = new BroadcastChannel('notifications');
+
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
     
@@ -87,12 +89,24 @@ export default async function handler(req) {
                              });
 
                              // Notify Winner
+                             const winTitle = "Victoire en Tournoi !";
+                             const winMsg = `Félicitations ! Vous avez remporté le tournoi ${found.name}. Un badge a été ajouté à votre profil.`;
+                             const winLink = `/TournamentDetail?id=${found.id}`;
+
                              await base44.asServiceRole.entities.Notification.create({
                                  recipient_id: winner.user_id,
                                  type: "success",
-                                 title: "Victoire en Tournoi !",
-                                 message: `Félicitations ! Vous avez remporté le tournoi ${found.name}. Un badge a été ajouté à votre profil.`,
-                                 link: `/TournamentDetail?id=${found.id}`
+                                 title: winTitle,
+                                 message: winMsg,
+                                 link: winLink
+                             });
+                             
+                             channel.postMessage({
+                                 recipientId: winner.user_id,
+                                 type: "success",
+                                 title: winTitle,
+                                 message: winMsg,
+                                 link: winLink
                              });
                          } else {
                              await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
@@ -110,12 +124,24 @@ export default async function handler(req) {
                  // Notify participants
                  const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: found.id });
                  for (const p of participants) {
+                     const title = "Le tournoi commence !";
+                     const msg = `Le tournoi ${found.name} vient de commencer. Rejoignez l'arène !`;
+                     const link = `/TournamentDetail?id=${found.id}`;
+
                       await base44.asServiceRole.entities.Notification.create({
                          recipient_id: p.user_id,
                          type: "tournament",
-                         title: "Le tournoi commence !",
-                         message: `Le tournoi ${found.name} vient de commencer. Rejoignez l'arène !`,
-                         link: `/TournamentDetail?id=${found.id}`
+                         title: title,
+                         message: msg,
+                         link: link
+                     });
+
+                     channel.postMessage({
+                         recipientId: p.user_id,
+                         type: "tournament",
+                         title: title,
+                         message: msg,
+                         link: link
                      });
                  }
             }

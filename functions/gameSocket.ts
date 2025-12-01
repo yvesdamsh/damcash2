@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 const connections = new Map(); // gameId -> Set<WebSocket>
+const channel = new BroadcastChannel('notifications');
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
@@ -59,6 +60,26 @@ export default async function handler(req) {
                     type: 'CHAT_UPDATE',
                     payload: message
                 });
+
+                // Notify opponent via Global Notification System
+                try {
+                    const game = await base44.asServiceRole.entities.Game.get(gameId);
+                    if (game) {
+                        const opponentId = game.white_player_id === sender_id ? game.black_player_id : game.white_player_id;
+                        if (opponentId) {
+                            channel.postMessage({
+                                recipientId: opponentId,
+                                type: 'message',
+                                title: `Message de ${sender_name}`,
+                                message: content,
+                                link: `/Game?id=${gameId}`,
+                                senderId: sender_id
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to notify opponent", e);
+                }
             }
         } catch (error) {
             console.error("WebSocket Error:", error);

@@ -36,7 +36,42 @@ export default function Notifications() {
     useEffect(() => {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
-        return () => clearInterval(interval);
+
+        // WebSocket Realtime
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/functions/userSocket`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => console.log("Connected to Notifications");
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                // If it's a chat message AND we are currently in that game, ignore it (to avoid spam while playing)
+                if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {
+                    return;
+                }
+
+                // Show Toast
+                toast(data.title, {
+                    description: data.message,
+                    action: data.link ? {
+                        label: "Voir",
+                        onClick: () => navigate(data.link)
+                    } : undefined,
+                });
+
+                // Refresh list
+                fetchNotifications();
+            } catch (e) {
+                console.error("Notification WS Error", e);
+            }
+        };
+
+        return () => {
+            clearInterval(interval);
+            ws.close();
+        };
     }, []);
 
     const markAsRead = async (id) => {

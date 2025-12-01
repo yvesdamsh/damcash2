@@ -127,27 +127,11 @@ export default function FriendsManager() {
 
     const sendRequest = async (targetId) => {
         try {
-            // Check existing
-            const existing = await base44.entities.Friendship.filter({ requester_id: currentUser.id, recipient_id: targetId });
-            if (existing.length > 0) {
-                toast.error("Une demande existe déjà");
+            const res = await base44.functions.invoke('sendFriendRequest', { targetId });
+            if (res.data?.error) {
+                toast.error(res.data.error);
                 return;
             }
-            
-            await base44.entities.Friendship.create({
-                requester_id: currentUser.id,
-                recipient_id: targetId,
-                status: 'pending'
-            });
-            
-            // Notification
-            await base44.entities.Notification.create({
-                recipient_id: targetId,
-                type: "info",
-                title: "Nouvelle demande d'ami",
-                message: `${currentUser.username || currentUser.full_name} veut vous ajouter en ami.`,
-                read: false
-            });
 
             toast.success("Demande envoyée");
             setSearchResults(prev => prev.filter(u => u.id !== targetId));
