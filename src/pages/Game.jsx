@@ -784,7 +784,7 @@ export default function Game() {
                  <VideoChat 
                     gameId={game.id} 
                     currentUser={currentUser} 
-                    opponentId={currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
+                    opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
                 />
             </div>
 
