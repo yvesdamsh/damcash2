@@ -967,7 +967,8 @@ export default function Game() {
                                 theme={currentUser?.preferences?.checkers_theme}
                                 pieceDesign={currentUser?.preferences?.checkers_pieces}
                                 premove={premove}
-                              />
+                                isSoloMode={isSoloMode}
+                                />
                             : <ChessBoard 
                                 board={displayBoard} 
                                 onSquareClick={handleChessClick}

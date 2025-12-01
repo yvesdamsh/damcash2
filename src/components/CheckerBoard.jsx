@@ -2,13 +2,13 @@ import React from 'react';
 import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove }) {
+export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false }) {
     
     const isMoveTarget = (r, c) => {
         return validMoves.some(m => m.to.r === r && m.to.c === c);
     }
 
-    const isMyTurn = currentTurn === playerColor;
+    const canInteract = isSoloMode || (currentTurn === playerColor);
     const boardRef = React.useRef(null);
 
     const handleDragEnd = (e, info, r, c) => {
@@ -54,12 +54,12 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
                             const isTarget = isMoveTarget(r, c);
-                            
+
                             const squareColor = isDark ? currentTheme.dark : currentTheme.light;
 
-                            const isMyPiece = piece !== 0 && (
-                                (playerColor === 'white' && (piece === 1 || piece === 3)) ||
-                                (playerColor === 'black' && (piece === 2 || piece === 4))
+                            const isTurnPiece = piece !== 0 && (
+                                (currentTurn === 'white' && (piece === 1 || piece === 3)) ||
+                                (currentTurn === 'black' && (piece === 2 || piece === 4))
                             );
 
                             // Premove Highlight
@@ -77,7 +77,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                         ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
                                         ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
                                         ${isPremoveTarget ? 'bg-red-400/40' : ''}
-                                        ${(isTarget && isMyTurn) || (isMyPiece && isMyTurn) ? 'cursor-pointer' : ''}
+                                        ${(isTarget && canInteract) || (isTurnPiece && canInteract) ? 'cursor-pointer' : ''}
                                         transition-colors duration-150
                                     `}
                                 >
@@ -96,7 +96,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                         </span>
                                     )}
 
-                                    {isTarget && isMyTurn && (
+                                    {isTarget && canInteract && (
                                         <motion.div 
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
@@ -114,7 +114,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 onDragStart={() => onSquareClick(r, c)}
                                                 dragConstraints={boardRef}
-                                                canDrag={isMyTurn && isMyPiece}
+                                                canDrag={canInteract && isTurnPiece}
                                                 animateFrom={
                                                     lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                     ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
