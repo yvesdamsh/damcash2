@@ -51,7 +51,7 @@ export default function Layout({ children }) {
     };
 
     const navItems = [
-        { label: 'Accueil', path: '/', icon: Home },
+        { label: 'Accueil', path: '/Home', icon: Home },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
     ];
@@ -88,7 +88,7 @@ export default function Layout({ children }) {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <Link to="/" className="flex-shrink-0 flex items-center gap-2">
+                            <Link to="/Home" className="flex-shrink-0 flex items-center gap-2">
                                 <div className="w-8 h-8 bg-[#e8dcc5] rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] flex items-center justify-center">
                                     <div className="w-6 h-6 bg-[#2c1e12] rounded-full border-2 border-[#e8dcc5]" />
                                 </div>

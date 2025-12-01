@@ -24,39 +24,47 @@ export default function Home() {
         const init = async () => {
             try {
                 const currentUser = await base44.auth.me();
+                if (!currentUser) {
+                    setLoading(false);
+                    return;
+                }
                 setUser(currentUser);
                 
                 const savedGameType = localStorage.getItem('defaultGameType');
                 if (savedGameType) setGameType(savedGameType);
-                else {
-                     // Use list instead of filter for User entity to ensure compatibility
-                     const stats = await base44.entities.User.list();
-                     const myStats = stats.find(s => s.created_by === currentUser.email);
-                     if (myStats && myStats.default_game) setGameType(myStats.default_game);
-                }
 
-                const stats = await base44.entities.User.list();
-                const myStats = stats.find(s => s.created_by === currentUser.email);
-                if (!myStats) {
-                    await base44.entities.User.create({
-                        elo_checkers: 1200, elo_chess: 1200,
-                        wins_checkers: 0, losses_checkers: 0,
-                        wins_chess: 0, losses_chess: 0,
-                        games_played: 0, default_game: 'checkers'
-                    });
-                }
-
-                const [myGamesWhite, myGamesBlack, myInvites] = await Promise.all([
+                // Parallel fetching for better performance
+                const [stats, myGamesWhite, myGamesBlack, myInvites] = await Promise.all([
+                    base44.entities.User.list(),
                     base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
                     base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
                     base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' })
                 ]);
+
+                const myStats = stats.find(s => s.created_by === currentUser.email);
+                
+                if (myStats && myStats.default_game && !savedGameType) {
+                    setGameType(myStats.default_game);
+                }
+
+                if (!myStats) {
+                    try {
+                        await base44.entities.User.create({
+                            elo_checkers: 1200, elo_chess: 1200,
+                            wins_checkers: 0, losses_checkers: 0,
+                            wins_chess: 0, losses_chess: 0,
+                            games_played: 0, default_game: 'checkers'
+                        });
+                    } catch (err) {
+                        console.error("Error creating user stats", err);
+                    }
+                }
                 
                 setActiveGames([...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date)));
                 setInvitations(myInvites);
 
             } catch (e) {
-                // Not logged in
+                console.error("Home init error:", e);
             } finally {
                 setLoading(false);
             }
