@@ -28,6 +28,18 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
         // Check bounds
         if (targetR >= 0 && targetR < 10 && targetC >= 0 && targetC < 10) {
             if (targetR !== r || targetC !== c) {
+                // Check if it's a valid move based on current validMoves rules
+                const isValidMove = validMoves.some(m => 
+                    m.from.r === r && m.from.c === c && 
+                    m.to.r === targetR && m.to.c === targetC
+                );
+
+                if (isValidMove) {
+                    // Prevent snap-back glitch by hiding the piece instantly before unmount
+                    const pieceEl = e.target.closest('.checker-piece');
+                    if (pieceEl) pieceEl.style.opacity = '0';
+                }
+
                 if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
             }
         }

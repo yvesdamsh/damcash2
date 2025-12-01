@@ -38,7 +38,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
             animate={animate}
             exit={{ opacity: 0, transition: { duration: 0 } }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className={`relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+            className={`checker-piece relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
             style={{ touchAction: 'none' }}
         >
             <div 
