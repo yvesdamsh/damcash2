@@ -25,6 +25,10 @@ export default function Game() {
     // New states for Multi-jump logic (Checkers)
     const [mustContinueWith, setMustContinueWith] = useState(null); 
     
+    // Replay State
+    const [replayIndex, setReplayIndex] = useState(-1);
+    const [replayBoard, setReplayBoard] = useState(null);
+
     // Chess specific states
     const [chessState, setChessState] = useState({
         castlingRights: { wK: true, wQ: true, bK: true, bQ: true },
@@ -54,6 +58,47 @@ export default function Game() {
         };
         init();
     }, []);
+
+    useEffect(() => {
+        if (replayIndex === -1 || !game || !game.moves) {
+            setReplayBoard(null);
+            return;
+        }
+        
+        try {
+            const moves = JSON.parse(game.moves);
+            let currentBoard;
+            
+            if (game.game_type === 'chess') {
+                // Deep copy initial board to avoid mutation issues
+                const initial = initializeChessBoard();
+                currentBoard = initial.map(row => [...row]);
+            } else {
+                const initial = initializeBoard();
+                currentBoard = initial.map(row => [...row]);
+            }
+
+            for (let i = 0; i <= replayIndex; i++) {
+                if (i >= moves.length) break;
+                const move = moves[i];
+                if (game.game_type === 'chess') {
+                    const { board } = executeChessMove(currentBoard, move);
+                    currentBoard = board;
+                } else {
+                    // For checkers moves from history might store captured differently?
+                    // In handleSquareClick we stored: { ...checkersLastMove, captured: validation.captured, ... }
+                    // executeMove takes (board, from, to, captured)
+                    // move.from and move.to are stored in checkersLastMove format {r, c}
+                    const { newBoard } = executeMove(currentBoard, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
+                    currentBoard = newBoard;
+                }
+            }
+            setReplayBoard(currentBoard);
+        } catch (e) {
+            console.error("Replay error", e);
+        }
+
+    }, [replayIndex, game]);
 
     useEffect(() => {
         if (!id) return;
@@ -457,6 +502,9 @@ export default function Game() {
     if (isSolo) playerColor = game?.current_turn || 'white';
     const opponentName = isSolo ? "Moi-même (Test)" : (playerColor === 'white' ? game?.black_player_name : game?.white_player_name);
 
+    const displayBoard = (replayIndex !== -1 && replayBoard) ? replayBoard : board;
+    const movesList = game?.moves ? JSON.parse(game.moves) : [];
+
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
             <div className="mb-2 flex flex-row justify-between items-center bg-white/80 backdrop-blur rounded-lg p-2 shadow-md border border-[#d4c5b0] mx-2 md:mx-0 text-sm">
@@ -525,10 +573,10 @@ export default function Game() {
                     )}
                 </div>
 
-                <div className="order-1 lg:order-2 flex justify-center items-center h-full w-full">
+                <div className="order-1 lg:order-2 flex flex-col justify-center items-center h-full w-full">
                     {game.game_type === 'chess' ? (
                          <ChessBoard 
-                            board={board}
+                            board={displayBoard}
                             onSquareClick={handleSquareClick}
                             selectedSquare={selectedSquare}
                             validMoves={validTargetMoves.map(m => ({r: m.r, c: m.c}))}
@@ -539,7 +587,7 @@ export default function Game() {
                     ) : (
                         <>
                             <CheckerBoard 
-                                board={board}
+                                board={displayBoard}
                                 onSquareClick={handleSquareClick}
                                 selectedSquare={selectedSquare}
                                 validMoves={validTargetMoves}
@@ -553,6 +601,27 @@ export default function Game() {
                                 </div>
                             )}
                         </>
+                    )}
+
+                    {/* Replay Controls */}
+                    {game.status === 'finished' && movesList.length > 0 && (
+                        <div className="mt-4 bg-white/90 p-3 rounded-xl shadow-lg border border-[#d4c5b0] flex items-center gap-4">
+                            <div className="text-sm font-bold text-[#4a3728] mr-2">
+                                Replay: {replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}
+                            </div>
+                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(-100)} disabled={replayIndex === -1 && false}>
+                                <SkipBack className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(prev => (prev === -1 ? movesList.length - 2 : Math.max(-1, prev - 1)))}>
+                                <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(prev => (prev === -1 ? -1 : (prev >= movesList.length - 1 ? -1 : prev + 1)))}>
+                                <ChevronRight className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="outline" onClick={() => setReplayIndex(-1)}>
+                                <SkipForward className="w-4 h-4" />
+                            </Button>
+                        </div>
                     )}
                 </div>
 
