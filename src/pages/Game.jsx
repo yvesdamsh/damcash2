@@ -189,10 +189,14 @@ export default function Game() {
             soundManager.play(move.captured ? 'capture' : 'move');
         }
 
-        updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
+        await updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
             type: 'checkers', from: move.from, to: move.to, 
             captured: !!move.captured, board: JSON.stringify(newBoard) 
         });
+
+        if (status === 'finished') {
+            base44.functions.invoke('processGameResult', { gameId: game.id });
+        }
 
         setBoard(newBoard);
         if (mustContinue) {
@@ -250,11 +254,15 @@ export default function Game() {
                     else soundManager.play(move.captured ? 'capture' : 'move');
                 }
 
-                updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
+                await updateGameOnMove({ board: newBoard, castlingRights: newCastling, lastMove: move }, nextTurn, status, winnerId, {
                     type: 'chess', from: move.from, to: move.to,
                     piece: movedPiece, captured: !!move.captured,
                     board: JSON.stringify({ board: newBoard, castlingRights: newCastling, lastMove: move })
                 });
+
+                if (status === 'finished') {
+                    base44.functions.invoke('processGameResult', { gameId: game.id });
+                }
 
                 setBoard(newBoard);
                 setChessState({ castlingRights: newCastling, lastMove: move });
@@ -312,7 +320,8 @@ export default function Game() {
     const handleAcceptDraw = async () => {
         if (!game) return;
         await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null });
-        soundManager.play('win'); // Neutral sound preferable, but 'win' works for end game
+        base44.functions.invoke('processGameResult', { gameId: game.id });
+        soundManager.play('win');
         toast.success("Match nul !");
     };
 
@@ -487,6 +496,7 @@ export default function Game() {
                             <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
                                 if(confirm("Abandonner la partie ?")) {
                                     await base44.entities.Game.update(game.id, { status: 'finished', winner_id: currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id });
+                                    base44.functions.invoke('processGameResult', { gameId: game.id });
                                     soundManager.play('loss');
                                 }
                             }}><Flag className="w-4 h-4 mr-2" /> Abandonner</Button>

@@ -94,19 +94,35 @@ export default function Tournaments() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label>Jeu</Label>
-                                    <Select 
-                                        value={newTournament.game_type} 
-                                        onValueChange={v => setNewTournament({...newTournament, game_type: v})}
-                                    >
-                                        <SelectTrigger className="border-[#d4c5b0]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="checkers">Dames</SelectItem>
-                                            <SelectItem value="chess">Échecs</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                <Label>Jeu</Label>
+                                <Select 
+                                    value={newTournament.game_type} 
+                                    onValueChange={v => setNewTournament({...newTournament, game_type: v})}
+                                >
+                                    <SelectTrigger className="border-[#d4c5b0]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="checkers">Dames</SelectItem>
+                                        <SelectItem value="chess">Échecs</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                <Label>Format</Label>
+                                <Select 
+                                    value={newTournament.format || 'bracket'} 
+                                    onValueChange={v => setNewTournament({...newTournament, format: v})}
+                                >
+                                    <SelectTrigger className="border-[#d4c5b0]">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="bracket">Arbre (Bracket)</SelectItem>
+                                        <SelectItem value="swiss">Suisse</SelectItem>
+                                        <SelectItem value="arena">Arène</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label>Joueurs Max</Label>
