@@ -157,12 +157,12 @@ export default function PuzzleMode() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div className="flex gap-2">
-                    <Button variant={gameType === 'chess' ? 'default' : 'outline'} onClick={() => { setGameType('chess'); fetchPuzzle(); }}>Échecs</Button>
-                    <Button variant={gameType === 'checkers' ? 'default' : 'outline'} onClick={() => { setGameType('checkers'); fetchPuzzle(); }}>Dames</Button>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <Button className="flex-1 sm:flex-none" variant={gameType === 'chess' ? 'default' : 'outline'} onClick={() => { setGameType('chess'); fetchPuzzle(); }}>Échecs</Button>
+                    <Button className="flex-1 sm:flex-none" variant={gameType === 'checkers' ? 'default' : 'outline'} onClick={() => { setGameType('checkers'); fetchPuzzle(); }}>Dames</Button>
                 </div>
-                <Button onClick={fetchPuzzle} disabled={loading}>
+                <Button onClick={fetchPuzzle} disabled={loading} className="w-full sm:w-auto">
                     {loading ? <Loader2 className="animate-spin" /> : <RefreshCw className="mr-2 w-4 h-4" />} Nouveau Puzzle
                 </Button>
             </div>

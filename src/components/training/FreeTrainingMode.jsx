@@ -104,10 +104,10 @@ export default function FreeTrainingMode() {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <div className="flex gap-4">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                     <Select value={gameType} onValueChange={(v) => { setGameType(v); if(v==='chess') setBoard(initializeChessBoard()); else setBoard(initializeBoard()); setTurn('white'); }}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-full sm:w-[180px]">
                             <SelectValue placeholder="Jeu" />
                         </SelectTrigger>
                         <SelectContent>
@@ -115,13 +115,13 @@ export default function FreeTrainingMode() {
                             <SelectItem value="chess">Échecs</SelectItem>
                         </SelectContent>
                     </Select>
-                    <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md text-sm font-medium">
+                    <div className="flex items-center justify-center px-3 py-2 bg-gray-100 rounded-md text-sm font-medium">
                         Trait aux : <span className="ml-2 font-bold capitalize text-[#6b5138]">{turn === 'white' ? 'Blancs' : 'Noirs'}</span>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={resetBoard} title="Réinitialiser"><RotateCcw className="w-4 h-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={clearBoard} title="Vider le plateau"><Eraser className="w-4 h-4" /></Button>
+                <div className="flex gap-2 w-full md:w-auto justify-end">
+                    <Button variant="outline" className="flex-1 md:flex-none" onClick={resetBoard} title="Réinitialiser"><RotateCcw className="w-4 h-4 mr-2 md:mr-0" /><span className="md:hidden">Reset</span></Button>
+                    <Button variant="outline" className="flex-1 md:flex-none" onClick={clearBoard} title="Vider le plateau"><Eraser className="w-4 h-4 mr-2 md:mr-0" /><span className="md:hidden">Vider</span></Button>
                 </div>
             </div>
 
