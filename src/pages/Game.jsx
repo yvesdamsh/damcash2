@@ -271,8 +271,13 @@ export default function Game() {
                 }
 
                 try {
+                    const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+                    const moveData = { ...checkersLastMove, captured: validation.captured, player: playerColor, timestamp: Date.now() };
+                    const newMoves = [...currentMoves, moveData];
+
                     await base44.entities.Game.update(game.id, {
                         board_state: JSON.stringify({ board: newBoard, lastMove: checkersLastMove }), // Store lastMove for opponents
+                        moves: JSON.stringify(newMoves),
                         current_turn: nextTurn,
                         status: newStatus,
                         winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
@@ -404,12 +409,17 @@ export default function Game() {
                 }));
 
                 try {
+                    const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+                    const moveData = { ...move, piece: board[fromR][fromC], player: playerColor, timestamp: Date.now(), castlingRights: newCastlingRights };
+                    const newMoves = [...currentMoves, moveData];
+
                     await base44.entities.Game.update(game.id, {
                         board_state: JSON.stringify({ 
                             board: newBoard, 
                             castlingRights: newCastlingRights, 
                             lastMove: newLastMove 
                         }),
+                        moves: JSON.stringify(newMoves),
                         current_turn: nextTurn,
                         status: finalStatus,
                         winner_id: winner ? (winner === 'white' ? game.white_player_id : game.black_player_id) : null
