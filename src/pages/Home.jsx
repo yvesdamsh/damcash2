@@ -187,6 +187,33 @@ export default function Home() {
         }
     };
 
+    const handleSoloMode = async () => {
+        if (!user) return base44.auth.redirectToLogin();
+        setIsCreating(true);
+        try {
+            const initialBoard = gameType === 'chess' 
+                ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                : JSON.stringify(initializeBoard());
+
+            const newGame = await base44.entities.Game.create({
+                status: 'playing',
+                game_type: gameType,
+                white_player_id: user.id,
+                white_player_name: user.full_name || 'Moi',
+                black_player_id: user.id,
+                black_player_name: (user.full_name || 'Moi') + ' (Clone)',
+                current_turn: 'white',
+                board_state: initialBoard,
+                is_private: true
+            });
+            navigate(`/Game?id=${newGame.id}`);
+        } catch (error) {
+            console.error("Solo creation failed", error);
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     const handleJoinByCode = async (e) => {
         e.preventDefault();
         if (!user) return base44.auth.redirectToLogin();
@@ -323,14 +350,23 @@ export default function Home() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <p className="opacity-90">Affrontez un joueur aléatoire en ligne instantanément. Matchmaking automatique.</p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-3">
                                 <Button 
                                     onClick={handleQuickMatch} 
                                     disabled={isCreating}
-                                    className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg"
+                                    className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg"
                                 >
                                     {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />}
-                                    JOUER
+                                    JOUER MAINTENANT
+                                </Button>
+                                <Button 
+                                    onClick={handleSoloMode} 
+                                    disabled={isCreating}
+                                    variant="outline"
+                                    className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10"
+                                >
+                                    <Users className="w-4 h-4 mr-2" />
+                                    S'entraîner seul (Test)
                                 </Button>
                             </div>
                         </CardContent>

@@ -132,16 +132,19 @@ export default function Game() {
 
         const isWhitePlayer = game.white_player_id === currentUser.id;
         const isBlackPlayer = game.black_player_id === currentUser.id;
+        const isSoloMode = isWhitePlayer && isBlackPlayer;
         
         if (!isWhitePlayer && !isBlackPlayer) {
             toast.error("Vous êtes spectateur.");
             return;
         }
 
-        const playerColor = isWhitePlayer ? 'white' : 'black';
+        let playerColor = isWhitePlayer ? 'white' : 'black';
+        if (isSoloMode) {
+            playerColor = game.current_turn;
+        }
+
         if (game.current_turn !== playerColor) {
-             // Optional: Allow selecting pieces even if not turn to see moves? 
-             // For now strict turn order.
              toast.warning("Ce n'est pas votre tour !");
              return;
         }
@@ -439,8 +442,10 @@ export default function Game() {
     );
 
     const isPlayer = game?.white_player_id === currentUser.id || game?.black_player_id === currentUser.id;
-    const playerColor = game?.white_player_id === currentUser.id ? 'white' : 'black';
-    const opponentName = playerColor === 'white' ? game?.black_player_name : game?.white_player_name;
+    const isSolo = game?.white_player_id === currentUser.id && game?.black_player_id === currentUser.id;
+    let playerColor = game?.white_player_id === currentUser.id ? 'white' : 'black';
+    if (isSolo) playerColor = game?.current_turn || 'white';
+    const opponentName = isSolo ? "Moi-même (Test)" : (playerColor === 'white' ? game?.black_player_name : game?.white_player_name);
 
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
