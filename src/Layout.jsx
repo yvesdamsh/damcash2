@@ -10,7 +10,8 @@ import {
   Menu, 
   X,
   Volume2,
-  VolumeX
+  VolumeX,
+  Home
 } from 'lucide-react';
 
 export default function Layout({ children }) {
@@ -50,7 +51,7 @@ export default function Layout({ children }) {
     };
 
     const navItems = [
-        { label: 'Jeu de Dames / Échecs', path: '/', icon: Gamepad2 },
+        { label: 'Accueil', path: '/', icon: Home },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
     ];
