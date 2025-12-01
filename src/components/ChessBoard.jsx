@@ -36,11 +36,11 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
     };
 
     return (
-        <div className="relative select-none w-full h-full flex justify-center items-center">
-            <div className={`${currentTheme.bg} md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
+        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none' }}>
+            <div className={`${currentTheme.bg} p-0.5 md:p-1 rounded-md md:rounded-lg shadow-xl md:shadow-2xl border-2 md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
-                    className={`grid gap-0 w-full h-full ${currentTheme.light} md:border-2 ${currentTheme.border} shadow-inner`}
+                    className={`grid gap-0 w-full h-full ${currentTheme.light} border md:border-2 ${currentTheme.border} shadow-inner rounded-sm md:rounded`}
                     style={{ 
                         gridTemplateColumns: 'repeat(8, 1fr)', 
                         gridTemplateRows: 'repeat(8, 1fr)',
@@ -94,7 +94,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                     {isTarget && isMyTurn && (
                                         <div className={`
                                             absolute z-10 rounded-full pointer-events-none
-                                            ${piece ? 'inset-0 border-[6px] border-black/10' : 'w-3 h-3 md:w-4 md:h-4 bg-black/10'}
+                                            ${piece ? 'inset-0 border-[4px] md:border-[6px] border-black/20' : 'w-4 h-4 md:w-6 md:h-6 bg-black/20'}
                                         `} />
                                     )}
 

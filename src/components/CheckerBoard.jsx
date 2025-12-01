@@ -38,11 +38,11 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     const currentTheme = themes[theme] || themes.standard;
 
     return (
-        <div className="relative select-none w-full h-full flex justify-center items-center">
-            <div className={`${currentTheme.frame} md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
+        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none' }}>
+            <div className={`${currentTheme.frame} p-0.5 md:p-1 rounded-md md:rounded-lg shadow-xl md:shadow-2xl border-2 md:border-4 border-black/30 max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
-                    className={`grid gap-0 w-full h-full ${currentTheme.light} md:border-2 ${currentTheme.border} shadow-inner`}
+                    className={`grid gap-0 w-full h-full ${currentTheme.light} border md:border-2 ${currentTheme.border} shadow-inner rounded-sm md:rounded`}
                     style={{ 
                         gridTemplateColumns: 'repeat(10, 1fr)', 
                         gridTemplateRows: 'repeat(10, 1fr)',
@@ -100,7 +100,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                         <motion.div 
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className="absolute w-[30%] h-[30%] rounded-full bg-green-500 opacity-60 z-20 pointer-events-none shadow-[0_0_5px_#00ff00]" 
+                                            className="absolute w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 opacity-60 z-20 pointer-events-none shadow-[0_0_5px_#00ff00]" 
                                         />
                                     )}
 
