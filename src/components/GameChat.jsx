@@ -75,15 +75,6 @@ export default function GameChat({ gameId, currentUser, socket }) {
                 }
             }));
         } else {
-            socket.send(JSON.stringify({
-                type: 'CHAT_MESSAGE',
-                payload: {
-                    sender_id: currentUser.id,
-                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
-                    content
-                }
-            }));
-        } else {
             // Fallback HTTP
             try {
                 const msg = await base44.entities.ChatMessage.create({
