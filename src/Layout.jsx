@@ -75,13 +75,14 @@ export default function Layout({ children }) {
                         <div className="hidden md:flex items-center space-x-4">
                             {navItems.map((item) => {
                                 const Icon = item.icon;
-                                const isActive = location.pathname === item.path;
+                                // Case insensitive check for active route
+                                const isActive = location.pathname.toLowerCase() === item.path.toLowerCase();
                                 return (
                                     <Link
                                         key={item.path}
                                         to={item.path}
                                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2
-                                            ${location.pathname.toLowerCase() === item.path.toLowerCase() 
+                                            ${isActive 
                                                 ? 'bg-[#6b5138] text-white shadow-inner' 
                                                 : 'hover:bg-[#5c4430] text-[#d4c5b0]'
                                             }`}
