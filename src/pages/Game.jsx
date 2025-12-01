@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CheckerBoard from '@/components/CheckerBoard';
 import GameChat from '@/components/GameChat';
 import { Button } from '@/components/ui/button';
-import { validateMove, executeMove, checkWinner } from '@/utils/checkersLogic';
+import { validateMove, executeMove, checkWinner } from '@/components/checkersLogic';
 import { Loader2, User, Trophy, Flag, Copy, Check, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 

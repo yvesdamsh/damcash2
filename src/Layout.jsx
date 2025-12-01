@@ -36,8 +36,8 @@ export default function Layout({ children }) {
 
     const navItems = [
         { label: 'Jouer', path: '/', icon: Gamepad2 },
-        { label: 'Classement', path: '/leaderboard', icon: Trophy },
-        { label: 'Profil', path: '/profile', icon: User },
+        { label: 'Classement', path: '/Leaderboard', icon: Trophy },
+        { label: 'Profil', path: '/Profile', icon: User },
     ];
 
     const handleLogout = async () => {
@@ -81,7 +81,7 @@ export default function Layout({ children }) {
                                         key={item.path}
                                         to={item.path}
                                         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2
-                                            ${isActive 
+                                            ${location.pathname.toLowerCase() === item.path.toLowerCase() 
                                                 ? 'bg-[#6b5138] text-white shadow-inner' 
                                                 : 'hover:bg-[#5c4430] text-[#d4c5b0]'
                                             }`}

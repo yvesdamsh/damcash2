@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2 } from 'lucide-react';
-import { initializeBoard } from '@/utils/checkersLogic';
+import { initializeBoard } from '@/components/checkersLogic';
 
 export default function Home() {
     const [user, setUser] = useState(null);
