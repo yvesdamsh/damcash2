@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { initializeBoard } from '@/components/checkersLogic';
+import { initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
@@ -27,6 +30,7 @@ export default function Game() {
     const [replayIndex, setReplayIndex] = useState(-1);
     const [playersInfo, setPlayersInfo] = useState({ white: null, black: null });
     const [showChat, setShowChat] = useState(false);
+    const [showResult, setShowResult] = useState(false);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -76,6 +80,12 @@ export default function Game() {
             try {
                 const fetchedGame = await base44.entities.Game.get(id);
                 setGame(fetchedGame);
+                
+                if (fetchedGame.status === 'finished') {
+                    setShowResult(true);
+                } else {
+                    setShowResult(false);
+                }
                 
                 if (fetchedGame.game_type === 'chess') {
                     try {
@@ -289,12 +299,15 @@ export default function Game() {
             last_move_at: now
         };
 
+        // Increment Logic
+        const inc = game.increment || 0;
+
         if (game.last_move_at) {
             const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
             if (game.current_turn === 'white') {
-                updateData.white_seconds_left = Math.max(0, (game.white_seconds_left || 600) - elapsed);
+                updateData.white_seconds_left = Math.max(0, (game.white_seconds_left || 600) - elapsed + inc);
             } else {
-                updateData.black_seconds_left = Math.max(0, (game.black_seconds_left || 600) - elapsed);
+                updateData.black_seconds_left = Math.max(0, (game.black_seconds_left || 600) - elapsed + inc);
             }
         } else {
             // First move, just set timestamp
@@ -302,6 +315,41 @@ export default function Game() {
         }
 
         await base44.entities.Game.update(game.id, updateData);
+    };
+
+    const handleRematch = async () => {
+        if (!game) return;
+        
+        const initialBoard = game.game_type === 'chess' 
+            ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+            : JSON.stringify(initializeBoard());
+
+        const initTime = (game.initial_time || 10) * 60;
+
+        // Update Series Score
+        let newWhiteScore = game.series_score_white || 0;
+        let newBlackScore = game.series_score_black || 0;
+        
+        if (game.winner_id === game.white_player_id) newWhiteScore++;
+        else if (game.winner_id === game.black_player_id) newBlackScore++;
+        else { newWhiteScore += 0.5; newBlackScore += 0.5; }
+
+        await base44.entities.Game.update(game.id, {
+            status: 'playing',
+            board_state: initialBoard,
+            moves: '[]',
+            winner_id: null,
+            draw_offer_by: null,
+            current_turn: 'white',
+            white_seconds_left: initTime,
+            black_seconds_left: initTime,
+            last_move_at: null,
+            series_score_white: newWhiteScore,
+            series_score_black: newBlackScore,
+            elo_processed: false
+        });
+        setShowResult(false);
+        toast.success("Nouvelle manche commencée !");
     };
 
     const copyInviteCode = () => {
@@ -392,6 +440,85 @@ export default function Game() {
                     opponentId={currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
                 />
             </div>
+
+            {/* Result Overlay */}
+            <AnimatePresence>
+                {showResult && game && (
+                    <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.8, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="bg-[#fdfbf7] border-4 border-[#4a3728] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#4a3728] via-[#b8860b] to-[#4a3728]" />
+                            
+                            <div className="mb-6">
+                                {game.winner_id === currentUser?.id ? (
+                                    <>
+                                        <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
+                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">VICTOIRE !</h2>
+                                        <p className="text-[#6b5138] font-medium">Magnifique performance !</p>
+                                    </>
+                                ) : game.winner_id ? (
+                                    <>
+                                        <X className="w-20 h-20 mx-auto text-red-400 mb-4" />
+                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">DÉFAITE</h2>
+                                        <p className="text-[#6b5138] font-medium">Bien essayé, la prochaine sera la bonne.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Handshake className="w-20 h-20 mx-auto text-blue-400 mb-4" />
+                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">MATCH NUL</h2>
+                                        <p className="text-[#6b5138] font-medium">Une bataille très serrée.</p>
+                                    </>
+                                )}
+                            </div>
+
+                            {(game.series_length || 1) > 1 && (
+                                <div className="bg-[#f5f0e6] rounded-lg p-4 mb-6 border border-[#d4c5b0]">
+                                    <h3 className="font-bold text-[#4a3728] mb-2 text-sm uppercase tracking-widest">Score de la série</h3>
+                                    <div className="flex justify-center items-center gap-6 text-2xl font-black">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-sm font-normal text-gray-500 mb-1">{game.white_player_name}</span>
+                                            <span className={game.winner_id === game.white_player_id ? "text-green-600" : "text-[#4a3728]"}>
+                                                {(game.series_score_white || 0) + (game.winner_id === game.white_player_id ? 1 : game.winner_id ? 0 : 0.5)}
+                                            </span>
+                                        </div>
+                                        <span className="text-gray-300">-</span>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-sm font-normal text-gray-500 mb-1">{game.black_player_name}</span>
+                                            <span className={game.winner_id === game.black_player_id ? "text-green-600" : "text-[#4a3728]"}>
+                                                {(game.series_score_black || 0) + (game.winner_id === game.black_player_id ? 1 : game.winner_id ? 0 : 0.5)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">Best of {game.series_length}</p>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                {(game.series_length > 1) ? (
+                                     <Button onClick={handleRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
+                                        <Play className="w-5 h-5 mr-2" /> Manche Suivante
+                                     </Button>
+                                ) : (
+                                    <Button onClick={() => setShowResult(false)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">
+                                        <RotateCcw className="w-4 h-4 mr-2" /> Analyser le plateau
+                                    </Button>
+                                )}
+                                <Button variant="outline" onClick={() => navigate('/')} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
+                                    Retour à l'accueil
+                                </Button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <div className="max-w-4xl mx-auto w-full p-2 md:p-4 space-y-4">
                 

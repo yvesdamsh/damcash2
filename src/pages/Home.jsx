@@ -18,6 +18,12 @@ export default function Home() {
     const [gameType, setGameType] = useState('checkers');
     const [activeGames, setActiveGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
+    const [configOpen, setConfigOpen] = useState(false);
+    const [gameConfig, setGameConfig] = useState({
+        time: 10,
+        increment: 0,
+        series: 1
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -137,8 +143,13 @@ export default function Home() {
         }
     };
 
-    const handleCreatePrivate = async () => {
+    const handleCreatePrivate = () => {
         if (!user) return base44.auth.redirectToLogin();
+        setConfigOpen(true);
+    };
+
+    const confirmCreatePrivate = async () => {
+        setConfigOpen(false);
         setIsCreating(true);
         try {
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -147,10 +158,21 @@ export default function Home() {
                 : JSON.stringify(initializeBoard());
 
             const newGame = await base44.entities.Game.create({
-                status: 'waiting', game_type: gameType,
-                white_player_id: user.id, white_player_name: user.full_name || 'Hôte',
-                current_turn: 'white', board_state: initialBoard,
-                is_private: true, access_code: code
+                status: 'waiting', 
+                game_type: gameType,
+                white_player_id: user.id, 
+                white_player_name: user.full_name || 'Hôte',
+                current_turn: 'white', 
+                board_state: initialBoard,
+                is_private: true, 
+                access_code: code,
+                initial_time: gameConfig.time,
+                increment: gameConfig.increment,
+                white_seconds_left: gameConfig.time * 60,
+                black_seconds_left: gameConfig.time * 60,
+                series_length: parseInt(gameConfig.series),
+                series_score_white: 0,
+                series_score_black: 0
             });
             navigate(`/Game?id=${newGame.id}`);
         } catch (error) {
@@ -208,6 +230,71 @@ export default function Home() {
     return (
         <div className="max-w-4xl mx-auto">
             <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+
+            {/* Game Config Dialog */}
+            {configOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95">
+                        <CardHeader>
+                            <CardTitle className="text-[#4a3728]">Configuration de la partie</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#6b5138]">Cadence (Minutes)</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[1, 3, 5, 10, 15, 30, 60].map(t => (
+                                        <Button 
+                                            key={t}
+                                            variant={gameConfig.time === t ? "default" : "outline"}
+                                            onClick={() => setGameConfig({...gameConfig, time: t})}
+                                            className={gameConfig.time === t ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                        >
+                                            {t} min
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#6b5138]">Incrément (Secondes)</label>
+                                <div className="flex gap-2">
+                                    {[0, 1, 2, 3, 5].map(inc => (
+                                        <Button 
+                                            key={inc}
+                                            variant={gameConfig.increment === inc ? "default" : "outline"}
+                                            onClick={() => setGameConfig({...gameConfig, increment: inc})}
+                                            className={`flex-1 ${gameConfig.increment === inc ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}`}
+                                        >
+                                            +{inc}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#6b5138]">Série (Nombre de jeux)</label>
+                                <div className="flex gap-2">
+                                    {[1, 3, 7, 9, 20].map(s => (
+                                        <Button 
+                                            key={s}
+                                            variant={gameConfig.series === s ? "default" : "outline"}
+                                            onClick={() => setGameConfig({...gameConfig, series: s})}
+                                            className={`flex-1 ${gameConfig.series === s ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}`}
+                                        >
+                                            {s === 1 ? "Unique" : s}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
+                                <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={confirmCreatePrivate}>Créer</Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <div className="text-center mb-8 space-y-4">
                 <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
