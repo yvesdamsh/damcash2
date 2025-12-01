@@ -28,14 +28,14 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
         <motion.div
             drag={canDrag}
             dragMomentum={false}
-            dragElastic={0.1}
+            dragElastic={0}
             onDragStart={onDragStart}
             onDragEnd={props.onDragEnd}
             whileDrag={{ scale: 1.2, zIndex: 100, cursor: 'grabbing' }}
             dragSnapToOrigin
             initial={initial}
             animate={animate}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            transition={{ type: "spring", stiffness: 800, damping: 60 }}
             className={`relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
             style={{ touchAction: 'none' }}
         >
