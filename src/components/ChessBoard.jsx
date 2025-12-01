@@ -2,21 +2,24 @@ import React from 'react';
 import ChessPiece from './ChessPiece';
 import { motion } from 'framer-motion';
 
-export default function ChessBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove }) {
+export default function ChessBoard({ board, onSquareClick, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard' }) {
     
     const isMyTurn = currentTurn === playerColor;
 
-    // Helper to calculate notation
-    const getAlgebraic = (r, c) => {
-        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-        return `${files[c]}${8-r}`;
+    // Theme Configuration
+    const themes = {
+        standard: { dark: 'bg-[#6B8E4E]', light: 'bg-[#F0E7D5]', border: 'border-[#3d2b1f]', bg: 'bg-[#3d2b1f]', textDark: 'text-[#F0E7D5]', textLight: 'text-[#6B8E4E]' },
+        wood: { dark: 'bg-[#B58863]', light: 'bg-[#F0D9B5]', border: 'border-[#5c4430]', bg: 'bg-[#5c4430]', textDark: 'text-[#F0D9B5]', textLight: 'text-[#B58863]' },
+        blue: { dark: 'bg-[#5D8AA8]', light: 'bg-[#DEE3E6]', border: 'border-[#2F4F4F]', bg: 'bg-[#2F4F4F]', textDark: 'text-[#DEE3E6]', textLight: 'text-[#5D8AA8]' },
     };
+
+    const currentTheme = themes[theme] || themes.standard;
 
     return (
         <div className="relative select-none w-full h-full flex justify-center items-center">
-            <div className="bg-[#3d2b1f] md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]">
+            <div className={`${currentTheme.bg} md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
-                    className="grid gap-0 w-full h-full bg-[#F0E7D5] md:border-2 border-[#3d2b1f] shadow-inner"
+                    className={`grid gap-0 w-full h-full ${currentTheme.light} md:border-2 ${currentTheme.border} shadow-inner`}
                     style={{ 
                         gridTemplateColumns: 'repeat(8, 1fr)', 
                         gridTemplateRows: 'repeat(8, 1fr)',
@@ -33,10 +36,7 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                 (lastMove.to.r === r && lastMove.to.c === c)
                             );
                             
-                            // Colors from prompt
-                            const squareColor = isDark 
-                                ? 'bg-[#6B8E4E]' // Green
-                                : 'bg-[#F0E7D5]'; // Beige
+                            const squareColor = isDark ? currentTheme.dark : currentTheme.light;
 
                             return (
                                 <div
@@ -53,12 +53,12 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                 >
                                     {/* Coordinates */}
                                     {c === 0 && (
-                                        <span className={`absolute left-0.5 top-0 text-[8px] md:text-[10px] font-bold ${isDark ? 'text-[#F0E7D5]' : 'text-[#6B8E4E]'}`}>
+                                        <span className={`absolute left-0.5 top-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
                                             {8 - r}
                                         </span>
                                     )}
                                     {r === 7 && (
-                                        <span className={`absolute right-0.5 bottom-0 text-[8px] md:text-[10px] font-bold ${isDark ? 'text-[#F0E7D5]' : 'text-[#6B8E4E]'}`}>
+                                        <span className={`absolute right-0.5 bottom-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
                                             {String.fromCharCode(97 + c)}
                                         </span>
                                     )}
@@ -76,6 +76,7 @@ export default function ChessBoard({ board, onSquareClick, selectedSquare, valid
                                         <ChessPiece 
                                             type={piece} 
                                             isSelected={isSelected}
+                                            set={pieceSet}
                                             animateFrom={
                                                 lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                 ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }

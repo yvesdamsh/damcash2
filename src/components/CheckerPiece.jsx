@@ -1,27 +1,25 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected, animateFrom }) {
-    // type: 1 = white man, 2 = black man, 3 = white king, 4 = black king
-    
+export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard' }) {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
     const isKing = type === 3 || type === 4;
 
-    // Styled to match standard Chess pieces (High contrast)
     const baseColor = isWhite ? 'bg-[#f9f9f9]' : 'bg-[#2c2c2c]';
-    const borderColor = isWhite ? 'border-black' : 'border-[#d4c5b0]'; // Black border for white pieces (like chess SVGs)
+    const borderColor = isWhite ? 'border-black' : 'border-[#d4c5b0]'; 
     const innerRing = isWhite ? 'border-gray-400' : 'border-[#505050]';
     
+    const isFlat = design === 'flat';
+
     // Realistic shadow for 3D effect
-    const shadowStyle = {
+    const shadowStyle = isFlat ? {} : {
         boxShadow: isSelected 
             ? '0 8px 16px rgba(0,0,0,0.4), 0 4px 4px rgba(0,0,0,0.3)' 
             : '0 3px 0 ' + (isWhite ? '#555' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
-    // Animation logic
     const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
@@ -40,15 +38,17 @@ export default function CheckerPiece({ type, isSelected, animateFrom }) {
                     border-2 md:border-4 ${borderColor}
                     flex items-center justify-center
                     transition-transform duration-200
-                    ${isSelected ? '-translate-y-1' : ''}
+                    ${isSelected && !isFlat ? '-translate-y-1' : ''}
                 `}
                 style={shadowStyle}
             >
-                {/* Inner grooves for realism */}
-                <div className={`w-[70%] h-[70%] rounded-full border md:border-4 ${innerRing} opacity-50`} />
-                <div className={`absolute w-[40%] h-[40%] rounded-full border md:border-2 ${innerRing} opacity-50`} />
+                {!isFlat && (
+                    <>
+                        <div className={`w-[70%] h-[70%] rounded-full border md:border-4 ${innerRing} opacity-50`} />
+                        <div className={`absolute w-[40%] h-[40%] rounded-full border md:border-2 ${innerRing} opacity-50`} />
+                    </>
+                )}
                 
-                {/* King Crown Icon */}
                 {isKing && (
                     <div className="absolute text-lg md:text-2xl select-none drop-shadow-md">
                         👑

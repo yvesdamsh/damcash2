@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette } from 'lucide-react';
+import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ export default function Profile() {
     const [ranks, setRanks] = useState({ checkers: '-', chess: '-' });
     const [favoriteGames, setFavoriteGames] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editForm, setEditForm] = useState({ username: '', full_name: '', avatar_url: '', bio: '' });
     const [uploading, setUploading] = useState(false);
     const navigate = useNavigate();
@@ -171,6 +173,22 @@ export default function Profile() {
                                         <Save className="w-4 h-4 mr-2" /> Enregistrer
                                     </Button>
                                 </div>
+                            </DialogContent>
+                        </Dialog>
+                        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm ml-2">
+                                    <Palette className="w-4 h-4 mr-2" /> Personnaliser
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7] border-[#d4c5b0]">
+                                <DialogHeader>
+                                    <DialogTitle className="text-[#4a3728]">Personnalisation</DialogTitle>
+                                </DialogHeader>
+                                <GameSettings user={user} onUpdate={() => {
+                                    base44.auth.me().then(setUser);
+                                    setIsSettingsOpen(false);
+                                }} />
                             </DialogContent>
                         </Dialog>
                     </div>
