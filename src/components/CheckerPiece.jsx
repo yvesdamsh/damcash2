@@ -9,15 +9,15 @@ export default function CheckerPiece({ type, isSelected, animateFrom }) {
     const isWhite = type === 1 || type === 3;
     const isKing = type === 3 || type === 4;
 
-    const baseColor = isWhite ? 'bg-[#f0e6d2]' : 'bg-[#2c2c2c]';
-    const borderColor = isWhite ? 'border-[#d4c5b0]' : 'border-[#1a1a1a]';
-    const innerRing = isWhite ? 'border-[#e8dcc5]' : 'border-[#404040]';
+    const baseColor = isWhite ? 'bg-[#ffffff]' : 'bg-[#2c2c2c]';
+    const borderColor = isWhite ? 'border-[#e5e5e5]' : 'border-[#1a1a1a]';
+    const innerRing = isWhite ? 'border-[#f5f5f5]' : 'border-[#404040]';
     
     // Realistic shadow for 3D effect
     const shadowStyle = {
         boxShadow: isSelected 
             ? '0 8px 16px rgba(0,0,0,0.4), 0 4px 4px rgba(0,0,0,0.3)' 
-            : '0 3px 0 ' + (isWhite ? '#cbbba4' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
+            : '0 3px 0 ' + (isWhite ? '#cccccc' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
     // Animation logic
