@@ -440,32 +440,30 @@ export default function Game() {
 
     return (
         <div className="w-full md:w-[95%] max-w-[1800px] mx-auto pb-4">
-            <div className="mb-4 flex flex-col md:flex-row justify-between items-center bg-white/80 backdrop-blur rounded-xl p-3 shadow-lg border border-[#d4c5b0] mx-2 md:mx-0">
-                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${game.status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
-                        <span className="font-bold text-[#4a3728]">
-                            {game.status === 'waiting' ? 'En attente' : 'Partie en cours'}
-                        </span>
-                    </div>
+            <div className="mb-2 flex flex-row justify-between items-center bg-white/80 backdrop-blur rounded-lg p-2 shadow-md border border-[#d4c5b0] mx-2 md:mx-0 text-sm">
+                <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${game.status === 'playing' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`} />
+                    <span className="font-bold text-[#4a3728]">
+                        {game.status === 'waiting' ? 'En attente' : 'En cours'}
+                    </span>
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${game.current_turn === 'white' ? 'bg-[#e8dcc5] shadow-inner border border-[#d4c5b0]' : 'opacity-50'}`}>
+                <div className="flex items-center gap-2 md:gap-4">
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${game.current_turn === 'white' ? 'bg-[#e8dcc5] shadow-inner border border-[#d4c5b0]' : 'opacity-50'}`}>
                         <div className="w-4 h-4 rounded-full bg-[#f0e6d2] border border-gray-400" />
-                        <span className="font-bold text-[#4a3728]">{game.white_player_name || 'Joueur 1'}</span>
+                        <span className="font-bold text-[#4a3728] truncate max-w-[80px] md:max-w-none">{game.white_player_name || 'J1'}</span>
                     </div>
-                    <span className="text-[#4a3728] font-serif italic">vs</span>
-                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${game.current_turn === 'black' ? 'bg-[#2c2c2c] text-white shadow-inner border border-gray-700' : 'opacity-50'}`}>
-                        <div className="w-4 h-4 rounded-full bg-[#2c2c2c] border border-gray-500" />
-                        <span className={`font-bold ${game.current_turn === 'black' ? 'text-gray-200' : 'text-[#4a3728]'}`}>
-                            {game.black_player_name || 'Joueur 2'}
+                    <span className="text-[#4a3728] font-serif italic text-xs">vs</span>
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${game.current_turn === 'black' ? 'bg-[#2c2c2c] text-white shadow-inner border border-gray-700' : 'opacity-50'}`}>
+                        <div className="w-3 h-3 rounded-full bg-[#2c2c2c] border border-gray-500" />
+                        <span className={`font-bold truncate max-w-[80px] md:max-w-none ${game.current_turn === 'black' ? 'text-gray-200' : 'text-[#4a3728]'}`}>
+                            {game.black_player_name || 'J2'}
                         </span>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-4 items-start h-[85vh]">
+            <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-2 md:gap-4 items-start h-[calc(100vh-70px)]">
                 <div className="space-y-4 order-2 lg:order-1 h-full overflow-y-auto">
                     <div className="bg-white/80 rounded-xl p-4 shadow-md border border-[#d4c5b0]">
                         <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2">

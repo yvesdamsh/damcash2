@@ -14,7 +14,7 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
     return (
         <div className="relative select-none w-full h-full flex justify-center items-center">
             {/* Board Frame with coordinate labels */}
-            <div className="bg-[#4a3728] md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-[85vh] aspect-square w-full max-w-[85vh]">
+            <div className="bg-[#4a3728] md:p-1 md:rounded-lg md:shadow-2xl md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]">
                 
                 <div 
                     className="grid gap-0 w-full h-full bg-[#2c1e12] md:border-2 border-[#5c4430] shadow-inner"
