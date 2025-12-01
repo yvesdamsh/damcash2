@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X } from 'lucide-react';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
@@ -303,6 +303,25 @@ export default function Game() {
         setTimeout(() => setInviteCopied(false), 2000);
     };
 
+    const handleOfferDraw = async () => {
+        if (!game || !currentUser) return;
+        await base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id });
+        toast.success("Nulle proposée");
+    };
+
+    const handleAcceptDraw = async () => {
+        if (!game) return;
+        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null });
+        soundManager.play('win'); // Neutral sound preferable, but 'win' works for end game
+        toast.success("Match nul !");
+    };
+
+    const handleDeclineDraw = async () => {
+        if (!game) return;
+        await base44.entities.Game.update(game.id, { draw_offer_by: null });
+        toast.error("Nulle refusée");
+    };
+
     if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
     const movesList = game?.moves ? JSON.parse(game.moves) : [];
@@ -437,9 +456,32 @@ export default function Game() {
                             </div>
                         )}
                         
-                        <Button variant="outline" size="sm" onClick={() => navigate('/')}>
-                            <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
-                        </Button>
+                        {game.status === 'playing' ? (
+                            <>
+                                {game.draw_offer_by === currentUser?.id ? (
+                                    <Button variant="outline" size="sm" disabled className="opacity-70">
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Nulle proposée...
+                                    </Button>
+                                ) : game.draw_offer_by ? (
+                                    <div className="flex gap-2 animate-pulse">
+                                        <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleAcceptDraw}>
+                                            <Handshake className="w-4 h-4 mr-2" /> Accepter Nulle
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="border-red-200 text-red-600" onClick={handleDeclineDraw}>
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <Button variant="outline" size="sm" onClick={handleOfferDraw}>
+                                        <Handshake className="w-4 h-4 mr-1" /> Proposer nulle
+                                    </Button>
+                                )}
+                            </>
+                        ) : (
+                            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+                                <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
+                            </Button>
+                        )}
                         
                         {game.status === 'playing' && (
                             <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50" onClick={async () => {
