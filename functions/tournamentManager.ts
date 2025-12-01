@@ -65,6 +65,18 @@ export default async function handler(req) {
                  await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
             } else if (now >= start && now < end && found.status === 'open') {
                  await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'ongoing' });
+                 
+                 // Notify participants
+                 const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: found.id });
+                 for (const p of participants) {
+                      await base44.asServiceRole.entities.Notification.create({
+                         recipient_id: p.user_id,
+                         type: "tournament",
+                         title: "Le tournoi commence !",
+                         message: `Le tournoi ${found.name} vient de commencer. Rejoignez l'arène !`,
+                         link: `/TournamentDetail?id=${found.id}`
+                     });
+                 }
             }
         }
         return false;
