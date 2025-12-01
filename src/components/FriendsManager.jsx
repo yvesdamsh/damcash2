@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Users, UserPlus, Search, Check, X, MessageSquare, Gamepad2, Circle } from 'lucide-react';
+import { Users, UserPlus, Search, Check, X, MessageSquare, Gamepad2, Circle, Settings2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import DirectChat from './DirectChat';
 
 export default function FriendsManager() {
     const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +19,10 @@ export default function FriendsManager() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
+    const [activeChatFriend, setActiveChatFriend] = useState(null);
+    const [challengeConfigOpen, setChallengeConfigOpen] = useState(false);
+    const [challengeTarget, setChallengeTarget] = useState(null);
+    const [challengeConfig, setChallengeConfig] = useState({ time: 10, increment: 0, gameType: 'checkers' });
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -158,70 +164,115 @@ export default function FriendsManager() {
         } catch (e) { console.error(e); }
     };
 
-    const inviteToGame = async (friend) => {
-        // Create a quick private game and invite
+    const openChallengeModal = (friend) => {
+        setChallengeTarget(friend);
+        setChallengeConfigOpen(true);
+        setIsOpen(false); // Close friend list
+    };
+
+    const handleSendChallenge = async () => {
+        if (!challengeTarget) return;
+        
         try {
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            // Determine default game type? Let's ask or default to checkers
+            
+            let initialBoard = '[]';
+            if (challengeConfig.gameType === 'checkers') {
+                const { initializeBoard } = await import('@/components/checkersLogic');
+                initialBoard = JSON.stringify(initializeBoard());
+            } else {
+                const { initializeChessBoard } = await import('@/components/chessLogic');
+                initialBoard = JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+            }
+
             const game = await base44.entities.Game.create({
                 status: 'waiting',
-                game_type: 'checkers',
+                game_type: challengeConfig.gameType,
                 white_player_id: currentUser.id,
-                white_player_name: currentUser.username || 'Hôte',
+                white_player_name: currentUser.username || currentUser.full_name || 'Hôte',
                 current_turn: 'white',
-                board_state: '[]', // Needs proper init in backend or hook, but blank for now is dangerous. 
-                // Ideally we use the same logic as Home. Let's just redirect to Home with a pre-select intent or simple alert.
-                // Actually, let's just create a generic invite notification for now.
+                board_state: initialBoard,
                 is_private: true,
                 access_code: code,
-                initial_time: 10,
-                increment: 0
+                initial_time: challengeConfig.time,
+                increment: challengeConfig.increment,
+                white_seconds_left: challengeConfig.time * 60,
+                black_seconds_left: challengeConfig.time * 60,
+                series_length: 1
             });
-
-            // Init board correctly
-            const { initializeBoard } = await import('@/components/checkersLogic');
-            const board = JSON.stringify(initializeBoard());
-            await base44.entities.Game.update(game.id, { board_state: board });
 
             await base44.entities.Invitation.create({
                 from_user_id: currentUser.id,
-                from_user_name: currentUser.username || 'Ami',
-                to_user_email: friend.email,
-                game_type: 'checkers',
+                from_user_name: currentUser.username || currentUser.full_name || 'Ami',
+                to_user_email: challengeTarget.email,
+                game_type: challengeConfig.gameType,
                 game_id: game.id,
                 status: 'pending'
             });
 
             await base44.entities.Notification.create({
-                recipient_id: friend.id,
+                recipient_id: challengeTarget.id,
                 type: "game",
-                title: "Invitation à jouer",
-                message: `${currentUser.username} vous invite à une partie de Dames !`,
+                title: "Défi reçu",
+                message: `${currentUser.username || 'Ami'} vous défie aux ${challengeConfig.gameType === 'chess' ? 'Échecs' : 'Dames'} (${challengeConfig.time}+${challengeConfig.increment})`,
                 link: `/Game?id=${game.id}`
             });
 
-            toast.success(`Invitation envoyée à ${friend.username || friend.full_name}`);
+            toast.success(`Défi envoyé à ${challengeTarget.username}`);
             navigate(`/Game?id=${game.id}`);
-            setIsOpen(false);
+            setChallengeConfigOpen(false);
+            setChallengeTarget(null);
         } catch (e) {
             console.error(e);
-            toast.error("Erreur lors de la création de la partie");
+            toast.error("Erreur lors du défi");
         }
     };
 
     return (
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
-                    <Users className="w-5 h-5" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96 p-0 border-[#4a3728] bg-[#fdfbf7]" align="end">
-                <div className="p-4 border-b border-[#d4c5b0] bg-[#4a3728] text-[#e8dcc5]">
-                    <h4 className="font-bold flex items-center gap-2">
-                        <Users className="w-4 h-4" /> Amis & Contacts
-                    </h4>
-                </div>
+        <>
+            {activeChatFriend && <DirectChat friend={activeChatFriend} currentUser={currentUser} onClose={() => setActiveChatFriend(null)} />}
+            
+            <Dialog open={challengeConfigOpen} onOpenChange={setChallengeConfigOpen}>
+                <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7] border-[#d4c5b0]">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#4a3728]">Défier {challengeTarget?.username}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="grid gap-2">
+                            <label className="text-sm font-medium">Jeu</label>
+                            <div className="flex gap-2">
+                                <Button variant={challengeConfig.gameType === 'checkers' ? "default" : "outline"} onClick={() => setChallengeConfig({...challengeConfig, gameType: 'checkers'})} className="flex-1">Dames</Button>
+                                <Button variant={challengeConfig.gameType === 'chess' ? "default" : "outline"} onClick={() => setChallengeConfig({...challengeConfig, gameType: 'chess'})} className="flex-1">Échecs</Button>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <label className="text-sm font-medium">Temps (min)</label>
+                            <div className="flex gap-2 flex-wrap">
+                                {[3, 5, 10, 15].map(t => (
+                                    <Button key={t} size="sm" variant={challengeConfig.time === t ? "default" : "outline"} onClick={() => setChallengeConfig({...challengeConfig, time: t})}>{t}</Button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setChallengeConfigOpen(false)}>Annuler</Button>
+                        <Button onClick={handleSendChallenge} className="bg-[#4a3728] hover:bg-[#2c1e12]">Envoyer Défi</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
+                        <Users className="w-5 h-5" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-96 p-0 border-[#4a3728] bg-[#fdfbf7]" align="end">
+                    <div className="p-4 border-b border-[#d4c5b0] bg-[#4a3728] text-[#e8dcc5]">
+                        <h4 className="font-bold flex items-center gap-2">
+                            <Users className="w-4 h-4" /> Amis & Contacts
+                        </h4>
+                    </div>
                 
                 <Tabs defaultValue="list" className="w-full">
                     <TabsList className="w-full grid grid-cols-2 rounded-none bg-[#e8dcc5] p-0">
@@ -269,7 +320,6 @@ export default function FriendsManager() {
                                                         <AvatarImage src={friend.avatar_url} />
                                                         <AvatarFallback>{friend.username?.[0] || '?'}</AvatarFallback>
                                                     </Avatar>
-                                                    {/* Status Indicator Mockup - assuming online if listed? Or just static for now */}
                                                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" title="En ligne"></span>
                                                 </div>
                                                 <div>
@@ -277,15 +327,26 @@ export default function FriendsManager() {
                                                     <p className="text-[10px] text-gray-500">En ligne</p>
                                                 </div>
                                             </div>
-                                            <Button 
-                                                size="sm" 
-                                                variant="ghost" 
-                                                className="opacity-0 group-hover:opacity-100 text-[#4a3728] hover:bg-[#d4c5b0]"
-                                                onClick={() => inviteToGame(friend)}
-                                                title="Inviter à jouer"
-                                            >
-                                                <Gamepad2 className="w-4 h-4" />
-                                            </Button>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="ghost" 
+                                                    className="h-8 w-8 text-[#4a3728] hover:bg-[#d4c5b0]"
+                                                    onClick={() => { setActiveChatFriend(friend); setIsOpen(false); }}
+                                                    title="Message"
+                                                >
+                                                    <MessageSquare className="w-4 h-4" />
+                                                </Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="ghost" 
+                                                    className="h-8 w-8 text-[#4a3728] hover:bg-[#d4c5b0]"
+                                                    onClick={() => openChallengeModal(friend)}
+                                                    title="Défier"
+                                                >
+                                                    <Gamepad2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

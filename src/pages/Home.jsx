@@ -9,6 +9,7 @@ import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, Hist
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
+import ActivityFeed from '@/components/ActivityFeed';
 
 export default function Home() {
     const [user, setUser] = useState(null);
@@ -333,6 +334,8 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="space-y-8">
+                    <ActivityFeed />
+
                     {/* Baba Sy Featured Section */}
                     <Card className="mb-8 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
                         <div className="flex flex-col md:flex-row">
