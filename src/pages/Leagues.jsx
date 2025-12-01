@@ -73,8 +73,8 @@ export default function LeaguesPage() {
                 setUser(currentUser);
 
                 const [allLeagues, parts] = await Promise.all([
-                    base44.entities.League.list({}, { start_date: -1 }),
-                    currentUser ? base44.entities.LeagueParticipant.list({ user_id: currentUser.id }) : []
+                    base44.entities.League.list('-start_date', 50),
+                    currentUser ? base44.entities.LeagueParticipant.filter({ user_id: currentUser.id }) : []
                 ]);
 
                 setLeagues(allLeagues);
