@@ -258,7 +258,7 @@ const isSquareAttacked = (board, r, c, color) => {
     return false;
 };
 
-const isInCheck = (board, color) => {
+export const isInCheck = (board, color) => {
     return isCurrentInCheck(board, color);
 };
 
