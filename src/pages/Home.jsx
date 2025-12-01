@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen } from 'lucide-react';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
@@ -312,6 +313,41 @@ export default function Home() {
                 <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ Dames</button>
                 <button onClick={() => saveGameTypePref('chess')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'chess' ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'}`}>♟️ Échecs</button>
             </div>
+
+            {gameType === 'checkers' && (
+                <Card className="mb-12 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
+                    <div className="md:flex">
+                        <div className="md:w-2/5 h-64 md:h-auto relative group">
+                            <img 
+                                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/9a126e851_1764571213479.jpg" 
+                                alt="Baba Sy" 
+                                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]/10" />
+                            <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
+                                <h3 className="text-xl font-bold">Baba Sy</h3>
+                                <p className="text-xs opacity-90">Légende du Jeu</p>
+                            </div>
+                        </div>
+                        <div className="p-6 md:w-3/5 flex flex-col justify-center relative">
+                            <div className="hidden md:block mb-3">
+                                <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">Légende du Jeu</Badge>
+                                <h3 className="text-3xl font-black text-[#4a3728] mb-1">Baba Sy</h3>
+                                <p className="text-sm text-[#8c6b4a] font-serif italic">"Le grand maître sénégalais"</p>
+                            </div>
+                            <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base">
+                                Découvrez l'histoire fascinante de <strong>Baba Sy</strong> (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.
+                            </p>
+                            <div className="flex gap-3">
+                                <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open('https://fr.wikipedia.org/wiki/Baba_Sy', '_blank')}>
+                                    <BookOpen className="w-4 h-4 mr-2" />
+                                    Lire sa biographie
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+            )}
 
             {!user ? (
                 <div className="text-center bg-white/60 backdrop-blur p-12 rounded-2xl shadow-xl max-w-md mx-auto border border-[#d4c5b0]">
