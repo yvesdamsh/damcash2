@@ -19,7 +19,7 @@ export default function Home() {
     const [isCreating, setIsCreating] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
-    const [gameType, setGameType] = useState('checkers');
+    const [gameType, setGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [activeGames, setActiveGames] = useState([]);
     const [featuredGames, setFeaturedGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
@@ -72,16 +72,12 @@ export default function Home() {
                 }
                 setUser(currentUser);
                 
-                const savedGameType = localStorage.getItem('defaultGameType');
+                const savedGameType = localStorage.getItem('gameMode');
                 if (savedGameType) setGameType(savedGameType);
 
                 // Initial full load (with user stats check)
                 const stats = await base44.entities.User.list(); // Should be optimized in future
                 const myStats = stats.find(s => s.created_by === currentUser.email);
-                
-                if (myStats && myStats.default_game && !savedGameType) {
-                    setGameType(myStats.default_game);
-                }
 
                 if (!myStats) {
                     try {
@@ -111,7 +107,14 @@ export default function Home() {
             const u = await base44.auth.me().catch(()=>null);
             if (u) fetchData(u);
         }, 5000);
-        return () => clearInterval(interval);
+
+        const handleModeChange = () => setGameType(localStorage.getItem('gameMode') || 'checkers');
+        window.addEventListener('gameModeChanged', handleModeChange);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('gameModeChanged', handleModeChange);
+        };
     }, []);
 
     const handleAcceptInvite = async (invite) => {
@@ -133,7 +136,8 @@ export default function Home() {
 
     const saveGameTypePref = (type) => {
         setGameType(type);
-        localStorage.setItem('defaultGameType', type);
+        localStorage.setItem('gameMode', type);
+        window.dispatchEvent(new Event('gameModeChanged'));
         if (user) {
             base44.entities.User.list().then(users => {
                  const myUser = users.find(u => u.created_by === user.email);
@@ -599,10 +603,10 @@ export default function Home() {
                                             <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
                                                 <div className="bg-[#4a3728] p-3 flex items-center gap-2 text-[#e8dcc5]">
                                                     <Eye className="w-5 h-5" />
-                                                    <h3 className="font-bold">À la une - Top Parties</h3>
+                                                    <h3 className="font-bold">À la une - Top Parties ({gameType === 'chess' ? 'Échecs' : 'Dames'})</h3>
                                                 </div>
                                                 <div className="p-4 space-y-3 bg-[#fdfbf7]">
-                                                    {featuredGames.length > 0 ? featuredGames.map(g => (
+                                                    {featuredGames.filter(g => g.game_type === gameType).length > 0 ? featuredGames.filter(g => g.game_type === gameType).map(g => (
                                                         <div key={g.id} className="flex justify-between items-center p-3 bg-white border border-[#e8dcc5] rounded-lg hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
                                                             <div>
                                                                 <div className="text-sm font-bold text-[#4a3728] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>

@@ -11,9 +11,15 @@ import { Loader2 } from 'lucide-react';
 export default function Leaderboard() {
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [gameType, setGameType] = useState('checkers');
+    const [gameType, setGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [timeframe, setTimeframe] = useState('all_time');
     const [metric, setMetric] = useState('elo');
+
+    useEffect(() => {
+        const handleModeChange = () => setGameType(localStorage.getItem('gameMode') || 'checkers');
+        window.addEventListener('gameModeChanged', handleModeChange);
+        return () => window.removeEventListener('gameModeChanged', handleModeChange);
+    }, []);
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
@@ -49,23 +55,7 @@ export default function Leaderboard() {
 
             {/* Filters */}
             <div className="bg-white/80 backdrop-blur p-4 rounded-xl border border-[#d4c5b0] shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div className="flex gap-2">
-                     <Button 
-                        variant={gameType === 'checkers' ? "default" : "outline"}
-                        onClick={() => setGameType('checkers')}
-                        className={gameType === 'checkers' ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
-                    >
-                        ⚪ Dames
-                    </Button>
-                    <Button 
-                        variant={gameType === 'chess' ? "default" : "outline"}
-                        onClick={() => setGameType('chess')}
-                        className={gameType === 'chess' ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
-                    >
-                        ♟️ Échecs
-                    </Button>
-                </div>
-
+                
                 <div className="flex gap-2 items-center">
                     <Select value={metric} onValueChange={setMetric}>
                         <SelectTrigger className="w-[180px] border-[#d4c5b0]">

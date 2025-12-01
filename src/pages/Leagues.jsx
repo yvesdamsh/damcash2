@@ -65,6 +65,13 @@ export default function LeaguesPage() {
     const [myParticipations, setMyParticipations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [gameMode, setGameMode] = useState(localStorage.getItem('gameMode') || 'checkers');
+
+    useEffect(() => {
+        const handleModeChange = () => setGameMode(localStorage.getItem('gameMode') || 'checkers');
+        window.addEventListener('gameModeChanged', handleModeChange);
+        return () => window.removeEventListener('gameModeChanged', handleModeChange);
+    }, []);
 
     useEffect(() => {
         const init = async () => {
@@ -147,7 +154,10 @@ export default function LeaguesPage() {
 
             <div className="space-y-8">
                 {['active', 'upcoming', 'completed'].map(status => {
-                    const filteredLeagues = leagues.filter(l => l.status === status);
+                    const filteredLeagues = leagues
+                        .filter(l => l.game_type === gameMode)
+                        .filter(l => l.status === status);
+                    
                     if (filteredLeagues.length === 0) return null;
                     
                     const titles = {

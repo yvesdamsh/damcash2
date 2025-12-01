@@ -16,9 +16,10 @@ export default function Tournaments() {
     const [tournaments, setTournaments] = useState([]);
     const [user, setUser] = useState(null);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [gameMode, setGameMode] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [newTournament, setNewTournament] = useState({
         name: '',
-        game_type: 'checkers',
+        game_type: 'checkers', // Will sync with gameMode in useEffect
         format: 'bracket',
         max_players: '8',
         start_date: '',
@@ -44,6 +45,16 @@ export default function Tournaments() {
             }
         };
         init();
+
+        // Game Mode Listener
+        const handleModeChange = () => {
+            const mode = localStorage.getItem('gameMode') || 'checkers';
+            setGameMode(mode);
+            setNewTournament(prev => ({ ...prev, game_type: mode }));
+        };
+        window.addEventListener('gameModeChanged', handleModeChange);
+        handleModeChange(); // Init
+        return () => window.removeEventListener('gameModeChanged', handleModeChange);
     }, []);
 
     const fetchTournaments = async () => {
@@ -107,19 +118,8 @@ export default function Tournaments() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                <Label>Jeu</Label>
-                                <Select 
-                                    value={newTournament.game_type} 
-                                    onValueChange={v => setNewTournament({...newTournament, game_type: v})}
-                                >
-                                    <SelectTrigger className="border-[#d4c5b0]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="checkers">Dames</SelectItem>
-                                        <SelectItem value="chess">Échecs</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label>Jeu (Fixé par le mode)</Label>
+                                <Input value={newTournament.game_type === 'chess' ? 'Échecs' : 'Dames'} disabled className="bg-gray-100 border-[#d4c5b0]" />
                                 </div>
                                 <div className="grid gap-2">
                                 <Label>Format</Label>
@@ -291,7 +291,10 @@ export default function Tournaments() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {tournaments.filter(t => !t.is_private || (user && t.created_by_user_id === user.id)).map(t => (
+                {tournaments
+                    .filter(t => t.game_type === gameMode) // Filter by Game Mode
+                    .filter(t => !t.is_private || (user && t.created_by_user_id === user.id))
+                    .map(t => (
                     <Card key={t.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
                          {t.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
                         <CardHeader className="pb-3">

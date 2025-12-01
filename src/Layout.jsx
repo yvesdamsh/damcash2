@@ -25,8 +25,27 @@ import {
           export default function Layout({ children }) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
+    const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
     const [user, setUser] = React.useState(null);
+
+    // Sync Game Mode
+    const toggleGameMode = () => {
+        const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
+        setGameMode(newMode);
+        localStorage.setItem('gameMode', newMode);
+        window.dispatchEvent(new Event('gameModeChanged'));
+    };
+
+    // Listen for external changes to game mode
+    React.useEffect(() => {
+        const handleStorageChange = () => {
+            const mode = localStorage.getItem('gameMode');
+            if (mode && mode !== gameMode) setGameMode(mode);
+        };
+        window.addEventListener('gameModeChanged', handleStorageChange);
+        return () => window.removeEventListener('gameModeChanged', handleStorageChange);
+    }, [gameMode]);
 
     // Heartbeat for Online Status
     React.useEffect(() => {
@@ -149,6 +168,18 @@ import {
                                 );
                                 })}
 
+                                {/* Game Mode Toggle */}
+                                <button
+                                    onClick={toggleGameMode}
+                                    className={`px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm
+                                        ${gameMode === 'chess' 
+                                            ? 'bg-[#6B8E4E] text-white border-[#3d2b1f] hover:bg-[#5a7a40]' 
+                                            : 'bg-[#e8dcc5] text-[#4a3728] border-[#d4c5b0] hover:bg-[#d4c5b0]'
+                                        }`}
+                                >
+                                    {gameMode === 'chess' ? '♟️ Échecs' : '⚪ Dames'}
+                                </button>
+
                                 {user && <Notifications />}
                                 {user && <FriendsManager />}
 
@@ -205,6 +236,15 @@ import {
                                         </Link>
                                     );
                                 })}
+                                <button
+                                    onClick={() => {
+                                        toggleGameMode();
+                                        setIsMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
+                                >
+                                    {gameMode === 'chess' ? '♟️' : '⚪'} Mode: {gameMode === 'chess' ? 'Échecs' : 'Dames'}
+                                </button>
                                 <button
                                     onClick={() => {
                                         toggleSound();
