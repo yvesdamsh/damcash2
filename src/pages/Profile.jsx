@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
@@ -95,9 +96,22 @@ export default function Profile() {
     return (
         <div className="max-w-4xl mx-auto p-4">
             <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl border border-[#d4c5b0] overflow-hidden">
-                <div className="h-32 bg-[#4a3728] relative">
-                    <div className="absolute -bottom-12 left-8 group">
-                        <div className="w-24 h-24 rounded-full bg-white p-1 shadow-lg relative overflow-hidden">
+                <div className="h-32 bg-[#4a3728] relative overflow-hidden">
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 2 }}
+                        animate={{ opacity: 0.1, scale: 1 }}
+                        transition={{ duration: 1.5, ease: "circOut" }}
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                    >
+                        <span className="text-9xl font-black text-[#e8dcc5] tracking-tighter">DAMCASH</span>
+                    </motion.div>
+                    <div className="absolute -bottom-12 left-8 group z-10">
+                        <motion.div 
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
+                            className="w-24 h-24 rounded-full bg-white p-1 shadow-lg relative overflow-hidden"
+                        >
                             {user.avatar_url ? (
                                 <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
                             ) : (
@@ -105,7 +119,7 @@ export default function Profile() {
                                     <User className="w-12 h-12 text-gray-600" />
                                 </div>
                             )}
-                        </div>
+                        </motion.div>
                     </div>
                     <div className="absolute bottom-4 right-8">
                         <Dialog open={isEditing} onOpenChange={setIsEditing}>
@@ -154,11 +168,15 @@ export default function Profile() {
 
                 <div className="pt-16 px-8 pb-8">
                     <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-4">
-                        <div>
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 }}
+                        >
                             <h1 className="text-3xl font-bold text-[#4a3728]">{user.username || user.full_name || 'Joueur'}</h1>
                             <p className="text-gray-500">{user.email}</p>
                             {user.username && user.full_name && <p className="text-sm text-gray-400">{user.full_name}</p>}
-                        </div>
+                        </motion.div>
                         <div className="flex gap-3">
                             <Link to="/GameHistory">
                                 <Button variant="outline" className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">
@@ -169,25 +187,32 @@ export default function Profile() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">ELO Moyen</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-[#4a3728]">{avgElo}</div></CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Dames (ELO)</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-[#4a3728]">{stats.elo_checkers || 1200}</div></CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Échecs (ELO)</CardTitle></CardHeader>
-                            <CardContent><div className="text-2xl font-bold text-[#4a3728]">{stats.elo_chess || 1200}</div></CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Ratio Victoires</CardTitle></CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold text-[#4a3728]">{winRate}%</div>
-                                <p className="text-xs text-gray-500">{totalWins}V / {totalLosses}D</p>
-                            </CardContent>
-                        </Card>
+                        {[
+                            { title: "ELO Moyen", value: avgElo, icon: Activity },
+                            { title: "Dames (ELO)", value: stats.elo_checkers || 1200, icon: Shield },
+                            { title: "Échecs (ELO)", value: stats.elo_chess || 1200, icon: Shield },
+                            { title: "Ratio Victoires", value: `${winRate}%`, sub: `${totalWins}V / ${totalLosses}D`, icon: Trophy }
+                        ].map((item, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 + (index * 0.1) }}
+                                whileHover={{ scale: 1.05, rotate: 1 }}
+                                className="h-full"
+                            >
+                                <Card className="h-full border-none shadow-md bg-gradient-to-br from-white to-[#fdfbf7] hover:shadow-lg transition-shadow">
+                                    <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+                                        <CardTitle className="text-sm font-medium text-gray-500">{item.title}</CardTitle>
+                                        <item.icon className="w-4 h-4 text-[#d4c5b0]" />
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="text-2xl font-bold text-[#4a3728]">{item.value}</div>
+                                        {item.sub && <p className="text-xs text-gray-500 mt-1">{item.sub}</p>}
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </div>
