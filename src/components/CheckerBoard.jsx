@@ -16,7 +16,14 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
             {/* Board Frame with coordinate labels */}
             <div className="bg-[#4a3728] p-1 rounded-lg shadow-2xl border-4 border-[#2c1e12] max-h-[85vh] aspect-square w-full max-w-[85vh]">
                 
-                <div className="grid grid-cols-10 gap-0 aspect-square w-full h-full bg-[#2c1e12] border-2 border-[#5c4430] shadow-inner">
+                <div 
+                    className="grid gap-0 w-full h-full bg-[#2c1e12] border-2 border-[#5c4430] shadow-inner"
+                    style={{ 
+                        gridTemplateColumns: 'repeat(10, 1fr)', 
+                        gridTemplateRows: 'repeat(10, 1fr)',
+                        aspectRatio: '1/1'
+                    }}
+                >
                     {board.map((row, r) => (
                         row.map((piece, c) => {
                             const isDark = (r + c) % 2 !== 0;
@@ -25,17 +32,24 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                             
                             // Wood texture colors
                             const squareColor = isDark 
-                                ? 'bg-[#5c4430] hover:bg-[#6b5138]' // Dark wood
+                                ? 'bg-[#5c4430]' // Dark wood
                                 : 'bg-[#e8dcc5]'; // Light wood
+
+                            // Check if piece belongs to current player for cursor styling
+                            const isMyPiece = piece !== 0 && (
+                                (playerColor === 'white' && (piece === 1 || piece === 3)) ||
+                                (playerColor === 'black' && (piece === 2 || piece === 4))
+                            );
 
                             return (
                                 <div
                                     key={`${r}-${c}`}
                                     onClick={() => onSquareClick(r, c)}
+                                    style={{ aspectRatio: '1/1' }}
                                     className={`
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
-                                        ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
+                                        ${(isTarget && isMyTurn) || (isMyPiece && isMyTurn) ? 'cursor-pointer' : ''}
                                         transition-colors duration-150
                                     `}
                                 >
@@ -61,7 +75,7 @@ export default function CheckerBoard({ board, onSquareClick, selectedSquare, val
                                         <motion.div 
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className="absolute w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 opacity-50 z-10 pointer-events-none" 
+                                            className="absolute w-[30%] h-[30%] rounded-full bg-green-500 opacity-60 z-20 pointer-events-none shadow-[0_0_5px_#00ff00]" 
                                         />
                                     )}
 

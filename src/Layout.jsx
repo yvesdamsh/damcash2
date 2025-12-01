@@ -59,6 +59,17 @@ export default function Layout({ children }) {
         await base44.auth.logout();
     };
 
+    // Mobile Viewport Optimization
+    React.useEffect(() => {
+        let meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.name = "viewport";
+            document.head.appendChild(meta);
+        }
+        meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+    }, []);
+
     return (
         <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative overflow-hidden">
             {/* Background Wood Texture */}

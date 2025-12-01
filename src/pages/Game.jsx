@@ -182,14 +182,12 @@ export default function Game() {
         // 2. MOVING TO TARGET
         if (selectedSquare && !isMyPiece) {
             const [fromR, fromC] = selectedSquare;
-            
+
             // Validate specific move via logic
-            // We must pass the 'mustCapture' context if we want strict validation, 
-            // but since we pre-filtered 'validTargetMoves' above based on global rules,
-            // we can just check if the target is in our pre-calculated list + basic validation.
-            
             const targetMove = validTargetMoves.find(m => m.r === row && m.c === col);
             if (!targetMove) {
+                // Only deselect if clicking on an empty square that is NOT a valid move
+                // This allows "canceling" a selection by clicking elsewhere
                 setSelectedSquare(null);
                 setValidTargetMoves([]);
                 return;
