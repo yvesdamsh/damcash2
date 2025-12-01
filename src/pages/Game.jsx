@@ -388,8 +388,8 @@ export default function Game() {
                 </div>
 
                 {/* Board Area - Centered and Natural Size */}
-                <div className="flex justify-center py-2">
-                    <div className="relative shadow-2xl rounded-lg overflow-hidden">
+                <div className="flex justify-center py-2 w-full">
+                    <div className="relative shadow-2xl rounded-lg overflow-hidden w-full max-w-[90vw] md:max-w-[600px] aspect-square">
                             {game.game_type === 'checkers' 
                             ? <CheckerBoard board={displayBoard} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={null} />
                             : <ChessBoard board={displayBoard} onSquareClick={handleChessClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={game.current_turn} playerColor={isAmBlack ? 'black' : 'white'} lastMove={chessState.lastMove} />
