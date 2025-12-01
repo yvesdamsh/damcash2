@@ -134,7 +134,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                             isSelected={isSelected}
                                             set={pieceSet}
                                             onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
-                                            onDragStart={() => onSquareClick(r, c)}
+                                            // Removed onDragStart to match Checkers behavior and avoid re-render glitches
                                             dragConstraints={boardRef}
                                             canDrag={canInteract && (
                                                 (currentTurn === 'white' && piece === piece.toUpperCase()) ||
