@@ -14,45 +14,49 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
 
     // Framer Motion Drag Handler
     const handleDragEnd = (e, info, r, c) => {
-        if (!boardRef.current) return;
-        
-        const boardRect = boardRef.current.getBoundingClientRect();
-        const squareSize = boardRect.width / 10; // 10x10 board
-        
-        // Calculate relative coordinates
-        const dropX = info.point.x - boardRect.left;
-        const dropY = info.point.y - boardRect.top;
-        
-        const targetC = Math.floor(dropX / squareSize);
-        const targetR = Math.floor(dropY / squareSize);
+        // Robust coordinate extraction for Mobile/Desktop
+        const clientX = info.point.x || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
+        const clientY = info.point.y || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
 
-        // Check bounds
-        if (targetR >= 0 && targetR < 10 && targetC >= 0 && targetC < 10) {
-            if (targetR !== r || targetC !== c) {
-                // Calculate valid moves locally to avoid depending on state updates for the visual hack
-                // This ensures we know if it's valid even if onDragStart didn't fire (iOS fix)
-                const possibleMoves = getCheckersMoves(board, currentTurn);
-                const isValidMove = possibleMoves.some(m => 
-                    m.from.r === r && m.from.c === c && 
-                    m.to.r === targetR && m.to.c === targetC
-                );
+        // Use elementsFromPoint to find the square under the finger directly
+        // This bypasses math issues with zooming/scrolling on mobile
+        const elements = document.elementsFromPoint(clientX, clientY);
+        const targetSquare = elements.find(el => el.classList.contains('board-square'));
 
-                if (isValidMove) {
-                    // Prevent snap-back glitch by hiding the piece instantly before unmount
-                    // We use native DOM manipulation for speed
-                    try {
-                        // Try to find the piece element via the event target
-                        let pieceEl = e.target ? (e.target.closest ? e.target.closest('.checker-piece') : null) : null;
-                        if (pieceEl) {
-                            pieceEl.style.opacity = '0';
-                            pieceEl.style.visibility = 'hidden'; // Double assurance
-                        }
-                    } catch(err) {
-                        // Ignore DOM errors during drag end
+        if (targetSquare) {
+            const targetR = parseInt(targetSquare.dataset.r);
+            const targetC = parseInt(targetSquare.dataset.c);
+
+            if (!isNaN(targetR) && !isNaN(targetC)) {
+                if (targetR !== r || targetC !== c) {
+                    // Calculate valid moves locally
+                    const possibleMoves = getCheckersMoves(board, currentTurn);
+                    const isValidMove = possibleMoves.some(m => 
+                        m.from.r === r && m.from.c === c && 
+                        m.to.r === targetR && m.to.c === targetC
+                    );
+
+                    if (isValidMove) {
+                        // Prevent snap-back glitch
+                        try {
+                            // Find the piece in the elements stack (it's under the finger too)
+                            const pieceEl = elements.find(el => el.classList.contains('checker-piece'));
+                            if (pieceEl) {
+                                pieceEl.style.opacity = '0';
+                                pieceEl.style.visibility = 'hidden';
+                            } else if (e.target) {
+                                // Fallback
+                                const fallbackEl = e.target.closest ? e.target.closest('.checker-piece') : null;
+                                if (fallbackEl) {
+                                    fallbackEl.style.opacity = '0';
+                                    fallbackEl.style.visibility = 'hidden';
+                                }
+                            }
+                        } catch(err) {}
                     }
-                }
 
-                if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
+                    if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
+                }
             }
         }
     };
@@ -97,11 +101,14 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                             return (
                                 <div
                                     key={`${r}-${c}`}
+                                    data-r={r}
+                                    data-c={c}
                                     // Only handle click on square if it's empty (move destination)
                                     // If occupied, the piece handles the tap (selection)
                                     onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
+                                        board-square
                                         relative w-full h-full flex items-center justify-center
                                         ${squareColor}
                                         ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
