@@ -70,7 +70,9 @@ export default function Notifications() {
 
         return () => {
             clearInterval(interval);
-            ws.close();
+            if (ws.readyState === 0 || ws.readyState === 1) { // CONNECTING or OPEN
+                ws.close();
+            }
         };
     }, []);
 

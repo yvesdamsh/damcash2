@@ -10,14 +10,14 @@ export default async function handler(req) {
         return new Response(null, { status: 501 });
     }
 
-    const { socket, response } = Deno.upgradeWebSocket(req);
     const url = new URL(req.url);
     const gameId = url.searchParams.get('gameId');
 
     if (!gameId) {
-        socket.close(1008, "Missing gameId");
-        return response;
+        return new Response("Missing gameId", { status: 400 });
     }
+
+    const { socket, response } = Deno.upgradeWebSocket(req);
 
     socket.onopen = () => {
         if (!connections.has(gameId)) {

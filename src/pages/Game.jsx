@@ -131,9 +131,11 @@ export default function Game() {
         setSocket(ws);
 
         return () => {
-            if (ws) ws.close();
+            if (ws && (ws.readyState === 0 || ws.readyState === 1)) {
+                ws.close();
+            }
         };
-    }, [id]);
+        }, [id]);
 
     const updateGameState = (fetchedGame) => {
         // Check if turn changed for sound
