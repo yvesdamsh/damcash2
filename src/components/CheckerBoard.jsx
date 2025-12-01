@@ -36,24 +36,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                         m.to.r === targetR && m.to.c === targetC
                     );
 
-                    if (isValidMove) {
-                        // Prevent snap-back glitch
-                        try {
-                            // Find the piece in the elements stack (it's under the finger too)
-                            const pieceEl = elements.find(el => el.classList.contains('checker-piece'));
-                            if (pieceEl) {
-                                pieceEl.style.opacity = '0';
-                                pieceEl.style.visibility = 'hidden';
-                            } else if (e.target) {
-                                // Fallback
-                                const fallbackEl = e.target.closest ? e.target.closest('.checker-piece') : null;
-                                if (fallbackEl) {
-                                    fallbackEl.style.opacity = '0';
-                                    fallbackEl.style.visibility = 'hidden';
-                                }
-                            }
-                        } catch(err) {}
-                    }
+                    // Snap-back prevention removed to avoid visibility issues
 
                     if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
                 }

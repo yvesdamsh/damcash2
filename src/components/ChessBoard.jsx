@@ -49,16 +49,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                         m.to.r === targetR && m.to.c === targetC
                     );
 
-                    if (isValidMove) {
-                        // Prevent snap-back glitch
-                        try {
-                            const pieceEl = elements.find(el => el.classList.contains('chess-piece'));
-                            if (pieceEl) {
-                                pieceEl.style.opacity = '0';
-                                pieceEl.style.visibility = 'hidden';
-                            }
-                        } catch(err) {}
-                    }
+                    // Snap-back prevention removed to avoid visibility issues
 
                     onPieceDrop(r, c, targetR, targetC);
                 }
