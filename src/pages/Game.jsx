@@ -119,9 +119,9 @@ export default function Game() {
         };
 
         fetchGame();
-        const interval = setInterval(fetchGame, 1000);
+        const interval = setInterval(fetchGame, 800);
         return () => clearInterval(interval);
-    }, [id, navigate]);
+        }, [id, navigate]);
 
     const handleSquareClick = async (row, col) => {
         if (!game || !currentUser) return;
