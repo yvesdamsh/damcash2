@@ -422,7 +422,7 @@ export default function Game() {
         const isMyPiece = piece && (playerColor === 'white' ? isWhitePiece : !isWhitePiece);
 
         if (isMyPiece) {
-            setSelectedSquare({r, c});
+            setSelectedSquare([r, c]);
             // Calculate moves only if not premove execution (optimization)
             if (!isPremove) {
                 const moves = getValidChessMoves(board, playerColor, chessState.lastMove, chessState.castlingRights);

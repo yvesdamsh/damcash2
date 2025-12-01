@@ -48,14 +48,14 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                     }}
                 >
                     {board.map((row, r) => (
-                        row.map((piece, c) => {
-                            const isDark = (r + c) % 2 !== 0;
-                            const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
-                            const isTarget = validMoves.some(m => m.r === r && m.c === c);
-                            const isLastMove = lastMove && (
-                                (lastMove.from.r === r && lastMove.from.c === c) || 
-                                (lastMove.to.r === r && lastMove.to.c === c)
-                            );
+                    row.map((piece, c) => {
+                        const isDark = (r + c) % 2 !== 0;
+                        const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
+                        const isTarget = validMoves.some(m => m.to.r === r && m.to.c === c);
+                        const isLastMove = lastMove && (
+                            (lastMove.from.r === r && lastMove.from.c === c) || 
+                            (lastMove.to.r === r && lastMove.to.c === c)
+                        );
                             
                             // Premove Highlight
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
