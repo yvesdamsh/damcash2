@@ -14,7 +14,8 @@ import {
   Home,
   Flag,
   Eye,
-  Brain
+  Brain,
+  Shield
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
   import FriendsManager from '@/components/FriendsManager';
@@ -57,6 +58,7 @@ import {
 
     const navItems = [
         { label: 'Accueil', path: '/Home', icon: Home },
+        { label: 'Ligues', path: '/Leagues', icon: Shield },
         { label: 'Tournois', path: '/Tournaments', icon: Flag },
         { label: 'Entraînement', path: '/Training', icon: Brain },
         { label: 'Damcash TV', path: '/Spectate', icon: Eye },

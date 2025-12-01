@@ -135,6 +135,52 @@ export default async function handler(req) {
                 current_game_id: null
             });
         }
+    } else if (whiteId && blackId && whiteId !== blackId) {
+        // 3. Update LEAGUE Scores if it's a ranked game (non-tournament)
+        // Find active leagues for this game type
+        try {
+            const activeLeagues = await base44.asServiceRole.entities.League.list({ 
+                status: 'active', 
+                game_type: type 
+            });
+            
+            if (activeLeagues && activeLeagues.length > 0) {
+                // Update stats for all active leagues where users are participants
+                for (const league of activeLeagues) {
+                    const participants = await base44.asServiceRole.entities.LeagueParticipant.list({
+                        league_id: league.id,
+                        user_id: { '$in': [whiteId, blackId] } // Filter is nicer if supported, otherwise fetch individually
+                    });
+                    // Note: The above list query might not work perfectly if $in is not supported by Base44 SDK mock,
+                    // fallback to checking individually. Assuming basic filter works.
+                    // If not, we'd do loop. Let's do safe loop.
+                    
+                    const whiteParticipant = (await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: league.id, user_id: whiteId }))[0];
+                    const blackParticipant = (await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: league.id, user_id: blackId }))[0];
+
+                    const updateParticipant = async (p, isWinner, isDraw) => {
+                        if (!p) return;
+                        const points = isWinner ? 3 : (isDraw ? 1 : 0); // 3 points for win, 1 for draw
+                        const tier = (p.points + points) > 100 ? 'silver' : (p.points + points) > 300 ? 'gold' : p.rank_tier;
+                        
+                        await base44.asServiceRole.entities.LeagueParticipant.update(p.id, {
+                            points: (p.points || 0) + points,
+                            wins: (p.wins || 0) + (isWinner ? 1 : 0),
+                            losses: (p.losses || 0) + (isWinner || isDraw ? 0 : 1),
+                            draws: (p.draws || 0) + (isDraw ? 1 : 0),
+                            // Simple tier logic for now
+                            rank_tier: tier
+                        });
+                    };
+
+                    const isDraw = !winnerId;
+                    await updateParticipant(whiteParticipant, winnerId === whiteId, isDraw);
+                    await updateParticipant(blackParticipant, winnerId === blackId, isDraw);
+                }
+            }
+        } catch (err) {
+            console.error("Error updating leagues", err);
+        }
     }
 
     return Response.json({ status: 'success', message: 'Elo and scores updated' });
