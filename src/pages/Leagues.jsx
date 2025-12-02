@@ -37,6 +37,12 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                         Divisions actives
                     </div>
                 </div>
+                
+                {league.status === 'active' && (
+                    <div className="bg-blue-50 p-2 rounded text-xs text-blue-800 mt-2">
+                        <span className="font-bold">Promotion:</span> Top 15% • <span className="font-bold">Relégation:</span> Bottom 15%
+                    </div>
+                )}
 
                 <div className="mt-auto pt-4 border-t border-gray-100">
                     {isJoined ? (
@@ -78,6 +84,9 @@ export default function LeaguesPage() {
             try {
                 const currentUser = await base44.auth.me();
                 setUser(currentUser);
+
+                // Ensure seasons are managed
+                await base44.functions.invoke('seasonManager', {});
 
                 const [allLeagues, parts] = await Promise.all([
                     base44.entities.League.list('-start_date', 50),

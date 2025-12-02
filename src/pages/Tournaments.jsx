@@ -302,6 +302,26 @@ export default function Tournaments() {
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div className="grid gap-2">
+                                    <Label>Départage</Label>
+                                    <Select 
+                                        value={newTournament.tie_breaker || 'buchholz'} 
+                                        onValueChange={v => setNewTournament({...newTournament, tie_breaker: v})}
+                                    >
+                                        <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="buchholz">Buchholz (Standard)</SelectItem>
+                                            <SelectItem value="sonneborn_berger">Sonneborn-Berger</SelectItem>
+                                            <SelectItem value="head_to_head">Confrontation directe</SelectItem>
+                                            <SelectItem value="wins">Nombre de victoires</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
                             <div className="grid gap-2 mt-2">
                                 <Label>Règles personnalisées</Label>
                                 <textarea 

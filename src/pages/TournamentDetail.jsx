@@ -482,6 +482,21 @@ export default function TournamentDetail() {
                         </TabsList>
                         
                         <TabsContent value="bracket" className="mt-6">
+                            <div className="flex justify-end mb-4">
+                                <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                        // Logic to show Replay Center - maybe navigate to a special filtered view or modal
+                                        // For simplicity, just filter matches list below to show completed with "Watch" button
+                                        document.getElementById('matches-list')?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                    className="gap-2"
+                                >
+                                    <Play className="w-4 h-4" /> Revoir les parties
+                                </Button>
+                            </div>
+
                             {tournament.format === 'hybrid' && tournament.stage === 'groups' && (
                                 <div className="space-y-6">
                                     <div className="flex justify-between items-center">
