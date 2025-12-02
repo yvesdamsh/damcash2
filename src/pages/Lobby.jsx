@@ -175,66 +175,62 @@ export default function Lobby() {
 
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {players.map(player => (
-                    <Card key={player.id} className="p-4 flex items-center justify-between hover:shadow-md transition-all border-[#d4c5b0]">
-                        <div className="flex items-center gap-3">
-                            <div className="relative">
-                                <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
-                                    {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-gray-400" />}
+                {players.map(player => {
+                    const { status, gameId } = getUserStatus(player.id);
+                    return (
+                        <Card key={player.id} className="p-4 flex items-center justify-between hover:shadow-md transition-all border-[#d4c5b0]">
+                            <div className="flex items-center gap-3">
+                                <div className="relative">
+                                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
+                                        {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-gray-400" />}
+                                    </div>
+                                    <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
+                                        status === 'playing' ? 'bg-red-500' : 'bg-green-500'
+                                    }`} title={status === 'playing' ? "En jeu" : "En ligne"}></div>
                                 </div>
-                                {(() => {
-                                    const { status, gameId } = getUserStatus(player.id);
-                                    return (
-                                        <>
-                                            <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
-                                                status === 'playing' ? 'bg-red-500' : 'bg-green-500'
-                                            }`} title={status === 'playing' ? "En jeu" : "En ligne"}></div>
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-[#4a3728] flex items-center gap-1">
-                                                    {player.full_name || 'Joueur'}
-                                                    {player.id === currentUser?.id && <span className="text-xs text-gray-500">(Moi)</span>}
-                                                </div>
-                                                <div className="text-xs text-[#6b5138] flex items-center gap-2">
-                                                    <Crown className="w-3 h-3 text-yellow-600" />
-                                                    ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
-                                                </div>
-                                                <div className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                                    {status === 'playing' ? <span className="text-red-500">En partie</span> : <span className="text-green-600">Disponible</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {player.id !== currentUser?.id && (
-                                            <div className="flex gap-2">
-                                                {status === 'playing' ? (
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="outline"
-                                                        className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
-                                                        onClick={() => navigate(`/Game?id=${gameId}`)}
-                                                        title="Regarder la partie"
-                                                    >
-                                                        <Play className="w-4 h-4 mr-2" />
-                                                        Regarder
-                                                    </Button>
-                                                ) : (
-                                                    <Button 
-                                                        size="sm" 
-                                                        className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
-                                                        onClick={() => handleChallenge(player, type)}
-                                                        title="Inviter à jouer"
-                                                    >
-                                                        <Swords className="w-4 h-4 mr-2" />
-                                                        Inviter
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        )}
-                                        </>
-                                    );
-                                })()}
-                    </Card>
-                ))}
+                                <div>
+                                    <div className="font-bold text-[#4a3728] flex items-center gap-1">
+                                        {player.full_name || 'Joueur'}
+                                        {player.id === currentUser?.id && <span className="text-xs text-gray-500">(Moi)</span>}
+                                    </div>
+                                    <div className="text-xs text-[#6b5138] flex items-center gap-2">
+                                        <Crown className="w-3 h-3 text-yellow-600" />
+                                        ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 mt-0.5 font-medium">
+                                        {status === 'playing' ? <span className="text-red-500">En partie</span> : <span className="text-green-600">Disponible</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            {player.id !== currentUser?.id && (
+                                <div className="flex gap-2">
+                                    {status === 'playing' ? (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
+                                            onClick={() => navigate(`/Game?id=${gameId}`)}
+                                            title="Regarder la partie"
+                                        >
+                                            <Play className="w-4 h-4 mr-2" />
+                                            Regarder
+                                        </Button>
+                                    ) : (
+                                        <Button 
+                                            size="sm" 
+                                            className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
+                                            onClick={() => handleChallenge(player, type)}
+                                            title="Inviter à jouer"
+                                        >
+                                            <Swords className="w-4 h-4 mr-2" />
+                                            Inviter
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+                        </Card>
+                    );
+                })}
             </div>
         );
     };
