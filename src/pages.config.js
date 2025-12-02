@@ -15,7 +15,6 @@ import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
 import CreatePuzzle from './pages/CreatePuzzle';
 import index from './pages/index';
-import LogoutCallback from './pages/LogoutCallback';
 import __Layout from './Layout.jsx';
 
 
@@ -37,7 +36,6 @@ export const PAGES = {
     "TeamDetail": TeamDetail,
     "CreatePuzzle": CreatePuzzle,
     "index": index,
-    "LogoutCallback": LogoutCallback,
 }
 
 export const pagesConfig = {

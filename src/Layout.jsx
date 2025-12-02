@@ -129,13 +129,15 @@ import {
     const handleLogout = async (e) => {
         if (e) e.preventDefault();
         try {
-            // Redirect to the callback page after clearing session
-            // This prevents staying on a protected page without auth
-            await base44.auth.logout('/LogoutCallback');
+            // Hack: Redirect to hash to prevent full page reload/navigation by the SDK
+            // This keeps us in the current context long enough to trigger the external redirect
+            await base44.auth.logout('#');
+            
+            // Now force the correct external redirect
+            base44.auth.redirectToLogin();
         } catch (err) {
             console.error("Logout error:", err);
-            // Fallback
-            window.location.href = '/LogoutCallback';
+            base44.auth.redirectToLogin();
         }
     };
 
