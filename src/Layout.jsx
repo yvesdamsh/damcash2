@@ -124,7 +124,13 @@ import {
     ].filter(item => user || item.public);
 
     const handleLogout = async () => {
-        await base44.auth.logout('/Home');
+        try {
+            await base44.auth.logout();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            window.location.href = '/Home';
+        }
     };
 
     // Mobile Viewport Optimization
