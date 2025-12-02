@@ -125,16 +125,12 @@ import {
 
     const handleLogout = async () => {
         try {
-            // Force logout with timeout to prevent hanging
-            await Promise.race([
-                base44.auth.logout(),
-                new Promise(resolve => setTimeout(resolve, 500))
-            ]);
+            await base44.auth.logout();
         } catch (e) {
-            console.error(e);
-        } finally {
-            window.location.href = '/Home';
+            console.error("Logout error", e);
         }
+        // Force reload to home to clear all states
+        window.location.href = '/Home';
     };
 
     // Mobile Viewport Optimization
