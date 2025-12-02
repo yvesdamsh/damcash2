@@ -93,22 +93,12 @@ import {
 
     React.useEffect(() => {
         const checkUser = async () => {
-            // Prioritize checking authentication status safely
-            // The user requested immediate redirect if not logged in to avoid 403 errors
-            const isAuth = await base44.auth.isAuthenticated();
-            
-            if (!isAuth) {
-                // If not authenticated, redirect immediately before attempting any protected calls
-                base44.auth.redirectToLogin();
-                return;
-            }
-
             try {
-                const currentUser = await base44.auth.me();
+                const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
             } catch (e) {
-                console.error("Auth error, redirecting", e);
-                base44.auth.redirectToLogin();
+                // Not logged in - stay on page to show public content or login button
+                console.error("Auth check failed", e);
             }
         };
         checkUser();
@@ -140,15 +130,12 @@ import {
     const handleLogout = async (e) => {
         if (e) e.preventDefault();
         try {
-            // Redirect to hash to prevent server reload while clearing session
-            // This keeps us in the client context
-            await base44.auth.logout(window.location.origin + '/#logout');
+            await base44.auth.logout();
+            // Force reload to trigger platform auth check or clear state
+            window.location.href = '/';
         } catch (err) {
             console.error("Logout error:", err);
-        } finally {
-            // Immediately force redirect to the identity provider login page
-            // This takes the user out of the protected app environment
-            base44.auth.redirectToLogin();
+            window.location.reload();
         }
     };
 
