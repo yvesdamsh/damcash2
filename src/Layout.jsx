@@ -124,7 +124,7 @@ import {
     ].filter(item => user || item.public);
 
     const handleLogout = async () => {
-        await base44.auth.logout();
+        await base44.auth.logout('/Home');
     };
 
     // Mobile Viewport Optimization
