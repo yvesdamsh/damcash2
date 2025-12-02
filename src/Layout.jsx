@@ -129,12 +129,13 @@ import {
     const handleLogout = async (e) => {
         if (e) e.preventDefault();
         try {
-            // Logout and explicitly redirect to login to avoid 403 errors on Home
-            await base44.auth.logout();
-            base44.auth.redirectToLogin();
+            // Redirect to the callback page after clearing session
+            // This prevents staying on a protected page without auth
+            await base44.auth.logout('/LogoutCallback');
         } catch (err) {
             console.error("Logout error:", err);
-            window.location.reload();
+            // Fallback
+            window.location.href = '/LogoutCallback';
         }
     };
 
