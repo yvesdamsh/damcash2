@@ -66,8 +66,11 @@ import {
 
     // Heartbeat for Online Status
     React.useEffect(() => {
+        if (!user) return; // Only run heartbeat if we have a user in state
+
         const heartbeat = async () => {
             try {
+                // Double check with API to be safe
                 const me = await base44.auth.me();
                 if (me) {
                     await base44.auth.updateMe({ last_seen: new Date().toISOString() });
@@ -75,10 +78,10 @@ import {
             } catch(e) {}
         };
 
-        heartbeat(); // Initial call
-        const interval = setInterval(heartbeat, 60000); // Every minute
+        heartbeat();
+        const interval = setInterval(heartbeat, 60000); 
         return () => clearInterval(interval);
-    }, []);
+    }, [user]);
 
     // Sync with SoundManager on mount
     React.useEffect(() => {
@@ -126,11 +129,11 @@ import {
     const handleLogout = async (e) => {
         if (e) e.preventDefault();
         try {
-            // Logout without argument redirects to the login page (safe for private apps)
+            // Logout and explicitly redirect to login to avoid 403 errors on Home
             await base44.auth.logout();
+            base44.auth.redirectToLogin();
         } catch (err) {
             console.error("Logout error:", err);
-            // Fallback to reload if something fails
             window.location.reload();
         }
     };
