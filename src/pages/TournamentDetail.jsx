@@ -4,11 +4,12 @@ import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import TournamentBracket from '@/components/TournamentBracket';
+import TournamentChat from '@/components/TournamentChat';
 
 export default function TournamentDetail() {
     const location = useLocation();
@@ -400,9 +401,12 @@ export default function TournamentDetail() {
                 {/* Right Content Area */}
                 <div className="lg:col-span-2">
                     <Tabs defaultValue="bracket" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-[#e8dcc5]">
+                        <TabsList className="grid w-full grid-cols-3 bg-[#e8dcc5]">
                             <TabsTrigger value="bracket" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tableau</TabsTrigger>
                             <TabsTrigger value="participants" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Joueurs</TabsTrigger>
+                            <TabsTrigger value="chat" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                                <MessageSquare className="w-4 h-4 mr-2" /> Chat
+                            </TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="bracket" className="mt-6">
@@ -503,6 +507,10 @@ export default function TournamentDetail() {
                                     {participants.length === 0 && <div className="p-8 text-center text-gray-500">L'arène est vide...</div>}
                                 </CardContent>
                             </Card>
+                        </TabsContent>
+
+                        <TabsContent value="chat" className="mt-6">
+                            <TournamentChat tournamentId={tournament.id} currentUser={user} />
                         </TabsContent>
                     </Tabs>
                 </div>
