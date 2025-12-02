@@ -13,6 +13,7 @@ import Wallet from './pages/Wallet';
 import Lobby from './pages/Lobby';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
+import CreatePuzzle from './pages/CreatePuzzle';
 import __Layout from './Layout.jsx';
 
 
@@ -32,6 +33,7 @@ export const PAGES = {
     "Lobby": Lobby,
     "Teams": Teams,
     "TeamDetail": TeamDetail,
+    "CreatePuzzle": CreatePuzzle,
 }
 
 export const pagesConfig = {

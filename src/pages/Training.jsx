@@ -1,17 +1,26 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Swords, BarChart2, Search } from 'lucide-react';
+import { Brain, Swords, BarChart2, Search, PlusCircle } from 'lucide-react';
 import PuzzleMode from '@/components/training/PuzzleMode';
 import FreeTrainingMode from '@/components/training/FreeTrainingMode';
 import AnalysisMode from '@/components/training/AnalysisMode';
 import PerformanceStats from '@/components/training/PerformanceStats';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 export default function Training() {
     return (
         <div className="max-w-6xl mx-auto py-6 px-4 md:py-8">
-            <div className="text-center mb-6 md:mb-8">
-                <h1 className="text-3xl md:text-4xl font-black text-[#4a3728] mb-2">Centre d'Entraînement</h1>
-                <p className="text-[#6b5138] text-sm md:text-base">Améliorez votre jeu, analysez vos parties et suivez vos progrès.</p>
+            <div className="flex flex-col md:flex-row items-center justify-between mb-6 md:mb-8">
+                <div className="text-center md:text-left mb-4 md:mb-0">
+                    <h1 className="text-3xl md:text-4xl font-black text-[#4a3728] mb-2">Centre d'Entraînement</h1>
+                    <p className="text-[#6b5138] text-sm md:text-base">Améliorez votre jeu, analysez vos parties et suivez vos progrès.</p>
+                </div>
+                <Link to="/CreatePuzzle">
+                    <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] font-bold shadow-lg">
+                        <PlusCircle className="w-4 h-4 mr-2" /> Créer un Puzzle
+                    </Button>
+                </Link>
             </div>
 
             <Tabs defaultValue="puzzles" className="w-full">
