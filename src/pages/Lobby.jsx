@@ -13,6 +13,7 @@ import LobbyChat from '@/components/LobbyChat';
 export default function Lobby() {
     const [users, setUsers] = useState([]);
     const [publicGames, setPublicGames] = useState([]);
+    const [activeGames, setActiveGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const [myTeam, setMyTeam] = useState(null);
@@ -27,14 +28,25 @@ export default function Lobby() {
             const onlineUsers = allUsers.filter(u => u.last_seen && (now - new Date(u.last_seen)) < onlineThreshold);
             setUsers(onlineUsers);
 
-            // 2. Fetch Public Games
+            // 2. Fetch Public Waiting Games
             const games = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 20);
             setPublicGames(games);
+
+            // 3. Fetch Active Games (to determine user status)
+            const playing = await base44.entities.Game.filter({ status: 'playing' }, '-updated_date', 50);
+            setActiveGames(playing);
+
         } catch (e) {
             console.error(e);
         } finally {
             setLoading(false);
         }
+    };
+
+    const getUserStatus = (userId) => {
+        const game = activeGames.find(g => g.white_player_id === userId || g.black_player_id === userId);
+        if (game) return { status: 'playing', gameId: game.id };
+        return { status: 'online' };
     };
 
     useEffect(() => {
@@ -170,38 +182,57 @@ export default function Lobby() {
                                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
                                     {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-gray-400" />}
                                 </div>
-                                <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
-                                    // Simple heuristic: if active recently, green. If in game... hard to know without extra query, sticking to green for now.
-                                    'bg-green-500'
-                                }`} title="En ligne"></div>
-                            </div>
-                            <div>
-                                <div className="font-bold text-[#4a3728] flex items-center gap-1">
-                                    {player.full_name || 'Joueur'}
-                                    {player.id === currentUser?.id && <span className="text-xs text-gray-500">(Moi)</span>}
-                                </div>
-                                <div className="text-xs text-[#6b5138] flex items-center gap-2">
-                                    <Crown className="w-3 h-3 text-yellow-600" />
-                                    ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
-                                </div>
-                                <div className="text-[10px] text-gray-500 mt-0.5">
-                                    En ligne • Salon
-                                </div>
-                            </div>
-                        </div>
-                        {player.id !== currentUser?.id && (
-                            <div className="flex gap-2">
-                                <Button 
-                                    size="sm" 
-                                    className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
-                                    onClick={() => handleChallenge(player, type)}
-                                    title="Inviter à jouer"
-                                >
-                                    <Swords className="w-4 h-4 mr-2" />
-                                    Inviter
-                                </Button>
-                            </div>
-                        )}
+                                {(() => {
+                                    const { status, gameId } = getUserStatus(player.id);
+                                    return (
+                                        <>
+                                            <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
+                                                status === 'playing' ? 'bg-red-500' : 'bg-green-500'
+                                            }`} title={status === 'playing' ? "En jeu" : "En ligne"}></div>
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-[#4a3728] flex items-center gap-1">
+                                                    {player.full_name || 'Joueur'}
+                                                    {player.id === currentUser?.id && <span className="text-xs text-gray-500">(Moi)</span>}
+                                                </div>
+                                                <div className="text-xs text-[#6b5138] flex items-center gap-2">
+                                                    <Crown className="w-3 h-3 text-yellow-600" />
+                                                    ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
+                                                </div>
+                                                <div className="text-[10px] text-gray-500 mt-0.5 font-medium">
+                                                    {status === 'playing' ? <span className="text-red-500">En partie</span> : <span className="text-green-600">Disponible</span>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {player.id !== currentUser?.id && (
+                                            <div className="flex gap-2">
+                                                {status === 'playing' ? (
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline"
+                                                        className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
+                                                        onClick={() => navigate(`/Game?id=${gameId}`)}
+                                                        title="Regarder la partie"
+                                                    >
+                                                        <Play className="w-4 h-4 mr-2" />
+                                                        Regarder
+                                                    </Button>
+                                                ) : (
+                                                    <Button 
+                                                        size="sm" 
+                                                        className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
+                                                        onClick={() => handleChallenge(player, type)}
+                                                        title="Inviter à jouer"
+                                                    >
+                                                        <Swords className="w-4 h-4 mr-2" />
+                                                        Inviter
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                        </>
+                                    );
+                                })()}
                     </Card>
                 ))}
             </div>

@@ -1173,7 +1173,7 @@ export default function Game() {
                         </Button>
                     </div>
                     <div className="flex-1 overflow-hidden bg-[#fdfbf7]">
-                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} socket={socket} />}
+                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} socket={socket} players={{white: game.white_player_id, black: game.black_player_id}} />}
                         {activeTab === 'moves' && (
                             <MoveHistory 
                                 moves={movesList} 

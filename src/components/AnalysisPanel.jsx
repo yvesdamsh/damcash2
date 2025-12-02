@@ -145,7 +145,12 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
                                 <span className="text-xs font-bold uppercase text-gray-600">{moment.type}</span>
                                 <span className="text-xs text-gray-400 ml-auto">Coup #{moment.move_index + 1}</span>
                             </div>
-                            <p className="text-sm text-gray-700">{moment.comment}</p>
+                            <p className="text-sm text-gray-700 mb-1">{moment.comment}</p>
+                            {moment.better_move && (
+                                <div className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded inline-block border border-green-100">
+                                    Mieux : <span className="font-mono font-bold">{moment.better_move}</span>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

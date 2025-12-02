@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 const QUICK_REPLIES = ["Bien joué ! 👏", "Merci !", "Oups... 😅", "Belle partie !", "🤔 Réfléchis...", "Vite ! ⏰"];
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
-export default function GameChat({ gameId, currentUser, socket }) {
+export default function GameChat({ gameId, currentUser, socket, players }) {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef(null);
@@ -113,7 +113,14 @@ export default function GameChat({ gameId, currentUser, socket }) {
                                             : 'bg-white border border-[#d4c5b0] text-gray-800'
                                     }`}
                                 >
-                                    {!isMe && <div className="text-[10px] font-bold opacity-70 mb-0.5 text-[#4a3728]">{msg.sender_name}</div>}
+                                    {!isMe && (
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            <div className="text-[10px] font-bold opacity-70 text-[#4a3728]">{msg.sender_name}</div>
+                                            {players && (msg.sender_id !== players.white && msg.sender_id !== players.black) && (
+                                                <span className="text-[8px] bg-gray-200 px-1 rounded text-gray-500 uppercase tracking-wide">Spectateur</span>
+                                            )}
+                                        </div>
+                                    )}
                                     {msg.content}
                                 </div>
                                 <span className="text-[10px] text-gray-400 min-w-[30px] text-center">
