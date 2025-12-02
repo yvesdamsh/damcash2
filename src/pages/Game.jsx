@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
@@ -15,6 +15,10 @@ import VideoChat from '@/components/VideoChat';
 import GameTimer from '@/components/GameTimer';
 import MoveHistory from '@/components/MoveHistory';
 import AnalysisPanel from '@/components/AnalysisPanel';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
@@ -41,6 +45,10 @@ export default function Game() {
     const [premove, setPremove] = useState(null);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
     const [socket, setSocket] = useState(null);
+    const [reactions, setReactions] = useState([]);
+    const [inviteOpen, setInviteOpen] = useState(false);
+    const [inviteSearch, setInviteSearch] = useState("");
+    const [inviteResults, setInviteResults] = useState([]);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -112,19 +120,9 @@ export default function Game() {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'GAME_UPDATE') {
-                    // Re-fetch game to ensure full consistency or use payload if complete
-                    // For now, using payload to patch would be faster, but fetching ensures data integrity
-                    // If payload contains full game update data, we can use it.
-                    // Our backend sends { ...updateData, user_id }
-                    // Ideally we should merge this, but let's just fetch the fresh game to be safe and simple for now,
-                    // OR better: We construct the new state from payload to be "instant"
-                    // let's try fetching first for reliability, or just refetching if easy.
-                    // Actually, to be "Realtime" we should minimize RTT.
-                    // But base44.entities.Game.get is fast.
-                    // Optimization: The payload HAS the updateData. We can merge it.
-                    // Let's just refetch for now to guarantee we have the server-side computed fields (like updated_date etc)
-                    // But to make it FEEL instant, we can assume the state.
                     fetchGame(); 
+                } else if (data.type === 'GAME_REACTION') {
+                    handleIncomingReaction(data.payload);
                 }
             } catch (e) {
                 console.error("WS Message Error", e);
@@ -732,6 +730,59 @@ export default function Game() {
         toast.error("Annulation refusée");
     };
 
+    // Reactions Logic
+    const handleIncomingReaction = (payload) => {
+        const id = Date.now() + Math.random();
+        setReactions(prev => [...prev, { ...payload, id }]);
+        // Auto-remove
+        setTimeout(() => {
+            setReactions(prev => prev.filter(r => r.id !== id));
+        }, 3000);
+    };
+
+    const sendReaction = (emoji) => {
+        if (!socket || !currentUser) return;
+        socket.send(JSON.stringify({
+            type: 'GAME_REACTION',
+            payload: {
+                sender_id: currentUser.id,
+                sender_name: currentUser.username || currentUser.full_name,
+                emoji
+            }
+        }));
+    };
+
+    // Invitation Logic
+    const handleInviteSearch = async () => {
+        if (!inviteSearch.trim()) return;
+        try {
+            const users = await base44.entities.User.list(); 
+            const filtered = users.filter(u => 
+                u.id !== currentUser.id && 
+                ((u.username && u.username.toLowerCase().includes(inviteSearch.toLowerCase())) || 
+                 (u.email && u.email.toLowerCase().includes(inviteSearch.toLowerCase())))
+            );
+            setInviteResults(filtered.slice(0, 5));
+        } catch (e) { console.error(e); }
+    };
+
+    const inviteSpectator = async (userToInvite) => {
+        try {
+             await base44.entities.Notification.create({
+                recipient_id: userToInvite.id,
+                type: "info",
+                title: "Invitation à regarder",
+                message: `${currentUser.username || 'Un ami'} vous invite à regarder sa partie de ${game.game_type === 'chess' ? 'Échecs' : 'Dames'}`,
+                link: `/Game?id=${game.id}`,
+                sender_id: currentUser.id
+            });
+            toast.success(`Invitation envoyée à ${userToInvite.username || 'l\'utilisateur'}`);
+            setInviteOpen(false);
+        } catch (e) {
+            toast.error("Erreur lors de l'envoi");
+        }
+    };
+
     if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
     const movesList = game?.moves ? JSON.parse(game.moves) : [];
@@ -859,6 +910,65 @@ export default function Game() {
                      </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Floating Reactions Overlay */}
+            <div className="fixed inset-0 pointer-events-none z-[130] overflow-hidden">
+                <AnimatePresence>
+                    {reactions.map(r => (
+                        <motion.div
+                            key={r.id}
+                            initial={{ opacity: 0, y: 100, scale: 0.5 }}
+                            animate={{ opacity: 1, y: -200, scale: 1.5 }}
+                            exit={{ opacity: 0, scale: 0.5 }}
+                            transition={{ duration: 2, ease: "easeOut" }}
+                            className="absolute left-1/2 bottom-1/4 flex flex-col items-center"
+                            style={{ marginLeft: (Math.random() * 200 - 100) + 'px' }} // Random horizontal drift
+                        >
+                            <span className="text-6xl drop-shadow-lg">{r.emoji}</span>
+                            <span className="text-sm font-bold text-white bg-black/50 px-2 rounded-full mt-1 whitespace-nowrap">{r.sender_name}</span>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+
+            {/* Invite Dialog */}
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7]">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#4a3728]">Inviter un spectateur</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="flex gap-2">
+                            <Input 
+                                placeholder="Chercher un joueur..." 
+                                value={inviteSearch} 
+                                onChange={(e) => setInviteSearch(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleInviteSearch()}
+                            />
+                            <Button onClick={handleInviteSearch} className="bg-[#4a3728]">
+                                <Search className="w-4 h-4" />
+                            </Button>
+                        </div>
+                        <ScrollArea className="h-[200px] border rounded-md p-2">
+                            {inviteResults.length === 0 ? (
+                                <p className="text-center text-gray-400 py-4 text-sm">Recherchez un ami à inviter</p>
+                            ) : (
+                                inviteResults.map(u => (
+                                    <div key={u.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                                                {u.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User className="w-4 h-4" />}
+                                            </div>
+                                            <span className="text-sm font-medium">{u.username || u.full_name}</span>
+                                        </div>
+                                        <Button size="sm" variant="outline" onClick={() => inviteSpectator(u)}>Inviter</Button>
+                                    </div>
+                                ))
+                            )}
+                        </ScrollArea>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Result Overlay */}
             <AnimatePresence>
@@ -1134,7 +1244,32 @@ export default function Game() {
                                 <Button size="sm" variant="ghost" className="h-6 px-2" onClick={copyInviteCode}>{inviteCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</Button>
                             </div>
                         )}
-                        
+
+                        <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]" onClick={() => setInviteOpen(true)}>
+                            <UserPlus className="w-4 h-4 mr-1" /> Inviter
+                        </Button>
+
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-yellow-600 hover:bg-yellow-50">
+                                    <Smile className="w-5 h-5" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-2 bg-white" side="top">
+                                <div className="flex gap-2">
+                                    {["👏", "🔥", "😮", "😂", "❤️", "🤔"].map(emoji => (
+                                        <button 
+                                            key={emoji} 
+                                            className="text-2xl hover:scale-125 transition-transform p-1"
+                                            onClick={() => sendReaction(emoji)}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                            </PopoverContent>
+                        </Popover>
+
                         {game.status !== 'playing' && game.status !== 'waiting' && (
                             <Button variant="outline" size="sm" onClick={() => navigate('/')}>
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Quitter

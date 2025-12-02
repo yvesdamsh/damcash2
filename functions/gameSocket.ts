@@ -69,25 +69,32 @@ export default async function handler(req) {
 
                 // Notify opponent via Global Notification System
                 try {
-                    const game = await base44.asServiceRole.entities.Game.get(gameId);
-                    if (game) {
-                        const opponentId = game.white_player_id === sender_id ? game.black_player_id : game.white_player_id;
-                        if (opponentId) {
-                            channel.postMessage({
-                                recipientId: opponentId,
-                                type: 'message',
-                                title: `Message de ${sender_name}`,
-                                message: content,
-                                link: `/Game?id=${gameId}`,
-                                senderId: sender_id
-                            });
-                        }
+                const game = await base44.asServiceRole.entities.Game.get(gameId);
+                if (game) {
+                    const opponentId = game.white_player_id === sender_id ? game.black_player_id : game.white_player_id;
+                    if (opponentId) {
+                        channel.postMessage({
+                            recipientId: opponentId,
+                            type: 'message',
+                            title: `Message de ${sender_name}`,
+                            message: content,
+                            link: `/Game?id=${gameId}`,
+                            senderId: sender_id
+                        });
                     }
-                } catch (e) {
-                    console.error("Failed to notify opponent", e);
                 }
-            }
-        } catch (error) {
+                } catch (e) {
+                console.error("Failed to notify opponent", e);
+                }
+                }
+                else if (data.type === 'GAME_REACTION') {
+                // Broadcast Reaction (Ephemeral)
+                broadcast(gameId, {
+                type: 'GAME_REACTION',
+                payload: data.payload // { sender_id, sender_name, emoji }
+                });
+                }
+                } catch (error) {
             console.error("WebSocket Error:", error);
         }
     };
