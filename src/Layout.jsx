@@ -131,11 +131,10 @@ import {
         if (e) e.preventDefault();
         try {
             await base44.auth.logout();
-            // Force reload to trigger platform auth check or clear state
-            window.location.href = '/';
+            window.location.href = '/Home';
         } catch (err) {
             console.error("Logout error:", err);
-            window.location.reload();
+            window.location.href = '/Home';
         }
     };
 
