@@ -123,14 +123,15 @@ import {
         { label: 'Profil', path: '/Profile', icon: User, public: false },
     ].filter(item => user || item.public);
 
-    const handleLogout = async () => {
-        try {
-            await base44.auth.logout();
-        } catch (e) {
-            console.error("Logout error", e);
-        }
-        // Force reload to home to clear all states
-        window.location.href = '/Home';
+    const handleLogout = (e) => {
+        if (e) e.preventDefault();
+        // Clear local state immediately
+        setUser(null);
+        // Attempt logout and redirect regardless of outcome
+        base44.auth.logout()
+            .finally(() => {
+                window.location.href = '/Home';
+            });
     };
 
     // Mobile Viewport Optimization
