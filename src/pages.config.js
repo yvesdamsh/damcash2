@@ -14,6 +14,7 @@ import Lobby from './pages/Lobby';
 import Teams from './pages/Teams';
 import TeamDetail from './pages/TeamDetail';
 import CreatePuzzle from './pages/CreatePuzzle';
+import Index from './pages/Index';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "Teams": Teams,
     "TeamDetail": TeamDetail,
     "CreatePuzzle": CreatePuzzle,
+    "Index": Index,
 }
 
 export const pagesConfig = {

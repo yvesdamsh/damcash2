@@ -37,8 +37,25 @@ const isOwnPiece = (piece, currentTurn) => {
 
 // --- Core Logic ---
 
+// Helper for Majority Capture
+const getMaxChainLength = (board, r, c, piece) => {
+    const { captures } = getMovesForPiece(board, r, c, piece, true);
+    if (captures.length === 0) return 0;
+    
+    let max = 0;
+    for (const cap of captures) {
+        const { newBoard, promoted } = executeMove(board, [r,c], [cap.to.r, cap.to.c], cap.captured);
+        let len = 1;
+        if (!promoted) {
+             len += getMaxChainLength(newBoard, cap.to.r, cap.to.c, newBoard[cap.to.r][cap.to.c]);
+        }
+        if (len > max) max = len;
+    }
+    return max;
+};
+
 // Retourne tous les coups possibles pour un joueur donné
-// Si des prises sont possibles, retourne UNIQUEMENT les prises (Prise obligatoire)
+// Si des prises sont possibles, retourne UNIQUEMENT les prises MAJORITAIRES (Prise obligatoire)
 export const getValidMoves = (board, turn) => {
     let moves = [];
     let captureMoves = [];
@@ -54,11 +71,23 @@ export const getValidMoves = (board, turn) => {
         }
     }
 
-    // Si des captures existent, elles sont obligatoires
+    // Si des captures existent, elles sont obligatoires ET Majoritaires
     if (captureMoves.length > 0) {
-        // Optionnel : Filtrer pour garder seulement la "plus grande" prise si on veut règles strictes
-        // Ici on retourne toutes les captures possibles
-        return captureMoves;
+        let maxCaptureDepth = 0;
+        
+        // Calculate depth for all candidate captures
+        const capturesWithDepth = captureMoves.map(move => {
+            const { newBoard, promoted } = executeMove(board, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
+            let depth = 1;
+            if (!promoted) {
+                 depth += getMaxChainLength(newBoard, move.to.r, move.to.c, newBoard[move.to.r][move.to.c]);
+            }
+            if (depth > maxCaptureDepth) maxCaptureDepth = depth;
+            return { ...move, depth };
+        });
+
+        // Return only moves that lead to max capture count
+        return capturesWithDepth.filter(m => m.depth === maxCaptureDepth);
     }
     return moves;
 };

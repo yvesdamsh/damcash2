@@ -871,6 +871,7 @@ export default function Game() {
                                     onClick={async () => {
                                         setShowResignConfirm(false);
                                         const winnerId = currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                                        setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
                                         await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId });
                                         base44.functions.invoke('processGameResult', { gameId: game.id });
                                         soundManager.play('loss');
