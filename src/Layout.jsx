@@ -207,13 +207,21 @@ import {
                                 >
                                 {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                 </button>
-                                {user && (
+                                {user ? (
                                 <button
                                     onClick={handleLogout}
                                     className="px-3 py-2 rounded-md text-sm font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2 transition-colors"
                                 >
                                     <LogOut className="w-4 h-4" />
                                     Déconnexion
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => base44.auth.redirectToLogin('/Home')}
+                                    className="px-3 py-2 rounded-md text-sm font-bold bg-[#b8860b] text-white hover:bg-[#9a7009] flex items-center gap-2 transition-colors shadow-md"
+                                >
+                                    <User className="w-4 h-4" />
+                                    Connexion
                                 </button>
                             )}
                         </div>
@@ -273,13 +281,21 @@ import {
                                     {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                     Son: {soundEnabled ? 'Activé' : 'Désactivé'}
                                 </button>
-                                {user && (
+                                {user ? (
                                     <button
                                         onClick={handleLogout}
                                         className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2"
                                     >
                                         <LogOut className="w-5 h-5" />
                                         Déconnexion
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => base44.auth.redirectToLogin('/Home')}
+                                        className="w-full text-left px-3 py-2 rounded-md text-base font-bold text-[#b8860b] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
+                                    >
+                                        <User className="w-5 h-5" />
+                                        Connexion / Inscription
                                     </button>
                                 )}
                             </div>
