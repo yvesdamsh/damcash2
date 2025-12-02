@@ -36,8 +36,10 @@ export default async function handler(req) {
 
         Provide a JSON response with:
         1. "summary": A brief 2-3 sentence summary of the game style and turning point.
-        2. "key_moments": An array of objects with "move_index" (0-based), "type" (brilliant, blunder, mistake, good), and "comment" (short explanation).
-        Identify at least 3 key moments.
+        2. "opening_name": The name of the opening played (e.g. "Sicilian Defense", "Queens Gambit", "Russian Game"). If unknown, use "Unknown".
+        3. "white_accuracy": An estimated percentage (0-100) of White's move quality accuracy.
+        4. "black_accuracy": An estimated percentage (0-100) of Black's move quality accuracy.
+        5. "key_moments": An array of objects with "move_index" (0-based), "type" (brilliant, blunder, mistake, good), and "comment" (short explanation). Identify at least 3 key moments.
         `;
 
         const response = await base44.integrations.Core.InvokeLLM({
@@ -46,6 +48,9 @@ export default async function handler(req) {
                 type: "object",
                 properties: {
                     summary: { type: "string" },
+                    opening_name: { type: "string" },
+                    white_accuracy: { type: "number" },
+                    black_accuracy: { type: "number" },
                     key_moments: { 
                         type: "array",
                         items: {
@@ -65,8 +70,18 @@ export default async function handler(req) {
         const analysisRecord = await base44.asServiceRole.entities.GameAnalysis.create({
             game_id: gameId,
             summary: response.summary,
-            analysis_data: JSON.stringify(response.key_moments)
+            analysis_data: JSON.stringify({
+                key_moments: response.key_moments,
+                white_accuracy: response.white_accuracy,
+                black_accuracy: response.black_accuracy,
+                opening_name: response.opening_name
+            })
         });
+
+        // Update Game with opening info if available
+        if (response.opening_name && response.opening_name !== "Unknown") {
+            await base44.asServiceRole.entities.Game.update(gameId, { opening_name: response.opening_name });
+        }
 
         return Response.json(analysisRecord);
 

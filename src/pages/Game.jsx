@@ -1095,12 +1095,34 @@ export default function Game() {
                             </Button>
                         </div>
                         {game.moves && JSON.parse(game.moves).length > 0 && (
-                            <div className="flex justify-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}><SkipBack className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                                <span className="flex items-center px-1 text-xs font-mono min-w-[3rem] justify-center">{replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}</span>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}><ChevronRight className="w-4 h-4" /></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}><SkipForward className="w-4 h-4" /></Button>
+                            <div className="w-full max-w-md mx-auto bg-[#4a3728] p-1 rounded-lg shadow-inner flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}>
+                                    <SkipBack className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}>
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Button>
+                                
+                                <div className="flex-1 mx-2 relative h-8 flex items-center justify-center">
+                                    <div className="absolute inset-0 flex items-center">
+                                        <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-yellow-500 transition-all duration-200"
+                                                style={{ width: `${((replayIndex === -1 ? movesList.length : replayIndex + 1) / movesList.length) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <span className="relative z-10 text-xs font-mono font-bold text-[#e8dcc5] bg-[#4a3728] px-2 rounded">
+                                        {replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}
+                                    </span>
+                                </div>
+
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}>
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}>
+                                    <SkipForward className="w-4 h-4" />
+                                </Button>
                             </div>
                         )}
                     </div>
