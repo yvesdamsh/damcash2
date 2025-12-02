@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Search, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Tournaments() {
@@ -31,6 +33,13 @@ export default function Tournaments() {
         time_control: '5+0'
     });
     const [accessCodeInput, setAccessCodeInput] = useState('');
+    
+    // Filters & Search State
+    const [activeTab, setActiveTab] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [filterGameType, setFilterGameType] = useState('all'); // Default to all or specific
+    const [myTournamentIds, setMyTournamentIds] = useState(new Set());
 
     useEffect(() => {
         const init = async () => {
@@ -40,6 +49,12 @@ export default function Tournaments() {
                 // Ensure tournaments exist
                 await base44.functions.invoke('tournamentManager', {});
                 fetchTournaments();
+                
+                // Fetch my participations
+                if (u) {
+                    const parts = await base44.entities.TournamentParticipant.filter({ user_id: u.id });
+                    setMyTournamentIds(new Set(parts.map(p => p.tournament_id)));
+                }
             } catch (e) {
                 console.error(e);
             }
@@ -58,7 +73,8 @@ export default function Tournaments() {
     }, []);
 
     const fetchTournaments = async () => {
-        const list = await base44.entities.Tournament.list('-start_date', 20);
+        // Fetching more to allow client-side filtering effectively
+        const list = await base44.entities.Tournament.list('-start_date', 50);
         setTournaments(list);
     };
 
@@ -261,39 +277,108 @@ export default function Tournaments() {
                 </Dialog>
             </div>
 
-            <div className="mb-8 bg-white/50 p-4 rounded-xl border border-[#d4c5b0]">
-                <div className="flex gap-4 items-end">
-                    <div className="flex-1 max-w-xs">
-                        <Label className="mb-2 block font-bold text-[#4a3728]">Rejoindre un tournoi privé</Label>
+            {/* Filters & Controls */}
+            <div className="mb-8 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 justify-between">
+                    {/* Search & Filters */}
+                    <div className="flex flex-col md:flex-row gap-4 flex-1">
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                            <Input 
+                                placeholder="Rechercher un tournoi..." 
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                className="pl-8 bg-white border-[#d4c5b0]"
+                            />
+                        </div>
+                        
+                        <Select value={filterGameType} onValueChange={setFilterGameType}>
+                            <SelectTrigger className="w-[180px] bg-white border-[#d4c5b0]">
+                                <SelectValue placeholder="Type de jeu" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tous les jeux</SelectItem>
+                                <SelectItem value="checkers">Dames</SelectItem>
+                                <SelectItem value="chess">Échecs</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={filterStatus} onValueChange={setFilterStatus}>
+                            <SelectTrigger className="w-[180px] bg-white border-[#d4c5b0]">
+                                <SelectValue placeholder="Statut" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Tous statuts</SelectItem>
+                                <SelectItem value="open">Inscriptions ouvertes</SelectItem>
+                                <SelectItem value="ongoing">En cours</SelectItem>
+                                <SelectItem value="finished">Terminés</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Join Private Code */}
+                    <div className="flex gap-2">
                         <Input 
-                            placeholder="Code d'accès..." 
+                            placeholder="Code tournoi privé" 
                             value={accessCodeInput}
                             onChange={e => setAccessCodeInput(e.target.value.toUpperCase())}
-                            className="bg-white border-[#d4c5b0]"
+                            className="bg-white border-[#d4c5b0] w-40"
                         />
+                        <Button 
+                            onClick={async () => {
+                                if (!accessCodeInput) return;
+                                const res = await base44.entities.Tournament.list(); 
+                                const target = res.find(t => t.access_code === accessCodeInput && t.status !== 'finished');
+                                if (target) {
+                                    window.location.href = `/TournamentDetail?id=${target.id}`;
+                                } else {
+                                    toast.error("Code invalide ou tournoi terminé");
+                                }
+                            }}
+                            className="bg-[#6b5138] hover:bg-[#5c4430]"
+                        >
+                            Rejoindre
+                        </Button>
                     </div>
-                    <Button 
-                        onClick={async () => {
-                            if (!accessCodeInput) return;
-                            const res = await base44.entities.Tournament.list(); // Inefficient but works for small scale
-                            const target = res.find(t => t.access_code === accessCodeInput && t.status !== 'finished');
-                            if (target) {
-                                window.location.href = `/TournamentDetail?id=${target.id}`;
-                            } else {
-                                toast.error("Code invalide ou tournoi terminé");
-                            }
-                        }}
-                        className="bg-[#6b5138] hover:bg-[#5c4430]"
-                    >
-                        Rejoindre
-                    </Button>
                 </div>
+
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="bg-[#e8dcc5]">
+                        <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tous les tournois</TabsTrigger>
+                        <TabsTrigger value="my" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Mes tournois</TabsTrigger>
+                    </TabsList>
+                </Tabs>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tournaments
-                    .filter(t => t.game_type === gameMode) // Filter by Game Mode
-                    .filter(t => !t.is_private || (user && t.created_by_user_id === user.id))
+                    .filter(t => {
+                        // 1. Search
+                        if (searchQuery && !t.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                        
+                        // 2. Tab (All vs My)
+                        if (activeTab === 'my') {
+                            const isCreator = user && t.created_by_user_id === user.id;
+                            const isParticipant = myTournamentIds.has(t.id);
+                            if (!isCreator && !isParticipant) return false;
+                        }
+
+                        // 3. Status Filter
+                        if (filterStatus !== 'all' && t.status !== filterStatus) return false;
+
+                        // 4. Game Type Filter (Override default behavior or combine?)
+                        // Previous behavior was strict lock on gameMode. Now we have a filter.
+                        // If filter is 'all', show all types? Or default to gameMode if not specified?
+                        // Let's trust the filter control.
+                        if (filterGameType !== 'all' && t.game_type !== filterGameType) return false;
+                        // Fallback to gameMode if filter is 'all' to keep initial view consistent? 
+                        // No, 'all' should mean all. But let's default the filter state to 'all'.
+                        
+                        // 5. Private Visibility
+                        if (t.is_private && (!user || t.created_by_user_id !== user.id) && !myTournamentIds.has(t.id)) return false;
+
+                        return true;
+                    })
                     .map(t => (
                     <Card key={t.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
                          {t.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
