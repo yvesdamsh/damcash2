@@ -176,28 +176,8 @@ import {
                             </Link>
                         </div>
 
-                        {/* Desktop Nav */}
+                        {/* Desktop Actions (Nav items moved to hamburger) */}
                         <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
-                            {navItems.map((item) => {
-                                const Icon = item.icon;
-                                // Case insensitive check for active route
-                                const isActive = location.pathname.toLowerCase() === item.path.toLowerCase();
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        className={`px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium transition-colors flex items-center gap-1 lg:gap-2
-                                            ${isActive 
-                                                ? 'bg-[#6b5138] text-white shadow-inner' 
-                                                : 'hover:bg-[#5c4430] text-[#d4c5b0]'
-                                            }`}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                        {item.label}
-                                    </Link>
-                                );
-                                })}
-
                                 {/* Game Mode Toggle */}
                                 <button
                                     onClick={toggleGameMode}
@@ -249,8 +229,8 @@ import {
                             )}
                         </div>
 
-                        {/* Mobile menu button */}
-                        <div className="flex items-center md:hidden">
+                        {/* Menu button (Visible on all screens) */}
+                        <div className="flex items-center pl-4">
                             <button
                                 onClick={toggleMenu}
                                 className="inline-flex items-center justify-center p-2 rounded-md text-[#d4c5b0] hover:bg-[#5c4430] focus:outline-none"
@@ -261,14 +241,14 @@ import {
                     </div>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* Navigation Menu (Dropdown) */}
                 <AnimatePresence>
                     {isMenuOpen && (
                         <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="md:hidden bg-[#4a3728] border-t border-[#5c4430] overflow-hidden"
+                            className="bg-[#4a3728] border-t border-[#5c4430] overflow-hidden absolute w-full z-50 shadow-xl"
                         >
                             <div className="px-2 pt-2 pb-3 space-y-1">
                                 {navItems.map((item) => {
