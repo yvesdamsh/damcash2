@@ -2,6 +2,6 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 
 export default function Index() {
-    // Force redirect to Home to fix the persistent Profile redirection issue
+    // Redirect root URL to Home page
     return <Navigate to="/Home" replace />;
 }
