@@ -247,25 +247,11 @@ export default function TournamentDetail() {
 
             const qualifiers = [];
             
-            // Top N from each group based on rules
-            const advanceCount = tournament.group_advancement || 2;
-            
+            // Top 2 from each group
             Object.values(groups).forEach(groupParticipants => {
-                // Sort Logic with Tie-Breakers
-                const sorted = groupParticipants.sort((a, b) => {
-                    if (a.score !== b.score) return (b.score || 0) - (a.score || 0);
-                    
-                    // Tie Breaker Logic (Mocked, real implementation requires match history analysis)
-                    if (tournament.tie_breaker === 'buchholz') {
-                        // Mock: assume higher ID wins for stability or add logic
-                        return 0; 
-                    }
-                    return 0;
-                });
-
-                for(let k=0; k < advanceCount; k++) {
-                    if (sorted[k]) qualifiers.push(sorted[k]);
-                }
+                const sorted = groupParticipants.sort((a, b) => (b.score || 0) - (a.score || 0));
+                if(sorted[0]) qualifiers.push(sorted[0]);
+                if(sorted[1]) qualifiers.push(sorted[1]);
             });
 
             // Generate Bracket from qualifiers
@@ -546,25 +532,7 @@ export default function TournamentDetail() {
                                     </CardHeader>
                                     <CardContent className="overflow-auto">
                                         {matches.filter(m => m.tournament_round > 0).length > 0 ? (
-                                            <div className="space-y-4">
-                                                <TournamentBracket matches={matches} players={participants} currentRound={tournament.current_round} />
-                                                
-                                                {/* Replay Section */}
-                                                <div className="border-t pt-4">
-                                                    <h4 className="font-bold text-[#4a3728] mb-2">Matchs Terminés (Replay)</h4>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                                        {matches.filter(m => m.status === 'finished').map(m => (
-                                                            <Link key={m.id} to={`/Game?id=${m.id}`} target="_blank">
-                                                                <Button variant="outline" size="sm" className="w-full justify-between text-xs">
-                                                                    <span>{m.white_player_name} vs {m.black_player_name}</span>
-                                                                    <Play className="w-3 h-3 ml-2" />
-                                                                </Button>
-                                                            </Link>
-                                                        ))}
-                                                        {matches.filter(m => m.status === 'finished').length === 0 && <span className="text-xs text-gray-500">Aucun match terminé</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <TournamentBracket matches={matches} players={participants} currentRound={tournament.current_round} />
                                         ) : (
                                             <div className="text-center py-20 text-gray-500">
                                                 En attente de la génération de l'arbre...

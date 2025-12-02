@@ -302,37 +302,6 @@ export default function Tournaments() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div className="grid gap-2">
-                                    <Label>Départage (Tie-Break)</Label>
-                                    <Select 
-                                        value={newTournament.tie_breaker || 'none'} 
-                                        onValueChange={v => setNewTournament({...newTournament, tie_breaker: v})}
-                                    >
-                                        <SelectTrigger className="border-[#d4c5b0]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="none">Aucun (aléatoire)</SelectItem>
-                                            <SelectItem value="buchholz">Buchholz</SelectItem>
-                                            <SelectItem value="sonneborn_berger">Sonneborn-Berger</SelectItem>
-                                            <SelectItem value="head_to_head">Confrontation directe</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>Qualifiés par groupe</Label>
-                                    <Input 
-                                        type="number"
-                                        min="1"
-                                        value={newTournament.group_advancement || 2} 
-                                        onChange={e => setNewTournament({...newTournament, group_advancement: parseInt(e.target.value)})}
-                                        className="border-[#d4c5b0]"
-                                        disabled={newTournament.format !== 'hybrid'}
-                                    />
-                                </div>
-                            </div>
-
                             <div className="grid gap-2 mt-2">
                                 <Label>Règles personnalisées</Label>
                                 <textarea 

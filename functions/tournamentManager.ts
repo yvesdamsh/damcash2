@@ -175,9 +175,6 @@ export default async function handler(req) {
     await ensureTournament(nextStart, nextEnd, nextTC, 'checkers');
     await ensureTournament(nextStart, nextEnd, nextTC, 'chess');
 
-    // Trigger Season Manager periodically (simple way to ensure it runs without dedicated cron)
-    await base44.asServiceRole.functions.invoke('seasonManager', {});
-
     return Response.json({ status: 'success', message: 'Tournaments synced' });
 }
 
