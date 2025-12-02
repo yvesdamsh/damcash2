@@ -3,17 +3,19 @@ import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { User, Circle, Swords, Crown, Gamepad2, Search } from 'lucide-react';
+import { User, Circle, Swords, Crown, Gamepad2, Search, MessagesSquare, Users, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
+import LobbyChat from '@/components/LobbyChat';
 
 export default function Lobby() {
     const [users, setUsers] = useState([]);
     const [publicGames, setPublicGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
+    const [myTeam, setMyTeam] = useState(null);
     const navigate = useNavigate();
 
     const fetchData = async () => {
@@ -39,6 +41,16 @@ export default function Lobby() {
         const init = async () => {
             const me = await base44.auth.me();
             setCurrentUser(me);
+            
+            if (me) {
+                // Check for team membership
+                const memberships = await base44.entities.TeamMember.filter({ user_id: me.id, status: 'active' });
+                if (memberships.length > 0) {
+                    const team = await base44.entities.Team.get(memberships[0].team_id);
+                    setMyTeam(team);
+                }
+            }
+            
             fetchData();
         };
         init();
@@ -158,7 +170,10 @@ export default function Lobby() {
                                 <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
                                     {player.avatar_url ? <img src={player.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6 text-gray-400" />}
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full" title="En ligne"></div>
+                                <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
+                                    // Simple heuristic: if active recently, green. If in game... hard to know without extra query, sticking to green for now.
+                                    'bg-green-500'
+                                }`} title="En ligne"></div>
                             </div>
                             <div>
                                 <div className="font-bold text-[#4a3728] flex items-center gap-1">
@@ -169,17 +184,23 @@ export default function Lobby() {
                                     <Crown className="w-3 h-3 text-yellow-600" />
                                     ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
                                 </div>
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                    En ligne • Salon
+                                </div>
                             </div>
                         </div>
                         {player.id !== currentUser?.id && (
-                            <Button 
-                                size="sm" 
-                                className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
-                                onClick={() => handleChallenge(player, type)}
-                            >
-                                <Swords className="w-4 h-4 mr-2" />
-                                Défier
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button 
+                                    size="sm" 
+                                    className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
+                                    onClick={() => handleChallenge(player, type)}
+                                    title="Inviter à jouer"
+                                >
+                                    <Swords className="w-4 h-4 mr-2" />
+                                    Inviter
+                                </Button>
+                            </div>
                         )}
                     </Card>
                 ))}
@@ -226,48 +247,98 @@ export default function Lobby() {
                 </TabsList>
 
                 <TabsContent value="games" className="animate-in fade-in duration-500">
-                    <div className="mb-6 flex gap-4 justify-center">
-                        <Button onClick={() => handleCreatePublicGame('checkers')} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
-                            <Circle className="w-4 h-4" /> Créer Dames
-                        </Button>
-                        <Button onClick={() => handleCreatePublicGame('chess')} className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white gap-2">
-                            <Gamepad2 className="w-4 h-4" /> Créer Échecs
-                        </Button>
-                    </div>
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                            <div className="mb-6 flex gap-4 justify-center">
+                                <Button onClick={() => handleCreatePublicGame('checkers')} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
+                                    <Circle className="w-4 h-4" /> Créer Dames
+                                </Button>
+                                <Button onClick={() => handleCreatePublicGame('chess')} className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white gap-2">
+                                    <Gamepad2 className="w-4 h-4" /> Créer Échecs
+                                </Button>
+                            </div>
 
-                    {publicGames.length === 0 ? (
-                         <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
-                            <Swords className="w-10 h-10 mb-2 opacity-50" />
-                            <p>Aucune partie publique en attente. Créez-en une !</p>
+                            {publicGames.length === 0 ? (
+                                 <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
+                                    <Swords className="w-10 h-10 mb-2 opacity-50" />
+                                    <p>Aucune partie publique en attente. Créez-en une !</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {publicGames.map(game => (
+                                        <Card key={game.id} className="p-4 flex items-center justify-between border-[#d4c5b0] hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${game.game_type === 'chess' ? 'bg-[#6B8E4E]' : 'bg-[#4a3728]'}`}>
+                                                    {game.game_type === 'chess' ? <Gamepad2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-[#4a3728]">{game.white_player_name} <span className="font-normal text-gray-500">attend...</span></div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'} • {game.initial_time || 10} min</div>
+                                                </div>
+                                            </div>
+                                            <Button onClick={() => handleJoinGame(game.id)} className="bg-[#6b5138] hover:bg-[#5c4430]">
+                                                Rejoindre
+                                            </Button>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {publicGames.map(game => (
-                                <Card key={game.id} className="p-4 flex items-center justify-between border-[#d4c5b0] hover:shadow-md transition-all">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${game.game_type === 'chess' ? 'bg-[#6B8E4E]' : 'bg-[#4a3728]'}`}>
-                                            {game.game_type === 'chess' ? <Gamepad2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-[#4a3728]">{game.white_player_name} <span className="font-normal text-gray-500">attend...</span></div>
-                                            <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'} • {game.initial_time || 10} min</div>
-                                        </div>
-                                    </div>
-                                    <Button onClick={() => handleJoinGame(game.id)} className="bg-[#6b5138] hover:bg-[#5c4430]">
-                                        Rejoindre
-                                    </Button>
-                                </Card>
-                            ))}
+                        
+                        <div className="lg:w-96 space-y-6">
+                            {/* Global Chat Section */}
+                            <div className="h-[600px]">
+                                <Tabs defaultValue="global" className="h-full flex flex-col">
+                                    <TabsList className="w-full bg-[#e8dcc5]">
+                                        <TabsTrigger value="global" className="flex-1 data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                                            <MessagesSquare className="w-4 h-4 mr-2" /> Général
+                                        </TabsTrigger>
+                                        {myTeam && (
+                                            <TabsTrigger value="team" className="flex-1 data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                                                <Users className="w-4 h-4 mr-2" /> Équipe
+                                            </TabsTrigger>
+                                        )}
+                                    </TabsList>
+                                    <TabsContent value="global" className="flex-1 mt-2 h-full">
+                                        <LobbyChat channelId="global" channelName="Salon Général" currentUser={currentUser} />
+                                    </TabsContent>
+                                    {myTeam && (
+                                        <TabsContent value="team" className="flex-1 mt-2 h-full">
+                                            <LobbyChat channelId={myTeam.id} channelName={myTeam.name} currentUser={currentUser} />
+                                        </TabsContent>
+                                    )}
+                                </Tabs>
+                            </div>
                         </div>
-                    )}
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="checkers" className="animate-in fade-in duration-500">
-                    <PlayerList type="checkers" />
+                    <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                             <PlayerList type="checkers" />
+                        </div>
+                        <div className="lg:w-96 hidden lg:block">
+                             <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
+                                 <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
+                                 <p>Le chat est disponible dans l'onglet "Parties Publiques"</p>
+                             </div>
+                        </div>
+                    </div>
                 </TabsContent>
 
                 <TabsContent value="chess" className="animate-in fade-in duration-500">
-                    <PlayerList type="chess" />
+                     <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                             <PlayerList type="chess" />
+                        </div>
+                        <div className="lg:w-96 hidden lg:block">
+                             <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
+                                 <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
+                                 <p>Le chat est disponible dans l'onglet "Parties Publiques"</p>
+                             </div>
+                        </div>
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>
