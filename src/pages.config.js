@@ -39,7 +39,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Profile",
+    mainPage: "Home",
     Pages: PAGES,
     Layout: __Layout,
 };
