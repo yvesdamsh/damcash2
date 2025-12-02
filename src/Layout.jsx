@@ -156,18 +156,18 @@ import {
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
                             <Link to="/Home" className="flex-shrink-0 flex items-center gap-2 group">
-                                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full shadow-lg border-2 border-[#e8dcc5] flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                                    <span className="text-[#2c1e12] font-black text-lg">D</span>
-                                    <span className="text-[#e8dcc5] font-black text-lg -ml-1">$</span>
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full shadow-lg border-2 border-[#e8dcc5] flex items-center justify-center transform group-hover:scale-110 transition-transform">
+                                    <span className="text-[#2c1e12] font-black text-base lg:text-lg">D</span>
+                                    <span className="text-[#e8dcc5] font-black text-base lg:text-lg -ml-1">$</span>
                                 </div>
-                                <span className="font-black text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#e8dcc5] to-yellow-500 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                                <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#e8dcc5] to-yellow-500 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
                                     DAMCASH
                                 </span>
                             </Link>
                         </div>
 
                         {/* Desktop Nav */}
-                        <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
+                        <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
                             {navItems.map((item) => {
                                 const Icon = item.icon;
                                 // Case insensitive check for active route
@@ -176,7 +176,7 @@ import {
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2
+                                        className={`px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium transition-colors flex items-center gap-1 lg:gap-2
                                             ${isActive 
                                                 ? 'bg-[#6b5138] text-white shadow-inner' 
                                                 : 'hover:bg-[#5c4430] text-[#d4c5b0]'
