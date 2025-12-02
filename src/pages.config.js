@@ -11,6 +11,8 @@ import Leagues from './pages/Leagues';
 import LeagueDetail from './pages/LeagueDetail';
 import Wallet from './pages/Wallet';
 import Lobby from './pages/Lobby';
+import Teams from './pages/Teams';
+import TeamDetail from './pages/TeamDetail';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +30,8 @@ export const PAGES = {
     "LeagueDetail": LeagueDetail,
     "Wallet": Wallet,
     "Lobby": Lobby,
+    "Teams": Teams,
+    "TeamDetail": TeamDetail,
 }
 
 export const pagesConfig = {
