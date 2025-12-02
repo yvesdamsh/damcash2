@@ -128,15 +128,18 @@ import {
 
     const handleLogout = async (e) => {
         if (e) e.preventDefault();
+        // Optimistically clear user to update UI immediately
+        setUser(null);
         try {
-            // Hack: Redirect to hash to prevent full page reload/navigation by the SDK
-            // This keeps us in the current context long enough to trigger the external redirect
-            await base44.auth.logout('#');
-            
-            // Now force the correct external redirect
-            base44.auth.redirectToLogin();
+            // Attempt to logout
+            // We intentionally do not pass a redirect URL to avoid triggering an app reload
+            // which would cause a 403 error if the app is in private mode.
+            await base44.auth.logout();
         } catch (err) {
             console.error("Logout error:", err);
+        } finally {
+            // Always force redirect to the identity provider login page
+            // This ensures we leave the protected app environment
             base44.auth.redirectToLogin();
         }
     };
