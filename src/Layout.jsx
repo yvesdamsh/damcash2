@@ -123,14 +123,16 @@ import {
         { label: 'Profil', path: '/Profile', icon: User, public: false },
     ].filter(item => user || item.public);
 
-    const handleLogout = async (e) => {
+    const handleLogout = (e) => {
         if (e) e.preventDefault();
-        setUser(null);
+        // Avoid state updates that might cause render crashes
+        // Directly call SDK logout with redirect
         try {
-            await base44.auth.logout();
+            base44.auth.logout(); 
         } catch (err) {
             console.error("Logout error:", err);
         }
+        // Force hard redirect immediately
         window.location.href = '/Home';
     };
 
