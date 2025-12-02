@@ -111,6 +111,24 @@ export default async function handler(req) {
                          } else {
                              await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
                          }
+                         // Handle Recurrence if exists (for Arena)
+                         if (found.recurrence && found.recurrence !== 'none') {
+                             const nextDate = new Date(found.start_date);
+                             if (found.recurrence === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+                             if (found.recurrence === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+                             
+                             await base44.asServiceRole.entities.Tournament.create({
+                                 ...found,
+                                 id: undefined, // New ID
+                                 created_date: undefined,
+                                 updated_date: undefined,
+                                 status: 'open',
+                                 start_date: nextDate.toISOString(),
+                                 end_date: new Date(new Date(found.end_date).getTime() + (found.recurrence === 'daily' ? 86400000 : 604800000)).toISOString(),
+                                 current_round: 0,
+                                 winner_id: null
+                             });
+                         }
                      } else {
                          await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
                      }

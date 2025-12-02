@@ -30,7 +30,10 @@ export default function Tournaments() {
         entry_fee: 0,
         prize_pool: 0,
         rounds: 3,
-        time_control: '5+0'
+        time_control: '5+0',
+        team_mode: false,
+        custom_rules: '',
+        recurrence: 'none'
     });
     const [accessCodeInput, setAccessCodeInput] = useState('');
     
@@ -269,6 +272,45 @@ export default function Tournaments() {
                                     />
                                 </div>
                             )}
+
+                            <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-2">
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="checkbox" 
+                                        id="team_mode" 
+                                        checked={newTournament.team_mode}
+                                        onChange={e => setNewTournament({...newTournament, team_mode: e.target.checked})}
+                                        className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
+                                    />
+                                    <Label htmlFor="team_mode" className="font-bold text-[#4a3728]">Tournoi par Équipe</Label>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Récurrence</Label>
+                                    <Select 
+                                        value={newTournament.recurrence} 
+                                        onValueChange={v => setNewTournament({...newTournament, recurrence: v})}
+                                    >
+                                        <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Aucune</SelectItem>
+                                            <SelectItem value="daily">Quotidien</SelectItem>
+                                            <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-2 mt-2">
+                                <Label>Règles personnalisées</Label>
+                                <textarea 
+                                    value={newTournament.custom_rules} 
+                                    onChange={e => setNewTournament({...newTournament, custom_rules: e.target.value})}
+                                    placeholder="Détails spécifiques (ex: interdiction de nul rapide...)"
+                                    className="flex w-full rounded-md border border-[#d4c5b0] bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
+                                />
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button onClick={handleCreate} className="bg-[#4a3728] hover:bg-[#2c1e12]">Créer</Button>
@@ -346,6 +388,7 @@ export default function Tournaments() {
                     <TabsList className="bg-[#e8dcc5]">
                         <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tous les tournois</TabsTrigger>
                         <TabsTrigger value="my" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Mes tournois</TabsTrigger>
+                        <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Historique</TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
@@ -356,11 +399,18 @@ export default function Tournaments() {
                         // 1. Search
                         if (searchQuery && !t.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
                         
-                        // 2. Tab (All vs My)
-                        if (activeTab === 'my') {
+                        // 2. Tab (All vs My vs History)
+                        if (activeTab === 'history') {
+                             if (t.status !== 'finished') return false;
+                        } else if (activeTab === 'my') {
                             const isCreator = user && t.created_by_user_id === user.id;
                             const isParticipant = myTournamentIds.has(t.id);
                             if (!isCreator && !isParticipant) return false;
+                        } else {
+                            // 'all' tab usually hides finished tournaments to keep view clean, unless user filters for them
+                            // But let's keep 'all' showing everything unless filtered, OR hide finished by default in 'all' if 'history' exists?
+                            // Standard UX: 'All' shows Open/Ongoing. History shows Finished.
+                            if (t.status === 'finished' && filterStatus === 'all') return false;
                         }
 
                         // 3. Status Filter
