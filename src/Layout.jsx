@@ -29,6 +29,13 @@ import {
     const location = useLocation();
     const [user, setUser] = React.useState(null);
 
+    // Save last location for persistent navigation
+    React.useEffect(() => {
+        if (location.pathname && location.pathname !== '/' && !location.pathname.toLowerCase().includes('login')) {
+             localStorage.setItem('damcash_last_path', location.pathname);
+        }
+    }, [location]);
+
     // Sync Game Mode
     const toggleGameMode = () => {
         const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
