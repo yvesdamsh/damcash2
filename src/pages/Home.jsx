@@ -64,13 +64,19 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
-            try {
-                const currentUser = await base44.auth.me();
-                if (!currentUser) {
-                    setLoading(false);
-                    return;
-                }
-                setUser(currentUser);
+        try {
+        // Check authentication state first
+        const currentUser = await base44.auth.me().catch(() => null);
+
+        // If no user, we might be in a race condition or public mode
+        // Stop loading to avoid further errors
+        if (!currentUser) {
+            setLoading(false);
+            // Optional: Auto-redirect if app is meant to be private but landed here
+            // base44.auth.redirectToLogin(); 
+            return;
+        }
+        setUser(currentUser);
                 
                 const savedGameType = localStorage.getItem('gameMode');
                 if (savedGameType) setGameType(savedGameType);
