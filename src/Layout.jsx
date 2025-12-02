@@ -93,11 +93,22 @@ import {
 
     React.useEffect(() => {
         const checkUser = async () => {
+            // Prioritize checking authentication status safely
+            // The user requested immediate redirect if not logged in to avoid 403 errors
+            const isAuth = await base44.auth.isAuthenticated();
+            
+            if (!isAuth) {
+                // If not authenticated, redirect immediately before attempting any protected calls
+                base44.auth.redirectToLogin();
+                return;
+            }
+
             try {
                 const currentUser = await base44.auth.me();
                 setUser(currentUser);
             } catch (e) {
-                // Not logged in
+                console.error("Auth error, redirecting", e);
+                base44.auth.redirectToLogin();
             }
         };
         checkUser();
