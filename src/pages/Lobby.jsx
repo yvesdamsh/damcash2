@@ -43,39 +43,7 @@ export default function Lobby() {
         };
         init();
         
-        const interval = setInterval(fetchData, 10000); // Faster refresh for lobby
-        return () => clearInterval(interval);
-    }, []);
-        try {
-            // Fetch users active in the last 10 minutes
-            // Since we can't do complex date math in filter usually, we fetch list and filter in JS or use sort
-            // We'll fetch users sorted by last_seen desc
-            const allUsers = await base44.entities.User.list({ limit: 100, sort: { last_seen: -1 } });
-            const now = new Date();
-            const onlineThreshold = 10 * 60 * 1000; // 10 minutes
-
-            const onlineUsers = allUsers.filter(u => {
-                if (!u.last_seen) return false;
-                return (now - new Date(u.last_seen)) < onlineThreshold;
-            });
-
-            setUsers(onlineUsers);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        const init = async () => {
-            const me = await base44.auth.me();
-            setCurrentUser(me);
-            fetchUsers();
-        };
-        init();
-        
-        const interval = setInterval(fetchUsers, 30000); // Refresh every 30s
+        const interval = setInterval(fetchData, 5000); // Refresh every 5s for lobby
         return () => clearInterval(interval);
     }, []);
 
@@ -167,11 +135,7 @@ export default function Lobby() {
     };
 
     const PlayerList = ({ type }) => {
-        // Filter players by their default_game preference
         const players = users.filter(u => {
-            // If user has specific preference, strict match
-            // If no preference, maybe show in both? Or default to Checkers?
-            // User asked "ne jamais les mettre ensemble".
             const pref = u.default_game || 'checkers';
             return pref === type;
         });
@@ -230,7 +194,7 @@ export default function Lobby() {
                 <p className="text-[#6b5138]">Trouvez des adversaires en ligne et lancez des défis en temps réel.</p>
             </div>
 
-            <Tabs defaultValue="checkers" className="w-full">
+            <Tabs defaultValue="games" className="w-full">
                 <TabsList className="flex flex-col md:grid md:grid-cols-3 w-full bg-transparent md:bg-[#e8dcc5] p-0 md:p-1 gap-2 md:gap-0 rounded-xl mb-8 h-auto">
                     <TabsTrigger value="games" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
