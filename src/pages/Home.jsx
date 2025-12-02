@@ -75,20 +75,24 @@ export default function Home() {
                 const savedGameType = localStorage.getItem('gameMode');
                 if (savedGameType) setGameType(savedGameType);
 
-                // Initial full load (with user stats check)
-                const stats = await base44.entities.User.list(); // Should be optimized in future
-                const myStats = stats.find(s => s.created_by === currentUser.email);
-
-                if (!myStats) {
+                // Initialize user stats if they don't exist on the current user object
+                if (currentUser && typeof currentUser.elo_checkers === 'undefined') {
                     try {
-                        await base44.entities.User.create({
-                            elo_checkers: 1200, elo_chess: 1200,
-                            wins_checkers: 0, losses_checkers: 0,
-                            wins_chess: 0, losses_chess: 0,
-                            games_played: 0, default_game: 'checkers'
+                        await base44.auth.updateMe({
+                            elo_checkers: 1200, 
+                            elo_chess: 1200,
+                            wins_checkers: 0, 
+                            losses_checkers: 0,
+                            wins_chess: 0, 
+                            losses_chess: 0,
+                            games_played: 0, 
+                            default_game: 'checkers'
                         });
+                        // Refresh user after update
+                        const updatedUser = await base44.auth.me();
+                        setUser(updatedUser);
                     } catch (err) {
-                        console.error("Error creating user stats", err);
+                        console.error("Error initializing user stats", err);
                     }
                 }
                 
