@@ -125,15 +125,16 @@ import {
 
     const handleLogout = (e) => {
         if (e) e.preventDefault();
-        // Avoid state updates that might cause render crashes
-        // Directly call SDK logout with redirect
         try {
-            base44.auth.logout(); 
+            // Use SDK built-in redirect
+            base44.auth.logout('/Home');
+            // Safety fallback
+            setTimeout(() => {
+                window.location.href = '/Home';
+            }, 500);
         } catch (err) {
-            console.error("Logout error:", err);
+            window.location.href = '/Home';
         }
-        // Force hard redirect immediately
-        window.location.href = '/Home';
     };
 
     // Mobile Viewport Optimization
