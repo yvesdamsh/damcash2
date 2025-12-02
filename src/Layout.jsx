@@ -110,16 +110,18 @@ import {
         });
     };
 
+    // Filter items based on auth state to save space
     const navItems = [
-        { label: 'Accueil', path: '/Home', icon: Home },
-        { label: 'Salon', path: '/Lobby', icon: Users },
-        { label: 'Ligues', path: '/Leagues', icon: Shield },
-        { label: 'Tournois', path: '/Tournaments', icon: Flag },
-        { label: 'Équipes', path: '/Teams', icon: Users },
-        { label: 'Entraînement', path: '/Training', icon: Brain },
-        { label: 'Classement', path: '/Leaderboard', icon: Trophy },
-        { label: 'Profil', path: '/Profile', icon: User },
-    ];
+        { label: 'Accueil', path: '/Home', icon: Home, public: true },
+        { label: 'Salon', path: '/Lobby', icon: Users, public: true },
+        { label: 'Ligues', path: '/Leagues', icon: Shield, public: true },
+        { label: 'Tournois', path: '/Tournaments', icon: Flag, public: true },
+        { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
+        // Private items
+        { label: 'Équipes', path: '/Teams', icon: Users, public: false },
+        { label: 'Entraînement', path: '/Training', icon: Brain, public: false },
+        { label: 'Profil', path: '/Profile', icon: User, public: false },
+    ].filter(item => user || item.public);
 
     const handleLogout = async () => {
         await base44.auth.logout();
@@ -165,7 +167,7 @@ import {
                         </div>
 
                         {/* Desktop Nav */}
-                        <div className="hidden md:flex items-center space-x-4">
+                        <div className="hidden lg:flex items-center space-x-2 xl:space-x-4">
                             {navItems.map((item) => {
                                 const Icon = item.icon;
                                 // Case insensitive check for active route
@@ -198,14 +200,19 @@ import {
                                     {gameMode === 'chess' ? '♟️ Échecs' : '⚪ Dames'}
                                 </button>
 
-                                {user && <Notifications />}
-                                {user && <FriendsManager />}
+                                {user && (
+                                    <>
+                                        <Notifications />
+                                        <FriendsManager />
+                                    </>
+                                )}
 
                                 <button 
                                     onClick={toggleSound}
-                                className="p-2 rounded-full hover:bg-[#5c4430] text-[#d4c5b0] transition-colors"
+                                    className="p-2 rounded-full hover:bg-[#5c4430] text-[#d4c5b0] transition-colors"
+                                    title={soundEnabled ? "Couper le son" : "Activer le son"}
                                 >
-                                {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                 </button>
                                 {user ? (
                                 <button
