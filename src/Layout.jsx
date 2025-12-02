@@ -215,13 +215,19 @@ import {
                                     {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                 </button>
                                 {user ? (
-                                <button
-                                    onClick={handleLogout}
-                                    className="px-3 py-2 rounded-md text-sm font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2 transition-colors"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    Déconnexion
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <span className="hidden xl:block text-xs text-[#d4c5b0] max-w-[100px] truncate">
+                                        {user.full_name || user.email?.split('@')[0] || 'Invité'}
+                                    </span>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="px-3 py-2 rounded-md text-sm font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2 transition-colors"
+                                        title="Se déconnecter"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        <span className="hidden lg:inline">Déconnexion</span>
+                                    </button>
+                                </div>
                             ) : (
                                 <button
                                     onClick={() => base44.auth.redirectToLogin('/Home')}
@@ -289,13 +295,18 @@ import {
                                     Son: {soundEnabled ? 'Activé' : 'Désactivé'}
                                 </button>
                                 {user ? (
-                                    <button
-                                        onClick={handleLogout}
-                                        className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2"
-                                    >
-                                        <LogOut className="w-5 h-5" />
-                                        Déconnexion
-                                    </button>
+                                    <>
+                                        <div className="px-3 py-2 text-sm text-[#d4c5b0] border-b border-[#5c4430]/50 mb-1">
+                                            Connecté: <span className="font-bold text-white">{user.full_name || user.email || 'Invité'}</span>
+                                        </div>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-300 hover:bg-[#5c4430] hover:text-red-200 flex items-center gap-2"
+                                        >
+                                            <LogOut className="w-5 h-5" />
+                                            Déconnexion
+                                        </button>
+                                    </>
                                 ) : (
                                     <button
                                         onClick={() => base44.auth.redirectToLogin('/Home')}
