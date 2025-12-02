@@ -442,6 +442,7 @@ export default function Tournaments() {
                                      t.status === 'ongoing' ? 'En cours' : 'Terminé'}
                                 </div>
                                 <div className="text-[#8c7b6a] flex gap-2">
+                                    {t.team_mode && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">ÉQUIPES</span>}
                                     {t.entry_fee > 0 && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">${t.entry_fee}</span>}
                                     {t.game_type === 'chess' ? <Crown className="w-5 h-5" /> : <Gamepad2 className="w-5 h-5" />}
                                 </div>

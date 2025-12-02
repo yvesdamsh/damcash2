@@ -324,8 +324,9 @@ export default function TournamentDetail() {
 
                     <Card className="border-t-4 border-t-[#4a3728] shadow-lg bg-white/90">
                         <CardHeader>
-                            <div className="uppercase tracking-wider text-xs font-bold text-gray-500 mb-2">
+                            <div className="uppercase tracking-wider text-xs font-bold text-gray-500 mb-2 flex items-center gap-2">
                                 {tournament.game_type === 'checkers' ? 'Dames' : 'Échecs'}
+                                {tournament.team_mode && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-[10px]">PAR ÉQUIPE</span>}
                             </div>
                             <CardTitle className="text-3xl font-bold text-[#4a3728] font-serif">
                                 {tournament.name}
