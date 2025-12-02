@@ -125,7 +125,11 @@ import {
 
     const handleLogout = async () => {
         try {
-            await base44.auth.logout();
+            // Force logout with timeout to prevent hanging
+            await Promise.race([
+                base44.auth.logout(),
+                new Promise(resolve => setTimeout(resolve, 500))
+            ]);
         } catch (e) {
             console.error(e);
         } finally {
@@ -231,7 +235,7 @@ import {
                                         title="Se déconnecter"
                                     >
                                         <LogOut className="w-4 h-4" />
-                                        <span className="hidden lg:inline">Déconnexion</span>
+                                        <span>Déconnexion</span>
                                     </button>
                                 </div>
                             ) : (
