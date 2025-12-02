@@ -29,12 +29,11 @@ import {
     const location = useLocation();
     const [user, setUser] = React.useState(null);
 
-    // Save last location for persistent navigation
+    // Logic for persistent navigation removed to prevent defaulting to Profile
     React.useEffect(() => {
-        if (location.pathname && location.pathname !== '/' && !location.pathname.toLowerCase().includes('login')) {
-             localStorage.setItem('damcash_last_path', location.pathname);
-        }
-    }, [location]);
+        // Clear any stored path to ensure we start fresh
+        localStorage.removeItem('damcash_last_path');
+    }, []);
 
     // Sync Game Mode
     const toggleGameMode = () => {
