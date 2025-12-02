@@ -147,13 +147,13 @@ export default function Home() {
     };
 
     const handleQuickMatch = () => {
-        if (!user) return base44.auth.redirectToLogin();
+        if (!user) return base44.auth.redirectToLogin('/Home');
         setIsPrivateConfig(false);
         setConfigOpen(true);
     };
 
     const handleCreatePrivate = () => {
-        if (!user) return base44.auth.redirectToLogin();
+        if (!user) return base44.auth.redirectToLogin('/Home');
         setIsPrivateConfig(true);
         setConfigOpen(true);
     };
@@ -310,7 +310,7 @@ export default function Home() {
     };
 
     const handleSoloMode = async () => {
-        if (!user) return base44.auth.redirectToLogin();
+        if (!user) return base44.auth.redirectToLogin('/Home');
         setIsCreating(true);
         try {
             const initialBoard = gameType === 'chess' 
@@ -333,7 +333,7 @@ export default function Home() {
 
     const handleJoinByCode = async (e) => {
         e.preventDefault();
-        if (!user) return base44.auth.redirectToLogin();
+        if (!user) return base44.auth.redirectToLogin('/Home');
         if (!joinCode) return;
 
         try {
@@ -504,7 +504,7 @@ export default function Home() {
             {!user ? (
                 <div className="text-center bg-white/60 backdrop-blur p-12 rounded-2xl shadow-xl max-w-md mx-auto border border-[#d4c5b0]">
                     <h2 className="text-2xl font-bold mb-6 text-[#4a3728]">Prêt à jouer ?</h2>
-                    <Button onClick={() => base44.auth.redirectToLogin()} className="w-full bg-[#6b5138] hover:bg-[#5c4430] text-lg h-12">Connexion / Inscription</Button>
+                    <Button onClick={() => base44.auth.redirectToLogin('/Home')} className="w-full bg-[#6b5138] hover:bg-[#5c4430] text-lg h-12">Connexion / Inscription</Button>
                     <div className="mt-4">
                          <Button variant="link" onClick={() => setShowTutorial(true)} className="text-[#6b5138]"><HelpCircle className="w-4 h-4 mr-2" /> Comment jouer ?</Button>
                     </div>
