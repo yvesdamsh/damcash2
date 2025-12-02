@@ -4,178 +4,156 @@ const channel = new BroadcastChannel('notifications');
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
-    
-    // Determine current time and hour
     const now = new Date();
+
+    // 1. Manage Hourly Arenas (Existing Logic)
+    // ... (Simplified/Refactored to use common logic if possible, but keeping for compatibility)
     const currentHour = now.getHours();
     const nextHour = (currentHour + 1) % 24;
-    
-    // Time Control Logic: 3+0, 5+0, 3+2
-    // Cycle based on hour number
     const timeControls = ["3+0", "5+0", "3+2"];
     const currentTC = timeControls[currentHour % 3];
     const nextTC = timeControls[nextHour % 3];
 
-    // Start/End times for CURRENT hour tournament
-    const currentStart = new Date(now);
-    currentStart.setMinutes(0, 0, 0);
-    const currentEnd = new Date(currentStart);
-    currentEnd.setMinutes(57, 0, 0);
+    const currentStart = new Date(now); currentStart.setMinutes(0, 0, 0);
+    const currentEnd = new Date(currentStart); currentEnd.setMinutes(57, 0, 0);
+    
+    const nextStart = new Date(now); nextStart.setHours(currentHour + 1, 0, 0, 0);
+    const nextEnd = new Date(nextStart); nextEnd.setMinutes(57, 0, 0);
 
-    // Start/End times for NEXT hour tournament
-    const nextStart = new Date(now);
-    nextStart.setHours(currentHour + 1, 0, 0, 0);
-    const nextEnd = new Date(nextStart);
-    nextEnd.setMinutes(57, 0, 0);
-
-    // Helper to create if not exists
-    const ensureTournament = async (start, end, tc, type) => {
-        // Look for existing tournament roughly matching start time
-        // Since we can't exact match date easily with string filter sometimes, we filter by name pattern and status or just grab recent and check
-        // A better way is to search for open/ongoing arenas
+    const ensureArena = async (start, end, tc, type) => {
         const existing = await base44.asServiceRole.entities.Tournament.filter({
-            format: 'arena',
-            game_type: type,
-            status: ['open', 'ongoing']
+            format: 'arena', game_type: type, status: ['open', 'ongoing']
         });
-
-        // Filter in memory for the specific hour slot
-        const found = existing.find(t => {
-            const tStart = new Date(t.start_date);
-            return Math.abs(tStart - start) < 60000; // within 1 minute
-        });
-
-        if (!found) {
-            const name = `Arena ${type === 'checkers' ? 'Dames' : 'Échecs'} ${tc}`;
-            await base44.asServiceRole.entities.Tournament.create({
-                name: name,
-                game_type: type,
-                format: 'arena',
-                time_control: tc,
-                start_date: start.toISOString(),
-                end_date: end.toISOString(),
-                max_players: 999,
-                status: now >= start ? 'ongoing' : 'open',
-                description: "Tournoi officiel Damcash. Format Arena. Win=2, Draw=1, Loss=0."
-            });
-            return true; // Created
-        }
+        const found = existing.find(t => Math.abs(new Date(t.start_date) - start) < 60000);
         
-        // If found, update status if needed
-        if (found) {
-            if (now >= end && found.status !== 'finished') {
-                 // Calculate Winner for Arena
-                 if (found.format === 'arena') {
-                     const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: found.id });
-                     if (participants.length > 0) {
-                         // Sort by score desc, then games played desc (or other tie break)
-                         const sorted = participants.sort((a, b) => (b.score || 0) - (a.score || 0));
-                         const winner = sorted[0];
-                         
-                         if (winner && winner.score > 0) {
-                             await base44.asServiceRole.entities.Tournament.update(found.id, { 
-                                 status: 'finished',
-                                 winner_id: winner.user_id 
-                             });
-                             
-                             // Award Badge
-                             const badgeName = `Vainqueur ${found.name}`;
-                             await base44.asServiceRole.entities.UserBadge.create({
-                                 user_id: winner.user_id,
-                                 tournament_id: found.id,
-                                 name: badgeName,
-                                 icon: 'Trophy',
-                                 awarded_at: new Date().toISOString()
-                             });
-
-                             // Notify Winner
-                             const winTitle = "Victoire en Tournoi !";
-                             const winMsg = `Félicitations ! Vous avez remporté le tournoi ${found.name}. Un badge a été ajouté à votre profil.`;
-                             const winLink = `/TournamentDetail?id=${found.id}`;
-
-                             await base44.asServiceRole.entities.Notification.create({
-                                 recipient_id: winner.user_id,
-                                 type: "success",
-                                 title: winTitle,
-                                 message: winMsg,
-                                 link: winLink
-                             });
-                             
-                             channel.postMessage({
-                                 recipientId: winner.user_id,
-                                 type: "success",
-                                 title: winTitle,
-                                 message: winMsg,
-                                 link: winLink
-                             });
-                         } else {
-                             await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
-                         }
-                         // Handle Recurrence if exists (for Arena)
-                         if (found.recurrence && found.recurrence !== 'none') {
-                             const nextDate = new Date(found.start_date);
-                             if (found.recurrence === 'daily') nextDate.setDate(nextDate.getDate() + 1);
-                             if (found.recurrence === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-                             
-                             await base44.asServiceRole.entities.Tournament.create({
-                                 ...found,
-                                 id: undefined, // New ID
-                                 created_date: undefined,
-                                 updated_date: undefined,
-                                 status: 'open',
-                                 start_date: nextDate.toISOString(),
-                                 end_date: new Date(new Date(found.end_date).getTime() + (found.recurrence === 'daily' ? 86400000 : 604800000)).toISOString(),
-                                 current_round: 0,
-                                 winner_id: null
-                             });
-                         }
-                     } else {
-                         await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
-                     }
-                 } else {
-                     await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'finished' });
-                 }
-
-            } else if (now >= start && now < end && found.status === 'open') {
-                 await base44.asServiceRole.entities.Tournament.update(found.id, { status: 'ongoing' });
-                 
-                 // Notify participants
-                 const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: found.id });
-                 for (const p of participants) {
-                     const title = "Le tournoi commence !";
-                     const msg = `Le tournoi ${found.name} vient de commencer. Rejoignez l'arène !`;
-                     const link = `/TournamentDetail?id=${found.id}`;
-
-                      await base44.asServiceRole.entities.Notification.create({
-                         recipient_id: p.user_id,
-                         type: "tournament",
-                         title: title,
-                         message: msg,
-                         link: link
-                     });
-
-                     channel.postMessage({
-                         recipientId: p.user_id,
-                         type: "tournament",
-                         title: title,
-                         message: msg,
-                         link: link
-                     });
-                 }
-            }
+        if (!found) {
+            await base44.asServiceRole.entities.Tournament.create({
+                name: `Arena ${type === 'checkers' ? 'Dames' : 'Échecs'} ${tc}`,
+                game_type: type, format: 'arena', time_control: tc,
+                start_date: start.toISOString(), end_date: end.toISOString(),
+                max_players: 999, status: now >= start ? 'ongoing' : 'open',
+                description: "Tournoi officiel Damcash.",
+                prize_pool: 100, // Automated prize for automated tournaments
+                elo_min: 0, elo_max: 3000
+            });
         }
-        return false;
     };
 
-    // Ensure CURRENT hour tournaments
-    await ensureTournament(currentStart, currentEnd, currentTC, 'checkers');
-    await ensureTournament(currentStart, currentEnd, currentTC, 'chess');
+    await ensureArena(currentStart, currentEnd, currentTC, 'checkers');
+    await ensureArena(currentStart, currentEnd, currentTC, 'chess');
+    await ensureArena(nextStart, nextEnd, nextTC, 'checkers');
+    await ensureArena(nextStart, nextEnd, nextTC, 'chess');
 
-    // Ensure NEXT hour tournaments (for registration)
-    await ensureTournament(nextStart, nextEnd, nextTC, 'checkers');
-    await ensureTournament(nextStart, nextEnd, nextTC, 'chess');
 
-    return Response.json({ status: 'success', message: 'Tournaments synced' });
+    // 2. GENERAL TOURNAMENT MANAGER (Starts and Ends ANY tournament)
+    
+    // A. Start Tournaments
+    const pendingStart = await base44.asServiceRole.entities.Tournament.filter({ status: 'open' });
+    for (const t of pendingStart) {
+        if (new Date(t.start_date) <= now) {
+            // Start it
+            await base44.asServiceRole.entities.Tournament.update(t.id, { status: 'ongoing' });
+            // Trigger Matchmaking (Initial)
+            await base44.asServiceRole.functions.invoke('startTournament', { tournamentId: t.id });
+            
+            // Notify
+            const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: t.id });
+            for (const p of participants) {
+                await base44.asServiceRole.entities.Notification.create({
+                    recipient_id: p.user_id,
+                    type: "tournament",
+                    title: "C'est parti !",
+                    message: `Le tournoi ${t.name} commence maintenant.`,
+                    link: `/TournamentDetail?id=${t.id}`
+                });
+            }
+        }
+    }
+
+    // B. End Tournaments & Payouts
+    // Check ongoing tournaments that have passed end_date (for timed) OR completed (logic usually elsewhere, but we can safeguard here)
+    const ongoing = await base44.asServiceRole.entities.Tournament.filter({ status: 'ongoing' });
+    for (const t of ongoing) {
+        // Check if end date passed (primary trigger for Arena/Timed events)
+        // For Brackets, usually end_date is max duration, but real trigger is games finished. 
+        // We'll assume end_date is hard cutoff or if format is 'arena'.
+        // For automated admin tournaments, we'll respect end_date if set.
+        if (t.end_date && new Date(t.end_date) <= now) {
+            await finishTournament(t, base44);
+        }
+    }
+
+    return Response.json({ status: 'success' });
 }
 
-Deno.serve(handler);
+async function finishTournament(tournament, base44) {
+    const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: tournament.id });
+    if (participants.length === 0) {
+        await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'finished' });
+        return;
+    }
+
+    // Calculate Ranking
+    const sorted = participants.sort((a, b) => {
+        if (b.score !== a.score) return (b.score || 0) - (a.score || 0);
+        // Tie breakers could go here (Buchholz etc), simplified to wins/games
+        return (b.wins || 0) - (a.wins || 0);
+    });
+
+    const winner = sorted[0];
+    if (!winner) return; // Should not happen if len > 0
+
+    await base44.asServiceRole.entities.Tournament.update(tournament.id, { 
+        status: 'finished',
+        winner_id: winner.user_id 
+    });
+
+    // Distribute Prizes
+    // Standard: 1st = 50%, 2nd = 30%, 3rd = 20% of prize_pool (Example)
+    if (tournament.prize_pool > 0) {
+        const distribution = [0.5, 0.3, 0.2];
+        for (let i = 0; i < Math.min(sorted.length, 3); i++) {
+            const p = sorted[i];
+            const amount = Math.floor(tournament.prize_pool * distribution[i]);
+            if (amount > 0) {
+                // Check wallet
+                const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: p.user_id });
+                let wallet = wallets[0];
+                if (!wallet) wallet = await base44.asServiceRole.entities.Wallet.create({ user_id: p.user_id, balance: 0 });
+
+                // Credit
+                await base44.asServiceRole.entities.Wallet.update(wallet.id, {
+                    balance: (wallet.balance || 0) + amount
+                });
+
+                // Log
+                await base44.asServiceRole.entities.Transaction.create({
+                    user_id: p.user_id,
+                    type: 'prize',
+                    amount: amount,
+                    status: 'completed',
+                    description: `Prix Tournoi ${tournament.name} (Rang ${i+1})`,
+                    game_id: tournament.id // using game_id field for ref
+                });
+
+                // Notify
+                await base44.asServiceRole.entities.Notification.create({
+                    recipient_id: p.user_id,
+                    type: "success",
+                    title: "Récompense Tournoi",
+                    message: `Vous avez terminé ${i+1}e et gagné ${amount} DamCoins !`,
+                    link: `/Wallet`
+                });
+            }
+        }
+    }
+
+    // Badge for Winner
+    await base44.asServiceRole.entities.UserBadge.create({
+        user_id: winner.user_id,
+        tournament_id: tournament.id,
+        name: `Champion ${tournament.name}`,
+        icon: 'Trophy',
+        awarded_at: new Date().toISOString()
+    });
+}

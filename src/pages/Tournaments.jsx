@@ -33,7 +33,9 @@ export default function Tournaments() {
         time_control: '5+0',
         team_mode: false,
         custom_rules: '',
-        recurrence: 'none'
+        recurrence: 'none',
+        elo_min: 0,
+        elo_max: 3000
     });
     const [accessCodeInput, setAccessCodeInput] = useState('');
     
@@ -95,7 +97,9 @@ export default function Tournaments() {
                 rounds: parseInt(newTournament.rounds),
                 status: 'open',
                 stage: newTournament.format === 'hybrid' ? 'groups' : 'knockout',
-                created_by_user_id: user.id
+                created_by_user_id: user.id,
+                elo_min: parseInt(newTournament.elo_min) || 0,
+                elo_max: parseInt(newTournament.elo_max) || 3000
             });
             toast.success("Tournoi créé !");
             setIsCreateOpen(false);
@@ -299,6 +303,29 @@ export default function Tournaments() {
                                             <SelectItem value="weekly">Hebdomadaire</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div className="grid gap-2">
+                                    <Label>ELO Min</Label>
+                                    <Input 
+                                        type="number"
+                                        min="0"
+                                        value={newTournament.elo_min} 
+                                        onChange={e => setNewTournament({...newTournament, elo_min: e.target.value})}
+                                        className="border-[#d4c5b0]"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>ELO Max</Label>
+                                    <Input 
+                                        type="number"
+                                        min="0"
+                                        value={newTournament.elo_max} 
+                                        onChange={e => setNewTournament({...newTournament, elo_max: e.target.value})}
+                                        className="border-[#d4c5b0]"
+                                    />
                                 </div>
                             </div>
 
