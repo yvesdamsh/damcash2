@@ -14,6 +14,7 @@ export default function Leaderboard() {
     const [gameType, setGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [timeframe, setTimeframe] = useState('all_time');
     const [metric, setMetric] = useState('elo');
+    const [tierFilter, setTierFilter] = useState('all');
 
     useEffect(() => {
         const handleModeChange = () => setGameType(localStorage.getItem('gameMode') || 'checkers');
@@ -81,6 +82,20 @@ export default function Leaderboard() {
                             </SelectContent>
                         </Select>
                     )}
+
+                    {metric === 'elo' && (
+                         <Select value={tierFilter} onValueChange={setTierFilter}>
+                            <SelectTrigger className="w-[150px] border-[#d4c5b0]">
+                                <SelectValue placeholder="Ligue" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Toutes Ligues</SelectItem>
+                                <SelectItem value="Maître">Maître (+1800)</SelectItem>
+                                <SelectItem value="Pro">Pro (1200-1800)</SelectItem>
+                                <SelectItem value="Amateur">Amateur (-1200)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
             </div>
 
@@ -105,10 +120,24 @@ export default function Leaderboard() {
                             <p>Aucune donnée trouvée pour cette période</p>
                         </div>
                     ) : (
-                        players.map((player, index) => {
+                        players
+                            .filter(p => {
+                                if (metric !== 'elo' || tierFilter === 'all') return true;
+                                const tier = gameType === 'chess' ? p.tier_chess : p.tier_checkers;
+                                return tier === tierFilter || (!tier && tierFilter === 'Amateur'); // Default to Amateur if undef
+                            })
+                            .map((player, index) => {
                             let rankDisplay = <span className="font-bold text-gray-500 text-lg">#{index + 1}</span>;
                             let bgClass = index % 2 === 0 ? 'bg-white' : 'bg-[#fcf9f5]';
                             
+                            // Derive tier for display
+                            const pTier = gameType === 'chess' ? (player.tier_chess || 'Amateur') : (player.tier_checkers || 'Amateur');
+                            const tierColors = {
+                                'Amateur': 'text-gray-500',
+                                'Pro': 'text-blue-600',
+                                'Maître': 'text-purple-600'
+                            };
+
                             if (index === 0) {
                                 rankDisplay = <Medal className="w-6 h-6 text-yellow-500 drop-shadow-sm" />;
                                 bgClass = 'bg-gradient-to-r from-yellow-50/50 to-white border-l-4 border-yellow-400';
@@ -139,7 +168,14 @@ export default function Leaderboard() {
                                             <AvatarFallback>{player.username?.[0]}</AvatarFallback>
                                         </Avatar>
                                         <div className="overflow-hidden">
-                                            <div className="font-bold text-[#4a3728] truncate">{player.username}</div>
+                                            <div className="font-bold text-[#4a3728] truncate flex items-center gap-2">
+                                                {player.username}
+                                                {metric === 'elo' && (
+                                                    <span className={`text-[10px] uppercase border px-1 rounded ${tierColors[pTier] || 'text-gray-500'} border-current opacity-70`}>
+                                                        {pTier}
+                                                    </span>
+                                                )}
+                                            </div>
                                             {metric === 'elo' && <div className="text-xs text-gray-400">{player.games_played || 0} parties</div>}
                                         </div>
                                         {index === 0 && <Crown className="w-4 h-4 text-yellow-500 ml-auto hidden md:block" />}

@@ -99,6 +99,12 @@ export default async function handler(req) {
                 return 32; // Intermediate
             };
 
+            const getTier = (elo) => {
+                if (elo < 1200) return 'Amateur';
+                if (elo < 1800) return 'Pro';
+                return 'Maître';
+            };
+
             const KA = getK(whiteUser.games_played);
             const KB = getK(blackUser.games_played);
 
@@ -113,14 +119,40 @@ export default async function handler(req) {
             const newRatingA = Math.round(ratingA + KA * (scoreA - expectedA));
             const newRatingB = Math.round(ratingB + KB * (scoreB - expectedB));
             
+            // Helper to update tier and notify
+            const processTierUpdate = async (userId, oldTier, newElo, gameType) => {
+                const newTier = getTier(newElo);
+                if (oldTier !== newTier) {
+                    // Badge/Notify logic
+                    if (newTier === 'Maître' || newTier === 'Pro') {
+                        await base44.asServiceRole.entities.UserBadge.create({
+                            user_id: userId,
+                            name: `Promotion ${newTier}`,
+                            icon: "Award",
+                            awarded_at: new Date().toISOString()
+                        });
+                        await base44.asServiceRole.entities.Notification.create({
+                            recipient_id: userId,
+                            type: "success",
+                            title: "Promotion !",
+                            message: `Félicitations ! Vous êtes passé au rang ${newTier} en ${gameType === 'chess' ? 'Échecs' : 'Dames'}.`,
+                            link: `/Profile`
+                        });
+                    }
+                }
+                return newTier;
+            };
+
             // Update White
             const whiteUpdates = { games_played: (whiteUser.games_played || 0) + 1 };
             if (type === 'chess') {
                 whiteUpdates.elo_chess = newRatingA;
+                whiteUpdates.tier_chess = await processTierUpdate(whiteId, whiteUser.tier_chess, newRatingA, 'chess');
                 if (scoreA === 1) whiteUpdates.wins_chess = (whiteUser.wins_chess || 0) + 1;
                 else if (scoreA === 0) whiteUpdates.losses_chess = (whiteUser.losses_chess || 0) + 1;
             } else {
                 whiteUpdates.elo_checkers = newRatingA;
+                whiteUpdates.tier_checkers = await processTierUpdate(whiteId, whiteUser.tier_checkers, newRatingA, 'checkers');
                 if (scoreA === 1) whiteUpdates.wins_checkers = (whiteUser.wins_checkers || 0) + 1;
                 else if (scoreA === 0) whiteUpdates.losses_checkers = (whiteUser.losses_checkers || 0) + 1;
             }
@@ -130,10 +162,12 @@ export default async function handler(req) {
             const blackUpdates = { games_played: (blackUser.games_played || 0) + 1 };
             if (type === 'chess') {
                 blackUpdates.elo_chess = newRatingB;
+                blackUpdates.tier_chess = await processTierUpdate(blackId, blackUser.tier_chess, newRatingB, 'chess');
                 if (scoreB === 1) blackUpdates.wins_chess = (blackUser.wins_chess || 0) + 1;
                 else if (scoreB === 0) blackUpdates.losses_chess = (blackUser.losses_chess || 0) + 1;
             } else {
                 blackUpdates.elo_checkers = newRatingB;
+                blackUpdates.tier_checkers = await processTierUpdate(blackId, blackUser.tier_checkers, newRatingB, 'checkers');
                 if (scoreB === 1) blackUpdates.wins_checkers = (blackUser.wins_checkers || 0) + 1;
                 else if (scoreB === 0) blackUpdates.losses_checkers = (blackUser.losses_checkers || 0) + 1;
             }
