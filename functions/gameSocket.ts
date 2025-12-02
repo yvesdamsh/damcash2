@@ -2,6 +2,12 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 const connections = new Map(); // gameId -> Set<WebSocket>
 const channel = new BroadcastChannel('notifications');
+const gameUpdates = new BroadcastChannel('game_updates');
+
+gameUpdates.onmessage = (event) => {
+    const { gameId, type, payload } = event.data;
+    broadcast(gameId, { type, payload });
+};
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);

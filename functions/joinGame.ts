@@ -1,0 +1,66 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+
+const gameUpdates = new BroadcastChannel('game_updates');
+
+export default async function handler(req) {
+    if (req.method !== 'POST') {
+        return new Response("Method not allowed", { status: 405 });
+    }
+
+    try {
+        const base44 = createClientFromRequest(req);
+        const user = await base44.auth.me();
+        
+        if (!user) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const { gameId } = await req.json();
+        if (!gameId) {
+            return Response.json({ error: "Missing gameId" }, { status: 400 });
+        }
+
+        // Get the game to check status and vacancy
+        const game = await base44.entities.Game.get(gameId);
+        if (!game) {
+            return Response.json({ error: "Game not found" }, { status: 404 });
+        }
+
+        if (game.status !== 'waiting') {
+            return Response.json({ error: "Game is not waiting for players" }, { status: 400 });
+        }
+
+        // Determine role
+        const updateData = {
+            status: 'playing',
+            current_turn: 'white', // Ensure turn starts correctly
+            last_move_at: new Date().toISOString() // Start clock
+        };
+
+        if (!game.white_player_id) {
+            updateData.white_player_id = user.id;
+            updateData.white_player_name = user.full_name || user.username || 'Joueur 1';
+        } else if (!game.black_player_id) {
+            updateData.black_player_id = user.id;
+            updateData.black_player_name = user.full_name || user.username || 'Joueur 2';
+        } else {
+            return Response.json({ error: "Game is full" }, { status: 400 });
+        }
+
+        // Perform Update
+        const updatedGame = await base44.asServiceRole.entities.Game.update(gameId, updateData);
+
+        // Broadcast start
+        gameUpdates.postMessage({
+            gameId,
+            type: 'GAME_UPDATE',
+            payload: updatedGame
+        });
+
+        return Response.json({ success: true, game: updatedGame });
+
+    } catch (e) {
+        console.error("Join error:", e);
+        return Response.json({ error: e.message }, { status: 500 });
+    }
+}
