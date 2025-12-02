@@ -23,6 +23,10 @@ export default function TournamentDetail() {
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState("");
     const [pairingInterval, setPairingInterval] = useState(null);
+    
+    // Team Mode State
+    const [myLedTeams, setMyLedTeams] = useState([]);
+    const [isTeamJoinOpen, setIsTeamJoinOpen] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -38,8 +42,20 @@ export default function TournamentDetail() {
                     base44.entities.Game.filter({ tournament_id: id })
                 ]);
 
-                if (tData.length) setTournament(tData[0]);
-                setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0))); // Sort by score for Arena
+                if (tData.length) {
+                    const t = tData[0];
+                    setTournament(t);
+                    
+                    // If Team Mode, fetch led teams
+                    if (t.team_mode && u) {
+                        const memberships = await base44.entities.TeamMember.filter({ user_id: u.id, role: 'leader', status: 'active' });
+                        if (memberships.length > 0) {
+                            const teamDetails = await Promise.all(memberships.map(m => base44.entities.Team.get(m.team_id)));
+                            setMyLedTeams(teamDetails);
+                        }
+                    }
+                }
+                setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0))); 
                 setMatches(mData);
             } catch (e) {
                 console.error(e);
@@ -54,7 +70,9 @@ export default function TournamentDetail() {
         return () => clearInterval(interval);
     }, [id]);
 
-    const isParticipant = participants.some(p => p.user_id === user?.id);
+    const isParticipant = participants.some(p => 
+        p.user_id === user?.id || (tournament?.team_mode && p.team_id && myLedTeams.some(t => t.id === p.team_id))
+    );
     const canJoin = tournament && tournament.status === 'open' && participants.length < tournament.max_players;
 
     // Arena Pairing Logic Trigger
@@ -97,6 +115,16 @@ export default function TournamentDetail() {
 
     const handleJoin = async () => {
         if (!user || !tournament) return;
+
+        // Team Mode Check
+        if (tournament.team_mode) {
+            if (myLedTeams.length === 0) {
+                toast.error("Vous devez être chef d'une équipe pour l'inscrire !");
+                return;
+            }
+            setIsTeamJoinOpen(true);
+            return;
+        }
         
         if (participants.some(p => p.user_id === user.id)) return;
 
@@ -140,6 +168,33 @@ export default function TournamentDetail() {
         } catch (e) {
             console.error(e);
             toast.error("Erreur inscription");
+        }
+    };
+
+    const handleJoinAsTeam = async (team) => {
+        if (participants.some(p => p.team_id === team.id)) {
+            toast.error("Cette équipe est déjà inscrite !");
+            return;
+        }
+
+        try {
+             await base44.entities.TournamentParticipant.create({
+                tournament_id: tournament.id,
+                user_id: user.id, // Leader ID acts as user_id for permission checks
+                team_id: team.id,
+                user_name: team.name, // Display Team Name
+                avatar_url: team.avatar_url,
+                status: 'active',
+                score: 0,
+                games_played: 0
+            });
+            toast.success(`Équipe ${team.name} inscrite !`);
+            setIsTeamJoinOpen(false);
+            // Force refresh
+            base44.functions.invoke('tournamentManager', {}); 
+        } catch (e) {
+            console.error(e);
+            toast.error("Erreur inscription équipe");
         }
     };
 
@@ -251,6 +306,22 @@ export default function TournamentDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Info Column */}
                 <div className="space-y-6">
+                    
+                    <Dialog open={isTeamJoinOpen} onOpenChange={setIsTeamJoinOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Sélectionner une équipe</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-2">
+                                {myLedTeams.map(t => (
+                                    <Button key={t.id} onClick={() => handleJoinAsTeam(t)} className="w-full justify-start" variant="outline">
+                                        {t.name}
+                                    </Button>
+                                ))}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+
                     <Card className="border-t-4 border-t-[#4a3728] shadow-lg bg-white/90">
                         <CardHeader>
                             <div className="uppercase tracking-wider text-xs font-bold text-gray-500 mb-2">
