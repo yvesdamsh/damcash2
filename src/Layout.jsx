@@ -98,6 +98,7 @@ import {
         { label: 'Salon', path: '/Lobby', icon: Users },
         { label: 'Ligues', path: '/Leagues', icon: Shield },
         { label: 'Tournois', path: '/Tournaments', icon: Flag },
+        { label: 'Équipes', path: '/Teams', icon: Users },
         { label: 'Entraînement', path: '/Training', icon: Brain },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy },
         { label: 'Profil', path: '/Profile', icon: User },
