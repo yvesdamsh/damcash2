@@ -169,7 +169,7 @@ export default function Game() {
         const fetchGame = async () => {
             try {
                 const fetchedGame = await base44.entities.Game.get(id);
-                updateGameState(fetchedGame);
+                setGame(fetchedGame);
                 setLoading(false);
             } catch (e) {
                 console.error("Error fetching game", e);
