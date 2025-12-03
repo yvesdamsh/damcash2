@@ -50,7 +50,7 @@ export default function TournamentDetail() {
                     base44.entities.Tournament.filter({ id }),
                     base44.entities.TournamentParticipant.filter({ tournament_id: id }),
                     base44.entities.Game.filter({ tournament_id: id }),
-                    base44.entities.User.list() // Fetch users for ELO
+                    base44.entities.User.list(null, 200) // Fetch users for ELO
                 ]);
 
                 const uMap = {};
