@@ -608,36 +608,60 @@ export default function Game() {
     const handleRematch = async () => {
         if (!game) return;
         
-        const initialBoard = game.game_type === 'chess' 
-            ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
-            : JSON.stringify(initializeBoard());
+        try {
+            const initialBoard = game.game_type === 'chess' 
+                ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                : JSON.stringify(initializeBoard());
 
-        const initTime = (game.initial_time || 10) * 60;
+            const initTime = (game.initial_time || 10) * 60;
 
-        // Update Series Score
-        let newWhiteScore = game.series_score_white || 0;
-        let newBlackScore = game.series_score_black || 0;
-        
-        if (game.winner_id === game.white_player_id) newWhiteScore++;
-        else if (game.winner_id === game.black_player_id) newBlackScore++;
-        else { newWhiteScore += 0.5; newBlackScore += 0.5; }
+            // Update Series Score
+            let newWhiteScore = game.series_score_white || 0;
+            let newBlackScore = game.series_score_black || 0;
+            
+            if (game.winner_id === game.white_player_id) newWhiteScore++;
+            else if (game.winner_id === game.black_player_id) newBlackScore++;
+            else { newWhiteScore += 0.5; newBlackScore += 0.5; }
 
-        await base44.entities.Game.update(game.id, {
-            status: 'playing',
-            board_state: initialBoard,
-            moves: '[]',
-            winner_id: null,
-            draw_offer_by: null,
-            current_turn: 'white',
-            white_seconds_left: initTime,
-            black_seconds_left: initTime,
-            last_move_at: null,
-            series_score_white: newWhiteScore,
-            series_score_black: newBlackScore,
-            elo_processed: false
-        });
-        setShowResult(false);
-        toast.success("Nouvelle manche commencée !");
+            // Auto-extend series if needed
+            let newSeriesLength = game.series_length || 1;
+            const currentRound = newWhiteScore + newBlackScore + 1;
+            if (currentRound > newSeriesLength) newSeriesLength = currentRound;
+
+            // Reset Game State
+            const updateData = {
+                status: 'playing',
+                board_state: initialBoard,
+                moves: '[]',
+                winner_id: null,
+                draw_offer_by: null,
+                takeback_requested_by: null,
+                current_turn: 'white',
+                white_seconds_left: initTime,
+                black_seconds_left: initTime,
+                last_move_at: null,
+                series_score_white: newWhiteScore,
+                series_score_black: newBlackScore,
+                series_length: newSeriesLength,
+                elo_processed: false
+            };
+
+            await base44.entities.Game.update(game.id, updateData);
+            setGame(prev => ({ ...prev, ...updateData })); // Optimistic update
+            
+            // Re-fetch to be sure
+            setTimeout(async () => {
+                const refreshed = await base44.entities.Game.get(game.id);
+                updateGameState(refreshed);
+            }, 500);
+
+            setShowResult(false);
+            setReplayIndex(-1);
+            toast.success("Nouvelle manche commencée !");
+        } catch (e) {
+            console.error("Rematch error", e);
+            toast.error("Erreur lors du lancement de la revanche");
+        }
     };
 
     const copyInviteCode = () => {
@@ -1067,7 +1091,7 @@ export default function Game() {
             <div className="max-w-4xl mx-auto w-full p-0 md:p-4 space-y-2 md:space-y-4">
                 
                 {/* Series Score Display */}
-                {(game.series_length > 1) && (
+                {(game.series_length >= 1) && (
                     <div className="flex justify-center items-center -mb-2 z-10 relative">
                         <div className="bg-[#4a3728] text-[#e8dcc5] px-4 py-1 rounded-full shadow-md border-2 border-[#e8dcc5] text-sm font-bold flex gap-3">
                             <span>Manche {(game.series_score_white + game.series_score_black) - ((game.status === 'finished') ? 1 : 0) + 1} / {game.series_length}</span>
@@ -1096,7 +1120,7 @@ export default function Game() {
                                 {topPlayer.name || 'En attente...'}
                                 <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(topPlayer.info, game.game_type)}</span>
                             </div>
-                            {game.winner_id === topPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
+                            {game.winner_id === topPlayer.id && !isSoloMode && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
                         </div>
                     </div>
                     <GameTimer 
@@ -1210,7 +1234,7 @@ export default function Game() {
                                 {bottomPlayer.name || 'Moi'}
                                 <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(bottomPlayer.info, game.game_type)}</span>
                             </div>
-                            {game.winner_id === bottomPlayer.id && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
+                            {game.winner_id === bottomPlayer.id && !isSoloMode && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
                         </div>
                     </div>
                     <GameTimer 
