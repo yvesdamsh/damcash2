@@ -4,12 +4,16 @@ import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare, Bell, BellOff, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import TournamentBracket from '@/components/TournamentBracket';
 import TournamentChat from '@/components/TournamentChat';
+import { initializeBoard } from '@/components/checkersLogic';
+import { initializeChessBoard } from '@/components/chessLogic';
+import CheckerBoard from '@/components/CheckerBoard';
+import ChessBoard from '@/components/ChessBoard';
 
 export default function TournamentDetail() {
     const location = useLocation();
@@ -27,6 +31,11 @@ export default function TournamentDetail() {
     // Team Mode State
     const [myLedTeams, setMyLedTeams] = useState([]);
     const [isTeamJoinOpen, setIsTeamJoinOpen] = useState(false);
+    
+    // Follow & Live State
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [spectatingGame, setSpectatingGame] = useState(null);
+    const [spectateBoard, setSpectateBoard] = useState([]);
 
     useEffect(() => {
         if (!id) return;
@@ -46,6 +55,12 @@ export default function TournamentDetail() {
                     const t = tData[0];
                     setTournament(t);
                     
+                    // Check Follow Status
+                    if (u) {
+                        const follows = await base44.entities.TournamentFollow.filter({ tournament_id: id, user_id: u.id });
+                        setIsFollowing(follows.length > 0);
+                    }
+
                     // If Team Mode, fetch led teams
                     if (t.team_mode && u) {
                         const memberships = await base44.entities.TeamMember.filter({ user_id: u.id, role: 'leader', status: 'active' });
@@ -91,6 +106,33 @@ export default function TournamentDetail() {
              }
         }
     }, [tournament, participants, isParticipant]);
+
+    // Spectate Polling
+    useEffect(() => {
+        if (!spectatingGame) return;
+        
+        const pollGame = async () => {
+            try {
+                const g = await base44.entities.Game.get(spectatingGame.id);
+                if (g) {
+                    setSpectatingGame(g);
+                    // Parse Board
+                    try {
+                        const parsed = JSON.parse(g.board_state);
+                        if (g.game_type === 'chess') {
+                            setSpectateBoard(parsed.board || []);
+                        } else {
+                            setSpectateBoard(parsed);
+                        }
+                    } catch (e) { console.error("Board parse error", e); }
+                }
+            } catch(e) {}
+        };
+
+        pollGame(); // Initial
+        const interval = setInterval(pollGame, 2000);
+        return () => clearInterval(interval);
+    }, [spectatingGame?.id]);
 
     // Countdown Timer
     useEffect(() => {
@@ -195,6 +237,28 @@ export default function TournamentDetail() {
         } catch (e) {
             console.error(e);
             toast.error("Erreur inscription équipe");
+        }
+    };
+
+    const handleFollowToggle = async () => {
+        if (!user) return;
+        try {
+            if (isFollowing) {
+                const follows = await base44.entities.TournamentFollow.filter({ tournament_id: tournament.id, user_id: user.id });
+                if (follows.length) await base44.entities.TournamentFollow.delete(follows[0].id);
+                setIsFollowing(false);
+                toast.success("Vous ne suivez plus ce tournoi");
+            } else {
+                await base44.entities.TournamentFollow.create({
+                    tournament_id: tournament.id,
+                    user_id: user.id,
+                    created_at: new Date().toISOString()
+                });
+                setIsFollowing(true);
+                toast.success("Tournoi suivi ! Vous recevrez des notifications.");
+            }
+        } catch (e) {
+            toast.error("Erreur action");
         }
     };
 
@@ -328,9 +392,22 @@ export default function TournamentDetail() {
                                 {tournament.game_type === 'checkers' ? 'Dames' : 'Échecs'}
                                 {tournament.team_mode && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-[10px]">PAR ÉQUIPE</span>}
                             </div>
-                            <CardTitle className="text-3xl font-bold text-[#4a3728] font-serif">
-                                {tournament.name}
-                            </CardTitle>
+                            <div className="flex justify-between items-start">
+                                <CardTitle className="text-3xl font-bold text-[#4a3728] font-serif">
+                                    {tournament.name}
+                                </CardTitle>
+                                {user && (
+                                    <Button 
+                                        size="sm" 
+                                        variant={isFollowing ? "secondary" : "outline"} 
+                                        onClick={handleFollowToggle}
+                                        className={isFollowing ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" : "border-[#d4c5b0]"}
+                                    >
+                                        {isFollowing ? <BellOff className="w-4 h-4 mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
+                                        {isFollowing ? 'Suivi' : 'Suivre'}
+                                    </Button>
+                                )}
+                            </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="flex items-center gap-3 text-gray-700">
@@ -472,14 +549,101 @@ export default function TournamentDetail() {
 
                 {/* Right Content Area */}
                 <div className="lg:col-span-2">
-                    <Tabs defaultValue="bracket" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 bg-[#e8dcc5]">
+                    <Tabs defaultValue="live" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4 bg-[#e8dcc5]">
+                            <TabsTrigger value="live" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] flex gap-2">
+                                <Eye className="w-4 h-4" /> <span className="hidden md:inline">Direct</span>
+                            </TabsTrigger>
                             <TabsTrigger value="bracket" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tableau</TabsTrigger>
                             <TabsTrigger value="participants" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Joueurs</TabsTrigger>
                             <TabsTrigger value="chat" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
                                 <MessageSquare className="w-4 h-4 mr-2" /> Chat
                             </TabsTrigger>
                         </TabsList>
+
+                        <TabsContent value="live" className="mt-6 space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Live Game View */}
+                                <div className="lg:col-span-2">
+                                    <Card className="overflow-hidden bg-[#3d2b1f] border-[#5c4430]">
+                                        <CardHeader className="p-3 bg-[#2c1e12] text-[#e8dcc5] flex flex-row justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                                <span className="font-bold tracking-wider text-sm uppercase">Live : {spectatingGame ? `${spectatingGame.white_player_name} vs ${spectatingGame.black_player_name}` : 'En attente de sélection'}</span>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="p-0 aspect-square relative flex items-center justify-center bg-[#f0e6d2]">
+                                            {spectatingGame ? (
+                                                <div className="w-full h-full max-w-[500px] max-h-[500px]">
+                                                    {tournament.game_type === 'chess' ? (
+                                                        <ChessBoard 
+                                                            board={spectateBoard} 
+                                                            onSquareClick={()=>{}} 
+                                                            onPieceDrop={()=>{}} 
+                                                            validMoves={[]} 
+                                                            currentTurn={spectatingGame.current_turn} 
+                                                            playerColor="spectator" 
+                                                            isSoloMode={false}
+                                                        />
+                                                    ) : (
+                                                        <CheckerBoard 
+                                                            board={spectateBoard} 
+                                                            onSquareClick={()=>{}} 
+                                                            validMoves={[]} 
+                                                            currentTurn={spectatingGame.current_turn} 
+                                                            playerColor="spectator" 
+                                                            isSoloMode={false}
+                                                        />
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center p-10 text-gray-500">
+                                                    <Eye className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                                                    <p>Sélectionnez une partie en cours pour la regarder</p>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+
+                                {/* Active Games List */}
+                                <div className="lg:col-span-1">
+                                    <Card className="h-full bg-white/90 max-h-[500px] flex flex-col">
+                                        <CardHeader className="py-3 border-b">
+                                            <CardTitle className="text-sm uppercase text-gray-500">Parties en cours</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="p-0 flex-1 overflow-y-auto">
+                                            {matches.filter(m => m.status === 'playing').length === 0 ? (
+                                                <p className="p-4 text-sm text-gray-500 text-center italic">Aucune partie active.</p>
+                                            ) : (
+                                                <div className="divide-y">
+                                                    {matches.filter(m => m.status === 'playing').map(m => (
+                                                        <div 
+                                                            key={m.id} 
+                                                            onClick={() => {
+                                                                setSpectatingGame(m);
+                                                                // Initialize board immediately if possible (optional, effect handles it)
+                                                            }}
+                                                            className={`p-3 cursor-pointer hover:bg-gray-100 transition-colors flex flex-col gap-1 ${spectatingGame?.id === m.id ? 'bg-yellow-50 border-l-4 border-yellow-500' : ''}`}
+                                                        >
+                                                            <div className="flex justify-between items-center text-sm">
+                                                                <span className="font-bold text-[#4a3728] truncate max-w-[80px]">{m.white_player_name}</span>
+                                                                <span className="text-xs text-gray-400">vs</span>
+                                                                <span className="font-bold text-[#4a3728] truncate max-w-[80px]">{m.black_player_name}</span>
+                                                            </div>
+                                                            <div className="flex justify-between text-xs text-gray-500">
+                                                                <span>Tour {m.tournament_round || '-'}</span>
+                                                                <span className="flex items-center gap-1 text-green-600"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> En cours</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </div>
+                        </TabsContent>
                         
                         <TabsContent value="bracket" className="mt-6">
                             <div className="flex justify-end mb-4">

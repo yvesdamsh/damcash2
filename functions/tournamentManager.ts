@@ -56,11 +56,18 @@ export default async function handler(req) {
             // Trigger Matchmaking (Initial)
             await base44.asServiceRole.functions.invoke('startTournament', { tournamentId: t.id });
             
-            // Notify
+            // Notify Participants & Followers
             const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: t.id });
-            for (const p of participants) {
+            const followers = await base44.asServiceRole.entities.TournamentFollow.filter({ tournament_id: t.id });
+            
+            const recipientIds = new Set([
+                ...participants.map(p => p.user_id),
+                ...followers.map(f => f.user_id)
+            ]);
+
+            for (const uid of recipientIds) {
                 await base44.asServiceRole.entities.Notification.create({
-                    recipient_id: p.user_id,
+                    recipient_id: uid,
                     type: "tournament",
                     title: "C'est parti !",
                     message: `Le tournoi ${t.name} commence maintenant.`,
@@ -240,4 +247,16 @@ async function finishTournament(tournament, base44) {
         icon: 'Trophy',
         awarded_at: new Date().toISOString()
     });
+
+    // Notify Followers of Winner
+    const followers = await base44.asServiceRole.entities.TournamentFollow.filter({ tournament_id: tournament.id });
+    for (const f of followers) {
+        await base44.asServiceRole.entities.Notification.create({
+            recipient_id: f.user_id,
+            type: "tournament",
+            title: "Tournoi terminé",
+            message: `${winner.user_name} a remporté le tournoi ${tournament.name} !`,
+            link: `/TournamentDetail?id=${tournament.id}`
+        });
+    }
 }
