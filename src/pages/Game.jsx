@@ -710,6 +710,44 @@ export default function Game() {
         toast.error("Nulle refusée");
     };
 
+    const handleTimeout = async (color) => {
+        if (!game || game.status !== 'playing') return;
+        
+        // Only one player (the one not timing out? or anyone) should trigger this to avoid race conditions?
+        // Ideally the one whose time ran out triggers it? No, clients can lie.
+        // Ideally backend triggers it. But frontend must show it.
+        // If I am the opponent of the one who timed out, I should claim win.
+        // If I am the one who timed out, I should claim loss?
+        // Let's handle it: whoever detects it sends the update. The first one wins.
+        
+        const winnerId = color === 'white' ? game.black_player_id : game.white_player_id;
+        const winnerName = color === 'white' ? game.black_player_name : game.white_player_name;
+        
+        try {
+            await base44.entities.Game.update(game.id, { 
+                status: 'finished', 
+                winner_id: winnerId 
+            });
+            
+            // Notify
+            if (currentUser?.id === winnerId) {
+                soundManager.play('win');
+                toast.success("Temps écoulé ! Vous gagnez !");
+            } else {
+                soundManager.play('loss');
+                toast.error("Temps écoulé !");
+            }
+
+            base44.functions.invoke('processGameResult', { gameId: game.id });
+            
+            // Force local update
+            setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
+            setShowResult(true);
+        } catch (e) {
+            console.error("Timeout handling error", e);
+        }
+    };
+
     const handleRequestTakeback = async () => {
         if (!game || !currentUser) return;
         // Check if moves exist
@@ -1135,7 +1173,8 @@ export default function Game() {
                     </div>
                     <GameTimer 
                         initialSeconds={topPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color && !!game.last_move_at} 
+                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color && !!game.last_move_at}
+                        onTimeout={() => handleTimeout(topPlayer.color)}
                     />
                 </div>
 
@@ -1249,7 +1288,8 @@ export default function Game() {
                     </div>
                     <GameTimer 
                         initialSeconds={bottomPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color && !!game.last_move_at} 
+                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color && !!game.last_move_at}
+                        onTimeout={() => handleTimeout(bottomPlayer.color)}
                     />
                 </div>
 
