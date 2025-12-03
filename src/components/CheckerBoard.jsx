@@ -149,7 +149,6 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 onPieceClick={() => onSquareClick(r, c)}
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
-                                                dragConstraints={boardRef}
                                                 animateFrom={
                                                     lastMove && lastMove.to.r === r && lastMove.to.c === c
                                                     ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
