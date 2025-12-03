@@ -356,6 +356,23 @@ export default function Profile() {
                             </motion.div>
                             <div className="mb-2 text-center md:text-left">
                                 <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm">{user.username || user.full_name || 'Joueur'}</h1>
+                                
+                                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 mt-1">
+                                    <div className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-bold border border-yellow-200">
+                                        Niveau {user.level || 1}
+                                    </div>
+                                    <div className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-bold border border-blue-200">
+                                        XP: {user.xp || 0}
+                                    </div>
+                                    <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
+                                        <div 
+                                            className="h-full bg-yellow-500 transition-all duration-1000" 
+                                            style={{ width: `${Math.min(100, ((user.xp || 0) % 500) / 5)}%` }}
+                                            title={`Progression: ${(user.xp || 0) % 500} / 500 XP`}
+                                        />
+                                    </div>
+                                </div>
+
                                 <p className="text-gray-500 font-medium">{user.email}</p>
                                 {user.bio && <p className="text-[#6b5138] mt-2 max-w-lg italic">"{user.bio}"</p>}
                             </div>
