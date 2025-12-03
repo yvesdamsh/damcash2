@@ -46,10 +46,9 @@ export default function LeagueDetail() {
     if (loading) return <div className="p-8 text-center">Chargement...</div>;
     if (!league) return <div className="p-8 text-center">Ligue introuvable</div>;
 
-    // Determine active tier tab or default to highest populated one? Default to bronze as starter.
+    // Determine active tier tab
     const currentTier = searchParams.get('tier') || 'bronze';
     const filteredParticipants = participants.filter(p => p.rank_tier === currentTier);
-    const currentTier = searchParams.get('tier') || 'bronze';
     const tiers = ['bronze', 'silver', 'gold', 'diamond', 'master'];
 
     return (
