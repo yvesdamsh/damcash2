@@ -69,7 +69,11 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
     };
 
     return (
-        <div className="relative select-none w-full h-full flex justify-center items-center" style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}>
+        <div 
+            className="relative select-none w-full h-full flex justify-center items-center" 
+            style={{ touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
+            onContextMenu={(e) => e.preventDefault()}
+        >
             <div className={`${currentTheme.bg} p-0 md:p-1 rounded-none md:rounded-lg shadow-none md:shadow-2xl border-0 md:border-4 border-[#2c1e12] max-h-full aspect-square w-full md:max-w-[90vh]`}>
                 <div 
                     ref={boardRef}
