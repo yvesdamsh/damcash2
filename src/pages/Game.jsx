@@ -63,10 +63,24 @@ export default function Game() {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const user = await base44.auth.me();
+                let user = await base44.auth.me().catch(() => null);
+                if (!user) {
+                    const guestStr = localStorage.getItem('damcash_guest');
+                    if (guestStr) {
+                        user = JSON.parse(guestStr);
+                    } else {
+                        // Generate fallback guest if needed
+                        user = {
+                            id: 'guest_' + Math.random().toString(36).substr(2, 9),
+                            full_name: 'Spectateur',
+                            email: 'guest@damcash.com',
+                            is_guest: true
+                        };
+                    }
+                }
                 setCurrentUser(user);
             } catch (e) {
-                base44.auth.redirectToLogin();
+                console.error("Auth check error", e);
             }
         };
         checkAuth();
