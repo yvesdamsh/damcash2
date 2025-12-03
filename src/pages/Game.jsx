@@ -612,12 +612,13 @@ export default function Game() {
         if (isAiGame) {
              // Local update only for AI game
              const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
              const newMoveEntry = { 
-                type: 'checkers', from: move.from, to: move.to, 
-                captured: !!move.captured, board: JSON.stringify(newBoard),
-                color: game.current_turn,
-                notation: `${String.fromCharCode(97 + move.from.c)}${10 - move.from.r} > ${String.fromCharCode(97 + move.to.c)}${10 - move.to.r}`
-            };
+                 type: 'checkers', from: move.from, to: move.to, 
+                 captured: !!move.captured, board: JSON.stringify(newBoard),
+                 color: game.current_turn,
+                 notation: `${getNum(move.from.r, move.from.c)}${move.captured ? 'x' : '-'}${getNum(move.to.r, move.to.c)}`
+             };
              
              // Calculate Time Left
              const now = new Date().toISOString();
