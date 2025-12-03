@@ -374,7 +374,9 @@ export default function Game() {
                         difficulty: aiDifficulty,
                         // Chess specific
                         castlingRights: chessState.castlingRights,
-                        lastMove: chessState.lastMove
+                        lastMove: chessState.lastMove,
+                        // Checkers specific (for multi-jumps)
+                        activePiece: mustContinueWith
                     };
 
                     const res = await base44.functions.invoke(aiFunctionName, payload);
@@ -585,6 +587,17 @@ export default function Game() {
                 notation: `${String.fromCharCode(97 + move.from.c)}${10 - move.from.r} > ${String.fromCharCode(97 + move.to.c)}${10 - move.to.r}`
             };
              
+             // Calculate Time Left
+             const now = new Date().toISOString();
+             let whiteTime = game.white_seconds_left || 600;
+             let blackTime = game.black_seconds_left || 600;
+             
+             if (game.last_move_at) {
+                 const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
+                 if (game.current_turn === 'white') whiteTime = Math.max(0, whiteTime - elapsed);
+                 else blackTime = Math.max(0, blackTime - elapsed);
+             }
+
              setBoard(newBoard);
              setGame(prev => ({ 
                 ...prev, 
@@ -593,7 +606,9 @@ export default function Game() {
                 winner_id: winnerId,
                 board_state: JSON.stringify(newBoard),
                 moves: JSON.stringify([...currentMoves, newMoveEntry]),
-                last_move_at: new Date().toISOString()
+                last_move_at: now,
+                white_seconds_left: whiteTime,
+                black_seconds_left: blackTime
             }));
         } else {
             // Normal Online Game

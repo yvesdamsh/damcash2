@@ -150,12 +150,15 @@ const getFullCaptureChains = (board, r, c, piece) => {
 };
 
 // Get ALL valid full moves for a turn
-const getAllPlayableMoves = (board, turn) => {
+const getAllPlayableMoves = (board, turn, activePiece = null) => {
     let simpleMoves = [];
     let captureChains = [];
 
     for (let r = 0; r < 10; r++) {
         for (let c = 0; c < 10; c++) {
+            // If activePiece is defined, skip all other pieces
+            if (activePiece && (r !== activePiece.r || c !== activePiece.c)) continue;
+
             const piece = board[r][c];
             if (isOwnPiece(piece, turn)) {
                 // Check captures first (Mandatory)
@@ -164,8 +167,12 @@ const getAllPlayableMoves = (board, turn) => {
                     captureChains.push(...chains);
                 } 
                 
-                // If no global captures found yet, collect simple moves
-                if (captureChains.length === 0) {
+                // If no global captures found yet (and not restricted to active capture sequence), collect simple moves
+                // If activePiece is set, it usually means we MUST capture (continuation). 
+                // But if no captures available for activePiece (shouldn't happen if logic is correct upstream), simple moves might be valid? 
+                // No, usually activePiece implies "mid-capture".
+                // Let's allow simple moves only if activePiece is NOT set.
+                if (captureChains.length === 0 && !activePiece) {
                     const { moves } = getStepsForPiece(board, r, c, piece, false);
                     // Format simple moves to match chain structure
                     simpleMoves.push(...moves.map(m => ({
@@ -242,9 +249,9 @@ const evaluate = (board, aiColor, turn) => {
 
 // --- Minimax ---
 
-const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor) => {
-    // 1. Generate Moves
-    const moves = getAllPlayableMoves(board, turn);
+const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, activePiece = null) => {
+    // 1. Generate Moves (Pass activePiece only for the root call/current state)
+    const moves = getAllPlayableMoves(board, turn, activePiece);
 
     // 2. Terminal States
     if (depth === 0) {
@@ -299,7 +306,7 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor) => 
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const { board, turn, difficulty = 'medium' } = await req.json();
+        const { board, turn, difficulty = 'medium', activePiece } = await req.json();
 
         if (!board || !turn) {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
@@ -316,7 +323,7 @@ Deno.serve(async (req) => {
             default: depth = 4;
         }
 
-        const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn);
+        const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn, activePiece);
         
         if (!result.move) {
             return Response.json({ error: 'No moves available' }, { status: 200 });
