@@ -61,6 +61,62 @@ export default function Game() {
         setReplayIndex(-1);
     }, [location.search]);
 
+    const prevGameRef = useRef();
+
+    // Handle Game State Updates (Parsing & Sounds)
+    useEffect(() => {
+        if (!game) return;
+
+        // Sound Logic
+        if (prevGameRef.current && prevGameRef.current.current_turn !== game.current_turn) {
+            // Don't play sound on initial load (prevGameRef.current is undefined)
+            if (prevGameRef.current) {
+                soundManager.play('move');
+                if (document.hidden) soundManager.play('notify');
+            }
+        }
+
+        // Board Parsing
+        if (game.game_type === 'chess') {
+            try {
+                // Handle potentially nested stringification or object
+                let parsed = game.board_state;
+                if (typeof parsed === 'string') {
+                    try { parsed = JSON.parse(parsed); } catch (e) {}
+                }
+                // Double parse check if needed (sometimes API returns stringified string)
+                if (typeof parsed === 'string') {
+                    try { parsed = JSON.parse(parsed); } catch (e) {}
+                }
+                
+                setBoard(Array.isArray(parsed.board) ? parsed.board : []);
+                setChessState({ 
+                    castlingRights: parsed.castlingRights || {}, 
+                    lastMove: parsed.lastMove || null,
+                    halfMoveClock: parsed.halfMoveClock || 0,
+                    positionHistory: parsed.positionHistory || {}
+                });
+            } catch (e) { setBoard([]); }
+        } else {
+            try {
+                let parsed = game.board_state;
+                if (typeof parsed === 'string') {
+                    try { parsed = JSON.parse(parsed); } catch (e) {}
+                }
+                if (typeof parsed === 'string') {
+                     try { parsed = JSON.parse(parsed); } catch (e) {}
+                }
+                setBoard(Array.isArray(parsed) ? parsed : []);
+            } catch (e) { setBoard([]); }
+        }
+
+        // Result Logic
+        if (game.status === 'finished') setShowResult(true);
+        else setShowResult(false);
+
+        prevGameRef.current = game;
+    }, [game]);
+
     useEffect(() => {
         const checkAuth = async () => {
             try {
