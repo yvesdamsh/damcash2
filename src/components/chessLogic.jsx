@@ -288,6 +288,35 @@ export const getPositionId = (board, turn, castlingRights, lastMove) => {
     return `${boardStr} ${turn} ${castling} ${ep}`;
 };
 
+export const hasInsufficientMaterial = (board) => {
+    const pieces = [];
+    board.forEach((row, r) => row.forEach((p, c) => {
+        if(p) pieces.push({type: p, r, c, color: (p === p.toUpperCase() ? 'white' : 'black')});
+    }));
+
+    // King vs King
+    if (pieces.length === 2) return true;
+
+    // King + Minor Piece vs King
+    if (pieces.length === 3) {
+        const minor = pieces.find(p => 'bnBN'.includes(p.type));
+        if (minor) return true;
+    }
+
+    // King + Bishop vs King + Bishop (same color diagonals)
+    if (pieces.length === 4) {
+        const whiteBishop = pieces.find(p => p.type === 'B');
+        const blackBishop = pieces.find(p => p.type === 'b');
+        if (whiteBishop && blackBishop) {
+            const wbColor = (whiteBishop.r + whiteBishop.c) % 2;
+            const bbColor = (blackBishop.r + blackBishop.c) % 2;
+            if (wbColor === bbColor) return true;
+        }
+    }
+
+    return false;
+};
+
 export const checkChessStatus = (board, turn, lastMove, castlingRights, halfMoveClock = 0, positionHistory = {}) => {
     // 1. Check Checkmate/Stalemate
     const validMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
@@ -296,10 +325,13 @@ export const checkChessStatus = (board, turn, lastMove, castlingRights, halfMove
         return 'stalemate';
     }
 
-    // 2. 50-Move Rule (100 half-moves)
+    // 2. Insufficient Material
+    if (hasInsufficientMaterial(board)) return 'draw_insufficient';
+
+    // 3. 50-Move Rule (100 half-moves)
     if (halfMoveClock >= 100) return 'draw_50_moves';
 
-    // 3. Threefold Repetition
+    // 4. Threefold Repetition
     const currentPos = getPositionId(board, turn, castlingRights, lastMove);
     if (positionHistory[currentPos] >= 3) return 'draw_repetition';
 

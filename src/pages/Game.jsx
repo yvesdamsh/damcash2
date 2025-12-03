@@ -487,10 +487,6 @@ export default function Game() {
         }
         // If rook captured, update opponent castling rights
         if (move.captured) {
-             // Logic to remove castling right if a specific rook is captured could be added here, 
-             // but standard logic usually relies on the rook moving or king moving.
-             // Technically if A captures B's rook at h8, B can't castle kingside.
-             // Let's keep it simple for now or add:
              if (move.to.r === 0 && move.to.c === 0) newCastling.bQ = false;
              if (move.to.r === 0 && move.to.c === 7) newCastling.bK = false;
              if (move.to.r === 7 && move.to.c === 0) newCastling.wQ = false;
@@ -519,10 +515,15 @@ export default function Game() {
             status = 'finished';
             winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
             soundManager.play('win');
-        } else if (['stalemate', 'draw_50_moves', 'draw_repetition'].includes(gameStatus)) {
+        } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
             soundManager.play('win'); // or draw sound
-            toast.info(gameStatus === 'stalemate' ? "Pat (Stalemate)" : gameStatus === 'draw_50_moves' ? "Nulle (50 coups)" : "Nulle (Répétition)");
+            let reason = "Nulle";
+            if (gameStatus === 'stalemate') reason = "Pat (Stalemate)";
+            else if (gameStatus === 'draw_50_moves') reason = "Nulle (50 coups)";
+            else if (gameStatus === 'draw_repetition') reason = "Nulle (Répétition)";
+            else if (gameStatus === 'draw_insufficient') reason = "Nulle (Matériel insuffisant)";
+            toast.info(reason);
         } else {
             if (isInCheck(newBoard, nextTurn)) soundManager.play('check');
             else soundManager.play(move.captured ? 'capture' : 'move');
