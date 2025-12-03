@@ -27,7 +27,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     return (
         <motion.div
             drag={canDrag}
-            dragConstraints={dragConstraints}
+            // dragConstraints={dragConstraints}
             dragMomentum={false}
             dragElastic={0.1}
             onDragStart={onDragStart}
