@@ -131,6 +131,51 @@ export default async function handler(req) {
             
             const newRatingA = Math.round(ratingA + KA * (scoreA - expectedA));
             const newRatingB = Math.round(ratingB + KB * (scoreB - expectedB));
+
+            // XP & Level Logic
+            const calculateXP = (score) => {
+                if (score === 1) return 100; // Win
+                if (score === 0.5) return 50; // Draw
+                return 20; // Loss
+            };
+
+            const xpA = calculateXP(scoreA);
+            const xpB = calculateXP(scoreB);
+
+            const processLevelUpdate = async (userId, currentXP, addedXP) => {
+                const newXP = (currentXP || 0) + addedXP;
+                const oldLevel = Math.floor(Math.sqrt(currentXP || 0) * 0.1) + 1;
+                const newLevel = Math.floor(Math.sqrt(newXP) * 0.1) + 1;
+                
+                if (newLevel > oldLevel) {
+                    // Level Up Bonus
+                    const bonus = newLevel * 50; // 50 coins per level
+                    const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: userId });
+                    let w = wallets[0];
+                    if (!w) w = await base44.asServiceRole.entities.Wallet.create({ user_id: userId, balance: 0 });
+                    
+                    await base44.asServiceRole.entities.Wallet.update(w.id, { balance: (w.balance||0) + bonus });
+                    await base44.asServiceRole.entities.Transaction.create({
+                        user_id: userId,
+                        type: 'reward',
+                        amount: bonus,
+                        status: 'completed',
+                        description: `Niveau ${newLevel} atteint !`
+                    });
+
+                    await base44.asServiceRole.entities.Notification.create({
+                        recipient_id: userId,
+                        type: "success",
+                        title: "Niveau Supérieur !",
+                        message: `Bravo ! Vous êtes passé au niveau ${newLevel}. Bonus: ${bonus} D$`,
+                        link: `/Profile`
+                    });
+                }
+                return { xp: newXP, level: newLevel };
+            };
+
+            const levelUpdatesA = await processLevelUpdate(whiteId, whiteUser.xp, xpA);
+            const levelUpdatesB = await processLevelUpdate(blackId, blackUser.xp, xpB);
             
             // Helper to update tier and notify
             const processTierUpdate = async (userId, oldTier, newElo, gameType) => {
@@ -157,7 +202,11 @@ export default async function handler(req) {
             };
 
             // Update White
-            const whiteUpdates = { games_played: (whiteUser.games_played || 0) + 1 };
+            const whiteUpdates = { 
+                games_played: (whiteUser.games_played || 0) + 1,
+                xp: levelUpdatesA.xp,
+                level: levelUpdatesA.level
+            };
             if (type === 'chess') {
                 whiteUpdates.elo_chess = newRatingA;
                 whiteUpdates.tier_chess = await processTierUpdate(whiteId, whiteUser.tier_chess, newRatingA, 'chess');
@@ -172,7 +221,11 @@ export default async function handler(req) {
             await base44.asServiceRole.entities.User.update(whiteId, whiteUpdates);
 
             // Update Black
-            const blackUpdates = { games_played: (blackUser.games_played || 0) + 1 };
+            const blackUpdates = { 
+                games_played: (blackUser.games_played || 0) + 1,
+                xp: levelUpdatesB.xp,
+                level: levelUpdatesB.level
+            };
             if (type === 'chess') {
                 blackUpdates.elo_chess = newRatingB;
                 blackUpdates.tier_chess = await processTierUpdate(blackId, blackUser.tier_chess, newRatingB, 'chess');
