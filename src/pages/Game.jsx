@@ -86,9 +86,9 @@ export default function Game() {
         checkAuth();
     }, []);
 
-    // Fetch Players Info (ELO)
+    // Fetch Players Info (ELO) - Refetch on game status change (for dynamic Elo updates)
     useEffect(() => {
-        if (game && (!playersInfo.white || !playersInfo.black)) {
+        if (game) {
             const fetchPlayers = async () => {
                 try {
                     const [white, black] = await Promise.all([
@@ -102,7 +102,7 @@ export default function Game() {
             };
             fetchPlayers();
         }
-    }, [game?.white_player_id, game?.black_player_id]);
+    }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
     // WebSocket Connection
     useEffect(() => {
@@ -1066,6 +1066,25 @@ export default function Game() {
 
             <div className="max-w-4xl mx-auto w-full p-0 md:p-4 space-y-2 md:space-y-4">
                 
+                {/* Series Score Display */}
+                {(game.series_length > 1) && (
+                    <div className="flex justify-center items-center -mb-2 z-10 relative">
+                        <div className="bg-[#4a3728] text-[#e8dcc5] px-4 py-1 rounded-full shadow-md border-2 border-[#e8dcc5] text-sm font-bold flex gap-3">
+                            <span>Manche {(game.series_score_white + game.series_score_black) - ((game.status === 'finished') ? 1 : 0) + 1} / {game.series_length}</span>
+                            <span className="text-yellow-500">|</span>
+                            <span className="flex gap-2">
+                                <span className={game.series_score_white > game.series_score_black ? "text-green-400" : "text-white"}>
+                                    {game.white_player_name}: {game.series_score_white}
+                                </span>
+                                <span>-</span>
+                                <span className={game.series_score_black > game.series_score_white ? "text-green-400" : "text-white"}>
+                                    {game.black_player_name}: {game.series_score_black}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Top Player Info */}
                 <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
                     <div className="flex items-center gap-3">
