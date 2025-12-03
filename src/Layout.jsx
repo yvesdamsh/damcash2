@@ -16,7 +16,9 @@ import {
   Eye,
   Brain,
   Shield,
-  Users
+  Users,
+  PlayCircle,
+  ShoppingBag
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
           import FriendsManager from '@/components/FriendsManager';
@@ -122,6 +124,7 @@ import {
         { label: 'Ligues', path: '/Leagues', icon: Shield, public: true },
         { label: 'Tournois', path: '/Tournaments', icon: Flag, public: true },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
+        { label: 'Boutique', path: '/Shop', icon: ShoppingBag, public: true },
         // Private items
         { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
         { label: 'Équipes', path: '/Teams', icon: Users, public: false },
@@ -185,10 +188,15 @@ import {
                                 </button>
 
                                 {user && (
-                                    <>
-                                        <Notifications />
-                                        <FriendsManager />
-                                    </>
+                                  <>
+                                      <div className="flex flex-col items-end mr-2 hidden lg:flex">
+                                          <div className="text-xs font-bold text-[#d4c5b0] bg-[#2c1e12]/50 px-2 rounded-full border border-yellow-500/30">
+                                              Lvl {user.level || 1}
+                                          </div>
+                                      </div>
+                                      <Notifications />
+                                      <FriendsManager />
+                                  </>
                                 )}
 
                                 <button 

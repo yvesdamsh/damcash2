@@ -17,6 +17,7 @@ import CreatePuzzle from './pages/CreatePuzzle';
 import index from './pages/index';
 import Messages from './pages/Messages';
 import ReplayCenter from './pages/ReplayCenter';
+import Shop from './pages/Shop';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "index": index,
     "Messages": Messages,
     "ReplayCenter": ReplayCenter,
+    "Shop": Shop,
 }
 
 export const pagesConfig = {

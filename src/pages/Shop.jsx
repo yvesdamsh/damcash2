@@ -1,0 +1,162 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, ShoppingBag, Lock, Check, Coins, Shield, Palette, User } from 'lucide-react';
+import { toast } from 'sonner';
+import WalletBalance from '@/components/WalletBalance';
+
+export default function Shop() {
+    const [products, setProducts] = useState([]);
+    const [ownedIds, setOwnedIds] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null);
+    const [buying, setBuying] = useState(null);
+
+    const fetchData = async () => {
+        try {
+            const u = await base44.auth.me();
+            setUser(u);
+            const res = await base44.functions.invoke('shopManager', { action: 'list_products' });
+            setProducts(res.data.products || []);
+            setOwnedIds(res.data.owned || []);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleBuy = async (product) => {
+        if (!user) return;
+        setBuying(product.id);
+        try {
+            const res = await base44.functions.invoke('shopManager', { 
+                action: 'buy', 
+                productId: product.id 
+            });
+            
+            if (res.data.error) {
+                toast.error(res.data.error);
+            } else {
+                toast.success("Achat réussi !");
+                setOwnedIds([...ownedIds, product.id]);
+                // Trigger wallet refresh event if needed, or just rely on component polling
+            }
+        } catch (e) {
+            toast.error("Erreur lors de l'achat");
+        } finally {
+            setBuying(null);
+        }
+    };
+
+    const ProductCard = ({ product }) => {
+        const isOwned = ownedIds.includes(product.id);
+        const isLocked = (user?.level || 1) < product.required_level;
+        const canAfford = true; // Let backend handle, or check locally if balance available (need balance context)
+        
+        return (
+            <Card className={`relative overflow-hidden border-[#d4c5b0] transition-all hover:shadow-lg ${isLocked ? 'opacity-70 bg-gray-50' : 'bg-white'}`}>
+                {isOwned && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center shadow-sm z-10">
+                        <Check className="w-3 h-3 mr-1" /> Possédé
+                    </div>
+                )}
+                <div className="h-32 bg-[#f5f0e6] flex items-center justify-center relative overflow-hidden">
+                    {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover hover:scale-110 transition-transform duration-500" />
+                    ) : (
+                        <ShoppingBag className="w-12 h-12 text-[#d4c5b0]" />
+                    )}
+                    {isLocked && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                            <div className="bg-black/80 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center">
+                                <Lock className="w-3 h-3 mr-1" /> Niveau {product.required_level}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <CardContent className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 className="font-bold text-[#4a3728] line-clamp-1">{product.name}</h3>
+                            <p className="text-xs text-gray-500">{product.type === 'avatar' ? 'Avatar' : product.type === 'theme' ? 'Thème' : 'Pièces'}</p>
+                        </div>
+                    </div>
+                    <p className="text-sm text-[#6b5138] mb-4 line-clamp-2 h-10">{product.description}</p>
+                    
+                    {isOwned ? (
+                        <Button disabled className="w-full bg-gray-100 text-gray-400 border-0">
+                            Acquis
+                        </Button>
+                    ) : (
+                        <Button 
+                            onClick={() => handleBuy(product)} 
+                            disabled={isLocked || buying === product.id}
+                            className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white font-bold"
+                        >
+                            {buying === product.id ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                <>
+                                    <Coins className="w-4 h-4 mr-1 text-yellow-500" />
+                                    {product.price}
+                                </>
+                            )}
+                        </Button>
+                    )}
+                </CardContent>
+            </Card>
+        );
+    };
+
+    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin w-10 h-10 text-[#4a3728]" /></div>;
+
+    const avatars = products.filter(p => p.type === 'avatar');
+    const themes = products.filter(p => p.type === 'theme');
+    const pieces = products.filter(p => p.type === 'piece_set');
+
+    return (
+        <div className="max-w-6xl mx-auto p-4">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div>
+                    <h1 className="text-3xl font-black text-[#4a3728] flex items-center gap-3">
+                        <ShoppingBag className="w-8 h-8" /> Boutique
+                    </h1>
+                    <p className="text-[#6b5138]">Personnalisez votre expérience avec vos DamCoins.</p>
+                </div>
+                <div className="flex items-center gap-4 bg-white p-2 rounded-full shadow-sm border px-4">
+                    <span className="text-sm font-bold text-gray-500 uppercase mr-2">Votre Solde:</span>
+                    <WalletBalance />
+                </div>
+            </div>
+
+            <Tabs defaultValue="all" className="w-full">
+                <TabsList className="bg-[#e8dcc5] w-full justify-start overflow-x-auto">
+                    <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tout</TabsTrigger>
+                    <TabsTrigger value="avatars" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><User className="w-4 h-4 mr-2"/> Avatars</TabsTrigger>
+                    <TabsTrigger value="themes" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Palette className="w-4 h-4 mr-2"/> Thèmes</TabsTrigger>
+                    <TabsTrigger value="pieces" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Shield className="w-4 h-4 mr-2"/> Pièces</TabsTrigger>
+                </TabsList>
+
+                <div className="mt-6">
+                    <TabsContent value="all" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {products.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                    <TabsContent value="avatars" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {avatars.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                    <TabsContent value="themes" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {themes.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                    <TabsContent value="pieces" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {pieces.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                </div>
+            </Tabs>
+        </div>
+    );
+}
