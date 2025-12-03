@@ -16,17 +16,19 @@ export default function MoveHistory({ moves, currentIndex, onSelectMove, gameTyp
     }, [currentIndex]);
 
     const formatMove = (move, index) => {
+        // Use pre-calculated notation if available
+        if (move.notation) return move.notation;
+
         if (gameType === 'chess') {
-            // Simplified chess notation parsing if stored properly, otherwise raw coords
-            // Assuming move has 'from', 'to', and maybe 'piece' or standard algebraic if we enhanced logic
-            // For now, let's try to make it readable from the generic object
             const files = ['a','b','c','d','e','f','g','h'];
             const from = `${files[move.from.c]}${8-move.from.r}`;
             const to = `${files[move.to.c]}${8-move.to.r}`;
             return `${move.piece || ''} ${from}-${to}`;
         } else {
-            // Checkers notation (Board 10x10 usually 1-50 but we have 0-9 coords. Let's stick to coords for now or simple notation)
-            return `${move.from.r},${move.from.c} → ${move.to.r},${move.to.c}`;
+            // Fallback Checkers notation (1-50)
+            const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
+            const separator = move.captured ? 'x' : '-';
+            return `${getNum(move.from.r, move.from.c)}${separator}${getNum(move.to.r, move.to.c)}`;
         }
     };
 
