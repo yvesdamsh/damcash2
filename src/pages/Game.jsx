@@ -1305,13 +1305,13 @@ export default function Game() {
 
                 {/* Controls & Replay (Simplified as actions are now above) */}
                 <div className="bg-white/90 p-3 rounded-xl shadow-sm border border-[#d4c5b0] mx-2 md:mx-0">
-                    <div className="flex justify-between items-center">
-                        <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={toggleSaveGame} className={isSaved ? "text-yellow-500 bg-yellow-50" : "text-gray-400"}>
-                                {/* Star icon missing in import, use simplified text or add icon back if needed, using Copy for now as placeholder or remove icon if not critical */}
-                                {isSaved ? 'Sauvegardée' : 'Sauvegarder'}
-                            </Button>
-                        </div>
+                <div className="flex justify-between items-center">
+                <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={toggleSaveGame} className={isSaved ? "text-yellow-500 bg-yellow-50 hover:bg-yellow-100" : "text-gray-400 hover:text-yellow-500"}>
+                        <Star className={`w-4 h-4 mr-2 ${isSaved ? "fill-yellow-500" : ""}`} />
+                        {isSaved ? 'Sauvegardée' : 'Favoris'}
+                    </Button>
+                </div>
                         {game.moves && JSON.parse(game.moves).length > 0 && (
                             <div className="w-full max-w-md mx-auto bg-[#4a3728] p-1 rounded-lg shadow-inner flex items-center gap-1">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}>

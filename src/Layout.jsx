@@ -123,6 +123,7 @@ import {
         { label: 'Tournois', path: '/Tournaments', icon: Flag, public: true },
         { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
         // Private items
+        { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
         { label: 'Équipes', path: '/Teams', icon: Users, public: false },
         { label: 'Entraînement', path: '/Training', icon: Brain, public: false },
         { label: 'Profil', path: '/Profile', icon: User, public: false },

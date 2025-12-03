@@ -16,6 +16,7 @@ import TeamDetail from './pages/TeamDetail';
 import CreatePuzzle from './pages/CreatePuzzle';
 import index from './pages/index';
 import Messages from './pages/Messages';
+import ReplayCenter from './pages/ReplayCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "CreatePuzzle": CreatePuzzle,
     "index": index,
     "Messages": Messages,
+    "ReplayCenter": ReplayCenter,
 }
 
 export const pagesConfig = {
