@@ -452,7 +452,13 @@ export default function Game() {
         }
 
         setBoard(newBoard);
-        setGame(prev => ({ ...prev, current_turn: nextTurn, status, winner_id: winnerId }));
+        setGame(prev => ({ 
+            ...prev, 
+            current_turn: nextTurn, 
+            status, 
+            winner_id: winnerId,
+            board_state: JSON.stringify(newBoard)
+        }));
 
         if (mustContinue) {
             setMustContinueWith({ r: move.to.r, c: move.to.c });
@@ -586,7 +592,13 @@ export default function Game() {
         }
 
         setBoard(newBoard);
-        setGame(prev => ({ ...prev, current_turn: nextTurn, status, winner_id: winnerId }));
+        setGame(prev => ({ 
+            ...prev, 
+            current_turn: nextTurn, 
+            status, 
+            winner_id: winnerId,
+            board_state: JSON.stringify(newStateObj)
+        }));
         setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
