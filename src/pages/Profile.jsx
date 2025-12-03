@@ -1,25 +1,105 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
     const [stats, setStats] = useState(null);
     const [ranks, setRanks] = useState({ checkers: '-', chess: '-' });
     const [favoriteGames, setFavoriteGames] = useState([]);
+    const [gameHistory, setGameHistory] = useState([]);
+    const [badges, setBadges] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [editForm, setEditForm] = useState({ username: '', full_name: '', avatar_url: '', bio: '' });
+    const [editForm, setEditForm] = useState({ 
+        username: '', 
+        full_name: '', 
+        avatar_url: '', 
+        bio: '',
+        profile_theme: 'default',
+        avatar_frame: 'none'
+    });
     const [uploading, setUploading] = useState(false);
     const navigate = useNavigate();
+
+    const themes = {
+        default: "bg-gradient-to-r from-[#4a3728] to-[#2c1e12]",
+        blue: "bg-gradient-to-r from-blue-800 to-blue-950",
+        gold: "bg-gradient-to-r from-yellow-600 to-yellow-800",
+        forest: "bg-gradient-to-r from-green-800 to-green-950",
+        purple: "bg-gradient-to-r from-purple-800 to-purple-950"
+    };
+
+    const frames = {
+        none: "",
+        gold: "border-yellow-400 ring-4 ring-yellow-400/30",
+        silver: "border-gray-300 ring-4 ring-gray-300/30",
+        neon: "border-cyan-400 ring-4 ring-cyan-400/50 shadow-[0_0_15px_rgba(34,211,238,0.5)]",
+        wood: "border-[#5c4033] ring-4 ring-[#8b5a2b]"
+    };
+
+    const checkAndAwardBadges = async (currentUser, currentStats) => {
+        const newBadges = [];
+        const existingBadges = await base44.entities.UserBadge.filter({ user_id: currentUser.id });
+        const hasBadge = (name) => existingBadges.some(b => b.name === name);
+
+        // 1. Games Played
+        if ((currentStats.games_played || 0) >= 10 && !hasBadge('Débutant Motivé')) {
+            newBadges.push({ name: 'Débutant Motivé', icon: 'Star', description: 'Joué 10 parties' });
+        }
+        if ((currentStats.games_played || 0) >= 50 && !hasBadge('Vétéran')) {
+            newBadges.push({ name: 'Vétéran', icon: 'Shield', description: 'Joué 50 parties' });
+        }
+
+        // 2. Wins
+        if ((currentStats.wins_checkers || 0) >= 10 && !hasBadge('Maître des Dames')) {
+            newBadges.push({ name: 'Maître des Dames', icon: 'Crown', description: '10 Victoires aux Dames' });
+        }
+        if ((currentStats.wins_chess || 0) >= 10 && !hasBadge('Stratège Échecs')) {
+            newBadges.push({ name: 'Stratège Échecs', icon: 'Brain', description: '10 Victoires aux Échecs' });
+        }
+
+        // 3. ELO
+        if (((currentStats.elo_chess || 0) >= 1500 || (currentStats.elo_checkers || 0) >= 1500) && !hasBadge('Elite 1500')) {
+            newBadges.push({ name: 'Elite 1500', icon: 'Trophy', description: 'Atteint 1500 ELO' });
+        }
+
+        // Create new badges
+        for (const b of newBadges) {
+            await base44.entities.UserBadge.create({
+                user_id: currentUser.id,
+                name: b.name,
+                icon: b.icon,
+                tournament_id: 'system', // System awarded
+                awarded_at: new Date().toISOString()
+            });
+            // Notify
+             await base44.entities.Notification.create({
+                recipient_id: currentUser.id,
+                type: "success",
+                title: "Nouveau Badge !",
+                message: `Vous avez débloqué le badge : ${b.name}`,
+                link: `/Profile`
+            });
+        }
+        
+        if (newBadges.length > 0) {
+            return await base44.entities.UserBadge.filter({ user_id: currentUser.id });
+        }
+        return existingBadges;
+    };
 
     useEffect(() => {
         const init = async () => {
@@ -30,7 +110,9 @@ export default function Profile() {
                     username: u.username || '', 
                     full_name: u.full_name || '',
                     avatar_url: u.avatar_url || '',
-                    bio: u.bio || ''
+                    bio: u.bio || '',
+                    profile_theme: u.profile_theme || 'default',
+                    avatar_frame: u.avatar_frame || 'none'
                 });
 
                 const allStats = await base44.entities.User.list();
@@ -56,6 +138,20 @@ export default function Profile() {
                     const favs = await Promise.all(u.favorite_games.map(id => base44.entities.Game.get(id).catch(() => null)));
                     setFavoriteGames(favs.filter(g => g));
                 }
+
+                // Fetch History
+                const [whiteGames, blackGames] = await Promise.all([
+                    base44.entities.Game.filter({ white_player_id: u.id, status: 'finished' }, '-updated_date', 20),
+                    base44.entities.Game.filter({ black_player_id: u.id, status: 'finished' }, '-updated_date', 20)
+                ]);
+                const history = [...whiteGames, ...blackGames]
+                    .filter((g, index, self) => index === self.findIndex(t => t.id === g.id))
+                    .sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date));
+                setGameHistory(history);
+
+                // Badges
+                const userBadges = await checkAndAwardBadges(u, myStats);
+                setBadges(userBadges);
 
             } catch (e) {
                 console.error(e);
@@ -86,7 +182,9 @@ export default function Profile() {
                 username: editForm.username,
                 full_name: editForm.full_name,
                 avatar_url: editForm.avatar_url,
-                bio: editForm.bio
+                bio: editForm.bio,
+                profile_theme: editForm.profile_theme,
+                avatar_frame: editForm.avatar_frame
             });
             
             const updatedUser = await base44.auth.me();
@@ -111,7 +209,7 @@ export default function Profile() {
         <div className="max-w-5xl mx-auto p-4 pb-20">
             <div className="bg-white/90 backdrop-blur rounded-3xl shadow-2xl border border-[#d4c5b0] overflow-hidden mb-8">
                 {/* Cover / Header */}
-                <div className="h-48 bg-gradient-to-r from-[#4a3728] to-[#2c1e12] relative overflow-hidden">
+                <div className={`h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500`}>
                     <motion.div 
                         initial={{ opacity: 0, scale: 2 }}
                         animate={{ opacity: 0.1, scale: 1 }}
@@ -165,6 +263,38 @@ export default function Profile() {
                                                 placeholder="Parlez-nous de vous, de votre expérience aux échecs ou aux dames..." 
                                             />
                                         </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                                <Label>Thème Profil</Label>
+                                                <Select value={editForm.profile_theme} onValueChange={(v) => setEditForm({...editForm, profile_theme: v})}>
+                                                    <SelectTrigger className="border-[#d4c5b0]">
+                                                        <SelectValue placeholder="Thème" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="default">Classique (Bois)</SelectItem>
+                                                        <SelectItem value="blue">Nuit Bleue</SelectItem>
+                                                        <SelectItem value="gold">Or Royal</SelectItem>
+                                                        <SelectItem value="forest">Forêt Sombre</SelectItem>
+                                                        <SelectItem value="purple">Violet Mystique</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label>Cadre Avatar</Label>
+                                                <Select value={editForm.avatar_frame} onValueChange={(v) => setEditForm({...editForm, avatar_frame: v})}>
+                                                    <SelectTrigger className="border-[#d4c5b0]">
+                                                        <SelectValue placeholder="Cadre" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Aucun</SelectItem>
+                                                        <SelectItem value="gold">Cercle d'Or</SelectItem>
+                                                        <SelectItem value="silver">Argenté</SelectItem>
+                                                        <SelectItem value="neon">Néon Cyber</SelectItem>
+                                                        <SelectItem value="wood">Bois Rustique</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-2">
@@ -202,7 +332,7 @@ export default function Profile() {
                                 initial={{ scale: 0, rotate: -20 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                                className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1.5 shadow-2xl overflow-hidden border-4 border-[#e8dcc5]"
+                                className={`w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1.5 shadow-2xl overflow-hidden border-4 border-[#e8dcc5] ${frames[user.avatar_frame || 'none']}`}
                             >
                                 {user.avatar_url ? (
                                     <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
@@ -221,16 +351,33 @@ export default function Profile() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 mt-4 md:mt-16">
-                            <Link to="/GameHistory">
-                                <Button variant="outline" className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white shadow-sm">
-                                    <History className="w-4 h-4 mr-2" /> Historique
-                                </Button>
-                            </Link>
+                            {badges.length > 0 && (
+                                <div className="flex -space-x-3 overflow-hidden py-2">
+                                    {badges.slice(0, 5).map((b, i) => (
+                                        <div key={i} className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-yellow-100 flex items-center justify-center shadow-sm" title={b.name}>
+                                            <Trophy className="w-5 h-5 text-yellow-600" />
+                                        </div>
+                                    ))}
+                                    {badges.length > 5 && (
+                                        <div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                                            +{badges.length - 5}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Stats Grid */}
-                    <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Tabs defaultValue="overview" className="mt-12">
+                        <TabsList className="grid w-full grid-cols-3 bg-[#f5f0e6] mb-8">
+                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Vue d'ensemble</TabsTrigger>
+                            <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Historique</TabsTrigger>
+                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Badges & Trophées</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="overview">
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-white border-none shadow-lg transform hover:-translate-y-1 transition-transform duration-300">
                             <CardContent className="p-6 flex items-center justify-between">
                                 <div>
@@ -330,6 +477,99 @@ export default function Profile() {
                              )}
                          </div>
                     </div>
+                    </TabsContent>
+
+                    <TabsContent value="history">
+                        <Card className="bg-white/90 border-none">
+                            <CardContent className="p-0">
+                                {gameHistory.length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500">
+                                        <History className="w-12 h-12 mx-auto opacity-20 mb-2" />
+                                        <p>Aucun historique disponible.</p>
+                                        <Link to="/" className="text-[#6b5138] hover:underline font-bold mt-2 inline-block">Jouer une partie !</Link>
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+                                                <tr>
+                                                    <th className="px-6 py-3">Date</th>
+                                                    <th className="px-6 py-3">Jeu</th>
+                                                    <th className="px-6 py-3">Adversaire</th>
+                                                    <th className="px-6 py-3 text-center">Résultat</th>
+                                                    <th className="px-6 py-3 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {gameHistory.map((game) => {
+                                                    const isWhite = game.white_player_id === user.id;
+                                                    const opponentName = isWhite ? game.black_player_name : game.white_player_name;
+                                                    const isWinner = game.winner_id === user.id;
+                                                    const isDraw = !game.winner_id;
+                                                    return (
+                                                        <tr key={game.id} className="bg-white border-b hover:bg-gray-50">
+                                                            <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                                                {format(new Date(game.updated_date), 'dd MMM yyyy', { locale: fr })}
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-2 py-1 rounded text-xs font-bold ${game.game_type === 'chess' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                                    {game.game_type === 'chess' ? 'Échecs' : 'Dames'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4">{opponentName || 'Anonyme'}</td>
+                                                            <td className="px-6 py-4 text-center">
+                                                                {isDraw ? (
+                                                                    <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Nul</span>
+                                                                ) : isWinner ? (
+                                                                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Victoire</span>
+                                                                ) : (
+                                                                    <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">Défaite</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)}>
+                                                                    <History className="w-3 h-3 mr-1" /> Revoir
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="badges">
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                             {badges.length > 0 ? badges.map((badge, i) => (
+                                 <Card key={i} className="bg-gradient-to-br from-yellow-50 to-white border-yellow-200 overflow-hidden relative group hover:shadow-lg transition-all">
+                                     <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                                         <Award className="w-20 h-20 text-yellow-500" />
+                                     </div>
+                                     <CardContent className="p-6 text-center flex flex-col items-center z-10 relative">
+                                         <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-3 text-yellow-600 ring-4 ring-yellow-50">
+                                             <Trophy className="w-8 h-8" />
+                                         </div>
+                                         <h3 className="font-bold text-[#4a3728] mb-1">{badge.name}</h3>
+                                         <p className="text-xs text-gray-500 mb-2">{badge.description || 'Récompense prestigieuse'}</p>
+                                         <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                                             Obtenu le {format(new Date(badge.awarded_at), 'dd/MM/yyyy')}
+                                         </p>
+                                     </CardContent>
+                                 </Card>
+                             )) : (
+                                 <div className="col-span-full text-center py-12 text-gray-500 bg-white/50 rounded-xl border border-dashed border-gray-300">
+                                     <Award className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                                     <p>Aucun badge débloqué pour le moment.</p>
+                                     <p className="text-sm">Jouez des parties pour gagner des récompenses !</p>
+                                 </div>
+                             )}
+                         </div>
+                    </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </div>
