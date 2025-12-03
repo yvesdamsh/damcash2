@@ -690,7 +690,7 @@ export default function Game() {
             // Re-fetch to be sure
             setTimeout(async () => {
                 const refreshed = await base44.entities.Game.get(game.id);
-                updateGameState(refreshed);
+                setGame(refreshed);
             }, 500);
 
             setShowResult(false);
