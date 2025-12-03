@@ -339,6 +339,67 @@ export default function Game() {
         return baseTime;
     };
 
+    // -----------------------------------------------------------------------
+    // AI Logic
+    // -----------------------------------------------------------------------
+    useEffect(() => {
+        if (!isAiGame || !game || game.status !== 'playing') return;
+        
+        if (game.current_turn === 'black' && !isAiThinking) {
+            const makeAiMove = async () => {
+                setIsAiThinking(true);
+                try {
+                    // Call Backend AI
+                    const res = await base44.functions.invoke('checkersAI', {
+                        board: board,
+                        turn: 'black',
+                        difficulty: aiDifficulty
+                    });
+                    
+                    if (res.data && res.data.move) {
+                        const move = res.data.move;
+                        const formattedMove = {
+                            from: {r: move.from.r, c: move.from.c},
+                            to: {r: move.to.r, c: move.to.c},
+                            captured: move.captured ? {r: move.captured.r, c: move.captured.c} : null
+                        };
+
+                        // Local execution for AI
+                        const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
+                        
+                        soundManager.play(formattedMove.captured ? 'capture' : 'move');
+                        
+                        const movesList = game.moves ? JSON.parse(game.moves) : [];
+                        const newMoveEntry = {
+                            type: 'checkers',
+                            from: formattedMove.from,
+                            to: formattedMove.to,
+                            captured: !!formattedMove.captured,
+                            color: 'black',
+                            board: JSON.stringify(newBoard),
+                            notation: `${String.fromCharCode(97 + formattedMove.from.c)}${10 - formattedMove.from.r} > ${String.fromCharCode(97 + formattedMove.to.c)}${10 - formattedMove.to.r}`
+                        };
+                        
+                        setBoard(newBoard);
+                        setGame(prev => ({
+                            ...prev,
+                            board_state: JSON.stringify(newBoard),
+                            current_turn: 'white',
+                            moves: JSON.stringify([...movesList, newMoveEntry]),
+                            last_move_at: new Date().toISOString()
+                        }));
+                    }
+                } catch (err) {
+                    console.error("AI Error:", err);
+                    toast.error("L'IA réfléchit trop fort...");
+                } finally {
+                    setIsAiThinking(false);
+                }
+            };
+            setTimeout(makeAiMove, 1000);
+        }
+    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty]);
+
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || game.status !== 'playing') return;
         
