@@ -576,6 +576,21 @@ export default function Home() {
                                             const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
                                             const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || 'Hôte', current_turn: 'white', board_state: initialBoard, is_private: true });
                                             await base44.entities.Invitation.create({ from_user_id: user.id, from_user_name: user.full_name || user.email, to_user_email: email, game_type: gameType, game_id: newGame.id, status: 'pending' });
+                                            
+                                            // Find user by email to notify
+                                            try {
+                                                const foundUsers = await base44.entities.User.filter({ email: email });
+                                                if (foundUsers.length > 0) {
+                                                    await base44.functions.invoke('sendNotification', {
+                                                        recipient_id: foundUsers[0].id,
+                                                        type: "game",
+                                                        title: "Invitation à jouer",
+                                                        message: `${user.full_name || 'Un ami'} vous invite à une partie privée.`,
+                                                        link: `/Game?id=${newGame.id}`
+                                                    });
+                                                }
+                                            } catch(e) { console.error("Notify failed", e); }
+
                                             navigate(`/Game?id=${newGame.id}`);
                                         }} className="bg-[#4a3728] hover:bg-[#2c1e12]">Inviter</Button>
                                     </div>

@@ -13,7 +13,16 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    const [pushEnabled, setPushEnabled] = useState(Notification.permission === 'granted');
     const navigate = useNavigate();
+
+    const requestPushPermission = async () => {
+        const permission = await Notification.requestPermission();
+        setPushEnabled(permission === 'granted');
+        if (permission === 'granted') {
+            new Notification("Notifications activées", { body: "Vous recevrez désormais les alertes." });
+        }
+    };
 
     const fetchNotifications = async () => {
         try {
@@ -60,6 +69,18 @@ export default function Notifications() {
                         onClick: () => navigate(data.link)
                     } : undefined,
                 });
+
+                // Browser Push Notification (if background or enabled)
+                if (Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
+                    const n = new Notification(data.title, {
+                        body: data.message,
+                        icon: '/favicon.ico', // Assuming favicon exists
+                    });
+                    n.onclick = () => {
+                        window.focus();
+                        if (data.link) navigate(data.link);
+                    };
+                }
 
                 // Refresh list
                 fetchNotifications();
@@ -141,11 +162,18 @@ export default function Notifications() {
             <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7]" align="end">
                 <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] bg-[#4a3728] text-[#e8dcc5]">
                     <h4 className="font-bold">Notifications</h4>
-                    {unreadCount > 0 && (
-                        <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-[#d4c5b0] hover:text-white hover:bg-transparent">
-                            Tout marquer comme lu
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {!pushEnabled && (
+                            <Button variant="ghost" size="sm" onClick={requestPushPermission} className="h-auto p-0 text-xs text-yellow-400 hover:text-yellow-300 hover:bg-transparent" title="Activer les notifications navigateur">
+                                Activer Push
+                            </Button>
+                        )}
+                        {unreadCount > 0 && (
+                            <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-[#d4c5b0] hover:text-white hover:bg-transparent">
+                                Tout lu
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <ScrollArea className="h-[300px]">
                     {notifications.length === 0 ? (

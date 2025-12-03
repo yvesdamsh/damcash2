@@ -141,7 +141,8 @@ export default function Lobby() {
                 status: 'pending'
             });
 
-            await base44.entities.Notification.create({
+            // Send Real-time Notification
+            await base44.functions.invoke('sendNotification', {
                 recipient_id: opponent.id,
                 type: "game",
                 title: "Défi reçu !",
