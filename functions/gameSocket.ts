@@ -5,13 +5,11 @@ const channel = new BroadcastChannel('notifications');
 const gameUpdates = new BroadcastChannel('game_updates');
 
 gameUpdates.onmessage = (event) => {
-    const { gameId, type, payload } = event.data;
-    broadcast(gameId, { type, payload });
+    const { gameId, type, payload, senderId } = event.data;
+    broadcast(gameId, { type, payload }, senderId);
 };
 
-export default async function handler(req) {
-    const base44 = createClientFromRequest(req);
-    
+Deno.serve(async (req) => {
     if (req.headers.get("upgrade") !== "websocket") {
         return new Response(null, { status: 501 });
     }
@@ -23,7 +21,11 @@ export default async function handler(req) {
         return new Response("Missing gameId", { status: 400 });
     }
 
+    const base44 = createClientFromRequest(req);
     const { socket, response } = Deno.upgradeWebSocket(req);
+
+    // Store socket info
+    socket.gameId = gameId;
 
     socket.onopen = () => {
         if (!connections.has(gameId)) {
@@ -42,16 +44,21 @@ export default async function handler(req) {
                 if (updateData) {
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
                     
-                    // Broadcast
+                    // Broadcast locally
                     broadcast(gameId, {
                         type: 'GAME_UPDATE',
-                        payload: updateData,
-                        sender_socket: socket // Optional: don't echo back if handled optimistically, but usually safer to echo
+                        payload: updateData
+                    }, null); // null sender means broadcast to all, or maybe we want to exclude sender? usually safe to send to all.
+
+                    // Broadcast to other instances
+                    gameUpdates.postMessage({
+                        gameId,
+                        type: 'GAME_UPDATE',
+                        payload: updateData
                     });
                 }
             } 
             else if (data.type === 'CHAT_MESSAGE') {
-                // Persist Message
                 const { sender_id, sender_name, content } = data.payload;
                 
                 const message = await base44.asServiceRole.entities.ChatMessage.create({
@@ -61,46 +68,41 @@ export default async function handler(req) {
                     content
                 });
 
-                // Broadcast
-                broadcast(gameId, {
-                    type: 'CHAT_UPDATE',
-                    payload: message
-                });
+                const payload = message;
+                broadcast(gameId, { type: 'CHAT_UPDATE', payload });
+                gameUpdates.postMessage({ gameId, type: 'CHAT_UPDATE', payload });
 
-                // Notify opponent via Global Notification System
+                // Notify opponent
                 try {
-                const game = await base44.asServiceRole.entities.Game.get(gameId);
-                if (game) {
-                    const opponentId = game.white_player_id === sender_id ? game.black_player_id : game.white_player_id;
-                    if (opponentId) {
-                        channel.postMessage({
-                            recipientId: opponentId,
-                            type: 'message',
-                            title: `Message de ${sender_name}`,
-                            message: content,
-                            link: `/Game?id=${gameId}`,
-                            senderId: sender_id
-                        });
+                    const game = await base44.asServiceRole.entities.Game.get(gameId);
+                    if (game) {
+                        const opponentId = game.white_player_id === sender_id ? game.black_player_id : game.white_player_id;
+                        if (opponentId) {
+                            channel.postMessage({
+                                recipientId: opponentId,
+                                type: 'message',
+                                title: `Message de ${sender_name}`,
+                                message: content,
+                                link: `/Game?id=${gameId}`,
+                                senderId: sender_id
+                            });
+                        }
                     }
-                }
                 } catch (e) {
-                console.error("Failed to notify opponent", e);
+                    console.error("Failed to notify opponent", e);
                 }
-                }
-                else if (data.type === 'GAME_REACTION') {
-                // Broadcast Reaction (Ephemeral)
-                broadcast(gameId, {
-                    type: 'GAME_REACTION',
-                    payload: data.payload // { sender_id, sender_name, emoji }
-                });
+            }
+            else if (data.type === 'GAME_REACTION') {
+                const payload = data.payload;
+                broadcast(gameId, { type: 'GAME_REACTION', payload });
+                gameUpdates.postMessage({ gameId, type: 'GAME_REACTION', payload });
             }
             else if (data.type === 'SIGNAL') {
-                // WebRTC Signaling - Relay to others
-                broadcast(gameId, {
-                    type: 'SIGNAL',
-                    payload: data.payload, // { type, data, sender_id, recipient_id }
-                    senderId: data.payload.sender_id // Helper to filter self
-                });
+                const payload = data.payload;
+                // Exclude sender from broadcast? 
+                // Front end usually handles filtering, but we can try.
+                broadcast(gameId, { type: 'SIGNAL', payload });
+                gameUpdates.postMessage({ gameId, type: 'SIGNAL', payload });
             }
         } catch (error) {
             console.error("WebSocket Error:", error);
@@ -117,17 +119,15 @@ export default async function handler(req) {
         }
     };
 
-    socket.onerror = (e) => console.error("WebSocket error:", e);
-
     return response;
-}
+});
 
-function broadcast(gameId, message) {
+function broadcast(gameId, message, senderSocket = null) {
     const gameConns = connections.get(gameId);
     if (gameConns) {
         const msgString = JSON.stringify(message);
         for (const sock of gameConns) {
-            if (sock.readyState === WebSocket.OPEN) {
+            if (sock !== senderSocket && sock.readyState === WebSocket.OPEN) {
                 sock.send(msgString);
             }
         }
