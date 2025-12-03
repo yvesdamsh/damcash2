@@ -67,22 +67,45 @@ export default function Game() {
         
         if (gameId === 'local-ai') {
             const difficulty = searchParams.get('difficulty') || 'medium';
+            // Detect game type from URL logic or default? 
+            // Actually Home passes gameType in URL? No, Home usually sets gameType state.
+            // But here we are navigating. We should probably read the user preference or pass it.
+            // Home.js uses `gameType` state.
+            // Let's assume checkers default or pass param.
+            // Wait, Home navigation: `navigate(\`/Game?id=local-ai&difficulty=${lvl}\`)`
+            // It doesn't pass game type.
+            // We should read `localStorage.getItem('gameMode')` as fallback which is what Home uses.
+            const type = localStorage.getItem('gameMode') || 'checkers';
+            
             setAiDifficulty(difficulty);
             setIsAiGame(true);
             
-            const initialBoard = initializeBoard(); // Ensure this is defined or imported
+            let initialBoard;
+            if (type === 'chess') {
+                // Need to ensure initializeChessBoard is available or we use defaults
+                // It is imported in Game.js
+                initialBoard = initializeChessBoard();
+                setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+            } else {
+                initialBoard = initializeBoard();
+            }
+
+            const boardStr = type === 'chess' 
+                ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                : JSON.stringify(initialBoard);
+
             setGame({
                 id: 'local-ai',
                 status: 'playing',
-                game_type: 'checkers',
+                game_type: type,
                 white_player_name: currentUser ? (currentUser.username || 'Vous') : 'Vous',
                 black_player_name: `AI (${difficulty})`,
                 current_turn: 'white',
-                board_state: JSON.stringify(initialBoard),
+                board_state: boardStr,
                 moves: JSON.stringify([]),
                 white_seconds_left: 600,
                 black_seconds_left: 600,
-                last_move_at: new Date().toISOString(), // Start timer
+                last_move_at: new Date().toISOString(),
             });
             setBoard(initialBoard);
         } else {
@@ -349,45 +372,64 @@ export default function Game() {
             const makeAiMove = async () => {
                 setIsAiThinking(true);
                 try {
-                    // Call Backend AI
-                    const res = await base44.functions.invoke('checkersAI', {
+                    // Differentiate based on game type
+                    const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
+                    
+                    const payload = {
                         board: board,
                         turn: 'black',
-                        difficulty: aiDifficulty
-                    });
+                        difficulty: aiDifficulty,
+                        // Chess specific
+                        castlingRights: chessState.castlingRights,
+                        lastMove: chessState.lastMove
+                    };
+
+                    const res = await base44.functions.invoke(aiFunctionName, payload);
                     
                     if (res.data && res.data.move) {
                         const move = res.data.move;
-                        const formattedMove = {
-                            from: {r: move.from.r, c: move.from.c},
-                            to: {r: move.to.r, c: move.to.c},
-                            captured: move.captured ? {r: move.captured.r, c: move.captured.c} : null
-                        };
+                        
+                        if (game.game_type === 'chess') {
+                            // Handle Chess Move
+                            // move object comes from backend, format usually matches
+                            // Ensure promotion if needed
+                            if (!move.promotion && move.piece && move.piece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
+                                move.promotion = 'q';
+                            }
+                            
+                            await executeChessMoveFinal(move);
+                        } else {
+                            // Handle Checkers Move
+                            const formattedMove = {
+                                from: {r: move.from.r, c: move.from.c},
+                                to: {r: move.to.r, c: move.to.c},
+                                captured: move.captured ? {r: move.captured.r, c: move.captured.c} : null
+                            };
 
-                        // Local execution for AI
-                        const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
-                        
-                        soundManager.play(formattedMove.captured ? 'capture' : 'move');
-                        
-                        const movesList = game.moves ? JSON.parse(game.moves) : [];
-                        const newMoveEntry = {
-                            type: 'checkers',
-                            from: formattedMove.from,
-                            to: formattedMove.to,
-                            captured: !!formattedMove.captured,
-                            color: 'black',
-                            board: JSON.stringify(newBoard),
-                            notation: `${String.fromCharCode(97 + formattedMove.from.c)}${10 - formattedMove.from.r} > ${String.fromCharCode(97 + formattedMove.to.c)}${10 - formattedMove.to.r}`
-                        };
-                        
-                        setBoard(newBoard);
-                        setGame(prev => ({
-                            ...prev,
-                            board_state: JSON.stringify(newBoard),
-                            current_turn: 'white',
-                            moves: JSON.stringify([...movesList, newMoveEntry]),
-                            last_move_at: new Date().toISOString()
-                        }));
+                            const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
+                            
+                            soundManager.play(formattedMove.captured ? 'capture' : 'move');
+                            
+                            const movesList = game.moves ? JSON.parse(game.moves) : [];
+                            const newMoveEntry = {
+                                type: 'checkers',
+                                from: formattedMove.from,
+                                to: formattedMove.to,
+                                captured: !!formattedMove.captured,
+                                color: 'black',
+                                board: JSON.stringify(newBoard),
+                                notation: `${String.fromCharCode(97 + formattedMove.from.c)}${10 - formattedMove.from.r} > ${String.fromCharCode(97 + formattedMove.to.c)}${10 - formattedMove.to.r}`
+                            };
+                            
+                            setBoard(newBoard);
+                            setGame(prev => ({
+                                ...prev,
+                                board_state: JSON.stringify(newBoard),
+                                current_turn: 'white',
+                                moves: JSON.stringify([...movesList, newMoveEntry]),
+                                last_move_at: new Date().toISOString()
+                            }));
+                        }
                     }
                 } catch (err) {
                     console.error("AI Error:", err);
@@ -398,7 +440,7 @@ export default function Game() {
             };
             setTimeout(makeAiMove, 1000);
         }
-    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty]);
+    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || game.status !== 'playing') return;

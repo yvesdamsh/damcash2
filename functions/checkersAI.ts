@@ -76,12 +76,7 @@ const getStepsForPiece = (board, r, c, piece, onlyCaptures = false) => {
                 }
             }
         } 
-        // Kings (Flying Kings - International Rules simplified or Standard?)
-        // Assuming Standard US/UK checkers for AI simplicity first (no flying kings) unless specifically requested.
-        // Re-reading prompt: "International/Brazilian on 8x8" from logic file context suggests International logic.
-        // Let's stick to standard non-flying kings for robustness unless logic file specified otherwise.
-        // Looking at snapshot: `components/checkersLogic` had flying kings logic ("Logique DAME (Flying King)").
-        // OK, I must support Flying Kings for consistency.
+        // Kings (Flying Kings)
         else {
              let dist = 1;
              while (true) {
@@ -97,7 +92,6 @@ const getStepsForPiece = (board, r, c, piece, onlyCaptures = false) => {
                      if (isOwnPiece(cell, isWhite ? 'white' : 'black')) break; // Blocked by friend
                      
                      // Enemy - check jump
-                     // Flying king jump: can land on any empty square after the captured piece
                      let jumpDist = 1;
                      while (true) {
                          const jr = nr + (dr * jumpDist);
@@ -125,10 +119,6 @@ const getFullCaptureChains = (board, r, c, piece) => {
     const chains = [];
     for (const cap of captures) {
         const { newBoard, promoted } = executeStep(board, [r,c], [cap.to.r, cap.to.c], cap.captured);
-        
-        // If promoted, turn usually ends immediately (International Rules usually continue, but standard US stops. Let's assume continue if not promoted, or maybe continue even if promoted? International continues even if promoted ONLY if it passed through king row, but if it *becomes* king it stops? Logic varies.)
-        // `components/checkersLogic` didn't explicitly handle recursion in `getValidMoves` other than `getMaxChainLength`.
-        // Let's assume: If promoted, stop. If not, continue.
         
         if (promoted) {
             chains.push({
@@ -247,13 +237,6 @@ const evaluate = (board, aiColor, turn) => {
         }
     }
 
-    // Mobility (Expensive, maybe skip for deep nodes)
-    // const moves = getAllPlayableMoves(board, turn);
-    // const mobilityScore = moves.length * WEIGHTS.MOBILITY;
-    // if (turn === 'white') score += mobilityScore;
-    // else score -= mobilityScore;
-
-    // Perspective
     return aiColor === 'white' ? score : -score;
 };
 
@@ -277,6 +260,10 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor) => 
     
     if (maximizingPlayer) {
         let maxEval = -Infinity;
+        
+        // Move ordering (Captures first)
+        moves.sort((a, b) => b.score - a.score);
+
         for (const move of moves) {
             const nextTurn = turn === 'white' ? 'black' : 'white';
             const evalObj = minimax(move.finalBoard, depth - 1, alpha, beta, false, nextTurn, aiColor);
@@ -291,6 +278,9 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor) => 
         return { score: maxEval, move: bestMove };
     } else {
         let minEval = Infinity;
+        
+        moves.sort((a, b) => b.score - a.score);
+
         for (const move of moves) {
             const nextTurn = turn === 'white' ? 'black' : 'white';
             const evalObj = minimax(move.finalBoard, depth - 1, alpha, beta, true, nextTurn, aiColor);
@@ -316,10 +306,15 @@ Deno.serve(async (req) => {
         }
 
         // Depth Configuration
-        let depth = 4; // Medium default
-        if (difficulty === 'easy') depth = 2;
-        if (difficulty === 'hard') depth = 6;
-        if (difficulty === 'expert') depth = 7; // Deep search
+        let depth = 4; 
+        switch (difficulty) {
+            case 'easy': depth = 2; break;
+            case 'medium': depth = 4; break;
+            case 'hard': depth = 6; break;
+            case 'expert': depth = 8; break;
+            case 'grandmaster': depth = 10; break;
+            default: depth = 4;
+        }
 
         const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn);
         
@@ -327,37 +322,12 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'No moves available' }, { status: 200 });
         }
 
-        // Extract just the first step of the best sequence for the frontend to execute
-        // OR return the full sequence if frontend supports it.
-        // Frontend currently expects `move` with `from`, `to`, `captured`.
-        // Since we simulate full chain, `result.move` is an object { finalBoard, steps: [...], score }
-        // We should return the first step, but we must ensure the frontend knows to continue if it's a chain.
-        // However, the frontend's `executeCheckersMove` logic *already* checks for `mustContinue`.
-        // So we just return the first step of the best sequence.
-        // The AI will be called again for the next step if `mustContinue` is true on frontend?
-        // WAIT. If AI makes a move that requires continuation, the Frontend state will enter "mustContinueWith" mode.
-        // Then the Frontend `useEffect` will trigger again?
-        // The `useEffect` in Game.js watches `game.current_turn`.
-        // If AI captures and must continue, the turn is STILL the AI's turn.
-        // So the `useEffect` will fire again, call this function again.
-        // We need to ensure this function handles "must continue" state if board is in middle of capture.
-        // But `getAllPlayableMoves` starts from scratch.
-        
-        // Actually, if the frontend handles the "must continue" logic by updating the board and keeping the turn,
-        // then calling this API again with the new board is correct.
-        // BUT, `getAllPlayableMoves` will see the new board.
-        // If we just moved, we are in a state where we *must* capture with the specific piece.
-        // `getAllPlayableMoves` scans the whole board.
-        // Ideally, we should restrict moves to the piece that just moved if provided?
-        // For now, `getAllPlayableMoves` naturally prioritizes captures. If a piece must capture, it will be the only legal move(s).
-        // So standard logic holds.
-        
         const firstStep = result.move.steps[0];
 
         return Response.json({
             move: firstStep, // { from, to, captured }
             score: result.score,
-            fullSequence: result.move.steps // Debugging
+            fullSequence: result.move.steps
         });
 
     } catch (error) {

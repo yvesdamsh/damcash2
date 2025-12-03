@@ -585,21 +585,21 @@ export default function Home() {
                                     <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
                                         {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} JOUER MAINTENANT
                                     </Button>
-                                    <div className="grid grid-cols-2 gap-2">
-                                         <Button 
-                                            onClick={() => navigate('/Game?id=local-ai&difficulty=easy')}
-                                            variant="outline" 
-                                            className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 text-xs"
-                                        >
-                                            <Users className="w-3 h-3 mr-1" /> VS IA (Facile)
-                                        </Button>
-                                         <Button 
-                                            onClick={() => navigate('/Game?id=local-ai&difficulty=hard')}
-                                            variant="outline" 
-                                            className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 text-xs"
-                                        >
-                                            <Users className="w-3 h-3 mr-1" /> VS IA (Expert)
-                                        </Button>
+                                    
+                                    <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
+                                        <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">Mode Solo vs IA</div>
+                                        <div className="grid grid-cols-3 gap-1">
+                                            {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
+                                                <Button 
+                                                    key={lvl}
+                                                    onClick={() => navigate(`/Game?id=local-ai&difficulty=${lvl}`)}
+                                                    variant="outline" 
+                                                    className="border-[#e8dcc5]/30 text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-8 text-[10px] capitalize px-1"
+                                                >
+                                                    {lvl}
+                                                </Button>
+                                            ))}
+                                        </div>
                                     </div>
                                     <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10">
                                         <Users className="w-4 h-4 mr-2" /> S'entraîner seul
