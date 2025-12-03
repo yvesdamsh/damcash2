@@ -385,16 +385,11 @@ export default function Game() {
                         const move = res.data.move;
                         
                         if (game.game_type === 'chess') {
-                            // Handle Chess Move
-                            // move object comes from backend, format usually matches
-                            // Ensure promotion if needed
                             if (!move.promotion && move.piece && move.piece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
                                 move.promotion = 'q';
                             }
-                            
                             await executeChessMoveFinal(move);
                         } else {
-                            // Handle Checkers Move
                             const formattedMove = {
                                 from: {r: move.from.r, c: move.from.c},
                                 to: {r: move.to.r, c: move.to.c},
@@ -403,32 +398,68 @@ export default function Game() {
 
                             const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
                             
+                            let mustContinue = false;
+                            if (formattedMove.captured && !promoted) {
+                                const { getMovesForPiece } = await import('@/components/checkersLogic');
+                                const { captures } = getMovesForPiece(newBoard, formattedMove.to.r, formattedMove.to.c, newBoard[formattedMove.to.r][formattedMove.to.c], true);
+                                if (captures.length > 0) mustContinue = true;
+                            }
+
                             soundManager.play(formattedMove.captured ? 'capture' : 'move');
                             
                             const movesList = game.moves ? JSON.parse(game.moves) : [];
-                            const newMoveEntry = {
-                                type: 'checkers',
-                                from: formattedMove.from,
-                                to: formattedMove.to,
-                                captured: !!formattedMove.captured,
-                                color: 'black',
-                                board: JSON.stringify(newBoard),
-                                notation: `${String.fromCharCode(97 + formattedMove.from.c)}${10 - formattedMove.from.r} > ${String.fromCharCode(97 + formattedMove.to.c)}${10 - formattedMove.to.r}`
+                            const newMoveEntry = { 
+                                type: 'checkers', from: move.from, to: move.to, 
+                                captured: !!move.captured, board: JSON.stringify(newBoard),
+                                color: game.current_turn,
+                                notation: `${String.fromCharCode(97 + move.from.c)}${10 - move.from.r} > ${String.fromCharCode(97 + move.to.c)}${10 - move.to.r}`
                             };
                             
+                            const now = new Date().toISOString();
+                            let whiteTime = Number(game.white_seconds_left || 600);
+                            let blackTime = Number(game.black_seconds_left || 600);
+                            if (game.last_move_at) {
+                                const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
+                                if (game.current_turn === 'white') whiteTime = Math.max(0, whiteTime - elapsed);
+                                else blackTime = Math.max(0, blackTime - elapsed);
+                            }
+
+                            const nextTurn = mustContinue ? 'black' : 'white';
+                            let status = game.status;
+                            let winnerId = game.winner_id;
+
+                            if (!mustContinue) {
+                                const { checkWinner } = await import('@/components/checkersLogic');
+                                const winnerColor = checkWinner(newBoard);
+                                if (winnerColor) {
+                                    status = 'finished';
+                                    winnerId = winnerColor === 'white' ? currentUser?.id : 'ai';
+                                    soundManager.play('loss');
+                                }
+                            }
+
+                            if (mustContinue) {
+                                setMustContinueWith({ r: formattedMove.to.r, c: formattedMove.to.c });
+                            } else {
+                                setMustContinueWith(null);
+                            }
+
                             setBoard(newBoard);
                             setGame(prev => ({
                                 ...prev,
+                                current_turn: nextTurn,
+                                status,
+                                winner_id: winnerId,
                                 board_state: JSON.stringify(newBoard),
-                                current_turn: 'white',
                                 moves: JSON.stringify([...movesList, newMoveEntry]),
-                                last_move_at: new Date().toISOString()
+                                last_move_at: now,
+                                white_seconds_left: whiteTime,
+                                black_seconds_left: blackTime
                             }));
                         }
                     }
                 } catch (err) {
                     console.error("AI Error:", err);
-                    toast.error("L'IA réfléchit trop fort...");
                 } finally {
                     setIsAiThinking(false);
                 }
@@ -589,8 +620,8 @@ export default function Game() {
              
              // Calculate Time Left
              const now = new Date().toISOString();
-             let whiteTime = game.white_seconds_left || 600;
-             let blackTime = game.black_seconds_left || 600;
+             let whiteTime = Number(game.white_seconds_left || 600);
+             let blackTime = Number(game.black_seconds_left || 600);
              
              if (game.last_move_at) {
                  const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
