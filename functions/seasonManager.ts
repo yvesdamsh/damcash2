@@ -78,7 +78,9 @@ export default async function handler(req) {
                 status: 'active',
                 start_date: now.toISOString(),
                 end_date: nextEnd.toISOString(),
-                description: `Saison ${league.season + 1} officielle.`
+                description: `Saison ${league.season + 1} officielle.`,
+                rewards: league.rewards, // Carry over rewards structure
+                rules_summary: league.rules_summary
             });
         }
     }

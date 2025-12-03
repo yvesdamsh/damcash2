@@ -46,7 +46,9 @@ export default function LeagueDetail() {
     if (loading) return <div className="p-8 text-center">Chargement...</div>;
     if (!league) return <div className="p-8 text-center">Ligue introuvable</div>;
 
-    const filteredParticipants = participants.filter(p => p.rank_tier === (searchParams.get('tier') || 'bronze'));
+    // Determine active tier tab or default to highest populated one? Default to bronze as starter.
+    const currentTier = searchParams.get('tier') || 'bronze';
+    const filteredParticipants = participants.filter(p => p.rank_tier === currentTier);
     const currentTier = searchParams.get('tier') || 'bronze';
     const tiers = ['bronze', 'silver', 'gold', 'diamond', 'master'];
 
@@ -67,6 +69,40 @@ export default function LeagueDetail() {
                         <span className="bg-black/20 px-3 py-1 rounded-full">{league.game_type === 'chess' ? 'Échecs' : 'Dames'}</span>
                         <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status}</span>
                     </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {/* Rewards Card */}
+                <div className="bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 rounded-xl p-6 shadow-sm">
+                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> Récompenses Saison</h3>
+                    <div className="space-y-3 text-sm">
+                        <div className="flex items-center gap-3 bg-white p-2 rounded border border-yellow-100">
+                            <div className="bg-yellow-100 p-1.5 rounded-full text-yellow-700 font-bold text-xs">1er</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.first || "Titre de Champion"}</span>
+                        </div>
+                        <div className="flex items-center gap-3 bg-white p-2 rounded border border-gray-100">
+                            <div className="bg-gray-100 p-1.5 rounded-full text-gray-600 font-bold text-xs">2ème</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.second || "Badge Argent"}</span>
+                        </div>
+                        <div className="flex items-center gap-3 bg-white p-2 rounded border border-orange-100">
+                            <div className="bg-orange-100 p-1.5 rounded-full text-orange-700 font-bold text-xs">3ème</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.third || "Badge Bronze"}</span>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-dashed border-gray-200 text-xs text-gray-500">
+                            <p className="mb-1 font-bold text-blue-600">Promotion :</p>
+                            <p>{league.rewards?.tier_promotion || "Top 15% montent de division"}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Rules Card */}
+                <div className="bg-white border border-[#d4c5b0] rounded-xl p-6 shadow-sm md:col-span-2">
+                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-[#6b5138]" /> Règles & Format</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                        {league.rules_summary || 
+                        "• Format : Saisonnier (30 jours)\n• Système de points : Victoire +3, Nul +1, Défaite +0\n• Matchmaking : Basé sur le rang de division\n• Inactivité : Pénalité après 7 jours sans jouer"}
+                    </p>
                 </div>
             </div>
 
