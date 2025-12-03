@@ -67,6 +67,27 @@ export default async function handler(req) {
             description: 'Mise de jeu'
         });
 
+        // Update Prize Pool
+        try {
+            // Try Game first
+            const game = await base44.asServiceRole.entities.Game.get(gameId).catch(() => null);
+            if (game) {
+                await base44.asServiceRole.entities.Game.update(gameId, {
+                    prize_pool: (game.prize_pool || 0) + amount
+                });
+            } else {
+                // Try Tournament
+                const tournament = await base44.asServiceRole.entities.Tournament.get(gameId).catch(() => null);
+                if (tournament) {
+                    await base44.asServiceRole.entities.Tournament.update(gameId, {
+                        prize_pool: (tournament.prize_pool || 0) + amount
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Failed to update prize pool", e);
+        }
+
         return Response.json({ success: true });
     }
 

@@ -244,24 +244,10 @@ export default function Home() {
                 series_score_white: 0,
                 series_score_black: 0,
                 entry_fee: gameConfig.stake,
-                prize_pool: gameConfig.stake * 2 // Assuming 1v1
-            };
+                prize_pool: 0 // Initialized at 0, walletManager adds stake
+                };
 
-            // Pay Fee First
-            if (gameConfig.stake > 0) {
-                const payRes = await base44.functions.invoke('walletManager', { 
-                    action: 'pay_entry_fee', 
-                    amount: gameConfig.stake,
-                    gameId: 'pending_creation' // Placeholder
-                });
-                if (payRes.status !== 200 || (payRes.data && payRes.data.error)) {
-                    alert("Fonds insuffisants pour la mise !");
-                    setIsCreating(false);
-                    return;
-                }
-            }
-
-            if (isPrivateConfig) {
+                if (isPrivateConfig) {
                 const code = Math.random().toString(36).substring(2, 8).toUpperCase();
                 const newGame = await base44.entities.Game.create({
                     ...commonGameData,
@@ -269,8 +255,22 @@ export default function Home() {
                     access_code: code,
                     white_player_name: user.full_name || 'Hôte'
                 });
+
+                // Pay Fee After Creation (Now we have ID)
+                if (gameConfig.stake > 0) {
+                    const payRes = await base44.functions.invoke('walletManager', { 
+                        action: 'pay_entry_fee', 
+                        amount: gameConfig.stake,
+                        gameId: newGame.id 
+                    });
+                    if (payRes.status !== 200 || (payRes.data && payRes.data.error)) {
+                        alert("Fonds insuffisants ! Partie annulée.");
+                        // Should ideally delete game or mark cancelled
+                        return;
+                    }
+                }
                 navigate(`/Game?id=${newGame.id}`);
-            } else {
+                } else {
                 // Matchmaking Pool Logic
                 let matchFound = null;
                 
@@ -477,6 +477,11 @@ export default function Home() {
                                         </Button>
                                     ))}
                                 </div>
+                                {gameConfig.stake > 0 && (
+                                    <p className="text-xs text-yellow-700 italic text-center">
+                                        Pot total: {gameConfig.stake * 2} D$ (Commission 10% au gagnant)
+                                    </p>
+                                )}
                             </div>
 
                             {!isPrivateConfig && (

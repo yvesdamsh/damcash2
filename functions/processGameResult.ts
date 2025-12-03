@@ -21,13 +21,26 @@ export default async function handler(req) {
     const type = game.game_type; // 'checkers' or 'chess'
 
     // 0. Process Payouts if Prize Pool exists
-    if (game.prize_pool && game.prize_pool > 0 && winnerId) {
-        const payoutAmount = game.prize_pool; // Winner takes all for now
-        // If draw, maybe refund? For now, if winnerId is null (draw), logic below handles it?
-        // If draw, we should probably refund or split.
-        // Let's handle Draw split later or keep it simple: refund if draw.
-        
+    if (game.prize_pool && game.prize_pool > 0) {
+        const commissionRate = 0.10;
+        const commission = Math.floor(game.prize_pool * commissionRate);
+        const netPool = game.prize_pool - commission;
+
+        // Record Commission (System)
+        if (commission > 0) {
+             // Optionally record to a system wallet or just log transaction
+             await base44.asServiceRole.entities.Transaction.create({
+                user_id: 'system', // System ID
+                type: 'commission',
+                amount: commission,
+                game_id: gameId,
+                status: 'completed',
+                description: 'Commission 10%'
+            });
+        }
+
         if (winnerId) {
+            const payoutAmount = netPool;
             // Fetch winner wallet
             const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: winnerId });
             let wallet = wallets[0];
@@ -55,30 +68,30 @@ export default async function handler(req) {
                 recipient_id: winnerId,
                 type: "success",
                 title: "Gain Reçu !",
-                message: `Vous avez gagné ${payoutAmount} crédits !`,
+                message: `Vous avez gagné ${payoutAmount} D$ ! (Com. 10% déduite)`,
                 link: `/Wallet`
             });
-        }
-    } else if (game.prize_pool && game.prize_pool > 0 && !winnerId) {
-        // Draw - Refund both? Or split? Let's Split.
-        const split = game.prize_pool / 2;
-        [whiteId, blackId].forEach(async (uid) => {
-             if (!uid) return;
-             const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: uid });
-             let w = wallets[0];
-             if (!w) w = await base44.asServiceRole.entities.Wallet.create({ user_id: uid, balance: 0 });
-             
-             await base44.asServiceRole.entities.Wallet.update(w.id, { balance: (w.balance||0) + split });
-             
-             await base44.asServiceRole.entities.Transaction.create({
-                user_id: uid,
-                type: 'refund',
-                amount: split,
-                game_id: gameId,
-                status: 'completed',
-                description: 'Partage du pot (Nulle)'
+        } else {
+            // Draw - Split NET pool
+            const split = Math.floor(netPool / 2);
+            [whiteId, blackId].forEach(async (uid) => {
+                 if (!uid) return;
+                 const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: uid });
+                 let w = wallets[0];
+                 if (!w) w = await base44.asServiceRole.entities.Wallet.create({ user_id: uid, balance: 0 });
+                 
+                 await base44.asServiceRole.entities.Wallet.update(w.id, { balance: (w.balance||0) + split });
+                 
+                 await base44.asServiceRole.entities.Transaction.create({
+                    user_id: uid,
+                    type: 'refund',
+                    amount: split,
+                    game_id: gameId,
+                    status: 'completed',
+                    description: 'Partage du pot (Nulle)'
+                });
             });
-        });
+        }
     }
 
     // 1. Update ELO

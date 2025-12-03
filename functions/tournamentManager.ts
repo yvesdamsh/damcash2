@@ -109,12 +109,28 @@ async function finishTournament(tournament, base44) {
     });
 
     // Distribute Prizes
-    // Standard: 1st = 50%, 2nd = 30%, 3rd = 20% of prize_pool (Example)
     if (tournament.prize_pool > 0) {
+        const commissionRate = 0.10;
+        const commission = Math.floor(tournament.prize_pool * commissionRate);
+        const netPool = tournament.prize_pool - commission;
+
+        // Record Commission
+        if (commission > 0) {
+             await base44.asServiceRole.entities.Transaction.create({
+                user_id: 'system',
+                type: 'commission',
+                amount: commission,
+                game_id: tournament.id,
+                status: 'completed',
+                description: 'Commission Tournoi 10%'
+            });
+        }
+
+        // Standard: 1st = 50%, 2nd = 30%, 3rd = 20% of NET pool
         const distribution = [0.5, 0.3, 0.2];
         for (let i = 0; i < Math.min(sorted.length, 3); i++) {
             const p = sorted[i];
-            const amount = Math.floor(tournament.prize_pool * distribution[i]);
+            const amount = Math.floor(netPool * distribution[i]);
             if (amount > 0) {
                 // Check wallet
                 const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: p.user_id });
