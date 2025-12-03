@@ -10,6 +10,7 @@ import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
 import ActivityFeed from '@/components/ActivityFeed';
+import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
 
 export default function Home() {
@@ -40,6 +41,7 @@ export default function Home() {
     const [invitations, setInvitations] = useState([]);
     const [configOpen, setConfigOpen] = useState(false);
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
+    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
@@ -415,6 +417,34 @@ export default function Home() {
                             <CardTitle className="text-[#4a3728]">Configuration de la partie</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            {/* Presets */}
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-[#6b5138]">Modes Rapides</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setGameConfig({...gameConfig, time: 1, increment: 0})}
+                                        className={gameConfig.time === 1 && gameConfig.increment === 0 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                    >
+                                        ⚡ Bullet (1+0)
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setGameConfig({...gameConfig, time: 3, increment: 2})}
+                                        className={gameConfig.time === 3 && gameConfig.increment === 2 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                    >
+                                        🔥 Blitz (3+2)
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        onClick={() => setGameConfig({...gameConfig, time: 10, increment: 0})}
+                                        className={gameConfig.time === 10 && gameConfig.increment === 0 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                    >
+                                        🐢 Rapide (10+0)
+                                    </Button>
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#6b5138]">Cadence (Minutes)</label>
                                 <div className="grid grid-cols-4 gap-2">
@@ -434,7 +464,7 @@ export default function Home() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#6b5138]">Incrément (Secondes)</label>
                                 <div className="flex gap-2">
-                                    {[0, 1, 2, 3, 5].map(inc => (
+                                    {[0, 1, 2, 3, 5, 10].map(inc => (
                                         <Button 
                                             key={inc}
                                             variant={gameConfig.increment === inc ? "default" : "outline"}
@@ -568,37 +598,45 @@ export default function Home() {
                                 <CardContent className="space-y-4">
                                     <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Créer une partie privée</Button>
                                     <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">INVITER UN AMI</span></div></div>
-                                    <div className="flex gap-2">
-                                        <Input placeholder="Email de l'ami" id="friend-email" />
-                                        <Button onClick={async () => {
-                                            const email = document.getElementById('friend-email').value;
-                                            if(!email || !user) return;
+                                    <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+                                        <Users className="w-4 h-4 mr-2" /> Chercher et Inviter un Joueur
+                                    </Button>
+                                    <UserSearchDialog 
+                                        isOpen={inviteDialogOpen} 
+                                        onClose={() => setInviteDialogOpen(false)} 
+                                        onInvite={async (invitedUser) => {
+                                            if(!user) return;
+                                            setInviteDialogOpen(false);
                                             const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
                                             const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || 'Hôte', current_turn: 'white', board_state: initialBoard, is_private: true });
-                                            await base44.entities.Invitation.create({ from_user_id: user.id, from_user_name: user.full_name || user.email, to_user_email: email, game_type: gameType, game_id: newGame.id, status: 'pending' });
                                             
-                                            // Find user by email to notify
-                                            try {
-                                                const foundUsers = await base44.entities.User.filter({ email: email });
-                                                if (foundUsers.length > 0) {
-                                                    await base44.functions.invoke('sendNotification', {
-                                                        recipient_id: foundUsers[0].id,
-                                                        type: "game",
-                                                        title: "Invitation à jouer",
-                                                        message: `${user.full_name || 'Un ami'} vous invite à une partie privée.`,
-                                                        link: `/Game?id=${newGame.id}`
-                                                    });
-                                                }
-                                            } catch(e) { console.error("Notify failed", e); }
+                                            await base44.entities.Invitation.create({ 
+                                                from_user_id: user.id, 
+                                                from_user_name: user.full_name || user.email, 
+                                                to_user_email: invitedUser.email, 
+                                                game_type: gameType, 
+                                                game_id: newGame.id, 
+                                                status: 'pending' 
+                                            });
+                                            
+                                            await base44.functions.invoke('sendNotification', {
+                                                recipient_id: invitedUser.id,
+                                                type: "game",
+                                                title: "Invitation à jouer",
+                                                message: `${user.full_name || 'Un ami'} vous invite à une partie privée.`,
+                                                link: `/Game?id=${newGame.id}`
+                                            });
 
+                                            toast.success(`Invitation envoyée à ${invitedUser.username || invitedUser.full_name}`);
                                             navigate(`/Game?id=${newGame.id}`);
-                                        }} className="bg-[#4a3728] hover:bg-[#2c1e12]">Inviter</Button>
-                                    </div>
+                                        }}
+                                    />
                                     <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">OU REJOINDRE</span></div></div>
                                     <form onSubmit={handleJoinByCode} className="flex gap-2">
                                         <Input placeholder="Code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
                                         <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
                                     </form>
+                                    <p className="text-[10px] text-gray-500 text-center">Demandez le code à votre ami</p>
                                 </CardContent>
                             </Card>
                             <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> Apprendre à jouer</Button>

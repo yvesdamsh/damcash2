@@ -10,6 +10,7 @@ import { initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
+import UserSearchDialog from '@/components/UserSearchDialog';
 import GameChat from '@/components/GameChat';
 import VideoChat from '@/components/VideoChat';
 import GameTimer from '@/components/GameTimer';
@@ -48,8 +49,6 @@ export default function Game() {
     const [reactions, setReactions] = useState([]);
     const [lastSignal, setLastSignal] = useState(null);
     const [inviteOpen, setInviteOpen] = useState(false);
-    const [inviteSearch, setInviteSearch] = useState("");
-    const [inviteResults, setInviteResults] = useState([]);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -878,20 +877,6 @@ export default function Game() {
         }));
     };
 
-    // Invitation Logic
-    const handleInviteSearch = async () => {
-        if (!inviteSearch.trim()) return;
-        try {
-            const users = await base44.entities.User.list(); 
-            const filtered = users.filter(u => 
-                u.id !== currentUser.id && 
-                ((u.username && u.username.toLowerCase().includes(inviteSearch.toLowerCase())) || 
-                 (u.email && u.email.toLowerCase().includes(inviteSearch.toLowerCase())))
-            );
-            setInviteResults(filtered.slice(0, 5));
-        } catch (e) { console.error(e); }
-    };
-
     const inviteSpectator = async (userToInvite) => {
         try {
              await base44.entities.Notification.create({
@@ -927,7 +912,10 @@ export default function Game() {
     // However, standard usually puts "Opponent" at top, "Self" at bottom.
     // If I am spectator, maybe White bottom.
     const isAmBlack = currentUser?.id === game.black_player_id;
-    const topPlayer = isAmBlack ? { 
+    // If spectator, keep default orientation (White bottom, Black top) or flip based on preference? 
+    // For now standard: White Bottom.
+    
+    const topPlayer = (isAmBlack) ? { 
         id: game.white_player_id, 
         name: game.white_player_name, 
         color: 'white',
@@ -941,7 +929,7 @@ export default function Game() {
         timeLeft: getTimeLeft('black')
     };
 
-    const bottomPlayer = isAmBlack ? { 
+    const bottomPlayer = (isAmBlack) ? { 
         id: game.black_player_id, 
         name: game.black_player_name, 
         color: 'black',
@@ -954,6 +942,8 @@ export default function Game() {
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
     };
+
+    const isSpectator = currentUser?.id !== game.white_player_id && currentUser?.id !== game.black_player_id;
 
     const getElo = (info, type) => {
         if (!info) return 1200;
@@ -971,6 +961,11 @@ export default function Game() {
                     socket={socket}
                     lastSignal={lastSignal}
                 />
+                {isSpectator && (
+                    <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
+                        <Eye className="w-3 h-3" /> MODE SPECTATEUR
+                    </div>
+                )}
             </div>
 
             {/* Resign Confirmation Overlay */}
@@ -1062,43 +1057,12 @@ export default function Game() {
             </div>
 
             {/* Invite Dialog */}
-            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-                <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7]">
-                    <DialogHeader>
-                        <DialogTitle className="text-[#4a3728]">Inviter un spectateur</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="flex gap-2">
-                            <Input 
-                                placeholder="Chercher un joueur..." 
-                                value={inviteSearch} 
-                                onChange={(e) => setInviteSearch(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleInviteSearch()}
-                            />
-                            <Button onClick={handleInviteSearch} className="bg-[#4a3728]">
-                                <Search className="w-4 h-4" />
-                            </Button>
-                        </div>
-                        <ScrollArea className="h-[200px] border rounded-md p-2">
-                            {inviteResults.length === 0 ? (
-                                <p className="text-center text-gray-400 py-4 text-sm">Recherchez un ami à inviter</p>
-                            ) : (
-                                inviteResults.map(u => (
-                                    <div key={u.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                                                {u.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User className="w-4 h-4" />}
-                                            </div>
-                                            <span className="text-sm font-medium">{u.username || u.full_name}</span>
-                                        </div>
-                                        <Button size="sm" variant="outline" onClick={() => inviteSpectator(u)}>Inviter</Button>
-                                    </div>
-                                ))
-                            )}
-                        </ScrollArea>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <UserSearchDialog 
+                isOpen={inviteOpen} 
+                onClose={() => setInviteOpen(false)} 
+                onInvite={inviteSpectator} 
+                title="Inviter un spectateur"
+            />
 
             {/* Result Overlay */}
             <AnimatePresence>
