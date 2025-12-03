@@ -1165,11 +1165,39 @@ export default function Game() {
                                 <Button 
                                     onClick={async () => {
                                         setShowResignConfirm(false);
-                                        const winnerId = currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id;
-                                        setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
-                                        setShowResult(true); // Force result overlay
-                                        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId });
-                                        base44.functions.invoke('processGameResult', { gameId: game.id });
+
+                                        // Handle AI Resignation Locally if needed, but update logic handles it.
+                                        // Determine winner ID: if I am white, winner is black.
+                                        const isMeWhite = currentUser?.id === game.white_player_id;
+
+                                        // For local AI game, winner_id is 'ai' if human (white) resigns.
+                                        // If user is guest, currentUser.id might be guest_...
+                                        // If it's an AI game, black_player_id is 'ai' or similar? No, in local-ai setup:
+                                        // white_player_id: currentUser.id, black_player_id: 'ai' (not set in Game object explicitly as ID, but name is set).
+                                        // Let's check how local-ai game is initialized.
+                                        // id='local-ai'. It doesn't have DB record. It's purely local state?
+                                        // Yes, setGame({... id: 'local-ai' ...}).
+
+                                        let winnerId;
+                                        if (isAiGame) {
+                                            // In local AI, user is always White (currently).
+                                            winnerId = 'ai'; 
+                                        } else {
+                                            winnerId = isMeWhite ? game.black_player_id : game.white_player_id;
+                                        }
+
+                                        const newStatus = 'finished';
+
+                                        // Update Local State
+                                        setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
+                                        setShowResult(true);
+
+                                        if (!isAiGame) {
+                                            // Update Server
+                                            await base44.entities.Game.update(game.id, { status: newStatus, winner_id: winnerId });
+                                            base44.functions.invoke('processGameResult', { gameId: game.id });
+                                        }
+
                                         soundManager.play('loss');
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white"
