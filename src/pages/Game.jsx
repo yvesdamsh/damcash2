@@ -645,9 +645,11 @@ export default function Game() {
             }));
         } else {
             // Normal Online Game
+            const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
             await updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
                 type: 'checkers', from: move.from, to: move.to, 
-                captured: !!move.captured, board: JSON.stringify(newBoard) 
+                captured: !!move.captured, board: JSON.stringify(newBoard),
+                notation: `${getNum(move.from.r, move.from.c)}${move.captured ? 'x' : '-'}${getNum(move.to.r, move.to.c)}`
             });
             
             if (status === 'finished') {
