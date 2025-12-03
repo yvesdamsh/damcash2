@@ -183,6 +183,41 @@ async function finishTournament(tournament, base44) {
         winner_id: winner.user_id 
     });
 
+    // Handle Recurrence
+    if (tournament.recurrence && tournament.recurrence !== 'none') {
+        const nextStart = new Date(tournament.start_date);
+        if (tournament.recurrence === 'daily') nextStart.setDate(nextStart.getDate() + 1);
+        if (tournament.recurrence === 'weekly') nextStart.setDate(nextStart.getDate() + 7);
+        
+        // Check if already exists to avoid dupes (simple check)
+        const exists = await base44.asServiceRole.entities.Tournament.filter({
+            name: tournament.name, // Assuming same name
+            start_date: nextStart.toISOString()
+        });
+
+        if (exists.length === 0) {
+            // Create next instance
+            const newTournament = { ...tournament };
+            delete newTournament.id;
+            delete newTournament.created_date;
+            delete newTournament.updated_date;
+            delete newTournament.winner_id;
+            delete newTournament.current_round;
+            delete newTournament.status; // Reset to open
+            delete newTournament.access_code; // Maybe keep or generate new? Let's generate new if private
+            
+            newTournament.start_date = nextStart.toISOString();
+            if (tournament.end_date) {
+                const duration = new Date(tournament.end_date) - new Date(tournament.start_date);
+                newTournament.end_date = new Date(nextStart.getTime() + duration).toISOString();
+            }
+            newTournament.status = 'open';
+            newTournament.access_code = tournament.is_private ? Math.random().toString(36).substring(2, 8).toUpperCase() : null;
+
+            await base44.asServiceRole.entities.Tournament.create(newTournament);
+        }
+    }
+
     // Distribute Prizes
     if (tournament.prize_pool > 0) {
         const commissionRate = 0.10;

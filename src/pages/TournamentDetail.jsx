@@ -24,6 +24,7 @@ export default function TournamentDetail() {
     const [participants, setParticipants] = useState([]);
     const [matches, setMatches] = useState([]);
     const [user, setUser] = useState(null);
+    const [usersMap, setUsersMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState("");
     const [pairingInterval, setPairingInterval] = useState(null);
@@ -45,11 +46,16 @@ export default function TournamentDetail() {
                 setUser(u);
                 
                 // Fetch Data in parallel
-                const [tData, pData, mData] = await Promise.all([
+                const [tData, pData, mData, allUsers] = await Promise.all([
                     base44.entities.Tournament.filter({ id }),
                     base44.entities.TournamentParticipant.filter({ tournament_id: id }),
-                    base44.entities.Game.filter({ tournament_id: id })
+                    base44.entities.Game.filter({ tournament_id: id }),
+                    base44.entities.User.list() // Fetch users for ELO
                 ]);
+
+                const uMap = {};
+                allUsers.forEach(u => uMap[u.id] = u);
+                setUsersMap(uMap);
 
                 if (tData.length) {
                     const t = tData[0];
@@ -742,7 +748,14 @@ export default function TournamentDetail() {
                                                 <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                                                     {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover"/> : <Users className="w-full h-full p-2 text-gray-500"/>}
                                                 </div>
-                                                <span className="truncate font-medium">{p.user_name}</span>
+                                                <span className="truncate font-medium">
+                                                    {p.user_name}
+                                                    <span className="ml-2 text-xs text-gray-500 bg-gray-200 px-1 rounded">
+                                                        {tournament.game_type === 'chess' 
+                                                            ? (usersMap[p.user_id]?.elo_chess || 1200) 
+                                                            : (usersMap[p.user_id]?.elo_checkers || 1200)}
+                                                    </span>
+                                                </span>
                                             </div>
                                             <div className="col-span-2 text-center font-bold text-lg text-[#d45c30]">{p.score || 0}</div>
                                             <div className="col-span-2 text-center text-gray-600">{p.games_played || 0}</div>
