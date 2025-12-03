@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, onPieceClick, dragConstraints, ...props }) {
+export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, onPieceClick, onDragEnd, ...props }) {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
@@ -27,11 +27,10 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
     return (
         <motion.div
             drag={canDrag}
-            // dragConstraints={dragConstraints}
             dragMomentum={false}
             dragElastic={0.1}
             onDragStart={onDragStart}
-            onDragEnd={props.onDragEnd}
+            onDragEnd={onDragEnd}
             onTap={onPieceClick}
             whileDrag={{ scale: 1.2, zIndex: 100, cursor: 'grabbing' }}
             dragSnapToOrigin
