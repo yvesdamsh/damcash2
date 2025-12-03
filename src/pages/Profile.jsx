@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -351,18 +351,18 @@ export default function Profile() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 mt-4 md:mt-16">
+                            <Link to="/Messages">
+                                <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md">
+                                    <MessageSquare className="w-4 h-4 mr-2" /> Messages
+                                </Button>
+                            </Link>
                             {badges.length > 0 && (
-                                <div className="flex -space-x-3 overflow-hidden py-2">
+                                <div className="flex -space-x-3 overflow-hidden py-2 ml-2">
                                     {badges.slice(0, 5).map((b, i) => (
                                         <div key={i} className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-yellow-100 flex items-center justify-center shadow-sm" title={b.name}>
                                             <Trophy className="w-5 h-5 text-yellow-600" />
                                         </div>
                                     ))}
-                                    {badges.length > 5 && (
-                                        <div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                                            +{badges.length - 5}
-                                        </div>
-                                    )}
                                 </div>
                             )}
                         </div>
