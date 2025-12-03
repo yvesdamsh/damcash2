@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Medal, User, Crown, Calendar, Timer, Swords } from 'lucide-react';
+import { Trophy, Medal, User, Crown, Calendar, Timer, Swords, Star, UserPlus, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Leaderboard() {
     const [players, setPlayers] = useState([]);
@@ -15,6 +16,8 @@ export default function Leaderboard() {
     const [timeframe, setTimeframe] = useState('all_time');
     const [metric, setMetric] = useState('elo');
     const [tierFilter, setTierFilter] = useState('all');
+    const [followedIds, setFollowedIds] = useState(new Set());
+    const [currentUser, setCurrentUser] = useState(null);
 
     useEffect(() => {
         const handleModeChange = () => setGameType(localStorage.getItem('gameMode') || 'checkers');
@@ -23,12 +26,23 @@ export default function Leaderboard() {
     }, []);
 
     useEffect(() => {
+        const init = async () => {
+            try {
+                const u = await base44.auth.me().catch(()=>null);
+                if (u) {
+                    setCurrentUser(u);
+                    const follows = await base44.entities.Follow.filter({ follower_id: u.id });
+                    setFollowedIds(new Set(follows.map(f => f.target_id)));
+                }
+            } catch (e) {}
+        };
+        init();
+    }, []);
+
+    useEffect(() => {
         const fetchLeaderboard = async () => {
             setLoading(true);
             try {
-                // If daily/weekly/monthly and metric is ELO, we fallback to wins or just show current ELO?
-                // Usually ELO is all time. Let's force 'all_time' if metric is 'elo' to avoid confusion or just show current.
-                
                 const res = await base44.functions.invoke('getLeaderboardData', {
                     timeframe,
                     gameType,
@@ -44,8 +58,34 @@ export default function Leaderboard() {
         fetchLeaderboard();
     }, [gameType, timeframe, metric]);
 
+    const handleFollow = async (targetId) => {
+        if (!currentUser) return toast.error("Connectez-vous pour suivre des joueurs");
+        try {
+            if (followedIds.has(targetId)) {
+                // Unfollow
+                const follows = await base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: targetId });
+                if (follows.length) await base44.entities.Follow.delete(follows[0].id);
+                const next = new Set(followedIds);
+                next.delete(targetId);
+                setFollowedIds(next);
+                toast.success("Désabonné");
+            } else {
+                // Follow
+                await base44.entities.Follow.create({
+                    follower_id: currentUser.id,
+                    target_id: targetId,
+                    created_at: new Date().toISOString()
+                });
+                setFollowedIds(prev => new Set(prev).add(targetId));
+                toast.success("Abonné !");
+            }
+        } catch (e) {
+            toast.error("Erreur action");
+        }
+    };
+
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6 pb-20">
             <div className="text-center space-y-2">
                 <h1 className="text-4xl font-black text-[#4a3728] flex items-center justify-center gap-3 uppercase tracking-wider">
                     <Trophy className="w-10 h-10 text-yellow-600" />
@@ -103,10 +143,11 @@ export default function Leaderboard() {
                 <CardHeader className="bg-[#4a3728] text-[#e8dcc5] py-3">
                     <div className="grid grid-cols-12 gap-4 font-bold text-sm md:text-base items-center">
                         <div className="col-span-2 text-center">Rang</div>
-                        <div className="col-span-7">Joueur</div>
-                        <div className="col-span-3 text-center">
+                        <div className="col-span-6">Joueur</div>
+                        <div className="col-span-2 text-center">
                             {metric === 'elo' ? 'ELO' : metric === 'wins' ? 'Victoires' : 'Titres'}
                         </div>
+                        <div className="col-span-2 text-center">Suivre</div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 min-h-[300px]">
@@ -162,7 +203,7 @@ export default function Leaderboard() {
                                     <div className="col-span-2 flex justify-center">
                                         {rankDisplay}
                                     </div>
-                                    <div className="col-span-7 flex items-center gap-3">
+                                    <div className="col-span-6 flex items-center gap-3">
                                         <Avatar className="w-10 h-10 border-2 border-white shadow-sm">
                                             <AvatarImage src={player.avatar_url} />
                                             <AvatarFallback>{player.username?.[0]}</AvatarFallback>
@@ -180,10 +221,22 @@ export default function Leaderboard() {
                                         </div>
                                         {index === 0 && <Crown className="w-4 h-4 text-yellow-500 ml-auto hidden md:block" />}
                                     </div>
-                                    <div className="col-span-3 text-center">
+                                    <div className="col-span-2 text-center">
                                         <span className="font-mono font-black text-xl text-[#6b5138]">
                                             {player.value}
                                         </span>
+                                    </div>
+                                    <div className="col-span-2 flex justify-center">
+                                        {currentUser && currentUser.id !== player.id && (
+                                            <Button 
+                                                size="sm" 
+                                                variant={followedIds.has(player.id) ? "secondary" : "outline"}
+                                                onClick={() => handleFollow(player.id)}
+                                                className={`h-8 w-8 p-0 rounded-full ${followedIds.has(player.id) ? 'bg-green-100 text-green-600 hover:bg-red-100 hover:text-red-600' : 'border-[#d4c5b0] text-[#6b5138]'}`}
+                                            >
+                                                {followedIds.has(player.id) ? <Check className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             );

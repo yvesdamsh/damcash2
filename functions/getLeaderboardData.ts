@@ -89,24 +89,30 @@ export default async function handler(req) {
 
         // Enhance with user details
         const userIds = Object.keys(resultsMap);
-        // We need to get user details (avatar, proper name)
-        // Fetch all relevant users?
-        // If list is small, fine. If huge, we might need to fetch individually or just use what we have.
-        // Let's fetch all users to map efficiently (assuming < 1000 users for this stage)
-        const allUsers = await base44.asServiceRole.entities.User.list();
+        const finalResults = [];
+        
+        // Fetch only needed users for performance (or just rely on full list if cached/small)
+        // For now, fetch all is simpler but let's try to be safe if many users
+        // Actually we have filtered logic above, let's just use the ones we found in resultsMap
+        
+        const allUsers = await base44.asServiceRole.entities.User.list(); // Optimized: ideally filter by IDs but SDK limitation
         const userLookup = {};
         allUsers.forEach(u => userLookup[u.id] = u);
 
-        const finalResults = userIds.map(uid => {
+        userIds.forEach(uid => {
             const u = userLookup[uid];
-            return {
-                id: uid,
-                username: u ? (u.username || u.full_name) : resultsMap[uid].name,
-                avatar_url: u?.avatar_url,
-                value: resultsMap[uid].count
-            };
+            if (u) {
+                 finalResults.push({
+                    id: uid,
+                    username: u.username || u.full_name || 'Joueur',
+                    avatar_url: u.avatar_url,
+                    value: resultsMap[uid].count,
+                    badge_count: 0 // Will fill if needed
+                 });
+            }
         });
 
+        // Sort by Value (Wins)
         return Response.json(finalResults.sort((a, b) => b.value - a.value).slice(0, 50));
 
     } catch (error) {
