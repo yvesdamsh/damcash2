@@ -28,6 +28,7 @@ export default function TournamentDetail() {
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState("");
     const [pairingInterval, setPairingInterval] = useState(null);
+    const [pairingsClosed, setPairingsClosed] = useState(false);
     
     // Team Mode State
     const [myLedTeams, setMyLedTeams] = useState([]);
@@ -98,7 +99,7 @@ export default function TournamentDetail() {
 
     // Arena Pairing Logic Trigger
     useEffect(() => {
-        if (tournament && tournament.format === 'arena' && tournament.status === 'ongoing' && isParticipant) {
+        if (tournament && tournament.format === 'arena' && tournament.status === 'ongoing' && isParticipant && !pairingsClosed) {
              const myParticipant = participants.find(p => p.user_id === user.id);
              // If I am active and not playing, trigger pairing attempt
              if (myParticipant && !myParticipant.current_game_id) {
@@ -111,7 +112,7 @@ export default function TournamentDetail() {
                  return () => clearInterval(pid);
              }
         }
-    }, [tournament, participants, isParticipant]);
+    }, [tournament, participants, isParticipant, pairingsClosed]);
 
     // Spectate Polling
     useEffect(() => {
@@ -154,8 +155,15 @@ export default function TournamentDetail() {
             } else if (now < end) {
                 const diff = end - now;
                 setCountdown(`Fin dans ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
+                
+                if (diff < 90000) { // Less than 1m 30s
+                    setPairingsClosed(true);
+                } else {
+                    setPairingsClosed(false);
+                }
             } else {
                 setCountdown("Terminé");
+                setPairingsClosed(true);
             }
         }, 1000);
         return () => clearInterval(timer);
@@ -454,7 +462,13 @@ export default function TournamentDetail() {
                                     {countdown}
                                 </div>
 
-                                {tournament.format === 'arena' && isParticipant && (
+                                {pairingsClosed && tournament.status === 'ongoing' && (
+                                    <div className="bg-blue-600 text-white text-center py-2 px-4 rounded font-bold shadow-sm animate-in fade-in">
+                                        Les appariements du tournoi sont maintenant terminés.
+                                    </div>
+                                )}
+
+                                {tournament.format === 'arena' && isParticipant && !pairingsClosed && (
                                     <div className="p-3 bg-blue-50 rounded-lg text-center">
                                         {participants.find(p => p.user_id === user?.id)?.current_game_id ? (
                                             <Button onClick={handleEnterGame} className="w-full bg-green-600 hover:bg-green-700 animate-pulse">

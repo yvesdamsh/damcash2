@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -139,10 +140,10 @@ export default function Profile() {
                     setFavoriteGames(favs.filter(g => g));
                 }
 
-                // Fetch History
+                // Fetch History (Extended for graph)
                 const [whiteGames, blackGames] = await Promise.all([
-                    base44.entities.Game.filter({ white_player_id: u.id, status: 'finished' }, '-updated_date', 20),
-                    base44.entities.Game.filter({ black_player_id: u.id, status: 'finished' }, '-updated_date', 20)
+                    base44.entities.Game.filter({ white_player_id: u.id, status: 'finished' }, '-updated_date', 50),
+                    base44.entities.Game.filter({ black_player_id: u.id, status: 'finished' }, '-updated_date', 50)
                 ]);
                 const history = [...whiteGames, ...blackGames]
                     .filter((g, index, self) => index === self.findIndex(t => t.id === g.id))
@@ -202,8 +203,16 @@ export default function Profile() {
     const winRate = stats.games_played > 0 
         ? Math.round((totalWins / stats.games_played) * 100) 
         : 0;
-    
+
     const avgElo = Math.round(((stats.elo_checkers || 1200) + (stats.elo_chess || 1200)) / 2);
+
+    // Graph Data Preparation
+    const chartData = gameHistory.slice().reverse().map((g, i) => ({
+        name: i + 1,
+        elo: g.white_player_id === user.id ? g.white_player_elo : g.black_player_elo,
+        date: format(new Date(g.updated_date), 'd MMM'),
+        game: g.game_type === 'chess' ? 'Échecs' : 'Dames'
+    })).filter(d => d.elo); // Only keep games where elo was recorded
 
     return (
         <div className="max-w-5xl mx-auto p-4 pb-20">
@@ -376,108 +385,131 @@ export default function Profile() {
                         </TabsList>
 
                         <TabsContent value="overview">
-                            {/* Stats Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-white border-none shadow-lg transform hover:-translate-y-1 transition-transform duration-300">
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-white/80 text-sm font-medium mb-1">Classement Global</p>
-                                    <div className="text-3xl font-bold flex items-baseline gap-1">
-                                        <span className="text-xs">#</span>{Math.min(ranks.checkers, ranks.chess) === 0 ? '-' : Math.min(ranks.checkers, ranks.chess)}
+                            {/* Graph Section */}
+                            <Card className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
+                                <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
+                                            <TrendingUp className="w-5 h-5 text-green-600" /> Progression ELO
+                                        </CardTitle>
+                                        <div className="flex gap-2 text-xs">
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 bg-white border shadow-sm text-[#6b5138]">1m</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">6m</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">1y</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">All</Button>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-white/60 mt-1">Top Player</p>
-                                </div>
-                                <div className="bg-white/20 p-3 rounded-full">
-                                    <Globe className="w-6 h-6 text-white" />
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardHeader>
+                                <CardContent className="p-4 h-64">
+                                    {chartData.length > 1 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={chartData}>
+                                                <defs>
+                                                    <linearGradient id="colorElo" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#4a3728" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#4a3728" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0e6d2" />
+                                                <XAxis dataKey="name" hide />
+                                                <YAxis domain={['auto', 'auto']} stroke="#8c7b6a" fontSize={12} />
+                                                <Tooltip 
+                                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#d4c5b0', borderRadius: '8px' }}
+                                                    labelStyle={{ display: 'none' }}
+                                                    itemStyle={{ color: '#4a3728', fontWeight: 'bold' }}
+                                                    formatter={(value, name, props) => [value, `${props.payload.game}`]}
+                                                />
+                                                <Area type="monotone" dataKey="elo" stroke="#4a3728" strokeWidth={2} fillOpacity={1} fill="url(#colorElo)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-gray-400">
+                                            <p>Jouez plus de parties pour voir votre progression !</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                        <Card className="bg-white border-[#d4c5b0] shadow-md hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm font-medium mb-1">Dames</p>
-                                    <div className="text-3xl font-bold text-[#4a3728]">{stats.elo_checkers || 1200}</div>
-                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.checkers}</p>
-                                </div>
-                                <div className="bg-[#f5f0e6] p-3 rounded-full">
-                                    <Shield className="w-6 h-6 text-[#6b5138]" />
-                                </div>
-                            </CardContent>
-                        </Card>
+                            {/* Detailed Info Grid (Like Screenshot) */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                                <div className="lg:col-span-2 space-y-6">
+                                    {/* Existing Stats Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <Card className="bg-white border-[#d4c5b0] shadow-sm">
+                                            <CardContent className="p-4 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-gray-500 text-sm font-medium mb-1">Dames ELO</p>
+                                                    <div className="text-2xl font-bold text-[#4a3728]">{stats.elo_checkers || 1200}</div>
+                                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.checkers}</p>
+                                                </div>
+                                                <Shield className="w-8 h-8 text-[#e8dcc5]" />
+                                            </CardContent>
+                                        </Card>
+                                        <Card className="bg-white border-[#d4c5b0] shadow-sm">
+                                            <CardContent className="p-4 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-gray-500 text-sm font-medium mb-1">Échecs ELO</p>
+                                                    <div className="text-2xl font-bold text-[#4a3728]">{stats.elo_chess || 1200}</div>
+                                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.chess}</p>
+                                                </div>
+                                                <Crown className="w-8 h-8 text-[#e8dcc5]" />
+                                            </CardContent>
+                                        </Card>
+                                    </div>
 
-                        <Card className="bg-white border-[#d4c5b0] shadow-md hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm font-medium mb-1">Échecs</p>
-                                    <div className="text-3xl font-bold text-[#4a3728]">{stats.elo_chess || 1200}</div>
-                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.chess}</p>
+                                    <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm">
+                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4">Détails du joueur</h3>
+                                        <div className="space-y-3 text-sm text-gray-700">
+                                            <div className="flex items-center gap-2">
+                                                <Globe className="w-4 h-4 text-gray-400" />
+                                                <span>Pays: <span className="font-medium">{user.country || 'International'} 🌍</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <CalendarIcon className="w-4 h-4 text-gray-400" />
+                                                <span>Membre depuis: <span className="font-medium">{format(new Date(user.created_date || Date.now()), 'd MMMM yyyy', { locale: fr })}</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-4 h-4 text-gray-400" />
+                                                <span>Actif: <span className="font-medium text-green-600">En ligne</span></span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-gray-400" />
+                                                <span>Taux de complétion: <span className="font-medium">100%</span></span>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-100 mt-2">
+                                                <p className="text-gray-500 mb-1">Temps total à jouer:</p>
+                                                <p className="font-mono font-bold text-[#6b5138]">{Math.floor((stats.games_played * 15) / 60)} heures estimées</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="bg-[#f5f0e6] p-3 rounded-full">
-                                    <Crown className="w-6 h-6 text-[#6b5138]" />
-                                </div>
-                            </CardContent>
-                        </Card>
 
-                        <Card className="bg-white border-[#d4c5b0] shadow-md hover:shadow-lg transition-shadow">
-                            <CardContent className="p-6 flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-500 text-sm font-medium mb-1">Victoires</p>
-                                    <div className="text-3xl font-bold text-[#4a3728]">{winRate}%</div>
-                                    <p className="text-xs text-gray-400 mt-1">{totalWins} Victoires - {totalLosses} Défaites</p>
+                                <div className="space-y-6">
+                                    {/* Favorite Games */}
+                                    <div className="bg-white/50 rounded-xl p-6 border border-[#d4c5b0]">
+                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Parties Favorites</h3>
+                                        {favoriteGames.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {favoriteGames.map(game => (
+                                                    <div key={game.id} onClick={() => navigate(`/Game?id=${game.id}`)} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-[#fdfbf7] cursor-pointer border border-transparent hover:border-[#d4c5b0] transition-all">
+                                                        <div>
+                                                            <div className="font-bold text-[#4a3728]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'}</div>
+                                                            <div className="text-xs text-gray-500">vs {game.white_player_id === user.id ? game.black_player_name : game.white_player_name}</div>
+                                                        </div>
+                                                        <Button size="sm" variant="ghost" className="text-[#6b5138] hover:text-[#4a3728]">Revoir</Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                                                <Star className="w-8 h-8 mb-2 opacity-20" />
+                                                <p>Aucune partie favorite</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="bg-[#f5f0e6] p-3 rounded-full">
-                                    <Trophy className="w-6 h-6 text-[#6b5138]" />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Detailed Stats */}
-                    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                         <div className="bg-white/50 rounded-xl p-6 border border-[#d4c5b0]">
-                             <h3 className="text-lg font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Activity className="w-5 h-5" /> Statistiques Détaillées</h3>
-                             <div className="space-y-4">
-                                 <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
-                                     <span className="text-gray-600">Parties Jouées</span>
-                                     <span className="font-bold text-[#4a3728]">{stats.games_played}</span>
-                                 </div>
-                                 <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
-                                     <span className="text-gray-600">Victoires Dames</span>
-                                     <span className="font-bold text-green-600">{stats.wins_checkers}</span>
-                                 </div>
-                                 <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
-                                     <span className="text-gray-600">Victoires Échecs</span>
-                                     <span className="font-bold text-green-600">{stats.wins_chess}</span>
-                                 </div>
-                             </div>
-                         </div>
-
-                         {/* Favorite Games */}
-                         <div className="bg-white/50 rounded-xl p-6 border border-[#d4c5b0]">
-                             <h3 className="text-lg font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Parties Favorites</h3>
-                             {favoriteGames.length > 0 ? (
-                                 <div className="space-y-3">
-                                     {favoriteGames.map(game => (
-                                         <div key={game.id} onClick={() => navigate(`/Game?id=${game.id}`)} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-[#fdfbf7] cursor-pointer border border-transparent hover:border-[#d4c5b0] transition-all">
-                                             <div>
-                                                 <div className="font-bold text-[#4a3728]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'}</div>
-                                                 <div className="text-xs text-gray-500">vs {game.white_player_id === user.id ? game.black_player_name : game.white_player_name}</div>
-                                             </div>
-                                             <Button size="sm" variant="ghost" className="text-[#6b5138] hover:text-[#4a3728]">Revoir</Button>
-                                         </div>
-                                     ))}
-                                 </div>
-                             ) : (
-                                 <div className="flex flex-col items-center justify-center h-40 text-gray-400">
-                                     <Star className="w-8 h-8 mb-2 opacity-20" />
-                                     <p>Aucune partie favorite</p>
-                                     <p className="text-xs mt-1">Marquez des parties pour les voir ici.</p>
-                                 </div>
-                             )}
-                         </div>
-                    </div>
-                    </TabsContent>
+                            </div>
+                        </TabsContent>
 
                     <TabsContent value="history">
                         <Card className="bg-white/90 border-none">
