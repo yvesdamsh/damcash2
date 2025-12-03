@@ -40,62 +40,128 @@ export default async function handler(req) {
         playedMap.add(`${g.black_player_id}-${g.white_player_id}`);
     });
 
-    // Sort by score descending
-    participants.sort((a, b) => (b.score || 0) - (a.score || 0));
+    // Fetch Users for ELO Sorting
+    const allUsers = await base44.asServiceRole.entities.User.list();
+    const userMap = new Map(allUsers.map(u => [u.id, u]));
+    
+    const getElo = (pid) => {
+        const u = userMap.get(pid);
+        if (!u) return 1200;
+        return tournament.game_type === 'chess' ? (u.elo_chess || 1200) : (u.elo_checkers || 1200);
+    };
+
+    // Sort: Primary = Score DESC, Secondary = ELO DESC
+    participants.sort((a, b) => {
+        const scoreDiff = (b.score || 0) - (a.score || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return getElo(b.user_id) - getElo(a.user_id);
+    });
 
     const newRound = (tournament.current_round || 0) + 1;
     const pairings = [];
     const used = new Set();
 
-    // Simple Greedy Pairing
-    for (let i = 0; i < participants.length; i++) {
-        if (used.has(participants[i].id)) continue;
+    // Special Round 1: Dutch System (1 vs N/2+1)
+    if (newRound === 1) {
+        const half = Math.ceil(participants.length / 2);
+        const topHalf = participants.slice(0, half);
+        const bottomHalf = participants.slice(half);
         
-        let bestOpponent = null;
-        
-        // Helper to check validity
-        const isValidOpponent = (p1, p2, ignorePlayed = false) => {
-            if (used.has(p2.id)) return false;
-            // Team check
-            if (tournament.team_mode && p1.team_id && p2.team_id && p1.team_id === p2.team_id) return false;
-            // Played check
-            const key = `${p1.user_id}-${p2.user_id}`;
-            if (!ignorePlayed && playedMap.has(key)) return false;
-            return true;
-        };
-
-        // 1. Try to find valid opponent (Not played, Not Teammate)
-        for (let j = i + 1; j < participants.length; j++) {
-            if (isValidOpponent(participants[i], participants[j])) {
-                bestOpponent = participants[j];
-                break;
-            }
+        // Handle odd total
+        if (participants.length % 2 !== 0) {
+            const byePlayer = bottomHalf.pop(); // Lowest seed gets Bye
+            await base44.asServiceRole.entities.TournamentParticipant.update(byePlayer.id, {
+                score: 1, games_played: 0
+            });
+            // Notify Bye
+            await base44.asServiceRole.entities.Notification.create({
+                recipient_id: byePlayer.user_id,
+                type: "info",
+                title: "Bye (Tour 1)",
+                message: "Vous avez reçu un Bye pour le premier tour (1 point).",
+                link: `/TournamentDetail?id=${tournamentId}`
+            });
         }
 
-        // 2. Fallback: Allow Played (but not Teammate if possible)
-        if (!bestOpponent) {
-             for (let j = i + 1; j < participants.length; j++) {
-                if (isValidOpponent(participants[i], participants[j], true)) {
-                    bestOpponent = participants[j];
-                    break;
+        // Pair Top Half vs Bottom Half
+        for (let i = 0; i < topHalf.length; i++) {
+            if (bottomHalf[i]) {
+                pairings.push([topHalf[i], bottomHalf[i]]);
+            } else {
+                // Should not happen if odd handled, unless strange split
+                // If bottom ran out, pair remaining top? (Not possible if split correctly)
+            }
+        }
+    } else {
+        // Subsequent Rounds: Score Groups + ELO Pairing
+        // Group by Score
+        const scoreGroups = {};
+        participants.forEach(p => {
+            const s = p.score || 0;
+            if (!scoreGroups[s]) scoreGroups[s] = [];
+            scoreGroups[s].push(p);
+        });
+
+        // Process groups from high to low
+        const scores = Object.keys(scoreGroups).sort((a, b) => parseFloat(b) - parseFloat(a));
+        let floaters = [];
+
+        for (const s of scores) {
+            const group = [...floaters, ...scoreGroups[s]];
+            floaters = []; // Reset floaters for next
+            
+            // Sort group by ELO
+            group.sort((a, b) => getElo(b.user_id) - getElo(a.user_id));
+
+            while (group.length > 1) {
+                const p1 = group.shift();
+                
+                // Find best opponent in group
+                let matched = false;
+                for (let i = 0; i < group.length; i++) {
+                    const p2 = group[i];
+                    
+                    // Valid check
+                    const key1 = `${p1.user_id}-${p2.user_id}`;
+                    const key2 = `${p2.user_id}-${p1.user_id}`;
+                    const played = playedMap.has(key1) || playedMap.has(key2);
+                    const isTeammate = tournament.team_mode && p1.team_id && p2.team_id && p1.team_id === p2.team_id;
+
+                    if (!played && !isTeammate) {
+                        pairings.push([p1, p2]);
+                        group.splice(i, 1);
+                        matched = true;
+                        break;
+                    }
+                }
+
+                if (!matched) {
+                    // Cannot pair in this group? Float down?
+                    // For now, simplistic: if no match found in group, put p1 to floaters?
+                    // Or try to pair with played if forced?
+                    // Let's float p1 to next lower group
+                    floaters.push(p1);
                 }
             }
-        }
-        
-        // 3. Last Resort: Allow Teammate (if absolutely necessary to avoid Bye in team tourney? Or force Bye?)
-        // Usually better to play teammate than no game in Swiss if odd numbers force it? 
-        // Let's stick to no-teammate rule strictly for now, result in Bye if no one else.
 
-        if (bestOpponent) {
-            pairings.push([participants[i], bestOpponent]);
-            used.add(participants[i].id);
-            used.add(bestOpponent.id);
-        } else {
-            // Bye for participants[i]
-            // Give 1 point
-            await base44.asServiceRole.entities.TournamentParticipant.update(participants[i].id, {
-                score: (participants[i].score || 0) + 1,
-                games_played: (participants[i].games_played || 0) + 1 // Maybe? Or count as played
+            if (group.length === 1) {
+                floaters.push(group[0]);
+            }
+        }
+
+        // Handle remaining floaters (Bye)
+        if (floaters.length > 0) {
+            const byePlayer = floaters[0]; // Lowest seed remaining
+            await base44.asServiceRole.entities.TournamentParticipant.update(byePlayer.id, {
+                score: (byePlayer.score || 0) + 1,
+                games_played: (byePlayer.games_played || 0) + 0 // No game played
+            });
+             await base44.asServiceRole.entities.Notification.create({
+                recipient_id: byePlayer.user_id,
+                type: "info",
+                title: `Bye (Tour ${newRound})`,
+                message: "Vous avez reçu un Bye pour ce tour (1 point).",
+                link: `/TournamentDetail?id=${tournamentId}`
             });
         }
     }

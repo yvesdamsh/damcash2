@@ -77,89 +77,66 @@ export default async function handler(req) {
         return Response.json({ success: true, message: 'Arena started' });
     }
 
+    // Fetch User Details for ELO Seeding
+    const userIds = participants.map(p => p.user_id);
+    // Optimize: fetch only needed users. Since we can't filter easily with $in, fetch all or chunk.
+    // If list is huge, this is slow. For now assume manageable.
+    const allUsers = await base44.asServiceRole.entities.User.list();
+    const userMap = new Map(allUsers.map(u => [u.id, u]));
+
+    const getElo = (pid) => {
+        const u = userMap.get(pid);
+        if (!u) return 1200;
+        return tournament.game_type === 'chess' ? (u.elo_chess || 1200) : (u.elo_checkers || 1200);
+    };
+
+    // Sort participants by ELO descending
+    participants.sort((a, b) => getElo(b.user_id) - getElo(a.user_id));
+
     // 2. Swiss
     if (tournament.format === 'swiss') {
-        // Just invoke swissPairing or replicate round 1 logic (Random/Seed)
-        // Let's replicate simple seeded pairing for Round 1
-        await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
+        // Reset round to 0 so swissPairing increments to 1
+        await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 0 });
         
-        // Initial Seed Sorting (by Rating usually, but here random or ELO if available)
-        // Try to avoid teammates in Round 1
-        
-        // Delegate to Swiss Pairing Function for consistency? 
-        // Or keep custom Round 1 logic. Swiss Round 1 is often random or top-vs-bottom.
-        // Let's use a teammate-aware random pairing.
-        
-        const available = [...participants]; // Random sort maybe needed first?
-        // Just use our swissPairing logic immediately as it handles Round 1 if current_round is 0 or 1?
-        // swissPairing function expects 'ongoing' and increments round.
-        // Let's just invoke it! It's robust enough now.
-        
-        await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 0 }); // Set 0 so swissPairing bumps to 1
-        
-        // Invoke swissPairing
+        // Invoke swissPairing which now handles ELO seeding and Byes
         try {
-            // We can't invoke another function easily via `base44.functions.invoke` internally here without full URL sometimes,
-            // but base44 SDK supports it via `asServiceRole`.
             await base44.asServiceRole.functions.invoke('swissPairing', { tournamentId: tournament.id });
-            return Response.json({ success: true, message: 'Swiss started via pairing engine' });
+            return Response.json({ success: true, message: 'Swiss started with ELO seeding' });
         } catch (e) {
-            // Fallback manual pairing if invoke fails (e.g. local env issues)
-            console.error("Swiss pairing invoke failed, using fallback", e);
-            // ... fallback logic ...
+            console.error("Swiss pairing invoke failed", e);
+            return Response.json({ error: 'Failed to start Swiss pairing' }, { status: 500 });
         }
-        
-        // Fallback: Simple pairing ignoring teams just to ensure start
-        const shuffled = [...participants].sort(() => 0.5 - Math.random());
-        for (let i = 0; i < shuffled.length; i += 2) {
-            if (i + 1 < shuffled.length) {
-                 await createGame(shuffled[i], shuffled[i+1], 1);
-            } else {
-                 await base44.asServiceRole.entities.TournamentParticipant.update(shuffled[i].id, { score: 1 });
-            }
-        }
-        await base44.asServiceRole.entities.Tournament.update(tournament.id, { current_round: 1 });
-        return Response.json({ success: true, message: 'Swiss started (Fallback)' });
     }
 
-    // 3. Bracket (Single Elimination)
+    // 3. Bracket (Single Elimination) - Seeded 1 vs N, 2 vs N-1...
     if (tournament.format === 'bracket') {
         await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
-        const shuffled = [...participants].sort(() => 0.5 - Math.random());
         
-        const used = new Set();
-        for (let i = 0; i < shuffled.length; i++) {
-            if (used.has(shuffled[i].id)) continue;
-            
-            let p2 = null;
-            // Try to find non-teammate
-            for (let j = i + 1; j < shuffled.length; j++) {
-                if (!used.has(shuffled[j].id)) {
-                    if (tournament.team_mode && shuffled[i].team_id && shuffled[j].team_id && shuffled[i].team_id === shuffled[j].team_id) continue;
-                    p2 = shuffled[j];
-                    break;
-                }
-            }
-            
-            // If strict no-teammate failed, take next available
-            if (!p2) {
-                for (let j = i + 1; j < shuffled.length; j++) {
-                    if (!used.has(shuffled[j].id)) { p2 = shuffled[j]; break; }
-                }
-            }
-
-            if (p2) {
-                used.add(shuffled[i].id);
-                used.add(p2.id);
-                await createGame(shuffled[i], p2, 1);
-            } else {
-                // Bye
-                // If strictly no one left, just advance
-                used.add(shuffled[i].id);
-                await base44.asServiceRole.entities.TournamentParticipant.update(shuffled[i].id, { status: 'active' }); 
-            }
+        // Handle Odd Number - Top Seed gets Bye
+        if (participants.length % 2 !== 0) {
+            const byePlayer = participants.shift(); // Top seed (sorted desc)
+            // Auto-win / Bye logic:
+            // Mark as 'active' but maybe give a "Bye" win game or just advance?
+            // For bracket visualizer, better to have a game with no opponent or special status.
+            // We'll just update score and status, bracket component should handle "no game in round 1" as bye.
+            await base44.asServiceRole.entities.TournamentParticipant.update(byePlayer.id, { 
+                status: 'active',
+                score: 1, // 1 point for bye
+                tournament_round: 2 // Advance effectively? Or just let bracket manager pick them up next.
+            });
+            // Actually, standard Bracket logic needs them to be waiting for Round 2. 
+            // We'll skip creating a game for them.
         }
-        return Response.json({ success: true, message: 'Bracket started' });
+
+        // Pair remaining: 1 vs N, 2 vs N-1
+        const count = participants.length;
+        for (let i = 0; i < count / 2; i++) {
+            const p1 = participants[i];
+            const p2 = participants[count - 1 - i];
+            await createGame(p1, p2, 1);
+        }
+        
+        return Response.json({ success: true, message: 'Bracket started (Seeded)' });
     }
 
     // 4. Hybrid (Groups -> Bracket)
