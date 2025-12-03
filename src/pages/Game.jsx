@@ -49,6 +49,11 @@ export default function Game() {
     const [reactions, setReactions] = useState([]);
     const [lastSignal, setLastSignal] = useState(null);
     const [inviteOpen, setInviteOpen] = useState(false);
+    
+    // AI State
+    const [isAiGame, setIsAiGame] = useState(false);
+    const [aiDifficulty, setAiDifficulty] = useState('medium');
+    const [isAiThinking, setIsAiThinking] = useState(false);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -56,9 +61,34 @@ export default function Game() {
     const [id, setId] = useState(searchParams.get('id'));
 
     useEffect(() => {
-        setId(searchParams.get('id'));
+        const gameId = searchParams.get('id');
+        setId(gameId);
         setReplayIndex(-1);
-    }, [location.search]);
+        
+        if (gameId === 'local-ai') {
+            const difficulty = searchParams.get('difficulty') || 'medium';
+            setAiDifficulty(difficulty);
+            setIsAiGame(true);
+            
+            const initialBoard = initializeBoard(); // Ensure this is defined or imported
+            setGame({
+                id: 'local-ai',
+                status: 'playing',
+                game_type: 'checkers',
+                white_player_name: currentUser ? (currentUser.username || 'Vous') : 'Vous',
+                black_player_name: `AI (${difficulty})`,
+                current_turn: 'white',
+                board_state: JSON.stringify(initialBoard),
+                moves: JSON.stringify([]),
+                white_seconds_left: 600,
+                black_seconds_left: 600,
+                last_move_at: new Date().toISOString(), // Start timer
+            });
+            setBoard(initialBoard);
+        } else {
+            setIsAiGame(false);
+        }
+    }, [location.search, currentUser]);
 
     const prevGameRef = useRef();
 
@@ -238,7 +268,10 @@ export default function Game() {
 
     const executePremove = async (move) => {
         if (game.game_type === 'chess') {
-            const { getValidChessMoves } = await import('@/components/chessLogic');
+            // Import helper safely
+            const chessLogic = await import('@/components/chessLogic');
+            if (!chessLogic || !chessLogic.getValidChessMoves) return;
+            const { getValidChessMoves } = chessLogic;
             // Use current state variables which should be up to date due to useEffect dependency
             const valid = getValidChessMoves(board, game.current_turn, chessState.lastMove, chessState.castlingRights);
             const validMove = valid.find(m => m.from.r === move.from.r && m.from.c === move.from.c && m.to.r === move.to.r && m.to.c === move.to.c);
@@ -435,29 +468,57 @@ export default function Game() {
 
         if (winnerColor) {
             status = 'finished';
-            winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
-            soundManager.play(winnerId === currentUser?.id ? 'win' : 'loss');
+            // In local AI game, update winner correctly
+            if (isAiGame) {
+                winnerId = winnerColor === 'white' ? currentUser?.id : 'ai';
             } else {
+                winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
+            }
+            soundManager.play(winnerId === currentUser?.id ? 'win' : 'loss');
+        } else {
             soundManager.play(move.captured ? 'capture' : 'move');
         }
 
-        await updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
-            type: 'checkers', from: move.from, to: move.to, 
-            captured: !!move.captured, board: JSON.stringify(newBoard) 
-        });
-
-        if (status === 'finished') {
-            base44.functions.invoke('processGameResult', { gameId: game.id });
+        if (isAiGame) {
+             // Local update only for AI game
+             const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+             const newMoveEntry = { 
+                type: 'checkers', from: move.from, to: move.to, 
+                captured: !!move.captured, board: JSON.stringify(newBoard),
+                color: game.current_turn,
+                notation: `${String.fromCharCode(97 + move.from.c)}${10 - move.from.r} > ${String.fromCharCode(97 + move.to.c)}${10 - move.to.r}`
+            };
+             
+             setBoard(newBoard);
+             setGame(prev => ({ 
+                ...prev, 
+                current_turn: nextTurn, 
+                status, 
+                winner_id: winnerId,
+                board_state: JSON.stringify(newBoard),
+                moves: JSON.stringify([...currentMoves, newMoveEntry]),
+                last_move_at: new Date().toISOString()
+            }));
+        } else {
+            // Normal Online Game
+            await updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
+                type: 'checkers', from: move.from, to: move.to, 
+                captured: !!move.captured, board: JSON.stringify(newBoard) 
+            });
+            
+            if (status === 'finished') {
+                base44.functions.invoke('processGameResult', { gameId: game.id });
+            }
+    
+            setBoard(newBoard);
+            setGame(prev => ({ 
+                ...prev, 
+                current_turn: nextTurn, 
+                status, 
+                winner_id: winnerId,
+                board_state: JSON.stringify(newBoard)
+            }));
         }
-
-        setBoard(newBoard);
-        setGame(prev => ({ 
-            ...prev, 
-            current_turn: nextTurn, 
-            status, 
-            winner_id: winnerId,
-            board_state: JSON.stringify(newBoard)
-        }));
 
         if (mustContinue) {
             setMustContinueWith({ r: move.to.r, c: move.to.c });

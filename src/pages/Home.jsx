@@ -585,6 +585,22 @@ export default function Home() {
                                     <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
                                         {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} JOUER MAINTENANT
                                     </Button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                         <Button 
+                                            onClick={() => navigate('/Game?id=local-ai&difficulty=easy')}
+                                            variant="outline" 
+                                            className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 text-xs"
+                                        >
+                                            <Users className="w-3 h-3 mr-1" /> VS IA (Facile)
+                                        </Button>
+                                         <Button 
+                                            onClick={() => navigate('/Game?id=local-ai&difficulty=hard')}
+                                            variant="outline" 
+                                            className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 text-xs"
+                                        >
+                                            <Users className="w-3 h-3 mr-1" /> VS IA (Expert)
+                                        </Button>
+                                    </div>
                                     <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10">
                                         <Users className="w-4 h-4 mr-2" /> S'entraîner seul
                                     </Button>
