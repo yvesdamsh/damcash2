@@ -83,27 +83,43 @@ export default async function handler(req) {
         // Let's replicate simple seeded pairing for Round 1
         await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
         
-        // Sort by seed (random or rating if we had it)
-        const shuffled = [...participants].sort(() => 0.5 - Math.random());
-        // Split top half vs bottom half? Or just adjacent
-        // Standard Swiss Round 1: Top half vs Bottom half
-        const half = Math.floor(shuffled.length / 2);
-        const top = shuffled.slice(0, half);
-        const bottom = shuffled.slice(half);
+        // Initial Seed Sorting (by Rating usually, but here random or ELO if available)
+        // Try to avoid teammates in Round 1
         
-        for (let i = 0; i < top.length; i++) {
-            if (bottom[i]) {
-                 await createGame(top[i], bottom[i], 1);
+        // Delegate to Swiss Pairing Function for consistency? 
+        // Or keep custom Round 1 logic. Swiss Round 1 is often random or top-vs-bottom.
+        // Let's use a teammate-aware random pairing.
+        
+        const available = [...participants]; // Random sort maybe needed first?
+        // Just use our swissPairing logic immediately as it handles Round 1 if current_round is 0 or 1?
+        // swissPairing function expects 'ongoing' and increments round.
+        // Let's just invoke it! It's robust enough now.
+        
+        await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 0 }); // Set 0 so swissPairing bumps to 1
+        
+        // Invoke swissPairing
+        try {
+            // We can't invoke another function easily via `base44.functions.invoke` internally here without full URL sometimes,
+            // but base44 SDK supports it via `asServiceRole`.
+            await base44.asServiceRole.functions.invoke('swissPairing', { tournamentId: tournament.id });
+            return Response.json({ success: true, message: 'Swiss started via pairing engine' });
+        } catch (e) {
+            // Fallback manual pairing if invoke fails (e.g. local env issues)
+            console.error("Swiss pairing invoke failed, using fallback", e);
+            // ... fallback logic ...
+        }
+        
+        // Fallback: Simple pairing ignoring teams just to ensure start
+        const shuffled = [...participants].sort(() => 0.5 - Math.random());
+        for (let i = 0; i < shuffled.length; i += 2) {
+            if (i + 1 < shuffled.length) {
+                 await createGame(shuffled[i], shuffled[i+1], 1);
+            } else {
+                 await base44.asServiceRole.entities.TournamentParticipant.update(shuffled[i].id, { score: 1 });
             }
         }
-        // If odd number, one bye (already in bottom leftover?)
-        if (shuffled.length % 2 !== 0) {
-             const byePlayer = shuffled[shuffled.length - 1];
-             // Give point?
-             await base44.asServiceRole.entities.TournamentParticipant.update(byePlayer.id, { score: 1, games_played: 1 });
-        }
-
-        return Response.json({ success: true, message: 'Swiss started' });
+        await base44.asServiceRole.entities.Tournament.update(tournament.id, { current_round: 1 });
+        return Response.json({ success: true, message: 'Swiss started (Fallback)' });
     }
 
     // 3. Bracket (Single Elimination)
@@ -111,12 +127,36 @@ export default async function handler(req) {
         await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });
         const shuffled = [...participants].sort(() => 0.5 - Math.random());
         
-        for (let i = 0; i < shuffled.length; i += 2) {
-            if (i + 1 < shuffled.length) {
-                await createGame(shuffled[i], shuffled[i+1], 1);
+        const used = new Set();
+        for (let i = 0; i < shuffled.length; i++) {
+            if (used.has(shuffled[i].id)) continue;
+            
+            let p2 = null;
+            // Try to find non-teammate
+            for (let j = i + 1; j < shuffled.length; j++) {
+                if (!used.has(shuffled[j].id)) {
+                    if (tournament.team_mode && shuffled[i].team_id && shuffled[j].team_id && shuffled[i].team_id === shuffled[j].team_id) continue;
+                    p2 = shuffled[j];
+                    break;
+                }
+            }
+            
+            // If strict no-teammate failed, take next available
+            if (!p2) {
+                for (let j = i + 1; j < shuffled.length; j++) {
+                    if (!used.has(shuffled[j].id)) { p2 = shuffled[j]; break; }
+                }
+            }
+
+            if (p2) {
+                used.add(shuffled[i].id);
+                used.add(p2.id);
+                await createGame(shuffled[i], p2, 1);
             } else {
                 // Bye
-                await base44.asServiceRole.entities.TournamentParticipant.update(shuffled[i].id, { status: 'active' }); // Just moves to next round technically
+                // If strictly no one left, just advance
+                used.add(shuffled[i].id);
+                await base44.asServiceRole.entities.TournamentParticipant.update(shuffled[i].id, { status: 'active' }); 
             }
         }
         return Response.json({ success: true, message: 'Bracket started' });

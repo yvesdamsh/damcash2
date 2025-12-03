@@ -56,11 +56,23 @@ export default async function handler(req) {
         let p2 = null;
 
         // Find best opponent (next available)
+        // Priority: 
+        // 1. Not same team (if team mode)
+        // 2. Closest score (list is sorted)
+        
         for (let j = i + 1; j < available.length; j++) {
-            if (!used.has(available[j].id)) {
-                p2 = available[j];
-                break;
+            if (used.has(available[j].id)) continue;
+            
+            const candidate = available[j];
+            
+            // Team restriction
+            if (tournament.team_mode && p1.team_id && candidate.team_id && p1.team_id === candidate.team_id) {
+                continue; 
             }
+            
+            // Found suitable opponent
+            p2 = candidate;
+            break;
         }
 
         if (p2) {

@@ -52,27 +52,39 @@ export default async function handler(req) {
         if (used.has(participants[i].id)) continue;
         
         let bestOpponent = null;
+        
+        // Helper to check validity
+        const isValidOpponent = (p1, p2, ignorePlayed = false) => {
+            if (used.has(p2.id)) return false;
+            // Team check
+            if (tournament.team_mode && p1.team_id && p2.team_id && p1.team_id === p2.team_id) return false;
+            // Played check
+            const key = `${p1.user_id}-${p2.user_id}`;
+            if (!ignorePlayed && playedMap.has(key)) return false;
+            return true;
+        };
+
+        // 1. Try to find valid opponent (Not played, Not Teammate)
         for (let j = i + 1; j < participants.length; j++) {
-            if (used.has(participants[j].id)) continue;
-            
-            // Check if played
-            const key = `${participants[i].user_id}-${participants[j].user_id}`;
-            if (!playedMap.has(key)) {
+            if (isValidOpponent(participants[i], participants[j])) {
                 bestOpponent = participants[j];
                 break;
             }
         }
 
-        // If no opponent found who hasn't played, take next available even if played (fallback)
-        // Or implement a 'Bye'
+        // 2. Fallback: Allow Played (but not Teammate if possible)
         if (!bestOpponent) {
              for (let j = i + 1; j < participants.length; j++) {
-                if (!used.has(participants[j].id)) {
+                if (isValidOpponent(participants[i], participants[j], true)) {
                     bestOpponent = participants[j];
                     break;
                 }
             }
         }
+        
+        // 3. Last Resort: Allow Teammate (if absolutely necessary to avoid Bye in team tourney? Or force Bye?)
+        // Usually better to play teammate than no game in Swiss if odd numbers force it? 
+        // Let's stick to no-teammate rule strictly for now, result in Bye if no one else.
 
         if (bestOpponent) {
             pairings.push([participants[i], bestOpponent]);

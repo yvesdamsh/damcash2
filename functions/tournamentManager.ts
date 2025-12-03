@@ -93,10 +93,78 @@ async function finishTournament(tournament, base44) {
         return;
     }
 
-    // Calculate Ranking
+    // Advanced Tie-Breakers (Buchholz / Sonneborn-Berger)
+    const games = await base44.asServiceRole.entities.Game.filter({ tournament_id: tournament.id, status: 'finished' });
+    
+    // Helper: Get opponents of a participant
+    const getOpponents = (userId) => {
+        const opponents = [];
+        games.forEach(g => {
+            if (g.white_player_id === userId) opponents.push({ id: g.black_player_id, result: g.winner_id === userId ? 1 : (g.winner_id ? 0 : 0.5) });
+            else if (g.black_player_id === userId) opponents.push({ id: g.white_player_id, result: g.winner_id === userId ? 1 : (g.winner_id ? 0 : 0.5) });
+        });
+        return opponents;
+    };
+
+    // Helper: Get Score of a participant
+    const getScore = (userId) => {
+        const p = participants.find(part => part.user_id === userId);
+        return p ? (p.score || 0) : 0;
+    };
+
+    // Calculate Metrics
+    for (const p of participants) {
+        const opps = getOpponents(p.user_id);
+        
+        // Buchholz: Sum of opponents' scores
+        const buchholz = opps.reduce((sum, opp) => sum + getScore(opp.id), 0);
+        
+        // Sonneborn-Berger: Sum of scores of opponents you DEFEATED + 0.5 * scores of opponents you DREW
+        const sb = opps.reduce((sum, opp) => {
+            if (opp.result === 1) return sum + getScore(opp.id);
+            if (opp.result === 0.5) return sum + (getScore(opp.id) * 0.5);
+            return sum;
+        }, 0);
+
+        p.buchholz = buchholz;
+        p.sonneborn_berger = sb;
+        
+        // Update DB with these stats for record keeping
+        // (assuming schema allows arbitrary props or we ignore if not in schema, mainly used for sorting here)
+    }
+
+    // Sort based on Tie Breaker setting
     const sorted = participants.sort((a, b) => {
-        if (b.score !== a.score) return (b.score || 0) - (a.score || 0);
-        // Tie breakers could go here (Buchholz etc), simplified to wins/games
+        // 1. Score (Primary)
+        if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+        
+        // 2. Tie Breakers
+        const tieBreaker = tournament.tie_breaker || 'buchholz';
+        
+        if (tieBreaker === 'buchholz') {
+            if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
+        }
+        else if (tieBreaker === 'sonneborn_berger') {
+            if (b.sonneborn_berger !== a.sonneborn_berger) return b.sonneborn_berger - a.sonneborn_berger;
+        }
+        else if (tieBreaker === 'head_to_head') {
+            // Simple check if they played each other
+            const match = games.find(g => 
+                (g.white_player_id === a.user_id && g.black_player_id === b.user_id) || 
+                (g.white_player_id === b.user_id && g.black_player_id === a.user_id)
+            );
+            if (match) {
+                if (match.winner_id === a.user_id) return -1; // a wins -> a comes first (index 0) so negative diff? Wait. Sort desc? 
+                // Sort fn: < 0 means a comes first.
+                // If a is better, we want a first. 
+                if (match.winner_id === b.user_id) return 1;
+            }
+        }
+        else if (tieBreaker === 'wins') {
+            if ((b.wins || 0) !== (a.wins || 0)) return (b.wins || 0) - (a.wins || 0);
+        }
+
+        // 3. Fallback: Wins -> Games Played -> Random/ID
         return (b.wins || 0) - (a.wins || 0);
     });
 
