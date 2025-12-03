@@ -435,7 +435,7 @@ export default function Game() {
             };
             setTimeout(makeAiMove, 1000);
         }
-    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState]);
+    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || game.status !== 'playing') return;
