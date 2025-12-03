@@ -218,36 +218,7 @@ export default function Game() {
         };
         }, [id]);
 
-    const updateGameState = (fetchedGame) => {
-        // Check if turn changed for sound
-        if (game && game.current_turn !== fetchedGame.current_turn) {
-            soundManager.play('move');
-            if (document.hidden) soundManager.play('notify');
-        }
 
-        setGame(fetchedGame);
-        
-        if (fetchedGame.status === 'finished') setShowResult(true);
-        else setShowResult(false);
-        
-        if (fetchedGame.game_type === 'chess') {
-            try {
-                const parsed = JSON.parse(fetchedGame.board_state);
-                setBoard(Array.isArray(parsed.board) ? parsed.board : []);
-                setChessState({ 
-                    castlingRights: parsed.castlingRights || {}, 
-                    lastMove: parsed.lastMove || null,
-                    halfMoveClock: parsed.halfMoveClock || 0,
-                    positionHistory: parsed.positionHistory || {}
-                });
-                } catch (e) { setBoard([]); }
-                } else {
-            try {
-                const parsed = JSON.parse(fetchedGame.board_state);
-                setBoard(Array.isArray(parsed) ? parsed : []);
-            } catch (e) { setBoard([]); }
-        }
-    };
 
     // Effect to handle Premove execution when state updates
     useEffect(() => {
