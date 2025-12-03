@@ -191,7 +191,11 @@ export default function Game() {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'GAME_UPDATE') {
-                    fetchGame(); 
+                    if (data.payload) {
+                        setGame(prev => ({ ...prev, ...data.payload }));
+                    } else {
+                        fetchGame();
+                    }
                 } else if (data.type === 'GAME_REACTION') {
                     handleIncomingReaction(data.payload);
                 } else if (data.type === 'SIGNAL') {
