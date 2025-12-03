@@ -15,15 +15,44 @@ export default function GameSettings({ user, onUpdate }) {
         checkers_pieces: 'standard'
     });
 
+    const [ownedThemes, setOwnedThemes] = useState([]);
+    const [ownedPieces, setOwnedPieces] = useState([]);
+
     useEffect(() => {
-        if (user?.preferences) {
-            setPrefs({
-                chess_theme: user.preferences.chess_theme || 'standard',
-                chess_pieces: user.preferences.chess_pieces || 'standard',
-                checkers_theme: user.preferences.checkers_theme || 'standard',
-                checkers_pieces: user.preferences.checkers_pieces || 'standard'
-            });
-        }
+        const init = async () => {
+            if (user?.preferences) {
+                setPrefs({
+                    chess_theme: user.preferences.chess_theme || 'standard',
+                    chess_pieces: user.preferences.chess_pieces || 'standard',
+                    checkers_theme: user.preferences.checkers_theme || 'standard',
+                    checkers_pieces: user.preferences.checkers_pieces || 'standard'
+                });
+            }
+            // Fetch owned items
+            try {
+                const res = await base44.functions.invoke('shopManager', { action: 'list_products' });
+                if (res.data.owned) {
+                    // Filter local constant lists or rely on backend?
+                    // For simplicity, let's just assume standard ones are always available + owned ones
+                    // But I need to know WHICH select item corresponds to WHICH product ID.
+                    // The Shop uses Product IDs. The settings use strings like 'wood', 'blue'.
+                    // I should map them or update Product creation to match these values.
+                    // My product creation used 'dark_wood' for value.
+                    // I'll add logic to merge standard options with owned options.
+                    const products = res.data.products || [];
+                    const ownedIds = res.data.owned || [];
+                    
+                    const myProducts = products.filter(p => ownedIds.includes(p.id));
+                    
+                    const themes = myProducts.filter(p => p.type === 'theme').map(p => ({ value: p.value, label: p.name }));
+                    const pieces = myProducts.filter(p => p.type === 'piece_set').map(p => ({ value: p.value, label: p.name }));
+                    
+                    setOwnedThemes(themes);
+                    setOwnedPieces(pieces);
+                }
+            } catch (e) {}
+        };
+        init();
     }, [user]);
 
     const handleSave = async () => {
@@ -61,6 +90,7 @@ export default function GameSettings({ user, onUpdate }) {
                                 <SelectItem value="standard">Vert (Standard)</SelectItem>
                                 <SelectItem value="wood">Bois (Classique)</SelectItem>
                                 <SelectItem value="blue">Bleu (Moderne)</SelectItem>
+                                {ownedThemes.map(t => <SelectItem key={t.value} value={t.value}>{t.label} (Débloqué)</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -73,6 +103,7 @@ export default function GameSettings({ user, onUpdate }) {
                             <SelectContent>
                                 <SelectItem value="standard">Standard (Images)</SelectItem>
                                 <SelectItem value="unicode">Minimaliste (Symboles)</SelectItem>
+                                {ownedPieces.map(p => <SelectItem key={p.value} value={p.value}>{p.label} (Débloqué)</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
