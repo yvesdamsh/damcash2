@@ -15,11 +15,22 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     // Framer Motion Drag Handler
     const handleDragEnd = (e, info, r, c) => {
         // Robust coordinate extraction for Mobile/Desktop
-        const clientX = info.point.x || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
-        const clientY = info.point.y || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
+        // Prefer event coordinates directly from the pointer event if available
+        let clientX, clientY;
+        
+        if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else if (e.clientX !== undefined) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        } else {
+            // Fallback to framer point
+            clientX = info.point.x;
+            clientY = info.point.y;
+        }
 
         // Use elementsFromPoint to find the square under the finger directly
-        // This bypasses math issues with zooming/scrolling on mobile
         const elements = document.elementsFromPoint(clientX, clientY);
         const targetSquare = elements.find(el => el.classList.contains('board-square'));
 

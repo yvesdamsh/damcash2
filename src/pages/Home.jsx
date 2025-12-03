@@ -13,6 +13,21 @@ import ActivityFeed from '@/components/ActivityFeed';
 import PublicForum from '@/components/PublicForum';
 
 export default function Home() {
+    // Guest User Logic
+    const getGuestUser = () => {
+        let guest = JSON.parse(localStorage.getItem('damcash_guest'));
+        if (!guest) {
+            guest = {
+                id: 'guest_' + Math.random().toString(36).substr(2, 9),
+                full_name: 'Invité ' + Math.floor(Math.random() * 1000),
+                email: 'guest@damcash.com',
+                is_guest: true
+            };
+            localStorage.setItem('damcash_guest', JSON.stringify(guest));
+        }
+        return guest;
+    };
+
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState("");
@@ -64,19 +79,16 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
-        try {
-        // Check authentication state first
-        const currentUser = await base44.auth.me().catch(() => null);
-
-        // If no user, we might be in a race condition or public mode
-        // Stop loading to avoid further errors
-        if (!currentUser) {
-            setLoading(false);
-            // Optional: Auto-redirect if app is meant to be private but landed here
-            // base44.auth.redirectToLogin(); 
-            return;
-        }
-        setUser(currentUser);
+            try {
+                // Check authentication state
+                let currentUser = await base44.auth.me().catch(() => null);
+                
+                // Fallback to Guest if not logged in
+                if (!currentUser) {
+                    currentUser = getGuestUser();
+                }
+                
+                setUser(currentUser);
                 
                 const savedGameType = localStorage.getItem('gameMode');
                 if (savedGameType) setGameType(savedGameType);
@@ -169,13 +181,12 @@ export default function Home() {
     };
 
     const handleQuickMatch = () => {
-        if (!user) return base44.auth.redirectToLogin('/Home');
+        // Guest check handled in init
         setIsPrivateConfig(false);
         setConfigOpen(true);
     };
 
     const handleCreatePrivate = () => {
-        if (!user) return base44.auth.redirectToLogin('/Home');
         setIsPrivateConfig(true);
         setConfigOpen(true);
     };
@@ -332,7 +343,6 @@ export default function Home() {
     };
 
     const handleSoloMode = async () => {
-        if (!user) return base44.auth.redirectToLogin('/Home');
         setIsCreating(true);
         try {
             const initialBoard = gameType === 'chess' 
@@ -355,7 +365,6 @@ export default function Home() {
 
     const handleJoinByCode = async (e) => {
         e.preventDefault();
-        if (!user) return base44.auth.redirectToLogin('/Home');
         if (!joinCode) return;
 
         try {
@@ -523,16 +532,7 @@ export default function Home() {
 
 
 
-            {!user ? (
-                <div className="text-center bg-white/60 backdrop-blur p-12 rounded-2xl shadow-xl max-w-md mx-auto border border-[#d4c5b0]">
-                    <h2 className="text-2xl font-bold mb-6 text-[#4a3728]">Prêt à jouer ?</h2>
-                    <Button onClick={() => base44.auth.redirectToLogin('/Home')} className="w-full bg-[#6b5138] hover:bg-[#5c4430] text-lg h-12">Connexion / Inscription</Button>
-                    <div className="mt-4">
-                         <Button variant="link" onClick={() => setShowTutorial(true)} className="text-[#6b5138]"><HelpCircle className="w-4 h-4 mr-2" /> Comment jouer ?</Button>
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-8">
+            <div className="space-y-8">
                     {/* Game Actions - Moved to Top */}
                     <div className="grid md:grid-cols-2 gap-8">
                         <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
@@ -670,10 +670,8 @@ export default function Home() {
                     )}
 
 
-                </div>
-                )}
+            </div>
 
-
-                </div>
-                );
-                }
+        </div>
+    );
+}
