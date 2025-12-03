@@ -592,7 +592,7 @@ export default function Home() {
                                             {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
                                                 <Button 
                                                     key={lvl}
-                                                    onClick={() => navigate(`/Game?id=local-ai&difficulty=${lvl}`)}
+                                                    onClick={() => navigate(`/Game?id=local-ai&difficulty=${lvl}&type=${gameType}`)}
                                                     variant="outline" 
                                                     className="border-[#e8dcc5]/30 text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-8 text-[10px] capitalize px-1"
                                                 >

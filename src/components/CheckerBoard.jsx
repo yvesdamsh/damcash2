@@ -120,14 +120,9 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                         <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                                     )}
 
-                                    {c === 9 && isDark && (
-                                        <span className="absolute right-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
-                                            {r + 1}
-                                        </span>
-                                    )}
-                                    {r === 9 && isDark && (
-                                        <span className="absolute left-0.5 bottom-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-50 font-mono">
-                                            {String.fromCharCode(65 + c)}
+                                    {isDark && (
+                                        <span className="absolute left-0.5 top-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-60 font-mono">
+                                            {r * 5 + Math.floor(c / 2) + 1}
                                         </span>
                                     )}
 

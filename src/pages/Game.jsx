@@ -67,15 +67,8 @@ export default function Game() {
         
         if (gameId === 'local-ai') {
             const difficulty = searchParams.get('difficulty') || 'medium';
-            // Detect game type from URL logic or default? 
-            // Actually Home passes gameType in URL? No, Home usually sets gameType state.
-            // But here we are navigating. We should probably read the user preference or pass it.
-            // Home.js uses `gameType` state.
-            // Let's assume checkers default or pass param.
-            // Wait, Home navigation: `navigate(\`/Game?id=local-ai&difficulty=${lvl}\`)`
-            // It doesn't pass game type.
-            // We should read `localStorage.getItem('gameMode')` as fallback which is what Home uses.
-            const type = localStorage.getItem('gameMode') || 'checkers';
+            // Read type from URL first (passed by Home), then fallback to localStorage
+            const type = searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers';
             
             setAiDifficulty(difficulty);
             setIsAiGame(true);
