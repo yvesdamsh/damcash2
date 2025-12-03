@@ -628,9 +628,14 @@ export default function Home() {
                                         </div>
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
-                                                <div className="bg-[#4a3728] p-3 flex items-center gap-2 text-[#e8dcc5]">
-                                                    <Eye className="w-5 h-5" />
-                                                    <h3 className="font-bold">À la une - Top Parties ({gameType === 'chess' ? 'Échecs' : 'Dames'})</h3>
+                                                <div className="bg-[#4a3728] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
+                                                    <div className="flex items-center gap-2">
+                                                        <Eye className="w-5 h-5" />
+                                                        <h3 className="font-bold">À la une - Top Parties ({gameType === 'chess' ? 'Échecs' : 'Dames'})</h3>
+                                                    </div>
+                                                    <Button size="sm" variant="ghost" onClick={() => navigate('/Spectate')} className="text-[#e8dcc5] hover:text-white hover:bg-white/10 h-6 px-2 text-xs">
+                                                        Voir tout <ArrowRight className="w-3 h-3 ml-1" />
+                                                    </Button>
                                                 </div>
                                                 <div className="p-4 space-y-3 bg-[#fdfbf7]">
                                                     {featuredGames.filter(g => g.game_type === gameType).length > 0 ? featuredGames.filter(g => g.game_type === gameType).map(g => (

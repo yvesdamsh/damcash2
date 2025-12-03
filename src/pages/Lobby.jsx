@@ -247,9 +247,18 @@ export default function Lobby() {
                     <TabsTrigger value="games" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Swords className="w-5 h-5" />
-                            <span>Parties Publiques</span>
+                            <span>Jouer</span>
                             <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {publicGames.length}
+                            </span>
+                        </div>
+                    </TabsTrigger>
+                    <TabsTrigger value="spectate" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
+                        <div className="flex items-center justify-center gap-2">
+                            <Eye className="w-5 h-5" />
+                            <span>Regarder</span>
+                            <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
+                                {activeGames.filter(g => !g.is_private).length}
                             </span>
                         </div>
                     </TabsTrigger>
@@ -272,6 +281,48 @@ export default function Lobby() {
                         </div>
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="spectate" className="animate-in fade-in duration-500">
+                     <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1">
+                            <div className="grid grid-cols-1 gap-4">
+                                {activeGames.filter(g => !g.is_private).length === 0 ? (
+                                    <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
+                                        <Eye className="w-10 h-10 mb-2 opacity-50" />
+                                        <p>Aucune partie en cours à regarder.</p>
+                                    </div>
+                                ) : (
+                                    activeGames.filter(g => !g.is_private).map(game => (
+                                        <Card key={game.id} className="p-4 flex items-center justify-between border-[#d4c5b0] hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white ${game.game_type === 'chess' ? 'bg-[#6B8E4E]' : 'bg-[#4a3728]'}`}>
+                                                    {game.game_type === 'chess' ? <Gamepad2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-[#4a3728] flex items-center gap-2">
+                                                        <span>{game.white_player_name}</span>
+                                                        <span className="text-xs text-gray-400">vs</span>
+                                                        <span>{game.black_player_name}</span>
+                                                    </div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'} • {game.initial_time || 10} min</div>
+                                                </div>
+                                            </div>
+                                            <Button onClick={() => navigate(`/Game?id=${game.id}`)} variant="outline" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
+                                                <Eye className="w-4 h-4 mr-2" /> Regarder
+                                            </Button>
+                                        </Card>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                        <div className="lg:w-96 hidden lg:block">
+                             <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
+                                 <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
+                                 <p>Discutez du match dans le salon général</p>
+                             </div>
+                        </div>
+                    </div>
+                </TabsContent>
 
                 <TabsContent value="games" className="animate-in fade-in duration-500">
                     <div className="flex flex-col lg:flex-row gap-6">

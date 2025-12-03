@@ -117,6 +117,7 @@ import {
     // Filter items based on auth state to save space
     const navItems = [
         { label: 'Accueil', path: '/Home', icon: Home, public: true },
+        { label: 'TV', path: '/Spectate', icon: Eye, public: true },
         { label: 'Salon', path: '/Lobby', icon: Users, public: true },
         { label: 'Ligues', path: '/Leagues', icon: Shield, public: true },
         { label: 'Tournois', path: '/Tournaments', icon: Flag, public: true },
