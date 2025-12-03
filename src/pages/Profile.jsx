@@ -378,10 +378,10 @@ export default function Profile() {
                     </div>
 
                     <Tabs defaultValue="overview" className="mt-12">
-                        <TabsList className="grid w-full grid-cols-3 bg-[#f5f0e6] mb-8">
-                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Vue d'ensemble</TabsTrigger>
-                            <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Historique</TabsTrigger>
-                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Badges & Trophées</TabsTrigger>
+                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto bg-[#f5f0e6] mb-8 gap-1 p-1">
+                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Vue d'ensemble</TabsTrigger>
+                            <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Historique</TabsTrigger>
+                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Badges & Trophées</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="overview">
