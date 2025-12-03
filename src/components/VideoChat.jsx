@@ -11,7 +11,7 @@ const ICE_SERVERS = {
     ]
 };
 
-export default function VideoChat({ gameId, currentUser, opponentId }) {
+export default function VideoChat({ gameId, currentUser, opponentId, socket, lastSignal }) {
     const [isCallActive, setIsCallActive] = useState(false);
     const [localStream, setLocalStream] = useState(null);
     const [remoteStream, setRemoteStream] = useState(null);
@@ -23,8 +23,6 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
     const pendingOffer = useRef(null);
-    const signalingInterval = useRef(null);
-    const processedSignals = useRef(new Set());
 
     useEffect(() => {
         if (localStream && localVideoRef.current) {
@@ -38,31 +36,12 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
         }
     }, [remoteStream]);
 
-    // Poll for signals
+    // Handle incoming signals via Socket props
     useEffect(() => {
-        if (!gameId || !currentUser || !opponentId) return;
-
-        const checkSignals = async () => {
-            try {
-                const messages = await base44.entities.SignalMessage.filter({
-                    game_id: gameId,
-                    recipient_id: currentUser.id
-                }, '-created_date', 10); // Get latest
-
-                for (const msg of messages) {
-                    if (processedSignals.current.has(msg.id)) continue;
-                    processedSignals.current.add(msg.id);
-
-                    await handleSignalMessage(msg);
-                }
-            } catch (e) {
-                console.error("Signaling error", e);
-            }
-        };
-
-        signalingInterval.current = setInterval(checkSignals, 2000);
-        return () => clearInterval(signalingInterval.current);
-    }, [gameId, currentUser, opponentId, isCallActive]);
+        if (lastSignal) {
+            handleSignalMessage(lastSignal);
+        }
+    }, [lastSignal]);
 
     const cleanup = () => {
         if (localStream) {
@@ -77,7 +56,6 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
         setRemoteStream(null);
         setIsCallActive(false);
         setStatus('idle');
-        processedSignals.current.clear();
     };
 
     useEffect(() => {
@@ -85,14 +63,13 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
     }, []);
 
     const createPeerConnection = () => {
-        // Close existing if any (unless it's just a holder for pending offer)
         if (peerConnection.current && peerConnection.current.close) peerConnection.current.close();
 
         const pc = new RTCPeerConnection(ICE_SERVERS);
 
         pc.onicecandidate = async (event) => {
             if (event.candidate) {
-                await sendSignal('candidate', JSON.stringify(event.candidate));
+                sendSignal('candidate', JSON.stringify(event.candidate));
             }
         };
 
@@ -102,11 +79,8 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
 
         pc.oniceconnectionstatechange = () => {
             if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-                console.log("Connection lost, attempting restart...");
-                // Simple restart logic could go here, or just notify user
                 toast.warning("Connexion instable...");
                 if (pc.iceConnectionState === 'failed') {
-                     // Optionally try to restart ice
                      pc.restartIce();
                 }
             }
@@ -128,12 +102,13 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
             setIsCallActive(true);
 
             const pc = createPeerConnection();
+            // Add tracks explicitly for fresh PC
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            await sendSignal('offer', JSON.stringify(offer));
+            sendSignal('offer', JSON.stringify(offer));
         } catch (err) {
             console.error("Error starting call", err);
             toast.error("Impossible d'accéder à la caméra/micro");
@@ -147,7 +122,6 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
         if (msg.type === 'offer') {
             if (status === 'connected' || status === 'calling') return; 
             setStatus('incoming');
-            // Store offer data to answer later
             pendingOffer.current = data;
         } else if (msg.type === 'answer') {
             if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
@@ -166,13 +140,13 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
             toast.error("Appel refusé");
             cleanup();
         } else if (msg.type === 'hangup') {
-            toast.info("Appel terminé par l'interlocuteur");
+            toast.info("Appel terminé");
             cleanup();
         }
     };
 
     const rejectCall = async () => {
-        await sendSignal('reject', '{}');
+        sendSignal('reject', '{}');
         setStatus('idle');
         peerConnection.current = null;
     };
@@ -194,7 +168,7 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
-            await sendSignal('answer', JSON.stringify(answer));
+            sendSignal('answer', JSON.stringify(answer));
         } catch (err) {
             console.error("Error answering", err);
             toast.error("Erreur lors de la réponse");
@@ -202,14 +176,23 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
         }
     };
 
-    const sendSignal = async (type, data) => {
-        await base44.entities.SignalMessage.create({
-            game_id: gameId,
-            sender_id: currentUser.id,
-            recipient_id: opponentId,
-            type: type,
-            data: data
-        });
+    const sendSignal = (type, data) => {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                type: 'SIGNAL',
+                payload: {
+                    game_id: gameId,
+                    sender_id: currentUser.id,
+                    recipient_id: opponentId,
+                    type: type,
+                    data: data
+                }
+            }));
+        } else {
+            // Fallback to HTTP if socket closed? (Rare if in game)
+            // For now assume socket is robust
+            console.warn("Socket not ready for signal");
+        }
     };
 
     const toggleMute = () => {
@@ -227,7 +210,7 @@ export default function VideoChat({ gameId, currentUser, opponentId }) {
     };
 
     const endCall = async () => {
-        await sendSignal('hangup', '{}');
+        sendSignal('hangup', '{}');
         cleanup();
     };
 

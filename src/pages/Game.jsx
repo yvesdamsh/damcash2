@@ -46,6 +46,7 @@ export default function Game() {
     const [showResignConfirm, setShowResignConfirm] = useState(false);
     const [socket, setSocket] = useState(null);
     const [reactions, setReactions] = useState([]);
+    const [lastSignal, setLastSignal] = useState(null);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [inviteSearch, setInviteSearch] = useState("");
     const [inviteResults, setInviteResults] = useState([]);
@@ -137,6 +138,11 @@ export default function Game() {
                     fetchGame(); 
                 } else if (data.type === 'GAME_REACTION') {
                     handleIncomingReaction(data.payload);
+                } else if (data.type === 'SIGNAL') {
+                    // Pass signal to VideoChat if it's for me and not from me
+                    if (data.payload.recipient_id === currentUser?.id && data.payload.sender_id !== currentUser?.id) {
+                        setLastSignal(data.payload);
+                    }
                 }
             } catch (e) {
                 console.error("WS Message Error", e);
@@ -880,7 +886,9 @@ export default function Game() {
                  <VideoChat 
                     gameId={game.id} 
                     currentUser={currentUser} 
-                    opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id} 
+                    opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
+                    socket={socket}
+                    lastSignal={lastSignal}
                 />
             </div>
 

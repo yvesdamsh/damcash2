@@ -90,11 +90,19 @@ export default async function handler(req) {
                 else if (data.type === 'GAME_REACTION') {
                 // Broadcast Reaction (Ephemeral)
                 broadcast(gameId, {
-                type: 'GAME_REACTION',
-                payload: data.payload // { sender_id, sender_name, emoji }
+                    type: 'GAME_REACTION',
+                    payload: data.payload // { sender_id, sender_name, emoji }
                 });
-                }
-                } catch (error) {
+            }
+            else if (data.type === 'SIGNAL') {
+                // WebRTC Signaling - Relay to others
+                broadcast(gameId, {
+                    type: 'SIGNAL',
+                    payload: data.payload, // { type, data, sender_id, recipient_id }
+                    senderId: data.payload.sender_id // Helper to filter self
+                });
+            }
+        } catch (error) {
             console.error("WebSocket Error:", error);
         }
     };
