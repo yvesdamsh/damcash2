@@ -92,12 +92,14 @@ export default function Spectate() {
                 <p className="text-[#6b5138] text-lg">Regardez les meilleurs joueurs s'affronter en direct</p>
             </div>
 
+            <GameFilters filters={filters} onChange={setFilters} showAi={false} />
+
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {activeGames.length === 0 ? (
                     <div className="col-span-full text-center p-12 bg-white/60 rounded-xl border border-[#d4c5b0]">
                         <Swords className="w-12 h-12 mx-auto text-[#d4c5b0] mb-4" />
-                        <h3 className="text-xl font-bold text-[#4a3728]">Aucune partie en cours</h3>
-                        <p className="text-[#6b5138]">Soyez le premier à lancer un match !</p>
+                        <h3 className="text-xl font-bold text-[#4a3728]">Aucune partie trouvée</h3>
+                        <p className="text-[#6b5138]">Essayez de modifier vos filtres.</p>
                         <Button className="mt-4 bg-[#4a3728]" onClick={() => navigate('/Home')}>Jouer</Button>
                     </div>
                 ) : (
@@ -113,8 +115,8 @@ export default function Spectate() {
                                             <Trophy className="w-3 h-3" /> TOURNOI
                                         </span>
                                     )}
-                                    <span className="text-xs text-red-500 font-bold flex items-center gap-1 animate-pulse">
-                                        <div className="w-2 h-2 bg-red-500 rounded-full" /> EN DIRECT
+                                    <span className={`text-xs font-bold flex items-center gap-1 ${game.status === 'playing' ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>
+                                        {game.status === 'playing' ? <><div className="w-2 h-2 bg-red-500 rounded-full" /> EN DIRECT</> : <><History className="w-3 h-3" /> TERMINÉ</>}
                                     </span>
                                 </div>
                             </CardHeader>
@@ -143,7 +145,7 @@ export default function Spectate() {
                                 </div>
 
                                 <Button className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] font-bold group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-colors">
-                                    <Eye className="w-4 h-4 mr-2" /> Regarder
+                                    {game.status === 'playing' ? <><Eye className="w-4 h-4 mr-2" /> Regarder</> : <><History className="w-4 h-4 mr-2" /> Revoir</>}
                                 </Button>
                             </CardContent>
                         </Card>
