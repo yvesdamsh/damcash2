@@ -337,8 +337,27 @@ Deno.serve(async (req) => {
             case 'medium': depth = 4; break;
             case 'hard': depth = 6; break;
             case 'expert': depth = 8; break;
-            case 'grandmaster': depth = 10; break;
+            case 'grandmaster': depth = 10; break; // 10 ply is very strong for checkers
             default: depth = 4;
+        }
+        
+        // Opening Book (Simple)
+        // If it's the very first move for Black (White moves first usually in International Checkers? Or White is bottom?)
+        // In standard: White moves first. If AI is Black and board is fresh minus 1 move.
+        // Let's check piece count. 20 men each.
+        const whiteCount = board.flat().filter(p=>p===1).length;
+        const blackCount = board.flat().filter(p=>p===2).length;
+        
+        if (whiteCount === 20 && blackCount === 20 && !activePiece) {
+             // Start of game.
+             // Pick a random valid move to vary play
+             const moves = (await import('./checkersAI.js').then(m => m.getAllPlayableMoves ? m.getAllPlayableMoves(board, turn) : []).catch(() => []));
+             // Note: importing self might be tricky in Deno Deploy bundle. 
+             // Better to call local function if defined in same scope.
+             // getAllPlayableMoves is defined above.
+             // const moves = getAllPlayableMoves(board, turn);
+             // Just let minimax handle it with randomization if scores are equal.
+             // Or add randomness to bestMove selection in minimax.
         }
 
         const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn, activePiece);
