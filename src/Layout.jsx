@@ -137,11 +137,10 @@ import {
 
     const handleLogout = async () => {
         try {
-            await base44.auth.logout();
+            // Explicitly redirect to root '/' to avoid default redirect to non-existent '/login'
+            await base44.auth.logout('/');
         } catch (e) {
             console.error("Logout error", e);
-        } finally {
-            // Force hard reload to root to clear any state
             window.location.href = '/';
         }
     };
