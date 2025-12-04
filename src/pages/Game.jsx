@@ -107,7 +107,7 @@ export default function Game() {
                 moves: JSON.stringify([]),
                 white_seconds_left: 600,
                 black_seconds_left: 600,
-                last_move_at: new Date().toISOString(),
+                last_move_at: null,
             });
             setBoard(initialBoard);
             setLoading(false);
@@ -889,6 +889,8 @@ export default function Game() {
         // We update local state immediately so the UI reflects the move.
         // The socket check in onmessage will prevent overwriting this with an old state.
         setGame(prev => ({ ...prev, ...updateData }));
+
+        if (game.id === 'local-ai') return;
 
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
