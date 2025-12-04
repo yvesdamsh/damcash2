@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye } from 'lucide-react';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
@@ -49,7 +50,32 @@ export default function Home() {
         stake: 0,
         difficulty: 'any' // any, easy, medium, hard
     });
+    const [currentLegendIndex, setCurrentLegendIndex] = useState(0);
     const navigate = useNavigate();
+
+    const legends = [
+        {
+            id: 'babasy',
+            name: 'Baba Sy',
+            subtitle: 'Le grand maître sénégalais',
+            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg',
+            description: "Découvrez l'histoire fascinante de Baba Sy (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.",
+            link: 'https://fr.wikipedia.org/wiki/Baba_Sy',
+            badge: 'Légende du Jeu'
+        },
+        {
+            id: 'sijbrands',
+            name: 'Ton Sijbrands',
+            subtitle: 'La Légende Néerlandaise',
+            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/62119ad07_1764873196043.jpg',
+            description: "Ton Sijbrands est une figure mythique du jeu de dames international. Champion du monde (1972, 1973), il est mondialement reconnu pour ses records époustouflants de parties simultanées à l'aveugle. Un stratège profond dont les parties continuent d'être analysées par les experts du monde entier.",
+            link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
+            badge: 'Grand Maître'
+        }
+    ];
+
+    const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
+    const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
 
     const fetchData = async (currentUser) => {
         if (!currentUser) return;
@@ -661,40 +687,79 @@ export default function Home() {
 
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="md:col-span-2">
-                             {/* Baba Sy Featured Section */}
-                            <Card className="mb-8 overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl transform hover:scale-[1.01] transition-transform duration-500">
-                        <div className="flex flex-col md:flex-row">
-                            <div className="w-full h-80 md:w-2/5 md:h-auto relative group shrink-0">
-                                <img 
-                                    src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg" 
-                                    alt="Baba Sy" 
-                                    className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 block"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]/10" />
-                                <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
-                                    <h3 className="text-xl font-bold">Baba Sy</h3>
-                                    <p className="text-xs opacity-90">Légende du Jeu</p>
+                            {/* Legends Carousel Section */}
+                            <div className="relative mb-8 group">
+                                <div className="absolute top-1/2 -left-4 z-20 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button size="icon" variant="outline" className="rounded-full bg-white/80 backdrop-blur shadow-lg border-[#d4c5b0] hover:bg-[#4a3728] hover:text-white" onClick={prevLegend}>
+                                        <ChevronLeft className="w-5 h-5" />
+                                    </Button>
                                 </div>
+                                <div className="absolute top-1/2 -right-4 z-20 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button size="icon" variant="outline" className="rounded-full bg-white/80 backdrop-blur shadow-lg border-[#d4c5b0] hover:bg-[#4a3728] hover:text-white" onClick={nextLegend}>
+                                        <ChevronRight className="w-5 h-5" />
+                                    </Button>
+                                </div>
+
+                                <Card className="overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl h-[450px] md:h-[380px] relative">
+                                    <AnimatePresence mode="wait">
+                                        <motion.div
+                                            key={currentLegendIndex}
+                                            initial={{ opacity: 0, x: 20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ duration: 0.3 }}
+                                            className="absolute inset-0 flex flex-col md:flex-row"
+                                        >
+                                            <div className="w-full h-60 md:h-full md:w-2/5 relative shrink-0 overflow-hidden">
+                                                <img 
+                                                    src={legends[currentLegendIndex].image} 
+                                                    alt={legends[currentLegendIndex].name} 
+                                                    className="w-full h-full object-cover object-top"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]" />
+                                                <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
+                                                    <h3 className="text-xl font-bold">{legends[currentLegendIndex].name}</h3>
+                                                    <p className="text-xs opacity-90">{legends[currentLegendIndex].badge}</p>
+                                                </div>
+                                            </div>
+                                            <div className="p-6 md:w-3/5 flex flex-col justify-center h-full">
+                                                <div className="hidden md:block mb-3">
+                                                    <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">
+                                                        {legends[currentLegendIndex].badge}
+                                                    </Badge>
+                                                    <h3 className="text-3xl font-black text-[#4a3728] mb-1">{legends[currentLegendIndex].name}</h3>
+                                                    <p className="text-sm text-[#8c6b4a] font-serif italic">{legends[currentLegendIndex].subtitle}</p>
+                                                </div>
+                                                <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base line-clamp-5 md:line-clamp-none">
+                                                    {legends[currentLegendIndex].description}
+                                                </p>
+                                                <div className="flex gap-3 mt-auto md:mt-0">
+                                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open(legends[currentLegendIndex].link, '_blank')}>
+                                                        <BookOpen className="w-4 h-4 mr-2" />
+                                                        Lire sa biographie
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    </AnimatePresence>
+                                    
+                                    {/* Dots Indicator */}
+                                    <div className="absolute bottom-4 right-4 flex gap-2 md:bottom-6 md:right-8 z-10">
+                                        {legends.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentLegendIndex(idx)}
+                                                className={`w-2 h-2 rounded-full transition-all ${
+                                                    idx === currentLegendIndex 
+                                                        ? 'bg-[#4a3728] w-6' 
+                                                        : 'bg-[#d4c5b0] hover:bg-[#8c6b4a]'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </Card>
                             </div>
-                            <div className="p-6 md:w-3/5 flex flex-col justify-center relative">
-                                <div className="hidden md:block mb-3">
-                                    <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">Légende du Jeu</Badge>
-                                    <h3 className="text-3xl font-black text-[#4a3728] mb-1">Baba Sy</h3>
-                                    <p className="text-sm text-[#8c6b4a] font-serif italic">"Le grand maître sénégalais"</p>
-                                </div>
-                                <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base">
-                                    Découvrez l'histoire fascinante de <strong>Baba Sy</strong> (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.
-                                </p>
-                                <div className="flex gap-3">
-                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open('https://fr.wikipedia.org/wiki/Baba_Sy', '_blank')}>
-                                        <BookOpen className="w-4 h-4 mr-2" />
-                                        Lire sa biographie
-                                        </Button>
-                                        </div>
-                                        </div>
-                                        </div>
-                                        </Card>
-                                        </div>
+                        </div>
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
                                                 <div className="bg-[#4a3728] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
