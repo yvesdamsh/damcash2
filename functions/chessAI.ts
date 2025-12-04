@@ -569,66 +569,62 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, cas
 };
 
 Deno.serve(async (req) => {
-    try {
-        const base44 = createClientFromRequest(req);
-        const { board, turn, difficulty = 'medium', castlingRights, lastMove, timeLeft } = await req.json();
-
-        // Time Management
-        const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.05 * 1000, 200), 10000) : 5000;
-        const deadline = startTime + timeBudget;
-
-        if (!board || !turn) {
-            return Response.json({ error: 'Missing board or turn' }, { status: 400 });
+        // Randomness / Suboptimal moves
+        // Instead of pure minimax, we collect top moves and pick based on randomness score
+        // Implementation: Inside minimax, we usually return BEST. 
+        // We can run minimax at Root, get scores for all moves, then pick.
+        // Refactor Root Call to get all move scores:
+        
+        const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
+        if (rootMoves.length === 0) return Response.json({ error: 'No moves' }, { status: 200 });
+        
+        let scoredMoves = [];
+        
+        // Run search for each root move
+        // Time budget split? No, just run depth search on each branch or standard AlphaBeta root
+        // Standard AlphaBeta returns best move only. We need list for randomness.
+        // Let's run shallow search (depth 1) to sort, then deep search on best?
+        // Or just modify Root search loop here.
+        
+        for (const move of rootMoves) {
+            if (Date.now() > deadline - 50) break;
+            
+            // Execute move
+            const { board: nextBoard } = executeChessMove(board, move);
+            const nextTurn = turn === 'white' ? 'black' : 'white';
+            
+            // Search
+            // We use maxDepth-1 because we already made one move
+            try {
+                const res = minimax(nextBoard, maxDepth - 1, -Infinity, Infinity, false, nextTurn, turn, castlingRights, move, deadline);
+                scoredMoves.push({ move, score: res.score });
+            } catch(e) {
+                scoredMoves.push({ move, score: -Infinity }); // Timeout treated as bad
+            }
+        }
+        
+        // Sort by score (descending for Maximizer - which is AI, AI wants to Maximize its score)
+        // Our evaluateBoard returns positive for AI color.
+        scoredMoves.sort((a, b) => b.score - a.score);
+        
+        let selected = scoredMoves[0];
+        
+        // Apply Randomness/Blunder Chance
+        // If randomness > 0, we might pick 2nd or 3rd best
+        if (randomness > 0 && scoredMoves.length > 1) {
+            const roll = Math.random() * 100;
+            if (roll < randomness) {
+                // Pick from top 3 weighted?
+                // Or just pick 2nd best
+                const cand = scoredMoves.slice(0, Math.min(scoredMoves.length, 3));
+                selected = cand[Math.floor(Math.random() * cand.length)];
+            }
         }
 
-        // Opening Book Check
-        if (!lastMove) {
-            // Very first move?
-            // Actually check board string or FEN-like key for book
-            // Simplified FEN-like Key generation for book lookup
-            // Just check if we have a match in common openings
-            // Construct simplified FEN (board + turn + castling)
-            // This is complex to get right without exact FEN generator, but let's try simple match or skip
-            // Or simpler: if move count is low. 
-            // Let's use the FEN generator logic if available or reconstruct it.
-            // Since we don't have full FEN easily here without code dupe, let's skip exact Book lookup
-            // unless we are at start position.
-        }
-
-        // Simple Book Lookup for Start Position
-        // Check standard start string
-        const isStart = board.flat().filter(p => p).length === 32;
-        if (isStart && !lastMove) {
-             // White first move
-             const bookMoves = OPENING_BOOK["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"];
-             if (bookMoves) {
-                 const rM = bookMoves[Math.floor(Math.random() * bookMoves.length)];
-                 // Decode rM (e.g. e2e4 -> from: {r:6,c:4}, to: {r:4,c:4})
-                 // Map algebraic to coords
-                 const cols = {a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
-                 const fC = cols[rM[0]], fR = 8 - parseInt(rM[1]);
-                 const tC = cols[rM[2]], tR = 8 - parseInt(rM[3]);
-                 return Response.json({
-                     move: { from: {r:fR, c:fC}, to: {r:tR, c:tC}, captured: null },
-                     score: 0
-                 });
-             }
-        }
-
-        // Chess Depth & Iterative Deepening
-        let maxDepth = 3;
-        switch (difficulty) {
-            case 'easy': maxDepth = 1; break;
-            case 'medium': maxDepth = 2; break;
-            case 'hard': maxDepth = 3; break;
-            case 'expert': maxDepth = 4; break;
-            case 'grandmaster': maxDepth = 5; break;
-            default: maxDepth = 3;
-        }
-
-        // Panic Mode: If very low time, reduce depth immediately
-        if (timeLeft && timeLeft < 5) maxDepth = Math.min(maxDepth, 2);
+        return Response.json({
+            move: selected.move,
+            score: selected.score
+        });
 
         let bestMoveSoFar = null;
         let currentDepth = 1;
