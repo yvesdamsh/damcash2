@@ -1,3 +1,4 @@
+
 // Chess Game Logic
 
 export const INITIAL_BOARD_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -286,6 +287,74 @@ export const getPositionId = (board, turn, castlingRights, lastMove) => {
     }
 
     return `${boardStr} ${turn} ${castling} ${ep}`;
+};
+
+export const getSan = (board, move, castlingRights, lastMove) => {
+    // Determine piece
+    const piece = board[move.from.r][move.from.c];
+    if (!piece) return ""; // Should not happen
+
+    const type = piece.toLowerCase();
+    const color = getColor(piece);
+    
+    // Castling
+    if (type === 'k' && Math.abs(move.from.c - move.to.c) > 1) {
+        return move.to.c > move.from.c ? "O-O" : "O-O-O";
+    }
+
+    const files = ['a','b','c','d','e','f','g','h'];
+    const ranks = ['8','7','6','5','4','3','2','1'];
+    const dest = files[move.to.c] + ranks[move.to.r];
+    // Check if the target square is occupied by an opponent's piece, or if it's an en passant capture
+    const isCapture = !!move.captured || (board[move.to.r][move.to.c] !== null && getColor(board[move.to.r][move.to.c]) !== color);
+
+    let san = "";
+
+    if (type !== 'p') {
+        san += piece.toUpperCase();
+        
+        // Disambiguation
+        // We need all valid moves for this player to check for ambiguity
+        const allMoves = getValidChessMoves(board, color, lastMove, castlingRights);
+        
+        // Filter for other pieces of the same type and color that can move to the same destination
+        const ambiguousMoves = allMoves.filter(m => 
+            m.to.r === move.to.r && m.to.c === move.to.c &&
+            board[m.from.r][m.from.c] === piece && // Same piece type and color
+            (m.from.r !== move.from.r || m.from.c !== move.from.c) // Not the current piece's origin
+        );
+
+        if (ambiguousMoves.length > 0) {
+            // Check if any other ambiguous piece is on the same file as the current piece
+            const sameFile = ambiguousMoves.some(m => m.from.c === move.from.c);
+            // Check if any other ambiguous piece is on the same rank as the current piece
+            const sameRank = ambiguousMoves.some(m => m.from.r === move.from.r);
+
+            if (!sameFile) { // If no other ambiguous piece is on the same file, use file for disambiguation
+                san += files[move.from.c];
+            } else if (!sameRank) { // If other ambiguous pieces are on the same file, but not on the same rank, use rank
+                san += ranks[move.from.r];
+            } else { // If ambiguous pieces are on both same file and same rank (multiple pieces to disambiguate), use both
+                san += files[move.from.c] + ranks[move.from.r];
+            }
+        }
+    } else {
+        // Pawn moves
+        if (isCapture) {
+            san += files[move.from.c]; // For pawn captures, e.g., 'exd4'
+        }
+    }
+
+    if (isCapture) san += "x"; // Add 'x' for captures
+    san += dest; // Add destination square
+
+    if (move.promotion) {
+        san += "=" + move.promotion.toUpperCase(); // Add promotion piece, e.g., '=Q'
+    }
+
+    // Add check/checkmate indicators later if needed (not in basic SAN)
+
+    return san;
 };
 
 export const hasInsufficientMaterial = (board) => {

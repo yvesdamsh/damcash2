@@ -750,7 +750,10 @@ export default function Game() {
 
     const executeChessMoveFinal = async (move) => {
         // Import helper to calculate position ID
-        const { getPositionId } = await import('@/components/chessLogic');
+        const { getPositionId, getSan } = await import('@/components/chessLogic');
+
+        // Generate SAN before execution (need original board state)
+        let san = getSan(board, move, chessState.castlingRights, chessState.lastMove);
 
         const { board: newBoard, piece: movedPiece, promoted } = executeChessMove(board, move);
         
@@ -803,6 +806,7 @@ export default function Game() {
             status = 'finished';
             winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
             soundManager.play('win');
+            san += "#";
         } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
             soundManager.play('win'); // or draw sound
@@ -813,7 +817,10 @@ export default function Game() {
             else if (gameStatus === 'draw_insufficient') reason = "Nulle (Matériel insuffisant)";
             toast.info(reason);
         } else {
-            if (isInCheck(newBoard, nextTurn)) soundManager.play('check');
+            if (isInCheck(newBoard, nextTurn)) {
+                soundManager.play('check');
+                san += "+";
+            }
             else soundManager.play(move.captured ? 'capture' : 'move');
         }
 
@@ -829,7 +836,8 @@ export default function Game() {
             type: 'chess', from: completedMove.from, to: completedMove.to,
             piece: movedPiece, captured: !!completedMove.captured,
             promotion: completedMove.promotion,
-            board: JSON.stringify(newStateObj)
+            board: JSON.stringify(newStateObj),
+            notation: san
         });
 
         if (status === 'finished') {
