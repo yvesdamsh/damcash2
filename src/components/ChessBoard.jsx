@@ -1,7 +1,7 @@
 import React from 'react';
 import ChessPiece from './ChessPiece';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getValidChessMoves } from '@/components/chessLogic';
+import { getValidChessMoves, isInCheck } from '@/components/chessLogic';
 
 export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) {
     
@@ -21,6 +21,15 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
     };
 
     const currentTheme = themes[theme] || themes.standard;
+
+    // Calculate Check State safely
+    const { isWhiteCheck, isBlackCheck } = React.useMemo(() => {
+        if (!board || board.length !== 8) return { isWhiteCheck: false, isBlackCheck: false };
+        return {
+            isWhiteCheck: isInCheck(board, 'white'),
+            isBlackCheck: isInCheck(board, 'black')
+        };
+    }, [board]);
 
     const handleDragEnd = (e, info, r, c) => {
         // Robust coordinate extraction for Mobile/Desktop
@@ -105,7 +114,13 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
-                            const squareColor = isDark ? currentTheme.dark : currentTheme.light;
+                            // Check Highlight
+                            const isKing = piece && piece.toLowerCase() === 'k';
+                            const isCheck = isKing && ((piece === 'K' && isWhiteCheck) || (piece === 'k' && isBlackCheck));
+
+                            const squareColor = isCheck 
+                              ? 'bg-red-500/90' // High visibility for check
+                              : (isDark ? currentTheme.dark : currentTheme.light);
                             
                             // Calculate Animation Delta (Adjust for Orientation)
                             let animDelta = null;
@@ -133,9 +148,10 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                         ${isSelected ? 'bg-yellow-200/50 ring-inset ring-4 ring-yellow-400' : ''}
                                         ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
                                         ${isPremoveTarget ? 'bg-red-400/40' : ''}
+                                        ${isCheck ? 'ring-inset ring-4 ring-red-600 shadow-[0_0_20px_rgba(220,38,38,0.6)] z-30 animate-pulse' : ''}
                                         ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
                                         ${isLastMoveTarget ? 'z-30' : (piece ? 'z-20' : 'z-auto')}
-                                    `}
+                                        `}
                                 >
                                     {/* Coordinates - Correctly positioned relative to visuals */}
                                     {(!isFlipped ? c === 0 : c === 7) && (
