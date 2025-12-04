@@ -137,12 +137,12 @@ import {
 
     const handleLogout = async () => {
         try {
-            setTimeout(() => window.location.href = '/Home', 1000);
             await base44.auth.logout();
         } catch (e) {
-            console.error("Logout failed", e);
+            console.error("Logout error", e);
         } finally {
-            window.location.href = '/Home';
+            // Force hard reload to root to clear any state
+            window.location.href = '/';
         }
     };
 

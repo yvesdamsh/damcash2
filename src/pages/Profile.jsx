@@ -472,12 +472,11 @@ export default function Profile() {
                                     variant="destructive"
                                     onClick={async () => {
                                         try {
-                                            setTimeout(() => window.location.href = '/Home', 1000);
                                             await base44.auth.logout();
                                         } catch (e) {
                                             console.error(e);
                                         } finally {
-                                            window.location.href = '/Home';
+                                            window.location.href = '/';
                                         }
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white shadow-md"
