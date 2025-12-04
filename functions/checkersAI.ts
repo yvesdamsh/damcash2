@@ -203,13 +203,14 @@ const WEIGHTS = {
     EDGE: 5,           // Edges are safer
     ADVANCED: 5,       // Push forward
     MOBILITY: 2,       // Number of moves available
-    DOG_HOLE: -20,     // Penalty for being trapped in corners
-    BRIDGE: 25,        // Bonus for holding bridge
-    OREO: 25,          // Bonus for Oreo pattern
-    PROTECTED: 10,     // Bonus for protected pieces
-    HANGING: -50,      // Penalty for pieces in danger
-    CLASSIC_CENTER: 10,// Bonus for controlling "Classic" center squares
-    MODERN_FLANK: 5    // Bonus for flexible "Modern" flank structures
+    DOG_HOLE: -30,     // Stronger penalty for dog hole
+    BRIDGE: 40,        // Strong bonus for holding bridge (defensive anchor)
+    OREO: 35,          // Strong bonus for Oreo pattern (hard to penetrate)
+    PROTECTED: 15,     // Increased bonus for protected pieces (formation)
+    HANGING: -80,      // Severe penalty for losing pieces (tactical error)
+    CLASSIC_CENTER: 15,// Stronger center control
+    MODERN_FLANK: 10,  // Flank flexibility
+    RUNAWAY: 50        // Bonus for pieces that are passed (unstoppable)
     };
 
     // Helper to check if a square is threatened (basic 1-ply check)
@@ -453,24 +454,24 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
         }
 
-        // Depth & Randomness Configuration
-        let maxDepth = 4; 
+        // Depth & Randomness Configuration (Boosted for better strategy)
+        let maxDepth = 6; 
         let randomness = 0; // 0-100
 
         if (difficulty === 'adaptive') {
-             if (userElo < 800) { maxDepth = 2; randomness = 30; }
-             else if (userElo < 1200) { maxDepth = 4; randomness = 15; }
-             else if (userElo < 1600) { maxDepth = 6; randomness = 5; }
-             else if (userElo < 2000) { maxDepth = 8; randomness = 0; }
-             else { maxDepth = 10; randomness = 0; }
+                if (userElo < 800) { maxDepth = 4; randomness = 25; } // Deeper but with mistakes
+                else if (userElo < 1200) { maxDepth = 6; randomness = 10; }
+                else if (userElo < 1600) { maxDepth = 8; randomness = 5; }
+                else if (userElo < 2000) { maxDepth = 10; randomness = 0; }
+                else { maxDepth = 12; randomness = 0; }
         } else {
             switch (difficulty) {
                 case 'easy': maxDepth = 2; randomness = 40; break;
-                case 'medium': maxDepth = 4; randomness = 10; break;
-                case 'hard': maxDepth = 6; randomness = 0; break;
-                case 'expert': maxDepth = 8; randomness = 0; break;
-                case 'grandmaster': maxDepth = 10; randomness = 0; break;
-                default: maxDepth = 4;
+                case 'medium': maxDepth = 6; randomness = 10; break; // Increased from 4
+                case 'hard': maxDepth = 8; randomness = 5; break; // Increased from 6
+                case 'expert': maxDepth = 10; randomness = 0; break;
+                case 'grandmaster': maxDepth = 14; randomness = 0; break; // Deep calculation
+                default: maxDepth = 6;
             }
         }
         

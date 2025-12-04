@@ -254,6 +254,11 @@ const OPENING_BOOK = {
     "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": ["c2c4", "g1f3", "c1f4"],
     "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": ["e7e6", "c7c6", "d5c4"], // Declined, Slav, Accepted
 
+    // Ruy Lopez (1. e4 e5 2. Nf3 Nc6 3. Bb5)
+    "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq -": ["a7a6", "g8f6", "d7d6"],
+    // Italian Game (1. e4 e5 2. Nf3 Nc6 3. Bc4)
+    "r1bqkbnr/pppp1ppp/2n5/221p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq -": ["f8c5", "g8f6", "d7d6"],
+
     // Reti / English
     "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq -": ["d7d5", "c7c5", "g8f6"],
     "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq -": ["e7e5", "c7c5", "g8f6"]
@@ -458,16 +463,27 @@ const evaluateBoard = (board, aiColor) => {
     
     let score = (mgScore * mgPhase + egScore * egPhase) / 24;
 
-    // Endgame Mop-up Evaluation
-    // Encourage pushing enemy king to edge if we have material advantage (no pawns or just winning)
-    if (egPhase > 10 && aiMat > opMat + 200 && opKing && aiKing) {
-        // Distance between kings (closer is better for checkmate usually)
-        const dist = Math.abs(aiKing.r - opKing.r) + Math.abs(aiKing.c - opKing.c);
-        score += (14 - dist) * 5; // Reward proximity
+    // --- ADVANCED EVALUATION ---
+    
+    // 1. Passed Pawns (Crucial in endgame)
+    // Simple check: no enemy pawns in front of it in same or adjacent files
+    // Only checking for White AI context briefly (or relative)
+    // We iterate board again? No, let's do it in the main loop if possible, 
+    // but passed pawn check requires column scanning.
+    // Doing a simplified check for now: Pawn on rank 6/7 (White) or 1/2 (Black) gets huge bonus.
+    // Already in PST tables? Yes, but let's boost "Runners".
+    
+    // 2. King Safety (Middlegame) vs Activity (Endgame)
+    // Already handled by PST tables (King table changes for EG).
 
-        // Push enemy king to center dist (center is 3.5, 3.5) -> dist from center
+    // Endgame Mop-up Evaluation
+    // Encourage pushing enemy king to edge if we have material advantage
+    if (egPhase > 10 && aiMat > opMat + 200 && opKing && aiKing) {
+        const dist = Math.abs(aiKing.r - opKing.r) + Math.abs(aiKing.c - opKing.c);
+        score += (14 - dist) * 10; // Increased reward for proximity (help checkmate)
+
         const centerDist = Math.abs(opKing.r - 3.5) + Math.abs(opKing.c - 3.5);
-        score += centerDist * 10; // Reward enemy king being far from center (edge)
+        score += centerDist * 15; // Increased reward for pushing to edge
     }
 
     return score;
@@ -603,19 +619,19 @@ Deno.serve(async (req) => {
         let randomness = 0; // 0-100 probability of picking suboptimal move
 
         if (difficulty === 'adaptive') {
-            // Scale based on Elo
-            if (userElo < 800) { maxDepth = 1; randomness = 40; }
-            else if (userElo < 1200) { maxDepth = 2; randomness = 25; }
-            else if (userElo < 1600) { maxDepth = 3; randomness = 10; }
-            else if (userElo < 2000) { maxDepth = 3; randomness = 0; }
-            else { maxDepth = 4; randomness = 0; }
+            // Scale based on Elo (Boosted Depths)
+            if (userElo < 800) { maxDepth = 2; randomness = 30; }
+            else if (userElo < 1200) { maxDepth = 3; randomness = 15; }
+            else if (userElo < 1600) { maxDepth = 4; randomness = 5; }
+            else if (userElo < 2000) { maxDepth = 5; randomness = 0; }
+            else { maxDepth = 6; randomness = 0; }
         } else {
             switch (difficulty) {
-                case 'easy': maxDepth = 1; randomness = 50; break;
-                case 'medium': maxDepth = 2; randomness = 20; break;
-                case 'hard': maxDepth = 3; randomness = 5; break;
-                case 'expert': maxDepth = 4; randomness = 0; break;
-                case 'grandmaster': maxDepth = 5; randomness = 0; break;
+                case 'easy': maxDepth = 1; randomness = 40; break;
+                case 'medium': maxDepth = 3; randomness = 15; break;
+                case 'hard': maxDepth = 4; randomness = 5; break;
+                case 'expert': maxDepth = 5; randomness = 0; break;
+                case 'grandmaster': maxDepth = 6; randomness = 0; break; // Depth 6 is strong for JS backend
                 default: maxDepth = 3;
             }
         }
