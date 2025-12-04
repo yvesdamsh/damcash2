@@ -61,7 +61,8 @@ export default function Home() {
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg',
             description: "Découvrez l'histoire fascinante de Baba Sy (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.",
             link: 'https://fr.wikipedia.org/wiki/Baba_Sy',
-            badge: 'Légende du Jeu'
+            badge: 'Légende du Jeu',
+            position: 'object-top'
         },
         {
             id: 'sijbrands',
@@ -70,7 +71,8 @@ export default function Home() {
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/62119ad07_1764873196043.jpg',
             description: "Ton Sijbrands est une figure mythique du jeu de dames international. Champion du monde (1972, 1973), il est mondialement reconnu pour ses records époustouflants de parties simultanées à l'aveugle. Un stratège profond dont les parties continuent d'être analysées par les experts du monde entier.",
             link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
-            badge: 'Grand Maître'
+            badge: 'Grand Maître',
+            position: 'object-[center_30%]'
         }
     ];
 
@@ -714,7 +716,7 @@ export default function Home() {
                                                 <img 
                                                     src={legends[currentLegendIndex].image} 
                                                     alt={legends[currentLegendIndex].name} 
-                                                    className="w-full h-full object-cover object-top"
+                                                    className={`w-full h-full object-cover ${legends[currentLegendIndex].position || 'object-top'}`}
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]" />
                                                 <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
