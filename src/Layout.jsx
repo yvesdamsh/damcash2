@@ -137,10 +137,11 @@ import {
 
     const handleLogout = async () => {
         try {
-            await base44.auth.logout();
-            window.location.href = '/'; 
+            // Explicitly redirect to home page after logout to avoid default behavior
+            await base44.auth.logout('/');
         } catch (e) {
             console.error("Logout failed", e);
+            window.location.href = '/';
         }
     };
 
