@@ -14,11 +14,12 @@ const getColor = (piece) => {
 const cloneBoard = (board) => board.map(row => [...row]);
 
 // Helper to execute move
-const executeChessMove = (board, move) => {
+const executeChessMove = (board, move, castlingRights = { wK: true, wQ: true, bK: true, bQ: true }) => {
     const newBoard = cloneBoard(board);
     const piece = newBoard[move.from.r][move.from.c];
+    const newCastling = { ...castlingRights };
 
-    if (!piece) return { board: newBoard, piece: null };
+    if (!piece) return { board: newBoard, piece: null, castlingRights: newCastling, lastMove: move };
 
     newBoard[move.from.r][move.from.c] = null;
     newBoard[move.to.r][move.to.c] = piece;
@@ -45,7 +46,26 @@ const executeChessMove = (board, move) => {
         newBoard[move.to.r][move.to.c] = newPieceChar;
     }
 
-    return { board: newBoard, piece };
+    // Update Castling Rights
+    if (piece.toLowerCase() === 'k') {
+        if (getColor(piece) === 'white') { newCastling.wK = false; newCastling.wQ = false; }
+        else { newCastling.bK = false; newCastling.bQ = false; }
+    }
+    if (piece.toLowerCase() === 'r') {
+        if (move.from.r === 7 && move.from.c === 0) newCastling.wQ = false;
+        if (move.from.r === 7 && move.from.c === 7) newCastling.wK = false;
+        if (move.from.r === 0 && move.from.c === 0) newCastling.bQ = false;
+        if (move.from.r === 0 && move.from.c === 7) newCastling.bK = false;
+    }
+    // If rook captured
+    if (move.captured) {
+       if (move.to.r === 0 && move.to.c === 0) newCastling.bQ = false;
+       if (move.to.r === 0 && move.to.c === 7) newCastling.bK = false;
+       if (move.to.r === 7 && move.to.c === 0) newCastling.wQ = false;
+       if (move.to.r === 7 && move.to.c === 7) newCastling.wK = false;
+    }
+
+    return { board: newBoard, piece, castlingRights: newCastling, lastMove: { ...move, piece } };
 };
 
 // Move Generation
@@ -64,7 +84,7 @@ const getValidChessMoves = (board, turn, lastMove = null, castlingRights = { wK:
         const tempBoard = executeChessMove(board, move).board;
         return !isInCheck(tempBoard, turn);
     });
-};
+    };
 
 const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
     if (!piece) return [];
@@ -515,6 +535,7 @@ const quiescence = (board, alpha, beta, turn, aiColor, castlingRights, lastMove)
     });
 
     for (const move of moves) {
+        // Quiescence usually ignores castling updates to stay fast, but we pass simplified state
         const { board: nextBoard } = executeChessMove(board, move);
         const nextTurn = turn === 'white' ? 'black' : 'white';
         const score = quiescence(nextBoard, -beta, -alpha, nextTurn, aiColor, castlingRights, move);
@@ -553,42 +574,35 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, cas
         moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0));
 
         for (const move of moves) {
-            const { board: nextBoard } = executeChessMove(board, move);
+            const { board: nextBoard, castlingRights: nextCR, lastMove: nextLM } = executeChessMove(board, move, castlingRights);
             const nextTurn = turn === 'white' ? 'black' : 'white';
-            
-            // Ideally we update castling rights/lastMove for recursion, but simplified for now (stateless recursion or assumptions)
-            // To do it right: need to update them. 
-            // For simplicity in this basic AI: we assume rights don't change drastically in 2-3 moves or we ignore deep castling logic logic for performance.
-            // Correct way: update them.
-            // Since executeChessMove doesn't return updated rights, we skip updating them for depth > 1 to keep it simple and fast.
-            // This weakens the AI slightly but avoids complexity hell in this single file.
-            
-            const evalObj = minimax(nextBoard, depth - 1, alpha, beta, false, nextTurn, aiColor, castlingRights, move);
-            
+
+            const evalObj = minimax(nextBoard, depth - 1, alpha, beta, false, nextTurn, aiColor, nextCR, nextLM, deadline);
+
             if (evalObj.score > maxEval) {
                 maxEval = evalObj.score;
                 bestMove = move;
             }
             alpha = Math.max(alpha, evalObj.score);
             if (beta <= alpha) break;
-        }
-        return { score: maxEval, move: bestMove };
-    } else {
-        let minEval = Infinity;
-        moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0));
+            }
+            return { score: maxEval, move: bestMove };
+            } else {
+            let minEval = Infinity;
+            moves.sort((a, b) => (b.captured ? 1 : 0) - (a.captured ? 1 : 0));
 
-        for (const move of moves) {
-            const { board: nextBoard } = executeChessMove(board, move);
+            for (const move of moves) {
+            const { board: nextBoard, castlingRights: nextCR, lastMove: nextLM } = executeChessMove(board, move, castlingRights);
             const nextTurn = turn === 'white' ? 'black' : 'white';
-            const evalObj = minimax(nextBoard, depth - 1, alpha, beta, true, nextTurn, aiColor, castlingRights, move);
-            
+            const evalObj = minimax(nextBoard, depth - 1, alpha, beta, true, nextTurn, aiColor, nextCR, nextLM, deadline);
+
             if (evalObj.score < minEval) {
                 minEval = evalObj.score;
                 bestMove = move;
             }
             beta = Math.min(beta, evalObj.score);
             if (beta <= alpha) break;
-        }
+            }
         return { score: minEval, move: bestMove };
     }
 };
