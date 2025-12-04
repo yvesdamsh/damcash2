@@ -126,6 +126,7 @@ import {
         { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
         { label: 'Boutique', path: '/Shop', icon: ShoppingBag, public: true },
         { label: 'Académie', path: '/Academy', icon: Brain, public: true },
+        { label: 'Académie', path: '/Academy', icon: Brain, public: true },
         // Private items
         { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
         { label: 'Équipes', path: '/Teams', icon: Users, public: false },
