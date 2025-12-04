@@ -1411,7 +1411,7 @@ export default function Game() {
                                         <RotateCcw className="w-4 h-4 mr-2" /> Analyser le plateau
                                     </Button>
                                 )}
-                                <Button variant="outline" onClick={() => navigate('/')} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
+                                <Button variant="outline" onClick={() => navigate('/Home')} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
                                     Retour à l'accueil
                                 </Button>
                             </div>
@@ -1665,7 +1665,7 @@ export default function Game() {
                         </Popover>
 
                         {game.status !== 'playing' && game.status !== 'waiting' && (
-                            <Button variant="outline" size="sm" onClick={() => navigate('/')}>
+                            <Button variant="outline" size="sm" onClick={() => navigate('/Home')}>
                                 <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
                             </Button>
                         )}
