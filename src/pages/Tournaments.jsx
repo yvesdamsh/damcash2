@@ -366,6 +366,51 @@ export default function Tournaments() {
                 </Dialog>
             </div>
 
+            {/* Official Tournaments Banner */}
+            <div className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <Crown className="w-6 h-6 text-yellow-600" />
+                    <h2 className="text-2xl font-bold text-[#4a3728]">Événements Officiels</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {tournaments
+                        .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing'))
+                        .slice(0, 4)
+                        .map(t => (
+                            <Card key={t.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Trophy className="w-24 h-24" />
+                                </div>
+                                <CardContent className="p-4 relative z-10">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="bg-yellow-500 text-[#2c1e12] text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                                            {t.recurrence === 'daily' ? 'Quotidien' : t.recurrence === 'weekly' ? 'Hebdo' : 'Officiel'}
+                                        </div>
+                                        {t.game_type === 'chess' ? <Crown className="w-4 h-4" /> : <Gamepad2 className="w-4 h-4" />}
+                                    </div>
+                                    <h3 className="font-bold text-lg leading-tight mb-1 truncate">{t.name}</h3>
+                                    <div className="flex items-center gap-2 text-xs opacity-80 mb-3">
+                                        <Calendar className="w-3 h-3" />
+                                        {format(new Date(t.start_date), 'HH:mm')}
+                                        <span>•</span>
+                                        <span>{t.time_control}</span>
+                                    </div>
+                                    <Link to={`/TournamentDetail?id=${t.id}`}>
+                                        <Button size="sm" className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-xs h-8">
+                                            Rejoindre
+                                        </Button>
+                                    </Link>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    {tournaments.filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing')).length === 0 && (
+                         <div className="col-span-full bg-white/50 p-4 rounded-lg text-center text-gray-500 border border-dashed border-gray-300">
+                             Aucun événement officiel à venir prochainement.
+                         </div>
+                    )}
+                </div>
+            </div>
+
             {/* Filters & Controls */}
             <div className="mb-8 space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
@@ -474,6 +519,12 @@ export default function Tournaments() {
                         // 5. Private Visibility
                         if (t.is_private && (!user || t.created_by_user_id !== user.id) && !myTournamentIds.has(t.id)) return false;
 
+                        // 6. Hide Official from main list (optional, or keep them mixed? User asked for a system. 
+                        // Usually better to duplicate or keep mixed. Let's keep mixed but sort officials top or visually distinct.
+                        // Actually, let's HIDE them from the "General List" if they are already shown in the top banner to avoid duplication?
+                        // No, the top banner is a "Highlight" (limit 4). The list is "All".
+                        // Let's keep them in the list too for completeness.
+                        
                         return true;
                     })
                     .map(t => (

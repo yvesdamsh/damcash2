@@ -6,6 +6,41 @@ export default async function handler(req) {
     const base44 = createClientFromRequest(req);
     const now = new Date();
 
+    // 1. Manage Official Tournaments (Hourly & Daily/Weekly)
+    const ensureScheduledTournament = async (namePrefix, type, format, tc, targetDate, recurrence, prize = 100) => {
+        const existing = await base44.asServiceRole.entities.Tournament.filter({
+            game_type: type,
+            format: format,
+            status: ['open', 'ongoing']
+        });
+        
+        // Check if we have one starting around targetDate (+/- 30 mins)
+        const found = existing.find(t => Math.abs(new Date(t.start_date) - targetDate) < 30 * 60 * 1000 && t.name.startsWith(namePrefix));
+        
+        if (!found) {
+             // Duration logic: Arena 1h, Swiss 2h
+             const duration = format === 'arena' ? 60 : 120;
+             const endDate = new Date(targetDate.getTime() + duration * 60 * 1000);
+             
+             await base44.asServiceRole.entities.Tournament.create({
+                name: `${namePrefix} ${format === 'arena' ? tc : format}`,
+                game_type: type,
+                format: format,
+                time_control: tc,
+                start_date: targetDate.toISOString(),
+                end_date: endDate.toISOString(),
+                max_players: 999,
+                status: 'open',
+                recurrence: recurrence, // system handles recurrence on finish, but we double check here
+                description: "Tournoi Officiel Damcash",
+                prize_pool: prize,
+                rounds: format === 'swiss' ? 7 : 0,
+                created_by_user_id: 'system',
+                elo_min: 0, elo_max: 3000
+            });
+        }
+    };
+
     // 1. Manage Hourly Arenas (Existing Logic)
     // ... (Simplified/Refactored to use common logic if possible, but keeping for compatibility)
     const currentHour = now.getHours();
@@ -20,29 +55,37 @@ export default async function handler(req) {
     const nextStart = new Date(now); nextStart.setHours(currentHour + 1, 0, 0, 0);
     const nextEnd = new Date(nextStart); nextEnd.setMinutes(57, 0, 0);
 
-    const ensureArena = async (start, end, tc, type) => {
-        const existing = await base44.asServiceRole.entities.Tournament.filter({
-            format: 'arena', game_type: type, status: ['open', 'ongoing']
-        });
-        const found = existing.find(t => Math.abs(new Date(t.start_date) - start) < 60000);
-        
-        if (!found) {
-            await base44.asServiceRole.entities.Tournament.create({
-                name: `Arena ${type === 'checkers' ? 'Dames' : 'Échecs'} ${tc}`,
-                game_type: type, format: 'arena', time_control: tc,
-                start_date: start.toISOString(), end_date: end.toISOString(),
-                max_players: 999, status: now >= start ? 'ongoing' : 'open',
-                description: "Tournoi officiel Damcash.",
-                prize_pool: 100, // Automated prize for automated tournaments
-                elo_min: 0, elo_max: 3000
-            });
-        }
-    };
+    // A. Hourly Arenas (Short duration, rotation)
+    await ensureScheduledTournament(`Arena ${currentTC} Dames`, 'checkers', 'arena', currentTC, currentStart, 'none', 50);
+    await ensureScheduledTournament(`Arena ${currentTC} Échecs`, 'chess', 'arena', currentTC, currentStart, 'none', 50);
+    await ensureScheduledTournament(`Arena ${nextTC} Dames`, 'checkers', 'arena', nextTC, nextStart, 'none', 50);
+    await ensureScheduledTournament(`Arena ${nextTC} Échecs`, 'chess', 'arena', nextTC, nextStart, 'none', 50);
 
-    await ensureArena(currentStart, currentEnd, currentTC, 'checkers');
-    await ensureArena(currentStart, currentEnd, currentTC, 'chess');
-    await ensureArena(nextStart, nextEnd, nextTC, 'checkers');
-    await ensureArena(nextStart, nextEnd, nextTC, 'chess');
+    // B. Daily Major Tournaments
+    // Daily Checkers Rapid at 18:00
+    const todayRapidCheckers = new Date(now); todayRapidCheckers.setHours(18, 0, 0, 0);
+    if (now > todayRapidCheckers) todayRapidCheckers.setDate(todayRapidCheckers.getDate() + 1);
+    await ensureScheduledTournament("Daily Checkers Rapid", 'checkers', 'swiss', '10+0', todayRapidCheckers, 'daily', 200);
+
+    // Daily Chess Blitz at 20:00
+    const todayBlitzChess = new Date(now); todayBlitzChess.setHours(20, 0, 0, 0);
+    if (now > todayBlitzChess) todayBlitzChess.setDate(todayBlitzChess.getDate() + 1);
+    await ensureScheduledTournament("Daily Chess Blitz", 'chess', 'swiss', '3+2', todayBlitzChess, 'daily', 200);
+
+    // C. Weekly Championships (Saturday/Sunday)
+    // Next Saturday 16:00 for Checkers
+    const nextSaturday = new Date(now); 
+    nextSaturday.setDate(now.getDate() + (6 - now.getDay() + 7) % 7);
+    nextSaturday.setHours(16, 0, 0, 0);
+    if (now > nextSaturday) nextSaturday.setDate(nextSaturday.getDate() + 7); // If today is Saturday and passed
+    await ensureScheduledTournament("Hebdo Dames Championship", 'checkers', 'arena', '5+0', nextSaturday, 'weekly', 1000);
+
+    // Next Sunday 16:00 for Chess
+    const nextSunday = new Date(now); 
+    nextSunday.setDate(now.getDate() + (0 - now.getDay() + 7) % 7);
+    nextSunday.setHours(16, 0, 0, 0);
+    if (now > nextSunday) nextSunday.setDate(nextSunday.getDate() + 7);
+    await ensureScheduledTournament("Hebdo Échecs Championship", 'chess', 'arena', '5+0', nextSunday, 'weekly', 1000);
 
 
     // 2. GENERAL TOURNAMENT MANAGER (Starts and Ends ANY tournament)
