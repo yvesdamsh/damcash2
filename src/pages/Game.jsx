@@ -62,9 +62,18 @@ export default function Game() {
 
     useEffect(() => {
         const gameId = searchParams.get('id');
+        // Reset game state immediately when ID changes to avoid showing old data (timer, board)
+        if (gameId !== id) {
+            setGame(null);
+            setBoard([]);
+            setValidMoves([]);
+            setSelectedSquare(null);
+            setMustContinueWith(null);
+        }
+
         setId(gameId);
         setReplayIndex(-1);
-        
+
         if (gameId === 'local-ai') {
             const difficulty = searchParams.get('difficulty') || 'medium';
             // Read type from URL first (passed by Home), then fallback to localStorage
@@ -237,7 +246,33 @@ export default function Game() {
                 const data = JSON.parse(event.data);
                 if (data.type === 'GAME_UPDATE') {
                     if (data.payload) {
-                        setGame(prev => ({ ...prev, ...data.payload }));
+                        setGame(prev => {
+                            // Sync Logic: Prevent reverting optimistic moves
+                            if (!prev) return { ...data.payload }; // Initial load
+
+                            // If we have local moves, check if incoming state is "newer"
+                            // We use moves count as versioning
+                            try {
+                                const prevMoves = prev.moves ? JSON.parse(prev.moves) : [];
+                                const newMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
+
+                                // If incoming has fewer or equal moves, it might be an old state (lag)
+                                // BUT: If we just made a move, we have N+1. Server sends N+1. That's fine (confirmation).
+                                // If server sends N (old state), we ignore.
+                                // EXCEPTION: Rematch/Reset (moves goes to 0).
+                                if (newMoves.length === 0 && prevMoves.length > 0) {
+                                    // This is a reset/rematch -> Accept it
+                                    return { ...prev, ...data.payload };
+                                }
+
+                                if (newMoves.length < prevMoves.length) {
+                                    console.warn("Ignoring stale game update", newMoves.length, prevMoves.length);
+                                    return prev;
+                                }
+                            } catch(e) {}
+
+                            return { ...prev, ...data.payload };
+                        });
                     } else {
                         fetchGame();
                     }
@@ -822,7 +857,7 @@ export default function Game() {
     const updateGameOnMove = async (boardStateObj, nextTurn, status, winnerId, moveData) => {
         const currentMoves = game.moves ? JSON.parse(game.moves) : [];
         const now = new Date().toISOString();
-        
+
         // Calculate time deduction
         let updateData = {
             board_state: JSON.stringify(boardStateObj),
@@ -848,15 +883,16 @@ export default function Game() {
              updateData.last_move_at = now;
         }
 
+        // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
+        // We update local state immediately so the UI reflects the move.
+        // The socket check in onmessage will prevent overwriting this with an old state.
+        setGame(prev => ({ ...prev, ...updateData }));
+
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'MOVE',
                 payload: { updateData }
             }));
-            // Optimistic Local Update (Optional, but makes it instant)
-            // But waiting for socket bounce is usually fast enough and safer for consistency.
-            // If we update local state here, we must be careful not to duplicate effect when message comes back.
-            // We'll rely on the immediate fetch/message from socket.
         } else {
             // Fallback if socket failed
             await base44.entities.Game.update(game.id, updateData);
