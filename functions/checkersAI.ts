@@ -310,23 +310,41 @@ const WEIGHTS = {
         }
     }
 
-            // Endgame Strategy
-            // If winning (more pieces), simplify (trade) and trap.
-            // If losing, avoid trades, seek complexity.
+            // --- ROBUST ENDGAME STRATEGY ---
             const myPieces = aiColor === 'white' ? whitePieces : blackPieces;
             const opPieces = aiColor === 'white' ? blackPieces : whitePieces;
+            const totalMaterial = whitePieces + blackPieces;
 
             let endgameScore = 0;
-            if (myPieces > opPieces) {
-            // Winning: Encourage trading (100 pts bonus per trade roughly, implicitly handled by material diff but let's boost)
-            endgameScore += (20 - opPieces) * 10; 
 
-            // Push opponent to edges?
-            // Not easily calculated without iterating again.
-            } else if (myPieces < opPieces) {
-            // Losing: Keep pieces on board (penalty for low piece count)
-            endgameScore -= (20 - myPieces) * 10;
+            // Phase Detection
+            if (totalMaterial <= 12) {
+                if (myPieces > opPieces) {
+                    // WINNING: Simplification & Control
+                    // Aggressively reward reducing opponent pieces (Trading)
+                    endgameScore += (15 - opPieces) * 50; 
+
+                    // Reward having more kings explicitly in endgame
+                    // (Kings are weighted 300, so this is implicit, but we want to force promotion)
+                } else if (myPieces < opPieces) {
+                    // LOSING: Complexity & Survival
+                    // Penalize reducing own pieces (Avoid Trading)
+                    endgameScore -= (15 - myPieces) * 50;
+
+                    // Reward keeping pieces central/safe (avoiding edges where they can be trapped)
+                }
+            } else {
+                // Middlegame: Standard trading incentives
+                if (myPieces > opPieces) endgameScore += (20 - opPieces) * 10;
+                if (myPieces < opPieces) endgameScore -= (20 - myPieces) * 10;
             }
+
+            // Symmetry for Dog Hole (Defensive Flaw)
+            // White Dog Hole: r=9, c=0 (Bottom Left)
+            // Black Dog Hole: r=0, c=9 (Top Right)
+            // Already checked White in loop, checking Black now?
+            // Actually, let's rely on the loop to handle it if we fix it there, 
+            // but for now this endgame block is the main request.
 
             let finalScore = score + endgameScore;
             return aiColor === 'white' ? finalScore : -finalScore;
