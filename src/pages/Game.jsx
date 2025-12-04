@@ -1423,16 +1423,20 @@ export default function Game() {
                                 </div>
                             )}
 
+                            {/* Close button for Analysis */}
+                            <button 
+                                onClick={() => setShowResult(false)}
+                                className="absolute top-4 right-4 p-2 text-[#4a3728] hover:bg-black/5 rounded-full transition-colors"
+                                title="Fermer et analyser"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
                             <div className="space-y-3">
-                                {(game.series_length > 1) ? (
-                                     <Button onClick={handleRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
-                                        <Play className="w-5 h-5 mr-2" /> Manche Suivante
-                                     </Button>
-                                ) : (
-                                    <Button onClick={() => setShowResult(false)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">
-                                        <RotateCcw className="w-4 h-4 mr-2" /> Analyser le plateau
-                                    </Button>
-                                )}
+                                <Button onClick={handleRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
+                                    <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1) ? "Manche Suivante" : "Rejouer"}
+                                </Button>
+                                
                                 <Button variant="outline" onClick={() => navigate('/Home')} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
                                     Retour à l'accueil
                                 </Button>
