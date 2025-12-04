@@ -102,6 +102,8 @@ export default function Game() {
                 game_type: type,
                 white_player_name: currentUser ? (currentUser.username || 'Vous') : 'Vous',
                 black_player_name: `AI (${difficulty})`,
+                white_player_id: currentUser?.id || 'guest',
+                black_player_id: 'ai',
                 current_turn: 'white',
                 board_state: boardStr,
                 moves: JSON.stringify([]),
