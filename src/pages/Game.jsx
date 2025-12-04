@@ -124,32 +124,27 @@ export default function Game() {
     useEffect(() => {
         if (!game) return;
 
-        // Sound Logic
-        if (prevGameRef.current && prevGameRef.current.current_turn !== game.current_turn) {
-            // Don't play sound on initial load (prevGameRef.current is undefined)
-            if (prevGameRef.current) {
-                soundManager.play('move');
-                if (document.hidden) soundManager.play('notify');
-            }
-        }
+        // Parse Board State first to use it in logic
+        let currentBoard = [];
+        let lastChessMove = null;
 
-        // Board Parsing
         if (game.game_type === 'chess') {
             try {
-                // Handle potentially nested stringification or object
                 let parsed = game.board_state;
                 if (typeof parsed === 'string') {
                     try { parsed = JSON.parse(parsed); } catch (e) {}
                 }
-                // Double parse check if needed (sometimes API returns stringified string)
                 if (typeof parsed === 'string') {
                     try { parsed = JSON.parse(parsed); } catch (e) {}
                 }
                 
-                setBoard(Array.isArray(parsed.board) ? parsed.board : []);
+                currentBoard = Array.isArray(parsed.board) ? parsed.board : [];
+                lastChessMove = parsed.lastMove || null;
+                
+                setBoard(currentBoard);
                 setChessState({ 
                     castlingRights: parsed.castlingRights || {}, 
-                    lastMove: parsed.lastMove || null,
+                    lastMove: lastChessMove,
                     halfMoveClock: parsed.halfMoveClock || 0,
                     positionHistory: parsed.positionHistory || {}
                 });
@@ -163,8 +158,44 @@ export default function Game() {
                 if (typeof parsed === 'string') {
                      try { parsed = JSON.parse(parsed); } catch (e) {}
                 }
-                setBoard(Array.isArray(parsed) ? parsed : []);
+                currentBoard = Array.isArray(parsed) ? parsed : [];
+                setBoard(currentBoard);
             } catch (e) { setBoard([]); }
+        }
+
+        // Sound & Notification Logic
+        if (prevGameRef.current && prevGameRef.current.current_turn !== game.current_turn) {
+            if (prevGameRef.current) {
+                let soundPlayed = false;
+                
+                // Checkers Logic
+                if (game.game_type === 'checkers') {
+                    try {
+                        const moves = game.moves ? JSON.parse(game.moves) : [];
+                        const lastMove = moves[moves.length - 1];
+                        if (lastMove && lastMove.captured) {
+                            soundManager.play('capture');
+                            soundPlayed = true;
+                        }
+                    } catch(e) {}
+                }
+                
+                // Chess Logic
+                if (game.game_type === 'chess' && currentBoard.length > 0) {
+                    if (isInCheck(currentBoard, game.current_turn)) {
+                        soundManager.play('check');
+                        toast.warning("Échec au Roi !");
+                        soundPlayed = true;
+                    } else if (lastChessMove && lastChessMove.captured) {
+                        soundManager.play('capture');
+                        soundPlayed = true;
+                    }
+                }
+
+                if (!soundPlayed) soundManager.play('move');
+                
+                if (document.hidden) soundManager.play('notify');
+            }
         }
 
         // Result Logic
@@ -450,8 +481,6 @@ export default function Game() {
                                 if (captures.length > 0) mustContinue = true;
                             }
 
-                            soundManager.play(formattedMove.captured ? 'capture' : 'move');
-                            
                             const movesList = game.moves ? JSON.parse(game.moves) : [];
                             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
                             const newMoveEntry = { 
@@ -481,7 +510,6 @@ export default function Game() {
                                     status = 'finished';
                                     // AI is the winner if winnerColor matches AI color
                                     winnerId = winnerColor === aiColor ? 'ai' : currentUser?.id;
-                                    soundManager.play(winnerId === 'ai' ? 'loss' : 'win');
                                 }
                             }
 
@@ -651,9 +679,7 @@ export default function Game() {
                 winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
             }
             soundManager.play(winnerId === currentUser?.id ? 'win' : 'loss');
-        } else {
-            soundManager.play(move.captured ? 'capture' : 'move');
-        }
+        } 
 
         if (isAiGame) {
              // Local update only for AI game
@@ -812,11 +838,9 @@ export default function Game() {
         if (['checkmate'].includes(gameStatus)) {
             status = 'finished';
             winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
-            soundManager.play('win');
             san += "#";
         } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
-            soundManager.play('win'); // or draw sound
             let reason = "Nulle";
             if (gameStatus === 'stalemate') reason = "Pat (Stalemate)";
             else if (gameStatus === 'draw_50_moves') reason = "Nulle (50 coups)";
@@ -825,10 +849,8 @@ export default function Game() {
             toast.info(reason);
         } else {
             if (isInCheck(newBoard, nextTurn)) {
-                soundManager.play('check');
                 san += "+";
             }
-            else soundManager.play(move.captured ? 'capture' : 'move');
         }
 
         const newStateObj = { 
