@@ -18,7 +18,8 @@ import {
   Shield,
   Users,
   PlayCircle,
-  ShoppingBag
+  ShoppingBag,
+  History
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
           import FriendsManager from '@/components/FriendsManager';
@@ -128,6 +129,7 @@ import {
         { label: 'Académie', path: '/Academy', icon: Brain, public: true },
         { label: 'Académie', path: '/Academy', icon: Brain, public: true },
         // Private items
+        { label: 'Historique', path: '/GameHistory', icon: History, public: false },
         { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
         { label: 'Équipes', path: '/Teams', icon: Users, public: false },
         { label: 'Entraînement', path: '/Training', icon: Brain, public: false },
