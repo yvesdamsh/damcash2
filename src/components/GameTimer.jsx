@@ -8,10 +8,20 @@ export default function GameTimer({ initialSeconds, isActive, onTimeout }) {
     const timeoutCalledRef = useRef(false);
 
     useEffect(() => {
-        setTimeLeft(initialSeconds);
+        // Only reset state if the deviation is significant (e.g. new move or sync)
+        // This prevents jitter from frequent parent re-renders where initialSeconds changes slightly
+        setTimeLeft(prev => {
+            // If inactive, always sync to prop
+            if (!isActive) return initialSeconds;
+            // If active, only sync if difference is large (>1s), implying a server correction or new move
+            if (Math.abs(prev - initialSeconds) > 1) return initialSeconds;
+            return prev;
+        });
+
         timeoutCalledRef.current = false;
         
         if (isActive && initialSeconds > 0) {
+            // Always target the end time based on the latest prop to ensure long-term accuracy
             endTimeRef.current = Date.now() + (initialSeconds * 1000);
             
             const tick = () => {
@@ -30,6 +40,7 @@ export default function GameTimer({ initialSeconds, isActive, onTimeout }) {
                 }
             };
             
+            // Restart loop
             if (requestIdRef.current) cancelAnimationFrame(requestIdRef.current);
             requestIdRef.current = requestAnimationFrame(tick);
         } else {

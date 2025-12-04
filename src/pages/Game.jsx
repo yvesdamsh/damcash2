@@ -217,7 +217,7 @@ export default function Game() {
 
     // WebSocket Connection
     useEffect(() => {
-        if (!id) return;
+        if (!id || id === 'local-ai') return;
 
         // Initial Fetch
         const fetchGame = async () => {
@@ -1452,6 +1452,7 @@ export default function Game() {
                         </div>
                     </div>
                     <GameTimer 
+                        key={`timer-top-${game.id}-${topPlayer.color}`}
                         initialSeconds={topPlayer.timeLeft} 
                         isActive={game.status === 'playing' && game.current_turn === topPlayer.color && !!game.last_move_at}
                         onTimeout={() => handleTimeout(topPlayer.color)}
@@ -1567,6 +1568,7 @@ export default function Game() {
                         </div>
                     </div>
                     <GameTimer 
+                        key={`timer-bottom-${game.id}-${bottomPlayer.color}`}
                         initialSeconds={bottomPlayer.timeLeft} 
                         isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color && !!game.last_move_at}
                         onTimeout={() => handleTimeout(bottomPlayer.color)}
