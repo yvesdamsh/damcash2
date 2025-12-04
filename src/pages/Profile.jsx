@@ -472,9 +472,10 @@ export default function Profile() {
                                     variant="destructive"
                                     onClick={async () => {
                                         try {
-                                            await base44.auth.logout('/Home');
+                                            await base44.auth.logout();
                                         } catch (e) {
                                             console.error(e);
+                                        } finally {
                                             window.location.href = '/Home';
                                         }
                                     }}
