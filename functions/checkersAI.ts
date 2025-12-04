@@ -186,9 +186,29 @@ const getAllPlayableMoves = (board, turn, activePiece = null) => {
     }
 
     if (captureChains.length > 0) {
-        // Filter by Max Length (Majority Rule)
+        // Filter by Max Length (Majority Rule - Fiche 5)
         const maxScore = Math.max(...captureChains.map(c => c.score));
-        return captureChains.filter(c => c.score === maxScore);
+        let bestCaptures = captureChains.filter(c => c.score === maxScore);
+
+        // Priority Rule (Fiche 6): "Si un pion et une dame capturent un nombre égal → la prise par la dame est obligatoire."
+        // We check if any capture is made by a King (piece 3 or 4).
+        // The 'steps' array contains the move details. The starting position is in steps[0].from
+        // We need to look up the piece at 'from' in the ORIGINAL board (before moves).
+        // But captureChains objects don't store the starting piece type directly, only coordinates.
+        // We can infer it or look it up. 'board' is passed to this function.
+        
+        const kingCaptures = bestCaptures.filter(chain => {
+            const startR = chain.steps[0].from.r;
+            const startC = chain.steps[0].from.c;
+            const p = board[startR][startC];
+            return p === 3 || p === 4;
+        });
+
+        if (kingCaptures.length > 0) {
+            return kingCaptures; // Enforce King Priority
+        }
+
+        return bestCaptures;
     }
     return simpleMoves;
 };
@@ -210,7 +230,9 @@ const WEIGHTS = {
     HANGING: -60,      // Stronger penalty for hanging pieces
     CLASSIC_CENTER: 15,// Stronger center control
     MODERN_FLANK: 8,   // Modern flank structures
-    SACRIFICE_RECOVERY: 30 // Bonus for positions that look losing materially but have high mobility/attack potential (heuristic)
+    SACRIFICE_RECOVERY: 30, // Bonus for positions that look losing materially but have high mobility/attack potential (heuristic)
+    FICHE_12_CENTER: 15, // Bonus for controlling specific central squares (27, 32, 20, 16)
+    FICHE_12_HOLE: -25   // Penalty for structural holes (29, 24)
     };
 
     // Helper to check if a square is threatened (basic 1-ply check)
@@ -260,9 +282,26 @@ const WEIGHTS = {
             // Edges (Safe from double jumps often)
             if (c === 0 || c === 9) value += WEIGHTS.EDGE;
             
-            // --- STRATEGY: CLASSIC VS MODERN ---
+            // --- STRATEGY: CLASSIC VS MODERN & FICHE 12 ---
             // Classic: Control the "Trictrac" / Center zone (rows 4-5, cols 3-6)
             if (c >= 3 && c <= 6 && r >= 4 && r <= 5) value += WEIGHTS.CLASSIC_CENTER;
+
+            // Fiche 12: Control specific center squares (27, 32, 20, 16)
+            // Mapping: 27->(5,2), 32->(6,3), 20->(3,8), 16->(3,0)
+            if ((r===5 && c===2) || (r===6 && c===3) || (r===3 && c===8) || (r===3 && c===0)) {
+                value += WEIGHTS.FICHE_12_CENTER;
+            }
+
+            // Fiche 12: Avoid structural holes (29, 24)
+            // Mapping: 29->(5,6), 24->(4,7)
+            // We penalize if these squares are empty but surrounded? Or just occupying them is risky?
+            // "Éviter les trous structurels (29, 24…)" usually means avoiding *leaving* them empty in a way that breaks the chain.
+            // For simplicity, we reward keeping pieces nearby or penalize specific patterns? 
+            // Let's assume having a piece there is GOOD to prevent a hole, or BAD if it creates one?
+            // Usually "Avoid holes" means DONT leave it empty. So we BONUS occupation.
+            if ((r===5 && c===6) || (r===4 && c===7)) {
+                value += 10; // Reward occupation to avoid hole
+            }
 
             // Modern: Control flanks but keep connection (Outpost squares)
             // e.g., Squares 24, 27, 28, 29 etc mapped to (r,c)
