@@ -44,6 +44,67 @@ export default async function handler(req) {
     await ensureArena(nextStart, nextEnd, nextTC, 'checkers');
     await ensureArena(nextStart, nextEnd, nextTC, 'chess');
 
+    // --- NEW: Regular Daily & Weekly Tournaments ---
+    const ensureScheduled = async (type, recurrence, startHour, startDay = null) => { // startDay 0=Sun, 6=Sat
+        const tDate = new Date(now);
+        tDate.setHours(startHour, 0, 0, 0);
+        
+        if (recurrence === 'weekly' && startDay !== null) {
+            const day = tDate.getDay();
+            const diff = startDay - day; // Adjust to next target day
+            let targetDiff = diff;
+            if (diff < 0 || (diff === 0 && now > tDate)) targetDiff += 7; // If passed today, next week
+            tDate.setDate(tDate.getDate() + targetDiff);
+        } else {
+            // Daily
+            if (now > tDate) tDate.setDate(tDate.getDate() + 1); // Next day if passed
+        }
+
+        // Check existence (fuzzy match time)
+        const existing = await base44.asServiceRole.entities.Tournament.filter({
+            recurrence: recurrence,
+            game_type: type,
+            status: 'open'
+        });
+        
+        const found = existing.find(t => {
+            const d = new Date(t.start_date);
+            return Math.abs(d - tDate) < 12 * 60 * 60 * 1000; // Within 12h (same day/event)
+        });
+
+        if (!found) {
+            const isDaily = recurrence === 'daily';
+            const name = isDaily 
+                ? `${type === 'chess' ? '♟️ Échecs' : '⚪ Dames'} Quotidien (Rapide)`
+                : `${type === 'chess' ? '♟️ Échecs' : '⚪ Dames'} Hebdo (Blitz)`;
+            
+            await base44.asServiceRole.entities.Tournament.create({
+                name,
+                game_type: type,
+                format: isDaily ? 'swiss' : 'arena',
+                time_control: isDaily ? '10+0' : '3+2',
+                start_date: tDate.toISOString(),
+                end_date: isDaily ? null : new Date(tDate.getTime() + 90*60000).toISOString(), // Arena needs end date (90m)
+                max_players: 100,
+                status: 'open',
+                recurrence: recurrence,
+                created_by_user_id: 'system',
+                prize_pool: isDaily ? 500 : 2000, // Big prizes
+                description: "Tournoi officiel automatique.",
+                rounds: isDaily ? 5 : 0, // Swiss rounds vs Arena (0)
+                entry_fee: 0
+            });
+        }
+    };
+
+    // Daily Rapid (18:00)
+    await ensureScheduled('chess', 'daily', 18);
+    await ensureScheduled('checkers', 'daily', 18);
+
+    // Weekly Blitz (Saturday 15:00)
+    await ensureScheduled('chess', 'weekly', 15, 6);
+    await ensureScheduled('checkers', 'weekly', 15, 6);
+
 
     // 2. GENERAL TOURNAMENT MANAGER (Starts and Ends ANY tournament)
     
