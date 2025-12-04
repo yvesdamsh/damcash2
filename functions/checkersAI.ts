@@ -204,11 +204,42 @@ const WEIGHTS = {
     ADVANCED: 5,       // Push forward
     MOBILITY: 2,       // Number of moves available
     DOG_HOLE: -20,     // Penalty for being trapped in corners
-    BRIDGE: 15,        // Bonus for holding bridge (c=2, r=9 or c=7, r=0)
-    OREO: 15           // Bonus for Oreo pattern (defensive triangle)
-};
+    BRIDGE: 25,        // Bonus for holding bridge
+    OREO: 25,          // Bonus for Oreo pattern
+    PROTECTED: 10,     // Bonus for protected pieces
+    HANGING: -50,      // Penalty for pieces in danger
+    CLASSIC_CENTER: 10,// Bonus for controlling "Classic" center squares
+    MODERN_FLANK: 5    // Bonus for flexible "Modern" flank structures
+    };
 
-const evaluate = (board, aiColor, turn) => {
+    // Helper to check if a square is threatened (basic 1-ply check)
+    const isUnderAttack = (board, r, c, turn) => {
+    const opponent = turn === 'white' ? 'black' : 'white';
+    const isWhite = turn === 'white';
+    // Simple check: can an opponent pawn jump this?
+    // Opponent pawns move opposite direction.
+    const opDir = isWhite ? 1 : -1; // Black moves down (+1), White moves up (-1)
+
+    // Check incoming diagonals for opponent pieces
+    const fromDirs = [[-opDir, -1], [-opDir, 1]]; 
+    for (const [dr, dc] of fromDirs) {
+        const nr = r + dr, nc = c + dc;
+        if (isValidPos(nr, nc)) {
+            const p = board[nr][nc];
+            if (isOpponent(p, turn)) {
+                // Check if space behind is empty (jumpable)
+                const jr = r - dr, jc = c - dc; // The landing spot relative to piece
+                // Actually the jump is FROM opponent TO landing.
+                // Opponent at nr,nc. Jumps over r,c. Lands at r + (r-nr), c + (c-nc).
+                const lr = r + (r - nr), lc = c + (c - nc);
+                if (isValidPos(lr, lc) && board[lr][lc] === 0) return true;
+            }
+        }
+    }
+    return false;
+    };
+
+    const evaluate = (board, aiColor, turn) => {
     let score = 0;
     let whitePieces = 0;
     let blackPieces = 0;
@@ -228,29 +259,45 @@ const evaluate = (board, aiColor, turn) => {
             // Edges (Safe from double jumps often)
             if (c === 0 || c === 9) value += WEIGHTS.EDGE;
             
-            // Center Box (Control)
-            if (c >= 3 && c <= 6 && r >= 3 && r <= 6) value += WEIGHTS.CENTER;
-            
-            // Advancement (for non-kings) - Reward getting closer to King
+            // --- STRATEGY: CLASSIC VS MODERN ---
+            // Classic: Control the "Trictrac" / Center zone (rows 4-5, cols 3-6)
+            if (c >= 3 && c <= 6 && r >= 4 && r <= 5) value += WEIGHTS.CLASSIC_CENTER;
+
+            // Modern: Control flanks but keep connection (Outpost squares)
+            // e.g., Squares 24, 27, 28, 29 etc mapped to (r,c)
+            if ((c === 2 || c === 7) && (r >= 3 && r <= 6)) value += WEIGHTS.MODERN_FLANK;
+
+            // Advancement (for non-kings)
             if (!isKing) {
                 const rank = isWhite ? (9 - r) : r;
-                // Progressive advancement
                 value += rank * rank * 0.5; 
                 
                 // Back row safety (Keep pieces on home row as long as possible)
                 if ((isWhite && r === 9) || (!isWhite && r === 0)) value += WEIGHTS.BACK_ROW;
 
-                // Dog Hole Penalty (Trapped pieces at r0,c1 or r0,c8 roughly)
-                if (isWhite && r===9 && (c===0 || c===2)) value += WEIGHTS.DOG_HOLE;
+                // Dog Hole Penalty
+                if (isWhite && r===9 && c===0) value += WEIGHTS.DOG_HOLE;
+                
+                // --- SAFETY & PROTECTION ---
+                // Protected: Has a friend behind it supporting
+                const backRow = isWhite ? r + 1 : r - 1;
+                const backLeft = c - 1, backRight = c + 1;
+                let protectedPiece = false;
+                if (isValidPos(backRow, backLeft) && isOwnPiece(board[backRow][backLeft], isWhite ? 'white' : 'black')) protectedPiece = true;
+                if (isValidPos(backRow, backRight) && isOwnPiece(board[backRow][backRight], isWhite ? 'white' : 'black')) protectedPiece = true;
+                
+                if (protectedPiece) value += WEIGHTS.PROTECTED;
+
+                // Hanging: Is under attack?
+                // We check if it can be jumped next turn.
+                if (isUnderAttack(board, r, c, isWhite ? 'white' : 'black')) {
+                    // If protected, penalty is smaller (trade), else huge penalty
+                    value += protectedPiece ? (WEIGHTS.HANGING / 2) : WEIGHTS.HANGING;
+                }
             } else {
                 // King centralization
                  if (c >= 2 && c <= 7 && r >= 2 && r <= 7) value += 10;
             }
-
-            // Patterns
-            // Bridge (White: r9 c2/4/6/8? Standard checkers 10x10 board is big)
-            // Assuming 10x10 international checkers (0-9)
-            // Bridge is usually central back.
 
             if (isWhite) {
                 whitePieces++;
@@ -259,8 +306,8 @@ const evaluate = (board, aiColor, turn) => {
                 blackPieces++;
                 score -= value;
             }
-            }
-            }
+        }
+    }
 
             // Endgame Strategy
             // If winning (more pieces), simplify (trade) and trap.
