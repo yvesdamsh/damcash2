@@ -472,6 +472,7 @@ export default function Profile() {
                                     variant="destructive"
                                     onClick={async () => {
                                         try {
+                                            setTimeout(() => window.location.href = '/Home', 1000);
                                             await base44.auth.logout();
                                         } catch (e) {
                                             console.error(e);

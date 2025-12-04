@@ -6,7 +6,7 @@ import { base44 } from '@/api/base44Client';
 
 export default function SplashScreen({ onPlayAsGuest }) {
     const handleLogin = () => {
-        base44.auth.redirectToLogin(window.location.pathname);
+        base44.auth.redirectToLogin();
     };
 
     return (
