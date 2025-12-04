@@ -465,6 +465,18 @@ export default function Profile() {
                                     <MessageSquare className="w-4 h-4 mr-2" /> Messages
                                 </Button>
                             </Link>
+                            {isOwnProfile && (
+                                <Button 
+                                    variant="destructive"
+                                    onClick={async () => {
+                                        await base44.auth.logout();
+                                        window.location.href = '/';
+                                    }}
+                                    className="bg-red-600 hover:bg-red-700 text-white shadow-md"
+                                >
+                                    <LogOut className="w-4 h-4 mr-2" /> Déconnexion
+                                </Button>
+                            )}
                             {badges.length > 0 && (
                                 <div className="flex -space-x-3 overflow-hidden py-2 ml-2">
                                     {badges.slice(0, 5).map((b, i) => (

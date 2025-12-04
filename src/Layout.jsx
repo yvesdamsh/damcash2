@@ -218,7 +218,16 @@ import {
                                 >
                                     {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                 </button>
-                                {/* Auth buttons removed as requested */}
+                                
+                                {user && (
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="p-2 rounded-full hover:bg-red-900/30 text-red-400 hover:text-red-300 transition-colors ml-2"
+                                        title="Déconnexion"
+                                    >
+                                        <LogOut className="w-5 h-5" />
+                                    </button>
+                                )}
                         </div>
 
                         {/* Menu button (Visible on all screens) */}
