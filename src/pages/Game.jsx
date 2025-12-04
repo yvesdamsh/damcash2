@@ -110,6 +110,7 @@ export default function Game() {
                 last_move_at: new Date().toISOString(),
             });
             setBoard(initialBoard);
+            setLoading(false);
         } else {
             setIsAiGame(false);
         }
