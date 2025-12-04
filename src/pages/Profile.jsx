@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon, ShoppingBag } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -28,6 +28,7 @@ export default function Profile() {
         username: '', 
         full_name: '', 
         avatar_url: '', 
+        banner_url: '',
         bio: '',
         profile_theme: 'default',
         avatar_frame: 'none'
@@ -111,6 +112,7 @@ export default function Profile() {
                     username: u.username || '', 
                     full_name: u.full_name || '',
                     avatar_url: u.avatar_url || '',
+                    banner_url: u.banner_url || '',
                     bio: u.bio || '',
                     profile_theme: u.profile_theme || 'default',
                     avatar_frame: u.avatar_frame || 'none'
@@ -162,14 +164,14 @@ export default function Profile() {
         init();
     }, []);
 
-    const handleFileUpload = async (e) => {
+    const handleFileUpload = async (e, field) => {
         const file = e.target.files[0];
         if (!file) return;
         
         setUploading(true);
         try {
             const { file_url } = await base44.integrations.Core.UploadFile({ file: file });
-            setEditForm(prev => ({ ...prev, avatar_url: file_url }));
+            setEditForm(prev => ({ ...prev, [field]: file_url }));
         } catch (error) {
             console.error("Upload failed", error);
         } finally {
@@ -183,6 +185,7 @@ export default function Profile() {
                 username: editForm.username,
                 full_name: editForm.full_name,
                 avatar_url: editForm.avatar_url,
+                banner_url: editForm.banner_url,
                 bio: editForm.bio,
                 profile_theme: editForm.profile_theme,
                 avatar_frame: editForm.avatar_frame
@@ -206,6 +209,21 @@ export default function Profile() {
 
     const avgElo = Math.round(((stats.elo_checkers || 1200) + (stats.elo_chess || 1200)) / 2);
 
+    // Stats Calculation for Charts
+    const chessGames = (stats.wins_chess || 0) + (stats.losses_chess || 0); // + draws if tracked
+    const checkersGames = (stats.wins_checkers || 0) + (stats.losses_checkers || 0);
+    
+    const pieData = [
+        { name: 'Victoires', value: totalWins, color: '#16a34a' },
+        { name: 'Défaites', value: totalLosses, color: '#dc2626' },
+        // Draws not explicitly in stats object but can be inferred or just ignored for now
+    ];
+
+    const gameModeData = [
+        { name: 'Échecs', value: chessGames, color: '#2563eb' },
+        { name: 'Dames', value: checkersGames, color: '#d97706' }
+    ];
+
     // Graph Data Preparation
     const chartData = gameHistory.slice().reverse().map((g, i) => ({
         name: i + 1,
@@ -218,15 +236,17 @@ export default function Profile() {
         <div className="max-w-5xl mx-auto p-4 pb-20">
             <div className="bg-white/90 backdrop-blur rounded-3xl shadow-2xl border border-[#d4c5b0] overflow-hidden mb-8">
                 {/* Cover / Header */}
-                <div className={`h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500`}>
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 2 }}
-                        animate={{ opacity: 0.1, scale: 1 }}
-                        transition={{ duration: 1.5, ease: "circOut" }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
-                    >
-                        <span className="text-9xl font-black text-[#e8dcc5] tracking-tighter opacity-20">DAMCASH</span>
-                    </motion.div>
+                <div className={`h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500 bg-cover bg-center`} style={user.banner_url ? { backgroundImage: `url(${user.banner_url})` } : {}}>
+                    {!user.banner_url && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 2 }}
+                            animate={{ opacity: 0.1, scale: 1 }}
+                            transition={{ duration: 1.5, ease: "circOut" }}
+                            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                        >
+                            <span className="text-9xl font-black text-[#e8dcc5] tracking-tighter opacity-20">DAMCASH</span>
+                        </motion.div>
+                    )}
                     <div className="absolute bottom-4 right-8 z-20">
                         <Button variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm mr-2">
                             <ShoppingBag className="w-4 h-4 mr-2" /> Boutique
@@ -252,9 +272,28 @@ export default function Profile() {
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Camera className="w-8 h-8 text-white" />
                                             </div>
-                                            <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                            <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'avatar_url')} className="absolute inset-0 opacity-0 cursor-pointer" />
                                         </div>
-                                        {uploading && <span className="text-xs text-blue-500 animate-pulse">Téléchargement...</span>}
+                                        
+                                        {/* Banner Upload */}
+                                        <div className="w-full space-y-2">
+                                            <Label>Bannière de profil</Label>
+                                            <div className="h-24 w-full rounded-lg bg-gray-100 relative group overflow-hidden border border-[#d4c5b0]">
+                                                {editForm.banner_url ? (
+                                                    <img src={editForm.banner_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        <Layout className="w-6 h-6 mr-2" /> Pas de bannière
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                                    <Camera className="w-6 h-6 text-white mr-2" /> Changer
+                                                </div>
+                                                <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner_url')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                            </div>
+                                        </div>
+
+                                        {uploading && <span className="text-xs text-blue-500 animate-pulse text-center">Téléchargement...</span>}
                                     </div>
                                     <div className="grid gap-4">
                                         <div className="grid gap-2">
@@ -453,6 +492,54 @@ export default function Profile() {
                             {/* Detailed Info Grid (Like Screenshot) */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                                 <div className="lg:col-span-2 space-y-6">
+                                    {/* New Detailed Stats Section */}
+                                    <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm">
+                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4">Statistiques Détaillées</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                            <div className="h-40 flex flex-col items-center justify-center">
+                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Ratio Victoires/Défaites</h4>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie 
+                                                            data={pieData} 
+                                                            innerRadius={30} 
+                                                            outerRadius={50} 
+                                                            paddingAngle={5} 
+                                                            dataKey="value"
+                                                        >
+                                                            {pieData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip />
+                                                        <Legend verticalAlign="bottom" height={36} iconSize={8} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                            <div className="h-40 flex flex-col items-center justify-center">
+                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Modes de jeu</h4>
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie 
+                                                            data={gameModeData} 
+                                                            cx="50%" 
+                                                            cy="50%" 
+                                                            outerRadius={50} 
+                                                            fill="#8884d8" 
+                                                            dataKey="value" 
+                                                            label={({name, percent}) => `${(percent * 100).toFixed(0)}%`}
+                                                        >
+                                                            {gameModeData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* Existing Stats Cards */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <Card className="bg-white border-[#d4c5b0] shadow-sm">
