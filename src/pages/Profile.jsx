@@ -471,7 +471,13 @@ export default function Profile() {
                                 <Button 
                                     variant="destructive"
                                     onClick={async () => {
-                                        await base44.auth.logout('/');
+                                        try {
+                                            await base44.auth.logout();
+                                        } catch (e) {
+                                            console.error(e);
+                                        } finally {
+                                            window.location.href = '/';
+                                        }
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white shadow-md"
                                 >
