@@ -14,6 +14,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import PlayerSearchBar from '@/components/PlayerSearchBar';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
@@ -255,6 +256,11 @@ export default function Profile() {
 
     return (
         <div className="max-w-5xl mx-auto p-4 pb-20">
+            <div className="flex justify-end mb-4">
+                <div className="w-full max-w-xs">
+                    <PlayerSearchBar />
+                </div>
+            </div>
             <div className="bg-white/90 backdrop-blur rounded-3xl shadow-2xl border border-[#d4c5b0] overflow-hidden mb-8">
                 {/* Cover / Header */}
                 <div className={`h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500 bg-cover bg-center`} style={user.banner_url ? { backgroundImage: `url(${user.banner_url})` } : {}}>
@@ -432,6 +438,12 @@ export default function Profile() {
                                     <div className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-bold border border-blue-200">
                                         XP: {user.xp || 0}
                                     </div>
+                                    <div className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-bold border border-green-200 flex items-center gap-1">
+                                        <Shield className="w-3 h-3" /> Dames: {stats.elo_checkers || 1200}
+                                    </div>
+                                    <div className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200 flex items-center gap-1">
+                                        <Crown className="w-3 h-3" /> Échecs: {stats.elo_chess || 1200}
+                                    </div>
                                     <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                                         <div 
                                             className="h-full bg-yellow-500 transition-all duration-1000" 
@@ -466,133 +478,16 @@ export default function Profile() {
                     </div>
 
                     <Tabs defaultValue="overview" className="mt-12">
-                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto bg-[#f5f0e6] mb-8 gap-1 p-1">
+                        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 h-auto bg-[#f5f0e6] mb-8 gap-1 p-1">
                             <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Vue d'ensemble</TabsTrigger>
+                            <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Statistiques</TabsTrigger>
                             <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Historique</TabsTrigger>
-                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Badges & Trophées</TabsTrigger>
+                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Badges</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="overview">
-                            {/* Graph Section */}
-                            <Card className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
-                                <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
-                                            <TrendingUp className="w-5 h-5 text-green-600" /> Progression ELO
-                                        </CardTitle>
-                                        <div className="flex gap-2 text-xs">
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 bg-white border shadow-sm text-[#6b5138]">1m</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">6m</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">1y</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">All</Button>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-4 h-64">
-                                    {chartData.length > 1 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={chartData}>
-                                                <defs>
-                                                    <linearGradient id="colorElo" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#4a3728" stopOpacity={0.3}/>
-                                                        <stop offset="95%" stopColor="#4a3728" stopOpacity={0}/>
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0e6d2" />
-                                                <XAxis dataKey="name" hide />
-                                                <YAxis domain={['auto', 'auto']} stroke="#8c7b6a" fontSize={12} />
-                                                <Tooltip 
-                                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#d4c5b0', borderRadius: '8px' }}
-                                                    labelStyle={{ display: 'none' }}
-                                                    itemStyle={{ color: '#4a3728', fontWeight: 'bold' }}
-                                                    formatter={(value, name, props) => [value, `${props.payload.game}`]}
-                                                />
-                                                <Area type="monotone" dataKey="elo" stroke="#4a3728" strokeWidth={2} fillOpacity={1} fill="url(#colorElo)" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-gray-400">
-                                            <p>Jouez plus de parties pour voir votre progression !</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-
-                            {/* Detailed Info Grid (Like Screenshot) */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                                 <div className="lg:col-span-2 space-y-6">
-                                    {/* New Detailed Stats Section */}
-                                    <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm">
-                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4">Statistiques Détaillées</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                            <div className="h-40 flex flex-col items-center justify-center">
-                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Ratio Victoires/Défaites</h4>
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie 
-                                                            data={pieData} 
-                                                            innerRadius={30} 
-                                                            outerRadius={50} 
-                                                            paddingAngle={5} 
-                                                            dataKey="value"
-                                                        >
-                                                            {pieData.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                        <Legend verticalAlign="bottom" height={36} iconSize={8} />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                            <div className="h-40 flex flex-col items-center justify-center">
-                                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Modes de jeu</h4>
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie 
-                                                            data={gameModeData} 
-                                                            cx="50%" 
-                                                            cy="50%" 
-                                                            outerRadius={50} 
-                                                            fill="#8884d8" 
-                                                            dataKey="value" 
-                                                            label={({name, percent}) => `${(percent * 100).toFixed(0)}%`}
-                                                        >
-                                                            {gameModeData.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                                            ))}
-                                                        </Pie>
-                                                        <Tooltip />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Existing Stats Cards */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <Card className="bg-white border-[#d4c5b0] shadow-sm">
-                                            <CardContent className="p-4 flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-gray-500 text-sm font-medium mb-1">Dames ELO</p>
-                                                    <div className="text-2xl font-bold text-[#4a3728]">{stats.elo_checkers || 1200}</div>
-                                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.checkers}</p>
-                                                </div>
-                                                <Shield className="w-8 h-8 text-[#e8dcc5]" />
-                                            </CardContent>
-                                        </Card>
-                                        <Card className="bg-white border-[#d4c5b0] shadow-sm">
-                                            <CardContent className="p-4 flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-gray-500 text-sm font-medium mb-1">Échecs ELO</p>
-                                                    <div className="text-2xl font-bold text-[#4a3728]">{stats.elo_chess || 1200}</div>
-                                                    <p className="text-xs text-green-600 font-bold mt-1">Rank #{ranks.chess}</p>
-                                                </div>
-                                                <Crown className="w-8 h-8 text-[#e8dcc5]" />
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-
                                     <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm">
                                         <h3 className="text-lg font-bold text-[#4a3728] mb-4">Détails du joueur</h3>
                                         <div className="space-y-3 text-sm text-gray-700">
@@ -645,6 +540,145 @@ export default function Profile() {
                                     </div>
                                 </div>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="stats">
+                            {/* Graph Section */}
+                            <Card className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
+                                <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
+                                            <TrendingUp className="w-5 h-5 text-green-600" /> Progression ELO
+                                        </CardTitle>
+                                        <div className="flex gap-2 text-xs">
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 bg-white border shadow-sm text-[#6b5138]">1m</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">6m</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">1y</Button>
+                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">All</Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4 h-64">
+                                    {chartData.length > 1 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={chartData}>
+                                                <defs>
+                                                    <linearGradient id="colorElo" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#4a3728" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#4a3728" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0e6d2" />
+                                                <XAxis dataKey="name" hide />
+                                                <YAxis domain={['auto', 'auto']} stroke="#8c7b6a" fontSize={12} />
+                                                <Tooltip 
+                                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#d4c5b0', borderRadius: '8px' }}
+                                                    labelStyle={{ display: 'none' }}
+                                                    itemStyle={{ color: '#4a3728', fontWeight: 'bold' }}
+                                                    formatter={(value, name, props) => [value, `${props.payload.game}`]}
+                                                />
+                                                <Area type="monotone" dataKey="elo" stroke="#4a3728" strokeWidth={2} fillOpacity={1} fill="url(#colorElo)" />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-gray-400">
+                                            <p>Jouez plus de parties pour voir votre progression !</p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Detailed Info Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                {/* Detailed Stats Section - Moved to Stats Tab, but kept a summary here if needed. 
+                                    Actually, we moved charts to 'stats' tab. 
+                                    So we just keep the structure clean here.
+                                */}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="stats">
+                            <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm mb-6">
+                                <h3 className="text-lg font-bold text-[#4a3728] mb-4">Répartition des Performances</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                    <div className="h-60 flex flex-col items-center justify-center">
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">Ratio Victoires/Défaites</h4>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie 
+                                                    data={pieData} 
+                                                    innerRadius={40} 
+                                                    outerRadius={70} 
+                                                    paddingAngle={5} 
+                                                    dataKey="value"
+                                                >
+                                                    {pieData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend verticalAlign="bottom" height={36} iconSize={10} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="h-60 flex flex-col items-center justify-center">
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">Modes de jeu préférés</h4>
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie 
+                                                    data={gameModeData} 
+                                                    cx="50%" 
+                                                    cy="50%" 
+                                                    outerRadius={70} 
+                                                    fill="#8884d8" 
+                                                    dataKey="value" 
+                                                    label={({name, percent}) => `${(percent * 100).toFixed(0)}%`}
+                                                >
+                                                    {gameModeData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                                <Legend verticalAlign="bottom" height={36} iconSize={10} />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <Card className="bg-white border-[#d4c5b0] shadow-sm hover:shadow-md transition-shadow">
+                                    <CardContent className="p-6 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">Dames</p>
+                                            <div className="text-4xl font-black text-[#4a3728]">{stats.elo_checkers || 1200}</div>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">Rank #{ranks.checkers}</span>
+                                                <span className="text-xs text-gray-400">{stats.games_played_checkers || 0} parties</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-16 h-16 bg-[#f5f0e6] rounded-full flex items-center justify-center">
+                                            <Shield className="w-8 h-8 text-[#4a3728]" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                                <Card className="bg-white border-[#d4c5b0] shadow-sm hover:shadow-md transition-shadow">
+                                    <CardContent className="p-6 flex items-center justify-between">
+                                        <div>
+                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">Échecs</p>
+                                            <div className="text-4xl font-black text-[#4a3728]">{stats.elo_chess || 1200}</div>
+                                            <div className="flex items-center gap-2 mt-2">
+                                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-bold">Rank #{ranks.chess}</span>
+                                                <span className="text-xs text-gray-400">{stats.games_played_chess || 0} parties</span>
+                                            </div>
+                                        </div>
+                                        <div className="w-16 h-16 bg-[#f5f0e6] rounded-full flex items-center justify-center">
+                                            <Crown className="w-8 h-8 text-[#4a3728]" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </TabsContent>
                         </TabsContent>
 
                     <TabsContent value="history">
