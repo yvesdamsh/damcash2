@@ -397,25 +397,29 @@ export default function Game() {
     useEffect(() => {
         if (!isAiGame || !game || game.status !== 'playing') return;
         
-        if (game.current_turn === 'black' && !isAiThinking) {
+        const isUserWhite = currentUser?.id === game.white_player_id;
+        const isUserBlack = currentUser?.id === game.black_player_id;
+        // If both are false (e.g. local-ai mismatch), default to User=White for safety, unless we know we swapped.
+        // But in handleRematch we swap IDs. 
+        // If game.white_player_id is NOT currentUser.id, then AI is White.
+        
+        const aiColor = isUserWhite ? 'black' : 'white';
+        
+        if (game.current_turn === aiColor && !isAiThinking) {
             const makeAiMove = async () => {
                 setIsAiThinking(true);
                 try {
-                    // Differentiate based on game type
                     const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
                     
                     const payload = {
                         board: board,
-                        turn: 'black',
+                        turn: aiColor,
                         difficulty: aiDifficulty,
-                        userElo: currentUser?.elo_chess || currentUser?.elo_checkers || 1200, // Pass Elo for adaptive AI
-                        // Chess specific
+                        userElo: currentUser?.elo_chess || currentUser?.elo_checkers || 1200,
                         castlingRights: chessState.castlingRights,
                         lastMove: chessState.lastMove,
-                        // Checkers specific (for multi-jumps)
                         activePiece: mustContinueWith,
-                        // Time Management
-                        timeLeft: getTimeLeft('black')
+                        timeLeft: getTimeLeft(aiColor)
                     };
 
                     const res = await base44.functions.invoke(aiFunctionName, payload);
@@ -464,7 +468,7 @@ export default function Game() {
                                 else blackTime = Math.max(0, blackTime - elapsed);
                             }
 
-                            const nextTurn = mustContinue ? 'black' : 'white';
+                            const nextTurn = mustContinue ? aiColor : (aiColor === 'white' ? 'black' : 'white');
                             let status = game.status;
                             let winnerId = game.winner_id;
 
@@ -473,8 +477,9 @@ export default function Game() {
                                 const winnerColor = checkWinner(newBoard);
                                 if (winnerColor) {
                                     status = 'finished';
-                                    winnerId = winnerColor === 'white' ? currentUser?.id : 'ai';
-                                    soundManager.play('loss');
+                                    // AI is the winner if winnerColor matches AI color
+                                    winnerId = winnerColor === aiColor ? 'ai' : currentUser?.id;
+                                    soundManager.play(winnerId === 'ai' ? 'loss' : 'win');
                                 }
                             }
 
@@ -506,7 +511,7 @@ export default function Game() {
             };
             setTimeout(makeAiMove, 1000);
         }
-    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith]);
+    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || game.status !== 'playing') return;
@@ -921,18 +926,33 @@ export default function Game() {
 
             const initTime = (game.initial_time || 10) * 60;
 
-            // Update Series Score
-            let newWhiteScore = game.series_score_white || 0;
-            let newBlackScore = game.series_score_black || 0;
+            // Update Series Score - Before Swap
+            let currentWhiteScore = game.series_score_white || 0;
+            let currentBlackScore = game.series_score_black || 0;
             
-            if (game.winner_id === game.white_player_id) newWhiteScore++;
-            else if (game.winner_id === game.black_player_id) newBlackScore++;
-            else { newWhiteScore += 0.5; newBlackScore += 0.5; }
+            if (game.winner_id === game.white_player_id) currentWhiteScore++;
+            else if (game.winner_id === game.black_player_id) currentBlackScore++;
+            else { currentWhiteScore += 0.5; currentBlackScore += 0.5; }
 
             // Auto-extend series if needed
             let newSeriesLength = game.series_length || 1;
-            const currentRound = newWhiteScore + newBlackScore + 1;
+            const currentRound = currentWhiteScore + currentBlackScore + 1;
             if (currentRound > newSeriesLength) newSeriesLength = currentRound;
+
+            // Swap Players for Rematch (Alternating Colors)
+            // White becomes Black, Black becomes White
+            // We must swap IDs, Names, Elos, AND Scores to maintain correct attribution
+            const newWhiteId = game.black_player_id;
+            const newBlackId = game.white_player_id;
+            const newWhiteName = game.black_player_name;
+            const newBlackName = game.white_player_name;
+            const newWhiteElo = game.black_player_elo;
+            const newBlackElo = game.white_player_elo;
+            
+            // Scores must swap too because "series_score_white" tracks the score of the person playing white.
+            // If User A was White (score 1) and becomes Black, User A's score (1) should now be in series_score_black.
+            const newSeriesScoreWhite = currentBlackScore;
+            const newSeriesScoreBlack = currentWhiteScore;
 
             // Reset Game State
             const updateData = {
@@ -946,24 +966,37 @@ export default function Game() {
                 white_seconds_left: initTime,
                 black_seconds_left: initTime,
                 last_move_at: null,
-                series_score_white: newWhiteScore,
-                series_score_black: newBlackScore,
+                
+                // Swapped Player Data
+                white_player_id: newWhiteId,
+                black_player_id: newBlackId,
+                white_player_name: newWhiteName,
+                black_player_name: newBlackName,
+                white_player_elo: newWhiteElo,
+                black_player_elo: newBlackElo,
+                
+                // Swapped Scores
+                series_score_white: newSeriesScoreWhite,
+                series_score_black: newSeriesScoreBlack,
+                
                 series_length: newSeriesLength,
                 elo_processed: false
             };
 
-            await base44.entities.Game.update(game.id, updateData);
-            setGame(prev => ({ ...prev, ...updateData })); // Optimistic update
+            if (game.id !== 'local-ai') {
+                await base44.entities.Game.update(game.id, updateData);
+                // Re-fetch to be sure for online games
+                setTimeout(async () => {
+                    const refreshed = await base44.entities.Game.get(game.id);
+                    setGame(refreshed);
+                }, 500);
+            }
             
-            // Re-fetch to be sure
-            setTimeout(async () => {
-                const refreshed = await base44.entities.Game.get(game.id);
-                setGame(refreshed);
-            }, 500);
-
+            setGame(prev => ({ ...prev, ...updateData })); // Optimistic/Local update
+            setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
             setShowResult(false);
             setReplayIndex(-1);
-            toast.success("Nouvelle manche commencée !");
+            toast.success("Nouvelle manche commencée ! Changement de couleurs.");
         } catch (e) {
             console.error("Rematch error", e);
             toast.error("Erreur lors du lancement de la revanche");
