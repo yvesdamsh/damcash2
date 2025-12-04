@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BookOpen, ChevronRight, GraduationCap, Sword, LayoutGrid } from 'lucide-react';
+import { BookOpen, ChevronRight, GraduationCap, Sword, LayoutGrid, Trophy } from 'lucide-react';
 
 const fiches = [
     {
