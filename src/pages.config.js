@@ -18,6 +18,7 @@ import index from './pages/index';
 import Messages from './pages/Messages';
 import ReplayCenter from './pages/ReplayCenter';
 import Shop from './pages/Shop';
+import Academy from './pages/Academy';
 import __Layout from './Layout.jsx';
 
 
@@ -42,6 +43,7 @@ export const PAGES = {
     "Messages": Messages,
     "ReplayCenter": ReplayCenter,
     "Shop": Shop,
+    "Academy": Academy,
 }
 
 export const pagesConfig = {
