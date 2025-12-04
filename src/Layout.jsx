@@ -141,7 +141,7 @@ import {
         } catch (e) {
             console.error("Logout failed", e);
         } finally {
-            window.location.href = '/';
+            window.location.href = '/Home';
         }
     };
 
