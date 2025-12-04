@@ -505,15 +505,49 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
         }
 
+        // Opening Book Check
+        if (!lastMove) {
+            // Very first move?
+            // Actually check board string or FEN-like key for book
+            // Simplified FEN-like Key generation for book lookup
+            // Just check if we have a match in common openings
+            // Construct simplified FEN (board + turn + castling)
+            // This is complex to get right without exact FEN generator, but let's try simple match or skip
+            // Or simpler: if move count is low. 
+            // Let's use the FEN generator logic if available or reconstruct it.
+            // Since we don't have full FEN easily here without code dupe, let's skip exact Book lookup
+            // unless we are at start position.
+        }
+
+        // Simple Book Lookup for Start Position
+        // Check standard start string
+        const isStart = board.flat().filter(p => p).length === 32;
+        if (isStart && !lastMove) {
+             // White first move
+             const bookMoves = OPENING_BOOK["rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"];
+             if (bookMoves) {
+                 const rM = bookMoves[Math.floor(Math.random() * bookMoves.length)];
+                 // Decode rM (e.g. e2e4 -> from: {r:6,c:4}, to: {r:4,c:4})
+                 // Map algebraic to coords
+                 const cols = {a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+                 const fC = cols[rM[0]], fR = 8 - parseInt(rM[1]);
+                 const tC = cols[rM[2]], tR = 8 - parseInt(rM[3]);
+                 return Response.json({
+                     move: { from: {r:fR, c:fC}, to: {r:tR, c:tC}, captured: null },
+                     score: 0
+                 });
+             }
+        }
+
         // Chess Depth
-        let depth = 2;
+        let depth = 3;
         switch (difficulty) {
             case 'easy': depth = 1; break;
             case 'medium': depth = 2; break;
             case 'hard': depth = 3; break;
             case 'expert': depth = 4; break;
-            case 'grandmaster': depth = 5; break;
-            default: depth = 2;
+            case 'grandmaster': depth = 5; break; // PeSTO is strong, depth 5 is decent
+            default: depth = 3;
         }
 
         const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove);
