@@ -233,39 +233,209 @@ const isSquareAttacked = (board, r, c, color) => {
 
 const isInCheck = (board, color) => isCurrentInCheck(board, color);
 
-// --- Evaluation ---
+// --- Opening Book (Compact) ---
+const OPENING_BOOK = {
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": ["e2e4", "d2d4", "g1f3", "c2c4"],
+    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": ["c7c5", "e7e5", "e7e6", "c7c6"],
+    "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": ["g8f6", "d7d5", "e7e6"],
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["g1f3", "c2c3", "d2d4"],
+    "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"],
+    "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"]
+};
 
-const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+// --- Evaluation (PeSTO Tables - Advanced Heuristics) ---
+// Tables are flipped for Black effectively by logic or by table definition. 
+// Here we define from White's perspective (row 0=White Backrank in array terms? No, row 7 is white backrank usually in our array [0..7])
+// Our array: row 0 = Black Pieces, row 7 = White Pieces.
+// So 'p' table should reward advancing to row 0.
+// MG = Middlegame, EG = Endgame
+
+const mg_value = { p: 82, n: 337, b: 365, r: 477, q: 1025, k: 0 };
+const eg_value = { p: 94, n: 281, b: 297, r: 512, q: 936, k: 0 };
+
+// Tables (from White's perspective: row 7 is bottom/home, row 0 is top/prom)
+// We need to map board[r][c] where r=7 is white home.
+const mg_pawn_table = [
+  [ 0,  0,  0,  0,  0,  0,  0,  0],
+  [98,134, 61, 95, 68,126, 34,-11],
+  [-6,  7, 26, 31, 65, 56, 25,-20],
+  [-14,13,  6, 21, 23, 12, 17,-23],
+  [-27,-2, -5, 12, 17,  6, 10,-25],
+  [-26,-4, -4,-10,  3,  3, 33,-12],
+  [-35,-1,-20,-23,-15, 24, 38,-22],
+  [ 0,  0,  0,  0,  0,  0,  0,  0]
+];
+const eg_pawn_table = [
+  [ 0,  0,  0,  0,  0,  0,  0,  0],
+  [178,173,158,134,147,132,165,187],
+  [94,100, 85, 67, 56, 53, 82, 84],
+  [32, 24, 13,  5, -2,  4, 17, 17],
+  [13,  9, -3, -7, -7, -8,  3, -1],
+  [ 4,  7, -6,  1,  0, -5, -1, -8],
+  [13,  8,  8, 10, 13,  0,  2, -7],
+  [ 0,  0,  0,  0,  0,  0,  0,  0]
+];
+const mg_knight_table = [
+  [-167,-89,-34,-49, 61,-97,-15,-107],
+  [-73,-41, 72, 36, 23, 62,  7, -17],
+  [-47, 60, 37, 65, 84,129, 73,  44],
+  [-9, 17, 19, 53, 37, 69, 18,  22],
+  [-13,  4, 16, 13, 28, 19, 21,  -8],
+  [-23, -9, 12, 10, 19, 17, 25, -16],
+  [-29,-53,-12, -3, -1, 18,-14, -19],
+  [-105,-21,-58,-33,-17,-28,-19, -23]
+];
+const mg_bishop_table = [
+  [-29,  4,-82,-37,-25,-42,  7,  -8],
+  [-26, 16,-18,-10, 30, 25, 27, -26],
+  [-16, 37, 43, 40, 35, 50, 37,  -2],
+  [-4,  5, 19, 50, 37, 37,  7,  -2],
+  [-6, 13, 13, 26, 34, 12, 10,   4],
+  [ 0, 15, 15, 15, 14, 27, 18,  10],
+  [ 4, 15, 16,  9,  8,  6, 10,  17],
+  [-14,-13,-10,-10, -9,-10,-20, -14]
+];
+const mg_rook_table = [
+  [32, 42, 32, 51, 63,  9, 31, 43],
+  [27, 32, 58, 62, 80, 55, 26, 20],
+  [-5, 19, 26, 36, 17, 45, 61, 16],
+  [-24,-11,  7, 26, 24, 35, -8,-20],
+  [-36,-26,-12, -1,  9, -7,  6,-23],
+  [-45,-25,-16,-17,  3,  0, -5,-33],
+  [-44,-16,-20, -9, -1, 11, -6,-71],
+  [-19,-13,  1, 17, 16,  7,-37,-26]
+];
+const mg_queen_table = [
+  [-28,  0, 29, 12, 59, 44, 43, 45],
+  [-24,-39,-5,  1,-16, 57, 28, 54],
+  [-13,-17, 7,  8, 29, 56, 47, 57],
+  [-27,-27,-16,-16, -1, 17, -2,  1],
+  [-9,-26,-9, -10, -2, -4,  3, -3],
+  [-14,  2,-11, -2, -5,  2, 14,  5],
+  [-35, -8, 11,  2,  8, 15, -3,  1],
+  [-1, -18, -9, 10,-15,-25,-31,-50]
+];
+const mg_king_table = [
+  [-65, 23, 16,-15,-56,-34,  2, 13],
+  [29, -1,-20, -7, -8, -4,-38,-29],
+  [-9, 24,  2,-16,-20,  6, 22,-22],
+  [-17,-20,-12,-27,-30,-25,-14,-36],
+  [-49, -1,-27,-39,-46,-44,-33,-51],
+  [-14,-14,-22,-46,-44,-30,-15,-27],
+  [1,  7, -8,-64,-43,-16,  9,  8],
+  [-15, 36, 12,-54,  8,-28, 24, 14]
+];
+const eg_king_table = [
+  [-74,-35,-18,-18,-11, 15,  4,-17],
+  [-12, 17, 14, 17, 17, 38, 23, 11],
+  [10, 17, 23, 15, 20, 45, 44, 13],
+  [-8, 22, 24, 27, 26, 33, 26,  3],
+  [-18, -4, 21, 24, 27, 23,  9,-11],
+  [-19, -3, 11, 21, 23, 16,  7, -9],
+  [-27,-11,  4, 13, 14,  4, -5,-17],
+  [-53,-34,-21,-11,-28,-14,-24,-43]
+];
+
+// Tables mapping
+const TABLES = {
+    p: { mg: mg_pawn_table, eg: eg_pawn_table },
+    n: { mg: mg_knight_table, eg: mg_knight_table }, // Using mg for eg roughly
+    b: { mg: mg_bishop_table, eg: mg_bishop_table },
+    r: { mg: mg_rook_table, eg: mg_rook_table },
+    q: { mg: mg_queen_table, eg: mg_queen_table },
+    k: { mg: mg_king_table, eg: eg_king_table }
+};
 
 const evaluateBoard = (board, aiColor) => {
-    let score = 0;
+    let mgScore = 0;
+    let egScore = 0;
+    let gamePhase = 0;
+
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const piece = board[r][c];
             if (!piece) continue;
-            
+
             const type = piece.toLowerCase();
             const color = getColor(piece);
-            const value = PIECE_VALUES[type];
+            const isWhitePiece = color === 'white';
             
-            if (color === aiColor) score += value;
-            else score -= value;
+            // Calculate Phase (to interpolate MG and EG scores)
+            // Total non-pawn material max ~24.
+            const mw = { n: 1, b: 1, r: 2, q: 4, k: 0, p: 0 };
+            gamePhase += mw[type] || 0;
+
+            // PST Lookups
+            // If White: index is [r][c]. If Black: index is [7-r][c] (mirror vertically)
+            // Actually PeSTO tables are usually relative to piece POV.
+            // White P on rank 6 (index 1) is close to promo. 
+            // Our array: 0 is top, 7 is bottom. White starts at 7.
+            // So for White, r corresponds to table directly? No, table usually 0=rank 1 (backrank).
+            // Let's map: White Backrank is 7. Table Backrank is usually 7 (bottom) or 0 (top)?
+            // Standard: Rank 1 is bottom.
+            // Our Board: 7 is bottom.
+            // PST Table: row 0 is Rank 8 (Top), row 7 is Rank 1 (Bottom).
+            // So White Piece at board[r][c]: table value at table[r][c].
+            // Black Piece at board[r][c]: table value at table[7-r][c] (mirrored).
             
-            // Positional Tweaks (simplified)
-            // Center control
-            if ((r === 3 || r === 4) && (c === 3 || c === 4)) {
-                if (color === aiColor) score += 10; else score -= 10;
+            const tr = isWhitePiece ? r : 7 - r; // Mirror for black
+            // Actually for black we need to mirror the table lookup to treat it as if it was white on the other side
+            
+            const mgVal = (mg_value[type] || 0) + (TABLES[type]?.mg[tr]?.[c] || 0);
+            const egVal = (eg_value[type] || 0) + (TABLES[type]?.eg[tr]?.[c] || 0);
+
+            if (color === aiColor) {
+                mgScore += mgVal;
+                egScore += egVal;
+            } else {
+                mgScore -= mgVal;
+                egScore -= egVal;
             }
         }
     }
-    return score;
+
+    // Interpolate
+    // Phase: 24 (Start) -> 0 (End). 
+    // MGS is dominant when Phase is high.
+    const mgPhase = Math.min(24, gamePhase);
+    const egPhase = 24 - mgPhase;
+    
+    return (mgScore * mgPhase + egScore * egPhase) / 24;
+};
+
+// --- Quiescence Search ---
+const quiescence = (board, alpha, beta, turn, aiColor, castlingRights, lastMove) => {
+    const standPat = evaluateBoard(board, aiColor);
+    
+    if (standPat >= beta) return standPat;
+    if (alpha < standPat) alpha = standPat;
+
+    const moves = getValidChessMoves(board, turn, lastMove, castlingRights).filter(m => m.captured);
+    // Sort captures by MVV-LVA (Most Valuable Victim - Least Valuable Aggressor) roughly
+    // Simplified: sort by captured value
+    moves.sort((a, b) => {
+        const valA = mg_value[a.captured?.toLowerCase()] || 0;
+        const valB = mg_value[b.captured?.toLowerCase()] || 0;
+        return valB - valA;
+    });
+
+    for (const move of moves) {
+        const { board: nextBoard } = executeChessMove(board, move);
+        const nextTurn = turn === 'white' ? 'black' : 'white';
+        const score = quiescence(nextBoard, -beta, -alpha, nextTurn, aiColor, castlingRights, move);
+
+        if (score >= beta) return beta;
+        if (score > alpha) alpha = score;
+    }
+    return alpha;
 };
 
 // --- Minimax ---
 
 const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, castlingRights, lastMove) => {
     if (depth === 0) {
-        return { score: evaluateBoard(board, aiColor) };
+        // Use Quiescence at leaf nodes
+        return { score: quiescence(board, alpha, beta, turn, aiColor, castlingRights, lastMove) };
     }
 
     const moves = getValidChessMoves(board, turn, lastMove, castlingRights);
