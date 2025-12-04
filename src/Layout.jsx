@@ -135,6 +135,15 @@ import {
         { label: 'Profil', path: '/Profile', icon: User, public: false },
     ].filter(item => user || item.public);
 
+    const handleLogout = async () => {
+        try {
+            await base44.auth.logout();
+            window.location.href = '/'; 
+        } catch (e) {
+            console.error("Logout failed", e);
+        }
+    };
+
     // handleLogout removed
 
     // Mobile Viewport Optimization
@@ -268,6 +277,18 @@ import {
                                     {soundEnabled ? <Volume2 className="w-4 h-4 flex-shrink-0" /> : <VolumeX className="w-4 h-4 flex-shrink-0" />}
                                     <span className="truncate">Son: {soundEnabled ? 'Activé' : 'Désactivé'}</span>
                                 </button>
+                                {user && (
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="text-left px-3 py-2 rounded-md text-sm font-medium text-red-400 hover:bg-[#5c4430] hover:text-red-300 flex items-center gap-2 overflow-hidden col-span-2"
+                                    >
+                                        <LogOut className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">Déconnexion</span>
+                                    </button>
+                                )}
                             </div>
                         </motion.div>
                     )}
