@@ -441,20 +441,36 @@ const evaluateBoard = (board, aiColor) => {
             if (color === aiColor) {
                 mgScore += mgVal;
                 egScore += egVal;
+                aiMat += mg_value[type] || 0;
+                if (type === 'k') aiKing = {r, c};
             } else {
                 mgScore -= mgVal;
                 egScore -= egVal;
+                opMat += mg_value[type] || 0;
+                if (type === 'k') opKing = {r, c};
             }
         }
     }
 
-    // Interpolate
-    // Phase: 24 (Start) -> 0 (End). 
-    // MGS is dominant when Phase is high.
+    // Interpolate Phase
     const mgPhase = Math.min(24, gamePhase);
     const egPhase = 24 - mgPhase;
     
-    return (mgScore * mgPhase + egScore * egPhase) / 24;
+    let score = (mgScore * mgPhase + egScore * egPhase) / 24;
+
+    // Endgame Mop-up Evaluation
+    // Encourage pushing enemy king to edge if we have material advantage (no pawns or just winning)
+    if (egPhase > 10 && aiMat > opMat + 200 && opKing && aiKing) {
+        // Distance between kings (closer is better for checkmate usually)
+        const dist = Math.abs(aiKing.r - opKing.r) + Math.abs(aiKing.c - opKing.c);
+        score += (14 - dist) * 5; // Reward proximity
+
+        // Push enemy king to center dist (center is 3.5, 3.5) -> dist from center
+        const centerDist = Math.abs(opKing.r - 3.5) + Math.abs(opKing.c - 3.5);
+        score += centerDist * 10; // Reward enemy king being far from center (edge)
+    }
+
+    return score;
 };
 
 // --- Quiescence Search ---
