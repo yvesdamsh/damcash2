@@ -3,11 +3,15 @@ import ChessPiece from './ChessPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getValidChessMoves } from '@/components/chessLogic';
 
-export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false }) {
+export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) {
     
     const canInteract = isSoloMode || (currentTurn === playerColor);
     const isMyTurn = canInteract; // Backward compatibility or just alias
     const boardRef = React.useRef(null);
+    
+    // If player is black in solo/online, default orientation usually matches unless overridden
+    const boardOrientation = orientation || (playerColor === 'black' ? 'black' : 'white');
+    const isFlipped = boardOrientation === 'black';
 
     // Theme Configuration
     const themes = {
@@ -84,23 +88,35 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                         aspectRatio: '1/1'
                     }}
                 >
-                    {board.map((row, r) => (
-                    row.map((piece, c) => {
-                        const isDark = (r + c) % 2 !== 0;
-                        const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
-                        const isTarget = validMoves.some(m => m.to.r === r && m.to.c === c);
-                        const isLastMove = lastMove && (
-                            (lastMove.from.r === r && lastMove.from.c === c) || 
-                            (lastMove.to.r === r && lastMove.to.c === c)
-                        );
-                        
-                        const isLastMoveTarget = lastMove && lastMove.to.r === r && lastMove.to.c === c;
+                    {(isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((r) => (
+                        (isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((c) => {
+                            const piece = board[r][c];
+                            const isDark = (r + c) % 2 !== 0;
+                            const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
+                            const isTarget = validMoves.some(m => m.to.r === r && m.to.c === c);
+                            const isLastMove = lastMove && (
+                                (lastMove.from.r === r && lastMove.from.c === c) || 
+                                (lastMove.to.r === r && lastMove.to.c === c)
+                            );
+                            
+                            const isLastMoveTarget = lastMove && lastMove.to.r === r && lastMove.to.c === c;
                             
                             // Premove Highlight
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
                             const squareColor = isDark ? currentTheme.dark : currentTheme.light;
+                            
+                            // Calculate Animation Delta (Adjust for Orientation)
+                            let animDelta = null;
+                            if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
+                                const dx = (lastMove.from.c - c);
+                                const dy = (lastMove.from.r - r);
+                                animDelta = {
+                                    x: (isFlipped ? -dx : dx) * 100 + '%',
+                                    y: (isFlipped ? -dy : dy) * 100 + '%'
+                                };
+                            }
 
                             return (
                                 <div
@@ -121,13 +137,13 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                         ${isLastMoveTarget ? 'z-30' : (piece ? 'z-20' : 'z-auto')}
                                     `}
                                 >
-                                    {/* Coordinates */}
-                                    {c === 0 && (
+                                    {/* Coordinates - Correctly positioned relative to visuals */}
+                                    {(!isFlipped ? c === 0 : c === 7) && (
                                         <span className={`absolute left-0.5 top-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
                                             {8 - r}
                                         </span>
                                     )}
-                                    {r === 7 && (
+                                    {(!isFlipped ? r === 7 : r === 0) && (
                                         <span className={`absolute right-0.5 bottom-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
                                             {String.fromCharCode(97 + c)}
                                         </span>
@@ -150,17 +166,12 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                                             isSelected={isSelected}
                                             set={pieceSet}
                                             onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
-                                            // Removed onDragStart to match Checkers behavior and avoid re-render glitches
                                             dragConstraints={boardRef}
                                             canDrag={canInteract && (
                                                 (currentTurn === 'white' && piece === piece.toUpperCase()) ||
                                                 (currentTurn === 'black' && piece === piece.toLowerCase())
                                             )}
-                                            animateFrom={
-                                                lastMove && lastMove.to.r === r && lastMove.to.c === c
-                                                ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
-                                                : null
-                                            }
+                                            animateFrom={animDelta}
                                         />
                                     )}
                                     </AnimatePresence>

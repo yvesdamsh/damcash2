@@ -1508,6 +1508,7 @@ export default function Game() {
                                 pieceSet={currentUser?.preferences?.chess_pieces}
                                 premove={premove}
                                 isSoloMode={isSoloMode}
+                                orientation={isAmBlack ? 'black' : 'white'}
                                 />
                         }
                     </div>
