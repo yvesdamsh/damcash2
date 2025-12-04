@@ -182,7 +182,7 @@ export default function Profile() {
 
             } catch (e) {
                 console.error(e);
-                if (!profileId) base44.auth.redirectToLogin('/Home');
+                if (!profileId) navigate('/Home');
             }
         };
         init();
