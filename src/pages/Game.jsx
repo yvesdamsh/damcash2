@@ -407,6 +407,7 @@ export default function Game() {
                         board: board,
                         turn: 'black',
                         difficulty: aiDifficulty,
+                        userElo: currentUser?.elo_chess || currentUser?.elo_checkers || 1200, // Pass Elo for adaptive AI
                         // Chess specific
                         castlingRights: chessState.castlingRights,
                         lastMove: chessState.lastMove,
