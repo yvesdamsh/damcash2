@@ -3,12 +3,15 @@ import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { User, Circle, Swords, Crown, Gamepad2, Search, MessagesSquare, Users, Play } from 'lucide-react';
+import { User, Circle, Swords, Crown, Gamepad2, Search, MessagesSquare, Users, Play, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import LobbyChat from '@/components/LobbyChat';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export default function Lobby() {
     const [users, setUsers] = useState([]);
@@ -17,6 +20,7 @@ export default function Lobby() {
     const [loading, setLoading] = useState(true);
     const [currentUser, setCurrentUser] = useState(null);
     const [myTeam, setMyTeam] = useState(null);
+    const [playerFilter, setPlayerFilter] = useState({ elo_min: 0, name: '' });
     const navigate = useNavigate();
 
     const fetchData = async () => {
@@ -161,8 +165,18 @@ export default function Lobby() {
 
     const PlayerList = ({ type }) => {
         const players = users.filter(u => {
+            // Filter by Game Type
             const pref = u.default_game || 'checkers';
-            return pref === type;
+            if (pref !== type) return false;
+            
+            // Filter by ELO
+            const elo = type === 'chess' ? (u.elo_chess || 1200) : (u.elo_checkers || 1200);
+            if (elo < playerFilter.elo_min) return false;
+
+            // Filter by Name
+            if (playerFilter.name && !u.full_name?.toLowerCase().includes(playerFilter.name.toLowerCase()) && !u.username?.toLowerCase().includes(playerFilter.name.toLowerCase())) return false;
+
+            return true;
         });
 
         if (loading) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
@@ -395,6 +409,34 @@ export default function Lobby() {
                 <TabsContent value="checkers" className="animate-in fade-in duration-500">
                     <div className="flex flex-col lg:flex-row gap-6">
                         <div className="flex-1">
+                             {/* Simple Player Filter */}
+                             <div className="bg-white p-3 rounded-lg shadow-sm border border-[#d4c5b0] mb-4 flex flex-wrap gap-4 items-end">
+                                <div className="flex-1 min-w-[200px]">
+                                    <Label className="text-xs text-gray-500">Rechercher un joueur</Label>
+                                    <Input 
+                                        placeholder="Nom du joueur..." 
+                                        value={playerFilter.name}
+                                        onChange={(e) => setPlayerFilter(prev => ({ ...prev, name: e.target.value }))}
+                                        className="h-9"
+                                    />
+                                </div>
+                                <div className="w-32">
+                                    <Label className="text-xs text-gray-500">ELO Min</Label>
+                                    <Select value={playerFilter.elo_min.toString()} onValueChange={(v) => setPlayerFilter(prev => ({ ...prev, elo_min: parseInt(v) }))}>
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue placeholder="0" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">Tous</SelectItem>
+                                            <SelectItem value="1000">1000+</SelectItem>
+                                            <SelectItem value="1200">1200+</SelectItem>
+                                            <SelectItem value="1500">1500+</SelectItem>
+                                            <SelectItem value="1800">1800+</SelectItem>
+                                            <SelectItem value="2000">2000+</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                             </div>
                              <PlayerList type="checkers" />
                         </div>
                         <div className="lg:w-96 hidden lg:block">
@@ -409,6 +451,34 @@ export default function Lobby() {
                 <TabsContent value="chess" className="animate-in fade-in duration-500">
                      <div className="flex flex-col lg:flex-row gap-6">
                         <div className="flex-1">
+                             {/* Simple Player Filter */}
+                             <div className="bg-white p-3 rounded-lg shadow-sm border border-[#d4c5b0] mb-4 flex flex-wrap gap-4 items-end">
+                                <div className="flex-1 min-w-[200px]">
+                                    <Label className="text-xs text-gray-500">Rechercher un joueur</Label>
+                                    <Input 
+                                        placeholder="Nom du joueur..." 
+                                        value={playerFilter.name}
+                                        onChange={(e) => setPlayerFilter(prev => ({ ...prev, name: e.target.value }))}
+                                        className="h-9"
+                                    />
+                                </div>
+                                <div className="w-32">
+                                    <Label className="text-xs text-gray-500">ELO Min</Label>
+                                    <Select value={playerFilter.elo_min.toString()} onValueChange={(v) => setPlayerFilter(prev => ({ ...prev, elo_min: parseInt(v) }))}>
+                                        <SelectTrigger className="h-9">
+                                            <SelectValue placeholder="0" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="0">Tous</SelectItem>
+                                            <SelectItem value="1000">1000+</SelectItem>
+                                            <SelectItem value="1200">1200+</SelectItem>
+                                            <SelectItem value="1500">1500+</SelectItem>
+                                            <SelectItem value="1800">1800+</SelectItem>
+                                            <SelectItem value="2000">2000+</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                             </div>
                              <PlayerList type="chess" />
                         </div>
                         <div className="lg:w-96 hidden lg:block">

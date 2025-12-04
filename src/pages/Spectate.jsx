@@ -3,21 +3,37 @@ import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Trophy, Swords, User, Loader2 } from 'lucide-react';
+import { Eye, Trophy, Swords, User, Loader2, History } from 'lucide-react';
+import GameFilters from '@/components/GameFilters';
 
 export default function Spectate() {
     const [activeGames, setActiveGames] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        game_type: 'all',
+        status: 'playing',
+        elo_min: 0,
+        tournament_query: '',
+        ai_difficulty: 'all'
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchGames = async () => {
             try {
-                // Fetch public playing games
-                const games = await base44.entities.Game.filter({ 
-                    status: 'playing', 
-                    is_private: false 
-                }, '-updated_date', 50);
+                setLoading(true);
+                const query = { is_private: false };
+                
+                if (filters.status !== 'all') query.status = filters.status;
+                if (filters.game_type !== 'all') query.game_type = filters.game_type;
+                
+                // Note: ELO filtering on backend might be limited, so we filter client-side for now as well to be safe,
+                // but passing it if backend supports it is good.
+                // Also tournament_query might need exact ID or we assume it's an ID for now.
+                if (filters.tournament_query) query.tournament_id = filters.tournament_query;
+
+                // Fetch games
+                const games = await base44.entities.Game.filter(query, '-updated_date', 50);
 
                 // Enhance games with ELO data if needed (could be heavy, for now we rely on stored names/ids)
                 // If we want to sort by "High Rank", we might need to fetch player stats.
@@ -43,10 +59,16 @@ export default function Spectate() {
                     return { ...g, white, black, avgElo };
                 });
 
-                // Sort by ELO desc
-                enhancedGames.sort((a, b) => b.avgElo - a.avgElo);
+                // Client-side filtering for ELO and partial tournament matches if needed
+                let filtered = enhancedGames;
+                if (filters.elo_min > 0) {
+                    filtered = filtered.filter(g => g.avgElo >= filters.elo_min);
+                }
 
-                setActiveGames(enhancedGames);
+                // Sort by ELO desc
+                filtered.sort((a, b) => b.avgElo - a.avgElo);
+
+                setActiveGames(filtered);
             } catch (e) {
                 console.error("Error fetching games", e);
             } finally {
@@ -57,7 +79,7 @@ export default function Spectate() {
         fetchGames();
         const interval = setInterval(fetchGames, 10000); // Refresh every 10s
         return () => clearInterval(interval);
-    }, []);
+    }, [filters]);
 
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin w-10 h-10 text-[#4a3728]" /></div>;
 
