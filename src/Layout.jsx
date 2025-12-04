@@ -127,7 +127,6 @@ import {
         { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
         { label: 'Boutique', path: '/Shop', icon: ShoppingBag, public: true },
         { label: 'Académie', path: '/Academy', icon: Brain, public: true },
-        { label: 'Académie', path: '/Academy', icon: Brain, public: true },
         // Private items
         { label: 'Historique', path: '/GameHistory', icon: History, public: false },
         { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
@@ -234,7 +233,7 @@ import {
                             exit={{ height: 0, opacity: 0 }}
                             className="bg-[#4a3728] border-t border-[#5c4430] overflow-hidden absolute w-full z-50 shadow-xl"
                         >
-                            <div className="px-2 pt-2 pb-3 space-y-1">
+                            <div className="grid grid-cols-2 gap-2 p-2">
                                 {navItems.map((item) => {
                                     const Icon = item.icon;
                                     return (
@@ -242,10 +241,10 @@ import {
                                             key={item.path}
                                             to={item.path}
                                             onClick={() => setIsMenuOpen(false)}
-                                            className="block px-3 py-2 rounded-md text-base font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
+                                            className="px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
                                         >
-                                            <Icon className="w-5 h-5" />
-                                            {item.label}
+                                            <Icon className="w-4 h-4 flex-shrink-0" />
+                                            <span className="truncate">{item.label}</span>
                                         </Link>
                                     );
                                 })}
@@ -254,21 +253,21 @@ import {
                                         toggleGameMode();
                                         setIsMenuOpen(false);
                                     }}
-                                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
+                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
-                                    {gameMode === 'chess' ? '♟️' : '⚪'} Mode: {gameMode === 'chess' ? 'Échecs' : 'Dames'}
+                                    <span className="flex-shrink-0">{gameMode === 'chess' ? '♟️' : '⚪'}</span>
+                                    <span className="truncate">Mode: {gameMode === 'chess' ? 'Échecs' : 'Dames'}</span>
                                 </button>
                                 <button
                                     onClick={() => {
                                         toggleSound();
                                         setIsMenuOpen(false);
                                     }}
-                                    className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2"
+                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
-                                    {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                                    Son: {soundEnabled ? 'Activé' : 'Désactivé'}
+                                    {soundEnabled ? <Volume2 className="w-4 h-4 flex-shrink-0" /> : <VolumeX className="w-4 h-4 flex-shrink-0" />}
+                                    <span className="truncate">Son: {soundEnabled ? 'Activé' : 'Désactivé'}</span>
                                 </button>
-                                {/* Mobile auth buttons removed as requested */}
                             </div>
                         </motion.div>
                     )}
