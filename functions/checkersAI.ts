@@ -206,10 +206,11 @@ const WEIGHTS = {
     DOG_HOLE: -20,     // Penalty for being trapped in corners
     BRIDGE: 25,        // Bonus for holding bridge
     OREO: 25,          // Bonus for Oreo pattern
-    PROTECTED: 10,     // Bonus for protected pieces
-    HANGING: -50,      // Penalty for pieces in danger
-    CLASSIC_CENTER: 10,// Bonus for controlling "Classic" center squares
-    MODERN_FLANK: 5    // Bonus for flexible "Modern" flank structures
+    PROTECTED: 15,     // Increased bonus for protected pieces
+    HANGING: -60,      // Stronger penalty for hanging pieces
+    CLASSIC_CENTER: 15,// Stronger center control
+    MODERN_FLANK: 8,   // Modern flank structures
+    SACRIFICE_RECOVERY: 30 // Bonus for positions that look losing materially but have high mobility/attack potential (heuristic)
     };
 
     // Helper to check if a square is threatened (basic 1-ply check)
@@ -467,10 +468,10 @@ Deno.serve(async (req) => {
             switch (difficulty) {
                 case 'easy': maxDepth = 2; randomness = 40; break;
                 case 'medium': maxDepth = 4; randomness = 10; break;
-                case 'hard': maxDepth = 6; randomness = 0; break;
-                case 'expert': maxDepth = 8; randomness = 0; break;
-                case 'grandmaster': maxDepth = 10; randomness = 0; break;
-                default: maxDepth = 4;
+                case 'hard': maxDepth = 8; randomness = 0; break;
+                case 'expert': maxDepth = 10; randomness = 0; break;
+                case 'grandmaster': maxDepth = 12; randomness = 0; break;
+                default: maxDepth = 6;
             }
         }
         

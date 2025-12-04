@@ -238,25 +238,32 @@ const isInCheck = (board, color) => isCurrentInCheck(board, color);
 const OPENING_BOOK = {
     // Start
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": ["e2e4", "d2d4", "g1f3", "c2c4"],
-    
+
     // e4 Responses
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": ["c7c5", "e7e5", "e7e6", "c7c6", "d7d6"],
+    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": ["c7c5", "e7e5", "e7e6", "c7c6", "d7d6", "g8f6"],
     // Sicilian (1. e4 c5)
-    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["g1f3", "c2c3", "b1c3"],
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["g1f3", "c2c3", "b1c3", "d2d4"],
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq -": ["d7d6", "e7e6", "b8c6", "g8f6"],
     // French (1. e4 e6)
-    "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "d2d3"],
+    "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "d2d3", "b1c3"],
     // Caro-Kann (1. e4 c6)
-    "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"],
+    "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3", "b1c3"],
+    // Pirc (1. e4 d6)
+    "rnbqkbnr/ppp1pppp/3p4/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"],
 
     // d4 Responses
-    "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": ["g8f6", "d7d5", "e7e6", "f7f5"],
+    "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": ["g8f6", "d7d5", "e7e6", "f7f5", "c7c5"],
     // Queen's Gambit (1. d4 d5 2. c4)
-    "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": ["c2c4", "g1f3", "c1f4"],
-    "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": ["e7e6", "c7c6", "d5c4"], // Declined, Slav, Accepted
+    "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": ["c2c4", "g1f3", "c1f4", "e2e3"],
+    "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": ["e7e6", "c7c6", "d5c4", "e7e5"], 
+    // King's Indian Defense Setup
+    "rnbqkbnr/pppppppp/8/8/3P4/5N2/PPP1PPPP/RNBQKB1R b KQkq -": ["g8f6", "d7d5", "c7c5", "g7g6"],
 
-    // Reti / English
-    "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq -": ["d7d5", "c7c5", "g8f6"],
-    "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq -": ["e7e5", "c7c5", "g8f6"]
+    // Ruy Lopez (Spanish) 1. e4 e5 2. Nf3 Nc6 3. Bb5
+    "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -": ["f1b5", "f1c4", "d2d4"],
+
+    // Italian Game 1. e4 e5 2. Nf3 Nc6 3. Bc4
+    "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq -": ["f8c5", "g8f6", "d7d6"]
 };
 
 const boardToFen = (board, turn, castlingRights, lastMove) => {
@@ -459,15 +466,33 @@ const evaluateBoard = (board, aiColor) => {
     let score = (mgScore * mgPhase + egScore * egPhase) / 24;
 
     // Endgame Mop-up Evaluation
-    // Encourage pushing enemy king to edge if we have material advantage (no pawns or just winning)
-    if (egPhase > 10 && aiMat > opMat + 200 && opKing && aiKing) {
+    // Encourage pushing enemy king to edge if we have material advantage
+    if (egPhase > 15 && aiMat > opMat + 100 && opKing && aiKing) {
         // Distance between kings (closer is better for checkmate usually)
         const dist = Math.abs(aiKing.r - opKing.r) + Math.abs(aiKing.c - opKing.c);
-        score += (14 - dist) * 5; // Reward proximity
+        score += (14 - dist) * 10; // Heavily reward proximity (Opposition)
 
-        // Push enemy king to center dist (center is 3.5, 3.5) -> dist from center
-        const centerDist = Math.abs(opKing.r - 3.5) + Math.abs(opKing.c - 3.5);
-        score += centerDist * 10; // Reward enemy king being far from center (edge)
+        // Push enemy king to edge/corner
+        // Distance from center (Max 7)
+        const centerDist = Math.max(Math.abs(opKing.r - 3.5), Math.abs(opKing.c - 3.5));
+        score += centerDist * 20; // Reward pushing to edge
+    }
+
+    // Pawn Promotion Incentive in Endgame
+    if (egPhase > 10) {
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = board[r][c];
+                if (p && p.toLowerCase() === 'p') {
+                    const isPWhite = p === 'P';
+                    if ((aiColor === 'white' && isPWhite) || (aiColor === 'black' && !isPWhite)) {
+                        // Bonus for advancing pawns in endgame
+                        const advancement = isPWhite ? (6 - r) : (r - 1); // Rank 0-7
+                        score += advancement * 10;
+                    }
+                }
+            }
+        }
     }
 
     return score;
@@ -612,11 +637,11 @@ Deno.serve(async (req) => {
         } else {
             switch (difficulty) {
                 case 'easy': maxDepth = 1; randomness = 50; break;
-                case 'medium': maxDepth = 2; randomness = 20; break;
-                case 'hard': maxDepth = 3; randomness = 5; break;
-                case 'expert': maxDepth = 4; randomness = 0; break;
-                case 'grandmaster': maxDepth = 5; randomness = 0; break;
-                default: maxDepth = 3;
+                case 'medium': maxDepth = 3; randomness = 20; break;
+                case 'hard': maxDepth = 4; randomness = 5; break;
+                case 'expert': maxDepth = 5; randomness = 0; break;
+                case 'grandmaster': maxDepth = 6; randomness = 0; break;
+                default: maxDepth = 4;
             }
         }
 
