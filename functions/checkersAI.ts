@@ -265,6 +265,54 @@ const evaluate = (board, aiColor, turn) => {
     return aiColor === 'white' ? score : -score;
 };
 
+// --- Quiescence Search ---
+// Extends the search for forced sequences (captures) to avoid horizon effect
+const quiescence = (board, alpha, beta, maximizingPlayer, turn, aiColor) => {
+    // Generate moves
+    const moves = getAllPlayableMoves(board, turn);
+    
+    // 1. Game Over / Terminal
+    if (moves.length === 0) {
+        return maximizingPlayer ? -100000 : 100000;
+    }
+
+    // 2. Check if "Quiet"
+    // In our logic, capture moves have score > 0.
+    const isForced = moves[0].score > 0;
+
+    if (!isForced) {
+        // Quiet position: Return static evaluation
+        return evaluate(board, aiColor, turn);
+    }
+
+    // 3. Forced/Capture Node: Continue Searching
+    if (maximizingPlayer) {
+        let maxEval = -Infinity;
+        // Note: moves are already mandatory captures if isForced is true
+        for (const move of moves) {
+            const nextTurn = turn === 'white' ? 'black' : 'white';
+            // Recursively call quiescence
+            const score = quiescence(move.finalBoard, alpha, beta, false, nextTurn, aiColor);
+            
+            if (score > maxEval) maxEval = score;
+            alpha = Math.max(alpha, score);
+            if (beta <= alpha) break;
+        }
+        return maxEval;
+    } else {
+        let minEval = Infinity;
+        for (const move of moves) {
+            const nextTurn = turn === 'white' ? 'black' : 'white';
+            const score = quiescence(move.finalBoard, alpha, beta, true, nextTurn, aiColor);
+            
+            if (score < minEval) minEval = score;
+            beta = Math.min(beta, score);
+            if (beta <= alpha) break;
+        }
+        return minEval;
+    }
+};
+
 // --- Minimax ---
 
 const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, activePiece = null) => {
@@ -272,12 +320,13 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, act
     const moves = getAllPlayableMoves(board, turn, activePiece);
 
     // 2. Terminal States
-    if (depth === 0) {
-        return { score: evaluate(board, aiColor, turn) };
-    }
     if (moves.length === 0) {
-        // No moves = Loss
         return { score: maximizingPlayer ? -100000 : 100000 };
+    }
+    
+    // Depth 0 -> Quiescence Search instead of Evaluate
+    if (depth === 0) {
+        return { score: quiescence(board, alpha, beta, maximizingPlayer, turn, aiColor) };
     }
 
     // 3. Search
