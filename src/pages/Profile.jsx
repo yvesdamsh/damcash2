@@ -18,6 +18,7 @@ import PlayerSearchBar from '@/components/PlayerSearchBar';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
+    const [isOwnProfile, setIsOwnProfile] = useState(false);
     const [stats, setStats] = useState(null);
     const [ranks, setRanks] = useState({ checkers: '-', chess: '-' });
     const [favoriteGames, setFavoriteGames] = useState([]);
@@ -112,16 +113,17 @@ export default function Profile() {
             try {
                 const currentUser = await base44.auth.me();
                 let u = currentUser;
-                let isOwnProfile = true;
+                let isOwnProfileLocal = true;
 
                 if (profileId && profileId !== currentUser.id) {
                     u = await base44.entities.User.get(profileId);
-                    isOwnProfile = false;
+                    isOwnProfileLocal = false;
                 }
 
                 setUser(u);
+                setIsOwnProfile(isOwnProfileLocal);
                 
-                if (isOwnProfile) {
+                if (isOwnProfileLocal) {
                     setEditForm({ 
                         username: u.username || '', 
                         full_name: u.full_name || '',
