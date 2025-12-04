@@ -233,14 +233,64 @@ const isSquareAttacked = (board, r, c, color) => {
 
 const isInCheck = (board, color) => isCurrentInCheck(board, color);
 
-// --- Opening Book (Compact) ---
+// --- Opening Book (Expanded) ---
+// Simplified map: FEN (without move counters) -> Array of Algebraic Moves
 const OPENING_BOOK = {
+    // Start
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -": ["e2e4", "d2d4", "g1f3", "c2c4"],
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": ["c7c5", "e7e5", "e7e6", "c7c6"],
-    "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": ["g8f6", "d7d5", "e7e6"],
-    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["g1f3", "c2c3", "d2d4"],
-    "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"],
-    "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"]
+    
+    // e4 Responses
+    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -": ["c7c5", "e7e5", "e7e6", "c7c6", "d7d6"],
+    // Sicilian (1. e4 c5)
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["g1f3", "c2c3", "b1c3"],
+    // French (1. e4 e6)
+    "rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "d2d3"],
+    // Caro-Kann (1. e4 c6)
+    "rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq -": ["d2d4", "g1f3"],
+
+    // d4 Responses
+    "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq -": ["g8f6", "d7d5", "e7e6", "f7f5"],
+    // Queen's Gambit (1. d4 d5 2. c4)
+    "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq -": ["c2c4", "g1f3", "c1f4"],
+    "rnbqkbnr/ppp1pppp/8/3p4/2PP4/8/PP2PPPP/RNBQKBNR b KQkq -": ["e7e6", "c7c6", "d5c4"], // Declined, Slav, Accepted
+
+    // Reti / English
+    "rnbqkbnr/pppppppp/8/8/8/5N2/PPPPPPPP/RNBQKB1R b KQkq -": ["d7d5", "c7c5", "g8f6"],
+    "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq -": ["e7e5", "c7c5", "g8f6"]
+};
+
+const boardToFen = (board, turn, castlingRights, lastMove) => {
+    let fen = "";
+    let empty = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (!p) empty++;
+            else {
+                if (empty > 0) { fen += empty; empty = 0; }
+                fen += p;
+            }
+        }
+        if (empty > 0) { fen += empty; empty = 0; }
+        if (r < 7) fen += "/";
+    }
+    
+    const castling = [
+        castlingRights.wK ? 'K' : '',
+        castlingRights.wQ ? 'Q' : '',
+        castlingRights.bK ? 'k' : '',
+        castlingRights.bQ ? 'q' : ''
+    ].join('') || '-';
+
+    let ep = '-';
+    if (lastMove && lastMove.piece && lastMove.piece.toLowerCase() === 'p' && Math.abs(lastMove.from.r - lastMove.to.r) === 2) {
+        const colMap = "abcdefgh";
+        const rowMap = "87654321"; // 0->8, 7->1
+        const r = (lastMove.from.r + lastMove.to.r) / 2;
+        ep = colMap[lastMove.from.c] + rowMap[r];
+    }
+
+    return `${fen} ${turn} ${castling} ${ep}`;
 };
 
 // --- Evaluation (PeSTO Tables - Advanced Heuristics) ---
