@@ -569,77 +569,85 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, cas
 };
 
 Deno.serve(async (req) => {
-        // Randomness / Suboptimal moves
-        // Instead of pure minimax, we collect top moves and pick based on randomness score
-        // Implementation: Inside minimax, we usually return BEST. 
-        // We can run minimax at Root, get scores for all moves, then pick.
-        // Refactor Root Call to get all move scores:
-        
-        const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
-        if (rootMoves.length === 0) return Response.json({ error: 'No moves' }, { status: 200 });
-        
-        let scoredMoves = [];
-        
-        // Run search for each root move
-        // Time budget split? No, just run depth search on each branch or standard AlphaBeta root
-        // Standard AlphaBeta returns best move only. We need list for randomness.
-        // Let's run shallow search (depth 1) to sort, then deep search on best?
-        // Or just modify Root search loop here.
-        
-        for (const move of rootMoves) {
-            if (Date.now() > deadline - 50) break;
-            
-            // Execute move
-            const { board: nextBoard } = executeChessMove(board, move);
-            const nextTurn = turn === 'white' ? 'black' : 'white';
-            
-            // Search
-            // We use maxDepth-1 because we already made one move
-            try {
-                const res = minimax(nextBoard, maxDepth - 1, -Infinity, Infinity, false, nextTurn, turn, castlingRights, move, deadline);
-                scoredMoves.push({ move, score: res.score });
-            } catch(e) {
-                scoredMoves.push({ move, score: -Infinity }); // Timeout treated as bad
-            }
+    try {
+        const base44 = createClientFromRequest(req);
+        const { board, turn, difficulty = 'medium', userElo = 1200, castlingRights, lastMove, timeLeft } = await req.json();
+
+        // Time Management
+        const startTime = Date.now();
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.05 * 1000, 200), 10000) : 5000;
+        const deadline = startTime + timeBudget;
+
+        if (!board || !turn) {
+            return Response.json({ error: 'Missing board or turn' }, { status: 400 });
         }
-        
-        // Sort by score (descending for Maximizer - which is AI, AI wants to Maximize its score)
-        // Our evaluateBoard returns positive for AI color.
-        scoredMoves.sort((a, b) => b.score - a.score);
-        
-        let selected = scoredMoves[0];
-        
-        // Apply Randomness/Blunder Chance
-        // If randomness > 0, we might pick 2nd or 3rd best
-        if (randomness > 0 && scoredMoves.length > 1) {
-            const roll = Math.random() * 100;
-            if (roll < randomness) {
-                // Pick from top 3 weighted?
-                // Or just pick 2nd best
-                const cand = scoredMoves.slice(0, Math.min(scoredMoves.length, 3));
-                selected = cand[Math.floor(Math.random() * cand.length)];
+
+        // 1. Opening Book Lookup
+        const fen = boardToFen(board, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove);
+        if (OPENING_BOOK[fen]) {
+            const moves = OPENING_BOOK[fen];
+            const rM = moves[Math.floor(Math.random() * moves.length)];
+            // Decode Algebraic (e.g. e2e4)
+            const cols = {a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
+            const fC = cols[rM[0]], fR = 8 - parseInt(rM[1]);
+            const tC = cols[rM[2]], tR = 8 - parseInt(rM[3]);
+            return Response.json({
+                move: { from: {r:fR, c:fC}, to: {r:tR, c:tC}, captured: null },
+                score: 0,
+                source: 'book'
+            });
+        }
+
+        // 2. Difficulty & Adaptation
+        let maxDepth = 3;
+        let randomness = 0; // 0-100 probability of picking suboptimal move
+
+        if (difficulty === 'adaptive') {
+            // Scale based on Elo
+            if (userElo < 800) { maxDepth = 1; randomness = 40; }
+            else if (userElo < 1200) { maxDepth = 2; randomness = 25; }
+            else if (userElo < 1600) { maxDepth = 3; randomness = 10; }
+            else if (userElo < 2000) { maxDepth = 3; randomness = 0; }
+            else { maxDepth = 4; randomness = 0; }
+        } else {
+            switch (difficulty) {
+                case 'easy': maxDepth = 1; randomness = 50; break;
+                case 'medium': maxDepth = 2; randomness = 20; break;
+                case 'hard': maxDepth = 3; randomness = 5; break;
+                case 'expert': maxDepth = 4; randomness = 0; break;
+                case 'grandmaster': maxDepth = 5; randomness = 0; break;
+                default: maxDepth = 3;
             }
         }
 
-        return Response.json({
-            move: selected.move,
-            score: selected.score
-        });
+        // Panic Mode
+        if (timeLeft && timeLeft < 5) maxDepth = Math.min(maxDepth, 2);
 
+        // 3. Search (Root)
+        // To allow "randomness" (choosing suboptimal moves), we need to score the top moves.
+        // We use the Iterative Deepening result for the BEST move, but if randomness > 0,
+        // we might want to evaluate other root moves too?
+        // For simplicity/performance: if randomness > 0, we reduce depth? 
+        // No, randomness usually means picking 2nd/3rd best move from a shallow search or from the deep search.
+        // Let's do this:
+        // If randomness > 0, we run a depth-1 search first to get candidate list with rough scores,
+        // then picking one based on chance, then running deep search on THAT move only? 
+        // Or just picking the best move from full search and applying "noise" to its score? No.
+        // Better: Run full search for best move. If randomness, collect root moves, sort by shallow score, pick one, then play it.
+        
+        // Standard Search first to get the "Best" move (for high levels)
         let bestMoveSoFar = null;
         let currentDepth = 1;
         
         // Iterative Deepening
         while (currentDepth <= maxDepth) {
-            // Check if we ran out of time budget
-            if (Date.now() > deadline - 100) break; // Leave 100ms buffer
+            if (Date.now() > deadline - 100) break;
 
             try {
                 const result = minimax(board, currentDepth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove, deadline);
                 if (result && result.move) {
                     bestMoveSoFar = result;
                 }
-                // If we found a checkmate, stop searching
                 if (Math.abs(result.score) > 90000) break;
             } catch (e) {
                 if (e.message === 'TIMEOUT') break;
@@ -647,10 +655,33 @@ Deno.serve(async (req) => {
             }
             currentDepth++;
         }
+        
+        // If we want randomness, we might override 'bestMoveSoFar'
+        if (randomness > 0 && bestMoveSoFar && bestMoveSoFar.move) {
+             const roll = Math.random() * 100;
+             if (roll < randomness) {
+                 // Find a suboptimal but valid move
+                 const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
+                 if (rootMoves.length > 1) {
+                     // Filter out the best move to avoid picking it again
+                     const others = rootMoves.filter(m => 
+                         m.from.r !== bestMoveSoFar.move.from.r || m.from.c !== bestMoveSoFar.move.from.c || 
+                         m.to.r !== bestMoveSoFar.move.to.r || m.to.c !== bestMoveSoFar.move.to.c
+                     );
+                     if (others.length > 0) {
+                         // Pick random valid move
+                         const randomMove = others[Math.floor(Math.random() * others.length)];
+                         return Response.json({ move: randomMove, score: 0 });
+                     }
+                 }
+             }
+        }
 
         const result = bestMoveSoFar || { move: null, score: 0 };
         
         if (!result.move) {
+            const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
+            if (rootMoves.length > 0) return Response.json({ move: rootMoves[0], score: 0 });
             return Response.json({ error: 'No moves available' }, { status: 200 });
         }
 
