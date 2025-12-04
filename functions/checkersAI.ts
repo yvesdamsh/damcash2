@@ -376,7 +376,12 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, act
 Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
-        const { board, turn, difficulty = 'medium', activePiece } = await req.json();
+        const { board, turn, difficulty = 'medium', activePiece, timeLeft } = await req.json();
+
+        // Time Management
+        const startTime = Date.now();
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.05 * 1000, 200), 10000) : 5000;
+        const deadline = startTime + timeBudget;
 
         if (!board || !turn) {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
