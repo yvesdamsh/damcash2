@@ -14,6 +14,7 @@ import ActivityFeed from '@/components/ActivityFeed';
 import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
+import SplashScreen from '@/components/SplashScreen';
 
 export default function Home() {
     // Guest User Logic
@@ -32,6 +33,7 @@ export default function Home() {
     };
 
     const [user, setUser] = useState(null);
+    const [showSplash, setShowSplash] = useState(true);
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -114,12 +116,18 @@ export default function Home() {
                 // Check authentication state
                 let currentUser = await base44.auth.me().catch(() => null);
                 
-                // Fallback to Guest if not logged in
-                if (!currentUser) {
-                    currentUser = getGuestUser();
+                if (currentUser) {
+                    setUser(currentUser);
+                    setShowSplash(false);
+                } else {
+                    // If no user, check if we previously selected guest mode in this session?
+                    // For now, always show splash if not logged in, unless guest already set?
+                    // Let's rely on state. Splash shows by default.
+                    // If we wanted to persist guest session without splash every refresh, we could check localStorage.
+                    // But user asked for login possibility, so showing splash is better.
+                    setLoading(false); // Stop loading to show splash
+                    return; 
                 }
-                
-                setUser(currentUser);
                 
                 const savedGameType = localStorage.getItem('gameMode');
                 if (savedGameType) setGameType(savedGameType);
@@ -166,12 +174,12 @@ export default function Home() {
                 // BUT it's better to be clean.
 
                 } catch (e) {
-                console.error("Home init error:", e);
+                    console.error("Home init error:", e);
                 } finally {
-                setLoading(false);
+                    setLoading(false);
                 }
-                };
-                init();
+        };
+        init();
         
         const handleModeChange = () => setGameType(localStorage.getItem('gameMode') || 'checkers');
         window.addEventListener('gameModeChanged', handleModeChange);
@@ -414,7 +422,18 @@ export default function Home() {
         }
     };
 
+    const handleGuestPlay = async () => {
+        const guest = getGuestUser();
+        setUser(guest);
+        setShowSplash(false);
+        await fetchData(guest);
+    };
+
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
+
+    if (showSplash && !user) {
+        return <SplashScreen onPlayAsGuest={handleGuestPlay} />;
+    }
 
     return (
         <div className="max-w-4xl mx-auto">
