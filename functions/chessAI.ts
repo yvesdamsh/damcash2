@@ -400,6 +400,10 @@ const evaluateBoard = (board, aiColor) => {
     let mgScore = 0;
     let egScore = 0;
     let gamePhase = 0;
+    let aiMat = 0;
+    let opMat = 0;
+    let aiKing = null;
+    let opKing = null;
 
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
