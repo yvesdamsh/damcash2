@@ -198,11 +198,14 @@ const getAllPlayableMoves = (board, turn, activePiece = null) => {
 const WEIGHTS = {
     PIECE: 100,
     KING: 300,
-    BACK_ROW: 20,      // Keep back row intact
-    CENTER: 5,         // Control center
-    EDGE: 2,           // Edges are safer than middle of nowhere
-    ADVANCED: 3,       // Push forward
-    MOBILITY: 1        // Number of moves available
+    BACK_ROW: 30,      // Stronger back row preference
+    CENTER: 15,        // Stronger center control
+    EDGE: 5,           // Edges are safer
+    ADVANCED: 5,       // Push forward
+    MOBILITY: 2,       // Number of moves available
+    DOG_HOLE: -20,     // Penalty for being trapped in corners
+    BRIDGE: 15,        // Bonus for holding bridge (c=2, r=9 or c=7, r=0)
+    OREO: 15           // Bonus for Oreo pattern (defensive triangle)
 };
 
 const evaluate = (board, aiColor, turn) => {
@@ -222,17 +225,32 @@ const evaluate = (board, aiColor, turn) => {
             let value = isKing ? WEIGHTS.KING : WEIGHTS.PIECE;
 
             // Position Bonuses
+            // Edges (Safe from double jumps often)
             if (c === 0 || c === 9) value += WEIGHTS.EDGE;
+            
+            // Center Box (Control)
             if (c >= 3 && c <= 6 && r >= 3 && r <= 6) value += WEIGHTS.CENTER;
             
-            // Advancement (for non-kings)
+            // Advancement (for non-kings) - Reward getting closer to King
             if (!isKing) {
                 const rank = isWhite ? (9 - r) : r;
-                value += rank * WEIGHTS.ADVANCED;
+                // Progressive advancement
+                value += rank * rank * 0.5; 
                 
-                // Back row safety
+                // Back row safety (Keep pieces on home row as long as possible)
                 if ((isWhite && r === 9) || (!isWhite && r === 0)) value += WEIGHTS.BACK_ROW;
+
+                // Dog Hole Penalty (Trapped pieces at r0,c1 or r0,c8 roughly)
+                if (isWhite && r===9 && (c===0 || c===2)) value += WEIGHTS.DOG_HOLE;
+            } else {
+                // King centralization
+                 if (c >= 2 && c <= 7 && r >= 2 && r <= 7) value += 10;
             }
+
+            // Patterns
+            // Bridge (White: r9 c2/4/6/8? Standard checkers 10x10 board is big)
+            // Assuming 10x10 international checkers (0-9)
+            // Bridge is usually central back.
 
             if (isWhite) {
                 whitePieces++;
