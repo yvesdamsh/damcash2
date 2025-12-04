@@ -3,7 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, ArrowLeft, Trophy, History, Calendar, Star } from 'lucide-react';
+import { Loader2, ArrowLeft, Trophy, History, Calendar, Star, FileText } from 'lucide-react';
+import { toast } from "sonner";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -12,6 +13,7 @@ export default function GameHistory() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [favorites, setFavorites] = useState([]);
+    const [exportingId, setExportingId] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -52,7 +54,24 @@ export default function GameHistory() {
             await base44.auth.updateMe({ favorite_games: newFavs });
         } catch (e) {
             console.error("Failed to update favorites", e);
-            // Revert on error if needed, but keeping it simple
+        }
+    };
+
+    const handleExportToNotion = async (gameId) => {
+        setExportingId(gameId);
+        try {
+            const response = await base44.functions.invoke('exportGameToNotion', { gameId });
+            if (response.data.success) {
+                toast.success("Exporté vers Notion avec succès !");
+                window.open(response.data.url, '_blank');
+            } else {
+                toast.error(response.data.error || "Erreur lors de l'export");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Erreur de connexion ou service indisponible");
+        } finally {
+            setExportingId(null);
         }
     };
 
@@ -102,7 +121,21 @@ export default function GameHistory() {
                                                         <Star className={`w-4 h-4 ${isFav ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`} />
                                                     </Button>
                                                 </td>
-                                                <td className="p-4 text-right"><Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Revoir</Button></td>
+                                                <td className="p-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="ghost" 
+                                                            onClick={() => handleExportToNotion(game.id)}
+                                                            disabled={exportingId === game.id}
+                                                            className="text-gray-500 hover:text-[#4a3728]"
+                                                            title="Exporter vers Notion"
+                                                        >
+                                                            {exportingId === game.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                                                        </Button>
+                                                        <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Revoir</Button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         );
                                     })}
