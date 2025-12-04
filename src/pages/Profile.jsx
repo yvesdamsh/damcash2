@@ -257,15 +257,15 @@ export default function Profile() {
     })).filter(d => d.elo); // Only keep games where elo was recorded
 
     return (
-        <div className="max-w-5xl mx-auto p-4 pb-20">
-            <div className="flex justify-end mb-4">
+        <div className="max-w-5xl mx-auto px-0 sm:px-4 pb-20">
+            <div className="flex justify-end mb-4 px-4 sm:px-0">
                 <div className="w-full max-w-xs">
                     <PlayerSearchBar />
                 </div>
             </div>
-            <div className="bg-white/90 backdrop-blur rounded-3xl shadow-2xl border border-[#d4c5b0] overflow-hidden mb-8">
+            <div className="bg-white/90 backdrop-blur sm:rounded-3xl shadow-2xl border-y sm:border border-[#d4c5b0] overflow-hidden mb-8">
                 {/* Cover / Header */}
-                <div className={`h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500 bg-cover bg-center`} style={user.banner_url ? { backgroundImage: `url(${user.banner_url})` } : {}}>
+                <div className={`h-40 sm:h-48 ${themes[user.profile_theme || 'default']} relative overflow-hidden transition-all duration-500 bg-cover bg-center`} style={user.banner_url ? { backgroundImage: `url(${user.banner_url})` } : {}}>
                     {!user.banner_url && (
                         <motion.div 
                             initial={{ opacity: 0, scale: 2 }}
@@ -276,10 +276,10 @@ export default function Profile() {
                             <span className="text-9xl font-black text-[#e8dcc5] tracking-tighter opacity-20">DAMCASH</span>
                         </motion.div>
                     )}
-                    <div className="absolute bottom-4 right-8 z-20 flex gap-2">
+                    <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-8 z-20 flex gap-2 flex-wrap justify-end">
                         {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
-                            <Button variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm">
-                                <ShoppingBag className="w-4 h-4 mr-2" /> Boutique
+                            <Button size="sm" variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm h-8 sm:h-10 text-xs sm:text-sm">
+                                <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Boutique
                             </Button>
                         )}
                         
@@ -412,25 +412,25 @@ export default function Profile() {
                     </div>
                 </div>
 
-                <div className="px-8 pb-8 relative">
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-6 -mt-16">
+                <div className="px-4 sm:px-8 pb-8 relative">
+                    <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-4 sm:gap-6 -mt-12 sm:-mt-16">
                         {/* Avatar & Info */}
-                        <div className="flex flex-col md:flex-row items-end md:items-end gap-6 z-10">
+                        <div className="flex flex-col md:flex-row items-center md:items-end gap-4 sm:gap-6 z-10 w-full md:w-auto">
                             <motion.div 
                                 initial={{ scale: 0, rotate: -20 }}
                                 animate={{ scale: 1, rotate: 0 }}
                                 transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                                className={`w-32 h-32 md:w-40 md:h-40 rounded-full bg-white p-1.5 shadow-2xl overflow-hidden border-4 border-[#e8dcc5] ${frames[user.avatar_frame || 'none']}`}
+                                className={`w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-white p-1 sm:p-1.5 shadow-2xl overflow-hidden border-4 border-[#e8dcc5] ${frames[user.avatar_frame || 'none']}`}
                             >
                                 {user.avatar_url ? (
                                     <img src={user.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full rounded-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
-                                        <User className="w-16 h-16 text-gray-400" />
+                                        <User className="w-10 h-10 sm:w-16 sm:h-16 text-gray-400" />
                                     </div>
                                 )}
                             </motion.div>
-                            <div className="mb-2 text-center md:text-left">
+                            <div className="mb-0 sm:mb-2 text-center md:text-left w-full md:w-auto flex flex-col items-center md:items-start">
                                 <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm">{user.username || user.full_name || 'Joueur'}</h1>
                                 
                                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2 mt-1">
@@ -461,9 +461,9 @@ export default function Profile() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-3 mt-4 md:mt-16">
+                        <div className="flex gap-2 sm:gap-3 mt-2 md:mt-16 justify-center md:justify-start w-full md:w-auto flex-wrap">
                             <Link to="/Messages">
-                                <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md">
+                                <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md h-9 sm:h-10 text-sm">
                                     <MessageSquare className="w-4 h-4 mr-2" /> Messages
                                 </Button>
                             </Link>
