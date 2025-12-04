@@ -90,7 +90,7 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                 >
                     {(isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((r) => (
                         (isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((c) => {
-                            const piece = board[r][c];
+                            const piece = board[r]?.[c];
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
                             const isTarget = validMoves.some(m => m.to.r === r && m.to.c === c);
