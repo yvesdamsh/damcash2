@@ -259,11 +259,30 @@ const evaluate = (board, aiColor, turn) => {
                 blackPieces++;
                 score -= value;
             }
-        }
-    }
+            }
+            }
 
-    return aiColor === 'white' ? score : -score;
-};
+            // Endgame Strategy
+            // If winning (more pieces), simplify (trade) and trap.
+            // If losing, avoid trades, seek complexity.
+            const myPieces = aiColor === 'white' ? whitePieces : blackPieces;
+            const opPieces = aiColor === 'white' ? blackPieces : whitePieces;
+
+            let endgameScore = 0;
+            if (myPieces > opPieces) {
+            // Winning: Encourage trading (100 pts bonus per trade roughly, implicitly handled by material diff but let's boost)
+            endgameScore += (20 - opPieces) * 10; 
+
+            // Push opponent to edges?
+            // Not easily calculated without iterating again.
+            } else if (myPieces < opPieces) {
+            // Losing: Keep pieces on board (penalty for low piece count)
+            endgameScore -= (20 - myPieces) * 10;
+            }
+
+            let finalScore = score + endgameScore;
+            return aiColor === 'white' ? finalScore : -finalScore;
+            };
 
 // --- Quiescence Search ---
 // Extends the search for forced sequences (captures) to avoid horizon effect
