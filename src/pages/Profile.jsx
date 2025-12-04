@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -35,6 +35,9 @@ export default function Profile() {
     });
     const [uploading, setUploading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const profileId = queryParams.get('id');
 
     const themes = {
         default: "bg-gradient-to-r from-[#4a3728] to-[#2c1e12]",
@@ -106,20 +109,32 @@ export default function Profile() {
     useEffect(() => {
         const init = async () => {
             try {
-                const u = await base44.auth.me();
+                const currentUser = await base44.auth.me();
+                let u = currentUser;
+                let isOwnProfile = true;
+
+                if (profileId && profileId !== currentUser.id) {
+                    u = await base44.entities.User.get(profileId);
+                    isOwnProfile = false;
+                }
+
                 setUser(u);
-                setEditForm({ 
-                    username: u.username || '', 
-                    full_name: u.full_name || '',
-                    avatar_url: u.avatar_url || '',
-                    banner_url: u.banner_url || '',
-                    bio: u.bio || '',
-                    profile_theme: u.profile_theme || 'default',
-                    avatar_frame: u.avatar_frame || 'none'
-                });
+                
+                if (isOwnProfile) {
+                    setEditForm({ 
+                        username: u.username || '', 
+                        full_name: u.full_name || '',
+                        avatar_url: u.avatar_url || '',
+                        banner_url: u.banner_url || '',
+                        bio: u.bio || '',
+                        profile_theme: u.profile_theme || 'default',
+                        avatar_frame: u.avatar_frame || 'none'
+                    });
+                }
 
                 const allStats = await base44.entities.User.list();
-                const myStats = allStats.find(s => s.created_by === u.email) || {
+                // Match by ID to be safer
+                const myStats = allStats.find(s => s.id === u.id) || {
                     elo_checkers: 1200, elo_chess: 1200, 
                     wins_checkers: 0, losses_checkers: 0,
                     wins_chess: 0, losses_chess: 0,
@@ -129,10 +144,10 @@ export default function Profile() {
 
                 // Calculate Ranks
                 const sortedCheckers = [...allStats].sort((a, b) => (b.elo_checkers || 1200) - (a.elo_checkers || 1200));
-                const myCheckersRank = sortedCheckers.findIndex(s => s.created_by === u.email) + 1;
+                const myCheckersRank = sortedCheckers.findIndex(s => s.id === u.id) + 1;
 
                 const sortedChess = [...allStats].sort((a, b) => (b.elo_chess || 1200) - (a.elo_chess || 1200));
-                const myChessRank = sortedChess.findIndex(s => s.created_by === u.email) + 1;
+                const myChessRank = sortedChess.findIndex(s => s.id === u.id) + 1;
 
                 setRanks({ checkers: myCheckersRank, chess: myChessRank });
 
@@ -153,16 +168,22 @@ export default function Profile() {
                 setGameHistory(history);
 
                 // Badges
-                const userBadges = await checkAndAwardBadges(u, myStats);
+                // Only check award if own profile, else just fetch
+                let userBadges;
+                if (isOwnProfile) {
+                    userBadges = await checkAndAwardBadges(u, myStats);
+                } else {
+                    userBadges = await base44.entities.UserBadge.filter({ user_id: u.id });
+                }
                 setBadges(userBadges);
 
             } catch (e) {
                 console.error(e);
-                base44.auth.redirectToLogin('/Home');
+                if (!profileId) base44.auth.redirectToLogin('/Home');
             }
         };
         init();
-    }, []);
+    }, [profileId]);
 
     const handleFileUpload = async (e, field) => {
         const file = e.target.files[0];
@@ -247,16 +268,20 @@ export default function Profile() {
                             <span className="text-9xl font-black text-[#e8dcc5] tracking-tighter opacity-20">DAMCASH</span>
                         </motion.div>
                     )}
-                    <div className="absolute bottom-4 right-8 z-20">
-                        <Button variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm mr-2">
-                            <ShoppingBag className="w-4 h-4 mr-2" /> Boutique
-                        </Button>
-                        <Dialog open={isEditing} onOpenChange={setIsEditing}>
-                            <DialogTrigger asChild>
-                                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                                    <Edit className="w-4 h-4 mr-2" /> Modifier le profil
-                                </Button>
-                            </DialogTrigger>
+                    <div className="absolute bottom-4 right-8 z-20 flex gap-2">
+                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                            <Button variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm">
+                                <ShoppingBag className="w-4 h-4 mr-2" /> Boutique
+                            </Button>
+                        )}
+                        
+                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                            <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                                <DialogTrigger asChild>
+                                    <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                        <Edit className="w-4 h-4 mr-2" /> Modifier
+                                    </Button>
+                                </DialogTrigger>
                             <DialogContent className="sm:max-w-[500px] bg-[#fdfbf7] border-[#d4c5b0]">
                                 <DialogHeader>
                                     <DialogTitle className="text-[#4a3728]">Modifier le profil</DialogTitle>
@@ -355,23 +380,27 @@ export default function Profile() {
                                     </Button>
                                 </div>
                             </DialogContent>
-                        </Dialog>
-                        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                            <DialogTrigger asChild>
-                                <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm ml-2">
-                                    <Palette className="w-4 h-4 mr-2" /> Personnaliser
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7] border-[#d4c5b0]">
-                                <DialogHeader>
-                                    <DialogTitle className="text-[#4a3728]">Personnalisation</DialogTitle>
-                                </DialogHeader>
-                                <GameSettings user={user} onUpdate={() => {
-                                    base44.auth.me().then(setUser);
-                                    setIsSettingsOpen(false);
-                                }} />
-                            </DialogContent>
-                        </Dialog>
+                            </Dialog>
+                        )}
+
+                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                        <Palette className="w-4 h-4 mr-2" /> Personnaliser
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7] border-[#d4c5b0]">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-[#4a3728]">Personnalisation</DialogTitle>
+                                    </DialogHeader>
+                                    <GameSettings user={user} onUpdate={() => {
+                                        base44.auth.me().then(setUser);
+                                        setIsSettingsOpen(false);
+                                    }} />
+                                </DialogContent>
+                            </Dialog>
+                        )}
                     </div>
                 </div>
 

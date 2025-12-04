@@ -13,6 +13,7 @@ import TutorialOverlay from '@/components/TutorialOverlay';
 import ActivityFeed from '@/components/ActivityFeed';
 import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
+import PlayerSearchBar from '@/components/PlayerSearchBar';
 
 export default function Home() {
     // Guest User Logic
@@ -576,7 +577,7 @@ export default function Home() {
                 </div>
             )}
 
-            <div className="text-center mb-8 space-y-4">
+            <div className="text-center mb-4 space-y-4">
                 <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
                     DAMCASH
                 </h1>
@@ -587,6 +588,8 @@ export default function Home() {
                     {gameType === 'checkers' ? "L'expérience ultime du jeu de dames en ligne" : "Le jeu des rois, stratégie pure"}
                 </p>
             </div>
+
+            <PlayerSearchBar />
 
             <div className="flex justify-center gap-4 mb-8">
                 <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ Dames</button>
