@@ -432,7 +432,9 @@ const quiescence = (board, alpha, beta, turn, aiColor, castlingRights, lastMove)
 
 // --- Minimax ---
 
-const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, castlingRights, lastMove) => {
+const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, castlingRights, lastMove, deadline) => {
+    // Time Check in Recursion
+    if (deadline && Date.now() > deadline) throw new Error('TIMEOUT');
     if (depth === 0) {
         // Use Quiescence at leaf nodes
         return { score: quiescence(board, alpha, beta, turn, aiColor, castlingRights, lastMove) };
@@ -539,18 +541,43 @@ Deno.serve(async (req) => {
              }
         }
 
-        // Chess Depth
-        let depth = 3;
+        // Chess Depth & Iterative Deepening
+        let maxDepth = 3;
         switch (difficulty) {
-            case 'easy': depth = 1; break;
-            case 'medium': depth = 2; break;
-            case 'hard': depth = 3; break;
-            case 'expert': depth = 4; break;
-            case 'grandmaster': depth = 5; break; // PeSTO is strong, depth 5 is decent
-            default: depth = 3;
+            case 'easy': maxDepth = 1; break;
+            case 'medium': maxDepth = 2; break;
+            case 'hard': maxDepth = 3; break;
+            case 'expert': maxDepth = 4; break;
+            case 'grandmaster': maxDepth = 5; break;
+            default: maxDepth = 3;
         }
 
-        const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove);
+        // Panic Mode: If very low time, reduce depth immediately
+        if (timeLeft && timeLeft < 5) maxDepth = Math.min(maxDepth, 2);
+
+        let bestMoveSoFar = null;
+        let currentDepth = 1;
+        
+        // Iterative Deepening
+        while (currentDepth <= maxDepth) {
+            // Check if we ran out of time budget
+            if (Date.now() > deadline - 100) break; // Leave 100ms buffer
+
+            try {
+                const result = minimax(board, currentDepth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove, deadline);
+                if (result && result.move) {
+                    bestMoveSoFar = result;
+                }
+                // If we found a checkmate, stop searching
+                if (Math.abs(result.score) > 90000) break;
+            } catch (e) {
+                if (e.message === 'TIMEOUT') break;
+                throw e;
+            }
+            currentDepth++;
+        }
+
+        const result = bestMoveSoFar || { move: null, score: 0 };
         
         if (!result.move) {
             return Response.json({ error: 'No moves available' }, { status: 200 });

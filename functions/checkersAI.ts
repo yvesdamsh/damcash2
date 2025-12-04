@@ -315,7 +315,10 @@ const quiescence = (board, alpha, beta, maximizingPlayer, turn, aiColor) => {
 
 // --- Minimax ---
 
-const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, activePiece = null) => {
+const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, activePiece = null, deadline = null) => {
+    // Time Check
+    if (deadline && Date.now() > deadline) throw new Error('TIMEOUT');
+
     // 1. Generate Moves (Pass activePiece only for the root call/current state)
     const moves = getAllPlayableMoves(board, turn, activePiece);
 
@@ -380,36 +383,45 @@ Deno.serve(async (req) => {
         }
 
         // Depth Configuration
-        let depth = 4; 
+        let maxDepth = 4; 
         switch (difficulty) {
-            case 'easy': depth = 2; break;
-            case 'medium': depth = 4; break;
-            case 'hard': depth = 6; break;
-            case 'expert': depth = 8; break;
-            case 'grandmaster': depth = 10; break; // 10 ply is very strong for checkers
-            default: depth = 4;
+            case 'easy': maxDepth = 2; break;
+            case 'medium': maxDepth = 4; break;
+            case 'hard': maxDepth = 6; break;
+            case 'expert': maxDepth = 8; break;
+            case 'grandmaster': maxDepth = 10; break;
+            default: maxDepth = 4;
         }
         
-        // Opening Book (Simple)
-        // If it's the very first move for Black (White moves first usually in International Checkers? Or White is bottom?)
-        // In standard: White moves first. If AI is Black and board is fresh minus 1 move.
-        // Let's check piece count. 20 men each.
-        const whiteCount = board.flat().filter(p=>p===1).length;
-        const blackCount = board.flat().filter(p=>p===2).length;
+        // Panic Mode
+        if (timeLeft && timeLeft < 10) maxDepth = Math.min(maxDepth, 4);
+        if (timeLeft && timeLeft < 5) maxDepth = 2;
+
+        // Iterative Deepening
+        let bestMoveSoFar = null;
+        let currentDepth = 2; // Start with decent depth
         
-        if (whiteCount === 20 && blackCount === 20 && !activePiece) {
-             // Start of game.
-             // Pick a random valid move to vary play
-             const moves = (await import('./checkersAI.js').then(m => m.getAllPlayableMoves ? m.getAllPlayableMoves(board, turn) : []).catch(() => []));
-             // Note: importing self might be tricky in Deno Deploy bundle. 
-             // Better to call local function if defined in same scope.
-             // getAllPlayableMoves is defined above.
-             // const moves = getAllPlayableMoves(board, turn);
-             // Just let minimax handle it with randomization if scores are equal.
-             // Or add randomness to bestMove selection in minimax.
+        // If activePiece (multi-jump in progress), we must play the forced sequence.
+        // Minimax handles it, but depth can be lower.
+        if (activePiece) maxDepth = 12; // Forced moves are fast to calculate
+
+        while (currentDepth <= maxDepth) {
+            if (!activePiece && Date.now() > deadline - 50) break;
+
+            try {
+                const result = minimax(board, currentDepth, -Infinity, Infinity, true, turn, turn, activePiece, deadline);
+                if (result && result.move) {
+                    bestMoveSoFar = result;
+                }
+                if (Math.abs(result.score) > 90000) break; // Mate/Win found
+            } catch (e) {
+                if (e.message === 'TIMEOUT') break;
+                throw e;
+            }
+            currentDepth += 2; // Checkers implies 2-ply increments usually for stability, or 1
         }
 
-        const result = minimax(board, depth, -Infinity, Infinity, true, turn, turn, activePiece);
+        const result = bestMoveSoFar || { move: null, score: 0 };
         
         if (!result.move) {
             return Response.json({ error: 'No moves available' }, { status: 200 });

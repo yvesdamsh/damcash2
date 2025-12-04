@@ -376,7 +376,9 @@ export default function Game() {
                         castlingRights: chessState.castlingRights,
                         lastMove: chessState.lastMove,
                         // Checkers specific (for multi-jumps)
-                        activePiece: mustContinueWith
+                        activePiece: mustContinueWith,
+                        // Time Management
+                        timeLeft: getTimeLeft('black')
                     };
 
                     const res = await base44.functions.invoke(aiFunctionName, payload);
