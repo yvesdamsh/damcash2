@@ -679,7 +679,6 @@ export default function Profile() {
                                 </Card>
                             </div>
                         </TabsContent>
-                        </TabsContent>
 
                     <TabsContent value="history">
                         <Card className="bg-white/90 border-none">
