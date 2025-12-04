@@ -183,10 +183,16 @@ export default function Game() {
                 // Chess Logic
                 if (game.game_type === 'chess' && currentBoard.length > 0) {
                     if (isInCheck(currentBoard, game.current_turn)) {
-                        soundManager.play('check');
+                        // Sound removed as requested, keeping visual notification
                         toast.warning("Échec au Roi !");
-                        soundPlayed = true;
-                    } else if (lastChessMove && lastChessMove.captured) {
+                        // We don't mark soundPlayed=true here so the move sound or capture sound can play if applicable? 
+                        // Actually, if it's check, usually we want a distinct feedback. 
+                        // If sound is removed, we should probably fall back to move/capture sound logic or just play move sound.
+                        // Let's allow normal move sound logic to proceed if check sound is removed.
+                        // soundPlayed = true; // Commented out to allow fallthrough
+                    } 
+                    
+                    if (lastChessMove && lastChessMove.captured) {
                         soundManager.play('capture');
                         soundPlayed = true;
                     }
