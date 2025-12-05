@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare, Bell, BellOff, Eye } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare, Bell, BellOff, Eye, ArrowUp, ArrowDown, Medal } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -38,6 +38,76 @@ export default function TournamentDetail() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [spectatingGame, setSpectatingGame] = useState(null);
     const [spectateBoard, setSpectateBoard] = useState([]);
+
+    // Ranking & Sorting State
+    const [sortConfig, setSortConfig] = useState({ key: 'score', direction: 'desc' });
+
+    const standings = useMemo(() => {
+        if (!participants.length) return [];
+        
+        // Initialize map
+        const pMap = {};
+        participants.forEach(p => {
+            pMap[p.user_id] = {
+                ...p,
+                wins: 0,
+                losses: 0,
+                draws: 0,
+                buchholz: 0, // Sum of opponents scores
+                sb: 0 // Sonneborn-Berger
+            };
+        });
+
+        // Process matches for stats
+        matches.forEach(m => {
+            if (m.status !== 'finished') return;
+            
+            const white = pMap[m.white_player_id];
+            const black = pMap[m.black_player_id];
+            
+            // Skip if player not found (e.g. deleted user)
+            if (!white || !black) return;
+
+            // W/L/D
+            if (m.winner_id === m.white_player_id) {
+                white.wins++;
+                black.losses++;
+                white.sb += (black.score || 0);
+            } else if (m.winner_id === m.black_player_id) {
+                black.wins++;
+                white.losses++;
+                black.sb += (white.score || 0);
+            } else {
+                white.draws++;
+                black.draws++;
+                white.sb += (black.score || 0) * 0.5;
+                black.sb += (white.score || 0) * 0.5;
+            }
+
+            // Buchholz (add opponent score regardless of result)
+            white.buchholz += (black.score || 0);
+            black.buchholz += (white.score || 0);
+        });
+
+        const list = Object.values(pMap);
+
+        // Sort
+        return list.sort((a, b) => {
+            const valA = a[sortConfig.key] || 0;
+            const valB = b[sortConfig.key] || 0;
+            
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [participants, matches, sortConfig]);
+
+    const handleSort = (key) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
 
     useEffect(() => {
         if (!id) return;
@@ -600,7 +670,7 @@ export default function TournamentDetail() {
                                 <Eye className="w-4 h-4" /> <span className="hidden md:inline">Direct</span>
                             </TabsTrigger>
                             <TabsTrigger value="bracket" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tableau</TabsTrigger>
-                            <TabsTrigger value="participants" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Joueurs</TabsTrigger>
+                            <TabsTrigger value="participants" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Classement</TabsTrigger>
                             <TabsTrigger value="chat" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
                                 <MessageSquare className="w-4 h-4 mr-2" /> Chat
                             </TabsTrigger>
@@ -770,44 +840,83 @@ export default function TournamentDetail() {
                         <TabsContent value="participants" className="mt-6">
                              <Card>
                                 <CardHeader>
-                                    <CardTitle>{tournament.format === 'arena' ? 'Classement' : 'Participants'}</CardTitle>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Medal className="w-5 h-5 text-yellow-600" />
+                                        Classement
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-0">
-                                    <div className="grid grid-cols-12 gap-2 p-2 bg-gray-100 font-bold text-xs text-gray-500 uppercase">
-                                        <div className="col-span-1">#</div>
-                                        <div className="col-span-5">Joueur</div>
-                                        <div className="col-span-2 text-center">Pts</div>
-                                        <div className="col-span-2 text-center">Jouées</div>
-                                        <div className="col-span-2 text-center">État</div>
+                                    <div className="grid grid-cols-12 gap-2 p-3 bg-[#f5f0e6] font-bold text-xs text-[#4a3728] uppercase border-b border-[#d4c5b0]">
+                                        <div className="col-span-1 cursor-pointer hover:bg-black/5 p-1 rounded" onClick={() => handleSort('score')}>#</div>
+                                        <div className="col-span-4 cursor-pointer hover:bg-black/5 p-1 rounded" onClick={() => handleSort('user_name')}>
+                                            Joueur {sortConfig.key === 'user_name' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />)}
+                                        </div>
+                                        <div className="col-span-2 text-center cursor-pointer hover:bg-black/5 p-1 rounded" onClick={() => handleSort('score')}>
+                                            Pts {sortConfig.key === 'score' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />)}
+                                        </div>
+                                        <div className="col-span-1 text-center cursor-pointer hover:bg-black/5 p-1 rounded" onClick={() => handleSort('wins')}>
+                                            Vic. {sortConfig.key === 'wins' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />)}
+                                        </div>
+                                        <div className="col-span-2 text-center cursor-pointer hover:bg-black/5 p-1 rounded" title="Départage (Buchholz)" onClick={() => handleSort('buchholz')}>
+                                            Départ. {sortConfig.key === 'buchholz' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />)}
+                                        </div>
+                                        <div className="col-span-1 text-center cursor-pointer hover:bg-black/5 p-1 rounded" onClick={() => handleSort('games_played')}>
+                                            Part. {sortConfig.key === 'games_played' && (sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 inline" /> : <ArrowDown className="w-3 h-3 inline" />)}
+                                        </div>
+                                        <div className="col-span-1 text-center">État</div>
                                     </div>
-                                    {participants.map((p, i) => (
-                                        <div key={p.id} className={`grid grid-cols-12 gap-2 items-center p-3 border-b last:border-0 hover:bg-gray-50 ${p.user_id === user?.id ? 'bg-yellow-50' : ''}`}>
-                                            <div className="col-span-1 font-mono font-bold text-[#4a3728]">{i + 1}</div>
-                                            <div className="col-span-5 flex items-center gap-3 overflow-hidden">
-                                                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                                    
+                                    {standings.map((p, i) => (
+                                        <div key={p.id} className={`grid grid-cols-12 gap-2 items-center p-3 border-b border-[#f0e6d2] last:border-0 hover:bg-[#faf7f2] transition-colors ${p.user_id === user?.id ? 'bg-yellow-50/80' : ''}`}>
+                                            <div className="col-span-1 font-mono font-bold text-[#4a3728] relative">
+                                                {i < 3 ? (
+                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs shadow-sm ${
+                                                        i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : 'bg-orange-400'
+                                                    }`}>
+                                                        {i + 1}
+                                                    </div>
+                                                ) : (
+                                                    <span className="pl-2">{i + 1}</span>
+                                                )}
+                                            </div>
+                                            <div className="col-span-4 flex items-center gap-3 overflow-hidden">
+                                                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden flex-shrink-0 border border-white shadow-sm">
                                                     {p.avatar_url ? <img src={p.avatar_url} className="w-full h-full object-cover"/> : <Users className="w-full h-full p-2 text-gray-500"/>}
                                                 </div>
-                                                <span className="truncate font-medium">
-                                                    {p.user_name}
-                                                    <span className="ml-2 text-xs text-gray-500 bg-gray-200 px-1 rounded">
-                                                        {tournament.game_type === 'chess' 
+                                                <div className="flex flex-col truncate">
+                                                    <span className="font-bold text-[#4a3728] text-sm truncate">{p.user_name}</span>
+                                                    <span className="text-[10px] text-gray-500 font-medium">
+                                                        ELO: {tournament.game_type === 'chess' 
                                                             ? (usersMap[p.user_id]?.elo_chess || 1200) 
                                                             : (usersMap[p.user_id]?.elo_checkers || 1200)}
                                                     </span>
-                                                </span>
+                                                </div>
                                             </div>
-                                            <div className="col-span-2 text-center font-bold text-lg text-[#d45c30]">{p.score || 0}</div>
-                                            <div className="col-span-2 text-center text-gray-600">{p.games_played || 0}</div>
-                                            <div className="col-span-2 flex justify-center">
+                                            <div className="col-span-2 text-center">
+                                                <span className="font-black text-lg text-[#d45c30]">{p.score || 0}</span>
+                                            </div>
+                                            <div className="col-span-1 text-center font-medium text-green-700">
+                                                {p.wins}
+                                            </div>
+                                            <div className="col-span-2 text-center font-mono text-xs text-gray-600" title={`Buchholz: ${p.buchholz} | SB: ${p.sb}`}>
+                                                {p.buchholz}
+                                            </div>
+                                            <div className="col-span-1 text-center text-gray-600 font-medium">
+                                                {p.games_played}
+                                            </div>
+                                            <div className="col-span-1 flex justify-center">
                                                  {p.current_game_id ? (
-                                                     <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" title="En jeu"></span>
+                                                     <span className="relative flex h-3 w-3">
+                                                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                       <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                                     </span>
                                                  ) : (
-                                                     <span className="w-3 h-3 rounded-full bg-gray-300" title="En attente"></span>
+                                                     <span className="w-2 h-2 rounded-full bg-gray-300"></span>
                                                  )}
                                             </div>
                                         </div>
                                     ))}
-                                    {participants.length === 0 && <div className="p-8 text-center text-gray-500">L'arène est vide...</div>}
+                                    {standings.length === 0 && <div className="p-8 text-center text-gray-500 italic">En attente des participants...</div>}
                                 </CardContent>
                             </Card>
                         </TabsContent>
