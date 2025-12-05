@@ -15,6 +15,7 @@ import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
+import IntroAnimation from '@/components/IntroAnimation';
 
 export default function Home() {
     // Guest User Logic
@@ -112,20 +113,19 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
+            const minLoadTime = new Promise(resolve => setTimeout(resolve, 3000));
+            const authCheck = base44.auth.me().catch(() => null);
+
             try {
-                // Check authentication state
-                let currentUser = await base44.auth.me().catch(() => null);
+                const [_, currentUser] = await Promise.all([minLoadTime, authCheck]);
                 
                 if (currentUser) {
                     setUser(currentUser);
                     setShowSplash(false);
                 } else {
-                    // If no user, check if we previously selected guest mode in this session?
-                    // For now, always show splash if not logged in, unless guest already set?
-                    // Let's rely on state. Splash shows by default.
-                    // If we wanted to persist guest session without splash every refresh, we could check localStorage.
-                    // But user asked for login possibility, so showing splash is better.
-                    setLoading(false); // Stop loading to show splash
+                    // If no user, we still stop loading but showSplash remains true (default)
+                    // This allows the welcome screen to appear after the intro
+                    setLoading(false);
                     return; 
                 }
                 
@@ -156,22 +156,10 @@ export default function Home() {
                 await fetchData(currentUser);
 
                 // Start polling only if authenticated
-                const interval = setInterval(async () => {
+                setInterval(async () => {
                     const u = await base44.auth.me().catch(()=>null);
                     if (u) fetchData(u);
                 }, 5000);
-
-                // Add interval cleanup to the cleanup function of useEffect
-                // Note: Since we can't easily access the cleanup function from here without refactoring the whole useEffect,
-                // we'll attach it to the window temporarily or use a ref if we were using one.
-                // BETTER APPROACH for this find_replace: 
-                // We'll return a cleanup from init? No, init is async.
-                // Let's just assign it to a variable outside init if possible.
-                // Since I can't change the outer scope easily with find_replace without replacing the whole useEffect,
-                // I will rely on the fact that this page unmounts on logout/navigation.
-                // But to be safe, let's try to attach it to a cleanup function defined in outer scope if possible.
-                // OR, just don't worry too much about one interval on page unload for this specific fix, 
-                // BUT it's better to be clean.
 
                 } catch (e) {
                     console.error("Home init error:", e);
@@ -429,7 +417,7 @@ export default function Home() {
         await fetchData(guest);
     };
 
-    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
+    if (loading) return <IntroAnimation />;
 
     if (showSplash && !user) {
         return <SplashScreen onPlayAsGuest={handleGuestPlay} />;
