@@ -238,6 +238,27 @@ export default async function handler(req) {
                 else if (scoreB === 0) blackUpdates.losses_checkers = (blackUser.losses_checkers || 0) + 1;
             }
             await base44.asServiceRole.entities.User.update(blackId, blackUpdates);
+
+            // Record Elo History
+            await base44.asServiceRole.entities.EloHistory.create({
+                user_id: whiteId,
+                game_type: type,
+                old_elo: ratingA,
+                new_elo: newRatingA,
+                change_amount: newRatingA - ratingA,
+                game_id: gameId,
+                reason: winnerId === whiteId ? 'game_win' : (winnerId === blackId ? 'game_loss' : 'game_draw')
+            });
+
+            await base44.asServiceRole.entities.EloHistory.create({
+                user_id: blackId,
+                game_type: type,
+                old_elo: ratingB,
+                new_elo: newRatingB,
+                change_amount: newRatingB - ratingB,
+                game_id: gameId,
+                reason: winnerId === blackId ? 'game_win' : (winnerId === whiteId ? 'game_loss' : 'game_draw')
+            });
             
             // Notifications for result
             if (whiteId && blackId && whiteId !== blackId) {
