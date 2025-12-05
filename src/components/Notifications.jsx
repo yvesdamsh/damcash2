@@ -46,54 +46,13 @@ export default function Notifications() {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 30000); // Poll every 30s
 
-        // WebSocket Realtime
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/functions/userSocket`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => console.log("Connected to Notifications");
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                
-                // If it's a chat message AND we are currently in that game, ignore it (to avoid spam while playing)
-                if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {
-                    return;
-                }
-
-                // Show Toast
-                toast(data.title, {
-                    description: data.message,
-                    action: data.link ? {
-                        label: "Voir",
-                        onClick: () => navigate(data.link)
-                    } : undefined,
-                });
-
-                // Browser Push Notification (if background or enabled)
-                if (Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
-                    const n = new Notification(data.title, {
-                        body: data.message,
-                        icon: '/favicon.ico', // Assuming favicon exists
-                    });
-                    n.onclick = () => {
-                        window.focus();
-                        if (data.link) navigate(data.link);
-                    };
-                }
-
-                // Refresh list
-                fetchNotifications();
-            } catch (e) {
-                console.error("Notification WS Error", e);
-            }
-        };
+        // Realtime updates handled via global event from RealTimeContext
+        const handleUpdate = () => fetchNotifications();
+        window.addEventListener('notification-update', handleUpdate);
 
         return () => {
             clearInterval(interval);
-            if (ws.readyState === 0 || ws.readyState === 1) { // CONNECTING or OPEN
-                ws.close();
-            }
+            window.removeEventListener('notification-update', handleUpdate);
         };
     }, []);
 

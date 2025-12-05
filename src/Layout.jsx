@@ -25,9 +25,18 @@ import {
   import Notifications from '@/components/Notifications';
           import FriendsManager from '@/components/FriendsManager';
           import WalletBalance from '@/components/WalletBalance';
+          import { RealTimeProvider } from '@/components/RealTimeContext';
 
-          export default function Layout({ children }) {
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+                          export default function Layout({ children }) {
+                    return (
+                      <RealTimeProvider>
+                          <LayoutContent>{children}</LayoutContent>
+                      </RealTimeProvider>
+                    );
+                          }
+
+                          function LayoutContent({ children }) {
+                    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
     const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
