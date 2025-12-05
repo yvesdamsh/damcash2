@@ -443,7 +443,7 @@ export default function Home() {
             {/* Game Config Dialog */}
             {configOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[85vh]">
+                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[65vh] md:max-h-[85vh]">
                         <CardHeader className="flex-shrink-0 border-b border-[#d4c5b0]/20">
                             <CardTitle className="text-[#4a3728]">Configuration de la partie</CardTitle>
                         </CardHeader>
