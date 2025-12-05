@@ -19,6 +19,7 @@ import Messages from './pages/Messages';
 import ReplayCenter from './pages/ReplayCenter';
 import Shop from './pages/Shop';
 import Academy from './pages/Academy';
+import AdminDashboard from './pages/AdminDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -44,6 +45,7 @@ export const PAGES = {
     "ReplayCenter": ReplayCenter,
     "Shop": Shop,
     "Academy": Academy,
+    "AdminDashboard": AdminDashboard,
 }
 
 export const pagesConfig = {

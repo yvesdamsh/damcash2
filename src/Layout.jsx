@@ -150,7 +150,8 @@ import {
         { label: 'Équipes', path: '/Teams', icon: Users, public: false },
         { label: 'Entraînement', path: '/Training', icon: Brain, public: false },
         { label: 'Profil', path: '/Profile', icon: User, public: false },
-    ].filter(item => user || item.public);
+        ...(user?.role === 'admin' ? [{ label: 'Admin', path: '/AdminDashboard', icon: Shield, public: false }] : []),
+        ].filter(item => user || item.public);
 
     const handleLogout = async () => {
         try {
