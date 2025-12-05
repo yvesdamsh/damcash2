@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Crown } from 'lucide-react';
 
 export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, onPieceClick, onDragEnd, ...props }) {
     if (type === 0) return null;
@@ -65,8 +66,11 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
                 )}
                 
                 {isKing && (
-                    <div className="absolute text-lg md:text-2xl select-none drop-shadow-md">
-                        👑
+                    <div className="absolute flex items-center justify-center drop-shadow-md">
+                        <Crown 
+                            className={`w-3/5 h-3/5 ${isWhite ? 'text-yellow-600 stroke-black' : 'text-yellow-400 stroke-white'} stroke-2`} 
+                            fill="currentColor"
+                        />
                     </div>
                 )}
             </div>

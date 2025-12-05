@@ -25,15 +25,56 @@ const createBoardFromSetup = (setup) => {
 const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
     const [board, setBoard] = useState(createBoardFromSetup(setup));
     const [currentTurn, setCurrentTurn] = useState(turn);
+    const [selectedSquare, setSelectedSquare] = useState(null);
 
     useEffect(() => {
         setBoard(createBoardFromSetup(setup));
         setCurrentTurn(turn);
+        setSelectedSquare(null);
     }, [setup, turn]);
 
+    const allValidMoves = React.useMemo(() => getValidMoves(board, currentTurn), [board, currentTurn]);
+
+    const displayedMoves = React.useMemo(() => {
+        if (!selectedSquare) return [];
+        return allValidMoves.filter(m => m.from.r === selectedSquare[0] && m.from.c === selectedSquare[1]);
+    }, [selectedSquare, allValidMoves]);
+
+    const handleSquareClick = (r, c) => {
+        const piece = board[r][c];
+        
+        // If clicking own piece, select it
+        if (piece !== 0) {
+            const isWhitePiece = piece === 1 || piece === 3;
+            const isTurnWhite = currentTurn === 'white';
+            if (isWhitePiece === isTurnWhite) {
+                setSelectedSquare([r, c]);
+                return;
+            }
+        }
+
+        // If clicking empty square and we have selection, try to move
+        if (selectedSquare && piece === 0) {
+            const move = allValidMoves.find(m => 
+                m.from.r === selectedSquare[0] && m.from.c === selectedSquare[1] && 
+                m.to.r === r && m.to.c === c
+            );
+
+            if (move) {
+                const { newBoard } = executeMove(board, [selectedSquare[0], selectedSquare[1]], [r, c], move.captured);
+                setBoard(newBoard);
+                setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
+                setSelectedSquare(null);
+            } else {
+                setSelectedSquare(null);
+            }
+        } else {
+            setSelectedSquare(null);
+        }
+    };
+
     const handlePieceDrop = (fromR, fromC, toR, toC) => {
-        const validMoves = getValidMoves(board, currentTurn);
-        const move = validMoves.find(m => 
+        const move = allValidMoves.find(m => 
             m.from.r === fromR && m.from.c === fromC && 
             m.to.r === toR && m.to.c === toC
         );
@@ -42,12 +83,14 @@ const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
             const { newBoard } = executeMove(board, [fromR, fromC], [toR, toC], move.captured);
             setBoard(newBoard);
             setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
+            setSelectedSquare(null);
         }
     };
 
     const reset = () => {
         setBoard(createBoardFromSetup(setup));
         setCurrentTurn(turn);
+        setSelectedSquare(null);
     };
 
     return (
@@ -70,8 +113,9 @@ const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
                     board={board} 
                     currentTurn={currentTurn}
                     playerColor={currentTurn}
-                    validMoves={getValidMoves(board, currentTurn)}
-                    onSquareClick={() => {}} 
+                    validMoves={displayedMoves}
+                    selectedSquare={selectedSquare}
+                    onSquareClick={handleSquareClick}
                     onPieceDrop={handlePieceDrop}
                     isSoloMode={true}
                 />
@@ -225,7 +269,7 @@ const fiches = [
         content: [
             { subtitle: "Définition", text: "Une manœuvre tactique basée sur la règle de la prise différée." },
             { subtitle: "Règle Clé", text: "Les pièces prises ne sont retirées du damier qu'à la FIN de la rafle. Une pièce prise reste donc sur le damier pendant la rafle et fait obstacle (butoir)." },
-            { subtitle: "Démonstration", text: "Ci-dessous, une illustration classique. Si les Blancs jouent, ils peuvent forcer un gain grâce à cette règle.", diagram: { 48: 1, 49: 1, 18: 4, 29: 1, 32: 1, 38: 1, 42: 1, 47: 1, 15: 2 }, turn: 'white', caption: "Coup Turc : La Dame Noire prendra plusieurs pions mais sera bloquée par une pièce qu'elle vient de capturer." }
+            { subtitle: "Démonstration", text: "Le diagramme pour le Coup Turc sera bientôt disponible. En attendant, retenez que ce coup utilise une pièce capturée comme obstacle." }
         ]
     },
     {
