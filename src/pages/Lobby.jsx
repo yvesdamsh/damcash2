@@ -12,6 +12,7 @@ import LobbyChat from '@/components/LobbyChat';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function Lobby() {
     const [users, setUsers] = useState([]);

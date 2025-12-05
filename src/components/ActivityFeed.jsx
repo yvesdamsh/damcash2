@@ -6,12 +6,11 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function ActivityFeed() {
     const [activities, setActivities] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
-
-    import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
     useEffect(() => {
         const loadActivities = async () => {
