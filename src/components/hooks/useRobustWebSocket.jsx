@@ -13,6 +13,19 @@ export function useRobustWebSocket(url, options = {}) {
         autoConnect = true
     } = options;
 
+    // Use refs for callbacks to avoid reconnects on render
+    const onOpenRef = useRef(onOpen);
+    const onMessageRef = useRef(onMessage);
+    const onCloseRef = useRef(onClose);
+    const onErrorRef = useRef(onError);
+
+    useEffect(() => {
+        onOpenRef.current = onOpen;
+        onMessageRef.current = onMessage;
+        onCloseRef.current = onClose;
+        onErrorRef.current = onError;
+    }, [onOpen, onMessage, onClose, onError]);
+
     const [readyState, setReadyState] = useState(WebSocket.CLOSED);
     const wsRef = useRef(null);
     const reconnectCountRef = useRef(0);
@@ -29,7 +42,6 @@ export function useRobustWebSocket(url, options = {}) {
         
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
-        // Ensure url starts with / if relative
         const path = url.startsWith('http') || url.startsWith('ws') ? url : `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
 
         console.log(`Connecting to ${path}...`);
@@ -40,7 +52,6 @@ export function useRobustWebSocket(url, options = {}) {
             setReadyState(WebSocket.OPEN);
             reconnectCountRef.current = 0;
             
-            // Heartbeat
             if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
             heartbeatTimerRef.current = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {
@@ -48,16 +59,16 @@ export function useRobustWebSocket(url, options = {}) {
                 }
             }, heartbeatInterval);
 
-            if (onOpen) onOpen(event);
+            if (onOpenRef.current) onOpenRef.current(event);
         };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'PONG') return;
-                if (onMessage) onMessage(event, data);
+                if (onMessageRef.current) onMessageRef.current(event, data);
             } catch (e) {
-                if (onMessage) onMessage(event, null);
+                if (onMessageRef.current) onMessageRef.current(event, null);
             }
         };
 
@@ -65,7 +76,7 @@ export function useRobustWebSocket(url, options = {}) {
             setReadyState(WebSocket.CLOSED);
             if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
             
-            if (onClose) onClose(event);
+            if (onCloseRef.current) onCloseRef.current(event);
 
             if (shouldReconnectRef.current && reconnectCountRef.current < reconnectAttempts) {
                 const timeout = reconnectInterval * Math.pow(1.5, reconnectCountRef.current);
@@ -79,7 +90,7 @@ export function useRobustWebSocket(url, options = {}) {
 
         ws.onerror = (event) => {
             console.error("WebSocket error:", event);
-            if (onError) onError(event);
+            if (onErrorRef.current) onErrorRef.current(event);
         };
 
         wsRef.current = ws;
