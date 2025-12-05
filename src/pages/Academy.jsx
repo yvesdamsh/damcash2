@@ -185,9 +185,9 @@ export default function Academy() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[600px] h-auto">
                 {/* Sidebar List */}
-                <div className="lg:col-span-4 bg-white/80 backdrop-blur border border-[#d4c5b0] rounded-xl overflow-hidden shadow-lg flex flex-col">
+                <div className="lg:col-span-4 bg-white/80 backdrop-blur border border-[#d4c5b0] rounded-xl overflow-hidden shadow-lg flex flex-col h-80 lg:h-auto">
                     <div className="p-4 bg-[#4a3728] text-[#e8dcc5] font-bold text-lg flex items-center gap-2">
                         <BookOpen className="w-5 h-5" />
                         Sommaire
