@@ -70,10 +70,19 @@ export default function Lobby() {
             fetchData();
         };
         init();
-        
-        const interval = setInterval(fetchData, 5000); // Refresh every 5s for lobby
-        return () => clearInterval(interval);
     }, []);
+
+    // Real-time Socket
+    const { sendMessage } = useRobustWebSocket('/functions/realtimeSocket?channelId=lobby', {
+        onMessage: (event, data) => {
+            if (!data) return;
+            if (data.type === 'game_created') {
+                setPublicGames(prev => [data.game, ...prev].slice(0, 20));
+            } else if (data.type === 'game_finished' || data.type === 'game_updated') {
+                fetchData(); // Refresh on significant changes to be safe, or update locally
+            }
+        }
+    });
 
     const handleCreatePublicGame = async (type) => {
         if (!currentUser) return base44.auth.redirectToLogin();
@@ -93,6 +102,9 @@ export default function Lobby() {
                 created_by_user_id: currentUser.id
             });
             
+            // Notify Lobby
+            sendMessage({ type: 'game_created', game: newGame });
+
             toast.success("Partie publique créée !");
             navigate(`/Game?id=${newGame.id}`);
         } catch (e) {

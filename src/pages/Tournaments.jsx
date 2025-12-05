@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Search, Filter, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { toast } from 'sonner';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function Tournaments() {
     const [tournaments, setTournaments] = useState([]);
@@ -80,6 +81,19 @@ export default function Tournaments() {
         return () => window.removeEventListener('gameModeChanged', handleModeChange);
     }, []);
 
+    // Real-time updates
+    const { sendMessage } = useRobustWebSocket('/functions/realtimeSocket?channelId=tournaments', {
+        onMessage: (event, data) => {
+            if (data && (data.type === 'tournament_created' || data.type === 'tournament_updated')) {
+                if (data.tournament) {
+                    setTournaments(prev => [data.tournament, ...prev.filter(t => t.id !== data.tournament.id)]);
+                } else {
+                    fetchTournaments();
+                }
+            }
+        }
+    });
+
     const fetchTournaments = async () => {
         // Fetching more to allow client-side filtering effectively
         const list = await base44.entities.Tournament.list('-start_date', 50);
@@ -104,6 +118,13 @@ export default function Tournaments() {
                 elo_min: parseInt(newTournament.elo_min) || 0,
                 elo_max: parseInt(newTournament.elo_max) || 3000
             });
+            
+            // Broadcast new tournament
+            // We need to fetch the created one to send it or just trigger refresh.
+            // create returns the object? Yes usually.
+            // Let's assume we fetch or just trigger refresh.
+            sendMessage({ type: 'tournament_created' }); // Trigger refresh for others
+
             toast.success("Tournoi créé !");
             setIsCreateOpen(false);
             fetchTournaments();

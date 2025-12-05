@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 const LeagueCard = ({ league, onJoin, isJoined }) => {
     return (
@@ -103,6 +104,15 @@ export default function LeaguesPage() {
         };
         init();
     }, []);
+
+    useRobustWebSocket('/functions/realtimeSocket?channelId=leagues', {
+        onMessage: (event, data) => {
+            if (data && data.type === 'league_update') {
+                // Refresh leagues
+                base44.entities.League.list('-start_date', 50).then(setLeagues);
+            }
+        }
+    });
 
     const handleJoin = async (league) => {
         if (!user) {
