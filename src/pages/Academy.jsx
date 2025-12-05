@@ -124,6 +124,48 @@ const fiches = [
             { subtitle: "Ouvertures", text: "32-27 (60%), 31-26 (35%)." },
             { subtitle: "Milieu de jeu", text: "Construire les ailes, contrôler le centre (27, 32), éviter les trous." }
         ]
+    },
+    {
+        id: 13,
+        title: "Règle : Prise Majoritaire",
+        icon: Sword,
+        content: [
+            { subtitle: "Principe", text: "On doit OBLIGATOIREMENT prendre du côté du plus grand nombre de pièces." },
+            { subtitle: "Valeur", text: "Une Dame compte pour 1 pièce, comme un pion. La qualité des pièces ne compte pas, seule la quantité importe." },
+            { subtitle: "Égalité", text: "Si le nombre de pièces à prendre est identique sur plusieurs chemins, le joueur a le libre choix." }
+        ]
+    },
+    {
+        id: 14,
+        title: "Tactique : Le Coup Turc",
+        icon: BookOpen,
+        content: [
+            { subtitle: "Définition", text: "Une manœuvre tactique basée sur la règle de la prise différée." },
+            { subtitle: "Règle 1", text: "Au cours d'une rafle, on peut passer plusieurs fois sur une même case vide, mais JAMAIS deux fois sur la même pièce adverse." },
+            { subtitle: "Règle 2", text: "Les pièces prises ne sont retirées du damier qu'une fois la rafle terminée et la pièce posée." },
+            { subtitle: "Effet", text: "Cela permet d'utiliser une pièce adverse déjà 'prise' (mais pas encore retirée) comme butoir pour arrêter la course d'une dame ou d'un pion." }
+        ]
+    },
+    {
+        id: 15,
+        title: "Tactique : Coup du Pivot (Barrage)",
+        icon: LayoutGrid,
+        content: [
+            { subtitle: "Concept", text: "Aussi appelé 'Coup du Barrage'. C'est un thème de fin de partie." },
+            { subtitle: "Mécanisme", text: "La dame se place devant un de ses propres pions à la bande pour enfermer ou limiter les mouvements de l'adversaire." },
+            { subtitle: "Objectif", text: "Forcer l'adversaire à jouer un coup perdant en réduisant ses options de mobilité." }
+        ]
+    },
+    {
+        id: 16,
+        title: "Répertoire Tactique FFJD",
+        icon: Trophy,
+        content: [
+            { subtitle: "Coups Classiques", text: "Coup de la Bombe, Coup de l'Africain, Coup du Marquis, Coup de la Souricière." },
+            { subtitle: "Coups Techniques", text: "Coup du Chapelet, Coup de l'Éponge, Coup du Tiroir, Coup de l'Express." },
+            { subtitle: "Fins de Partie", text: "Coup de l'Enfermé, Coup du Tric-Trac, Coup du Butoir." },
+            { subtitle: "Source", text: "Ces thèmes sont étudiés dans les écoles de la Fédération Française de Jeu de Dames (FFJD) et la Ligue Rhône-Alpes." }
+        ]
     }
 ];
 
@@ -138,7 +180,8 @@ export default function Academy() {
                     Académie Damcash
                 </h1>
                 <p className="text-[#6b5138] text-lg font-medium max-w-2xl mx-auto">
-                    Maîtrisez les subtilités du jeu de dames, des règles fondamentales aux stratégies avancées de la variante Frisonne.
+                    Maîtrisez les subtilités du jeu de dames, des règles fondamentales aux stratégies avancées. 
+                    Inclus des cours officiels de la Fédération Française de Jeu de Dames (FFJD).
                 </p>
             </div>
 
