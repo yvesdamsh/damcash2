@@ -273,7 +273,7 @@ export default function Game() {
     }, [id]);
 
     // Robust WebSocket Connection
-    const { socket: robustSocket, readyState } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
+    const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
         autoConnect: !!id && id !== 'local-ai',
         onMessage: (event, data) => {
             if (!data) return;
@@ -293,6 +293,13 @@ export default function Game() {
                         } catch(e) {}
                         return { ...prev, ...data.payload };
                     });
+                } else {
+                    // Refetch if payload missing
+                    const fetchGame = async () => {
+                        const fetched = await base44.entities.Game.get(id);
+                        setGame(fetched);
+                    };
+                    fetchGame();
                 }
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
@@ -309,8 +316,6 @@ export default function Game() {
             setSocket(robustSocket);
         }
     }, [robustSocket, id]);
-
-
 
     // Effect to handle Premove execution when state updates
     useEffect(() => {
