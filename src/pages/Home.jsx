@@ -76,6 +76,16 @@ export default function Home() {
             link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
             badge: 'Grand Maître',
             position: 'object-[center_30%]'
+        },
+        {
+            id: 'boomstra',
+            name: 'Roel Boomstra',
+            subtitle: 'Le Triple Champion du Monde',
+            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/38a69b1a1_Screenshot_20251206_032614_SamsungInternet.jpg',
+            description: "Roel Boomstra est l'un des plus grands joueurs de dames modernes. Grand Maître International néerlandais, il a décroché le titre de Champion du Monde à trois reprises (2016, 2018, 2022). Reconnu pour sa préparation théorique méticuleuse et son calme olympien, il incarne l'excellence du jeu de dames contemporain.",
+            link: 'https://fr.wikipedia.org/wiki/Roel_Boomstra',
+            badge: 'Champion du Monde',
+            position: 'object-top'
         }
     ];
 
