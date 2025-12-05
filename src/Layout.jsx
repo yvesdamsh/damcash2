@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import IntroAnimation from '@/components/IntroAnimation';
 import { 
@@ -31,12 +31,19 @@ import {
     const [soundEnabled, setSoundEnabled] = React.useState(true);
     const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
+    const navigate = useNavigate();
     const [user, setUser] = React.useState(null);
     const [showIntro, setShowIntro] = React.useState(!window.hasShownIntro);
 
     React.useEffect(() => {
         if (!window.hasShownIntro) {
             window.hasShownIntro = true;
+            
+            // Force redirect to Home if landing on Profile initially
+            if (location.pathname.toLowerCase().includes('profile')) {
+                navigate('/Home', { replace: true });
+            }
+
             const timer = setTimeout(() => setShowIntro(false), 5000);
             return () => clearTimeout(timer);
         }
