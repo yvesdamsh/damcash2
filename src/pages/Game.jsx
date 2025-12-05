@@ -24,6 +24,7 @@ import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager } from '@/components/SoundManager';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function Game() {
     const [game, setGame] = useState(null);
@@ -255,11 +256,9 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
-    // WebSocket Connection
+    // Initial Fetch
     useEffect(() => {
         if (!id || id === 'local-ai') return;
-
-        // Initial Fetch
         const fetchGame = async () => {
             try {
                 const fetchedGame = await base44.entities.Game.get(id);
@@ -271,72 +270,45 @@ export default function Game() {
             }
         };
         fetchGame();
+    }, [id]);
 
-        // Initialize WebSocket
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/functions/gameSocket?gameId=${id}`;
-        const ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log('Connected to Game WebSocket');
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'GAME_UPDATE') {
-                    if (data.payload) {
-                        setGame(prev => {
-                            // Sync Logic: Prevent reverting optimistic moves
-                            if (!prev) return { ...data.payload }; // Initial load
-
-                            // If we have local moves, check if incoming state is "newer"
-                            // We use moves count as versioning
-                            try {
-                                const prevMoves = prev.moves ? JSON.parse(prev.moves) : [];
-                                const newMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
-
-                                // If incoming has fewer or equal moves, it might be an old state (lag)
-                                // BUT: If we just made a move, we have N+1. Server sends N+1. That's fine (confirmation).
-                                // If server sends N (old state), we ignore.
-                                // EXCEPTION: Rematch/Reset (moves goes to 0).
-                                if (newMoves.length === 0 && prevMoves.length > 0) {
-                                    // This is a reset/rematch -> Accept it
-                                    return { ...prev, ...data.payload };
-                                }
-
-                                if (newMoves.length < prevMoves.length) {
-                                    console.warn("Ignoring stale game update", newMoves.length, prevMoves.length);
-                                    return prev;
-                                }
-                            } catch(e) {}
-
-                            return { ...prev, ...data.payload };
-                        });
-                    } else {
-                        fetchGame();
-                    }
-                } else if (data.type === 'GAME_REACTION') {
-                    handleIncomingReaction(data.payload);
-                } else if (data.type === 'SIGNAL') {
-                    // Pass signal to VideoChat if it's for me and not from me
-                    if (data.payload.recipient_id === currentUser?.id && data.payload.sender_id !== currentUser?.id) {
-                        setLastSignal(data.payload);
-                    }
+    // Robust WebSocket Connection
+    const { socket: robustSocket, readyState } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
+        autoConnect: !!id && id !== 'local-ai',
+        onMessage: (event, data) => {
+            if (!data) return;
+            
+            if (data.type === 'GAME_UPDATE') {
+                if (data.payload) {
+                    setGame(prev => {
+                        if (!prev) return { ...data.payload };
+                        try {
+                            const prevMoves = prev.moves ? JSON.parse(prev.moves) : [];
+                            const newMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
+                            if (newMoves.length === 0 && prevMoves.length > 0) return { ...prev, ...data.payload };
+                            if (newMoves.length < prevMoves.length) {
+                                console.warn("Ignoring stale game update");
+                                return prev;
+                            }
+                        } catch(e) {}
+                        return { ...prev, ...data.payload };
+                    });
                 }
-            } catch (e) {
-                console.error("WS Message Error", e);
+            } else if (data.type === 'GAME_REACTION') {
+                handleIncomingReaction(data.payload);
+            } else if (data.type === 'SIGNAL') {
+                if (data.payload.recipient_id === currentUser?.id && data.payload.sender_id !== currentUser?.id) {
+                    setLastSignal(data.payload);
+                }
             }
-        };
+        }
+    });
 
-        setSocket(ws);
-
-        return () => {
-            if (ws && (ws.readyState === 0 || ws.readyState === 1)) {
-                ws.close();
-            }
-        };
-        }, [id]);
+    useEffect(() => {
+        if (id && id !== 'local-ai') {
+            setSocket(robustSocket);
+        }
+    }, [robustSocket, id]);
 
 
 
