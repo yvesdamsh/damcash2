@@ -1,8 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BookOpen, ChevronRight, GraduationCap, Sword, LayoutGrid, Trophy } from 'lucide-react';
+import { BookOpen, ChevronRight, GraduationCap, Sword, LayoutGrid, Trophy, RotateCcw } from 'lucide-react';
+import CheckerBoard from '@/components/CheckerBoard';
+import { executeMove, getValidMoves } from '@/components/checkersLogic';
+
+const createBoardFromSetup = (setup) => {
+    const board = Array(10).fill(null).map(() => Array(10).fill(0));
+    if (!setup) return board;
+
+    Object.entries(setup).forEach(([square, type]) => {
+        const n = parseInt(square);
+        const row = Math.floor((n - 1) / 5);
+        const colIndex = (n - 1) % 5;
+        const col = row % 2 === 0 ? (colIndex * 2 + 1) : (colIndex * 2);
+        if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+            board[row][col] = type;
+        }
+    });
+    return board;
+};
+
+const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
+    const [board, setBoard] = useState(createBoardFromSetup(setup));
+    const [currentTurn, setCurrentTurn] = useState(turn);
+
+    useEffect(() => {
+        setBoard(createBoardFromSetup(setup));
+        setCurrentTurn(turn);
+    }, [setup, turn]);
+
+    const handlePieceDrop = (fromR, fromC, toR, toC) => {
+        // Simple move execution for demonstration (no rule validation enforcement for free exploration)
+        // OR we can enforce valid moves. Let's enforce to be helpful.
+        const validMoves = getValidMoves(board, currentTurn);
+        const move = validMoves.find(m => 
+            m.from.r === fromR && m.from.c === fromC && 
+            m.to.r === toR && m.to.c === toC
+        );
+
+        if (move) {
+            const { newBoard } = executeMove(board, [fromR, fromC], [toR, toC], move.captured);
+            setBoard(newBoard);
+            setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
+        }
+    };
+
+    const reset = () => {
+        setBoard(createBoardFromSetup(setup));
+        setCurrentTurn(turn);
+    };
+
+    return (
+        <div className="my-6 flex flex-col items-center">
+            <div className="w-full max-w-[350px] aspect-square relative">
+                <CheckerBoard 
+                    board={board} 
+                    currentTurn={currentTurn}
+                    playerColor={currentTurn} // Allow playing both sides
+                    validMoves={getValidMoves(board, currentTurn)}
+                    onSquareClick={() => {}} 
+                    onPieceDrop={handlePieceDrop}
+                    isSoloMode={true}
+                />
+                <button 
+                    onClick={reset}
+                    className="absolute -bottom-12 right-0 flex items-center gap-2 text-sm font-bold text-[#6b5138] bg-[#e8dcc5] px-3 py-1 rounded hover:bg-[#d4c5b0]"
+                >
+                    <RotateCcw className="w-4 h-4" /> Réinitialiser
+                </button>
+            </div>
+            {caption && <p className="mt-4 text-sm text-center text-gray-500 italic">{caption}</p>}
+        </div>
+    );
+};
 
 const fiches = [
     {
@@ -132,6 +204,7 @@ const fiches = [
         content: [
             { subtitle: "Principe", text: "On doit OBLIGATOIREMENT prendre du côté du plus grand nombre de pièces." },
             { subtitle: "Valeur", text: "Une Dame compte pour 1 pièce, comme un pion. La qualité des pièces ne compte pas, seule la quantité importe." },
+            { subtitle: "Exemple", text: "Dans la position ci-dessous, les Blancs (qui jouent) peuvent prendre 1 pion (vers la gauche) ou 2 pions (vers la droite). Ils DOIVENT prendre les 2 pions.", diagram: { 38: 1, 33: 2, 32: 2, 23: 2, 28: 2, 42: 2 }, turn: 'white', caption: "Les Blancs en 38 doivent prendre 2 pions (33 et 23) et non 1 seul (32)." },
             { subtitle: "Égalité", text: "Si le nombre de pièces à prendre est identique sur plusieurs chemins, le joueur a le libre choix." }
         ]
     },
@@ -141,9 +214,8 @@ const fiches = [
         icon: BookOpen,
         content: [
             { subtitle: "Définition", text: "Une manœuvre tactique basée sur la règle de la prise différée." },
-            { subtitle: "Règle 1", text: "Au cours d'une rafle, on peut passer plusieurs fois sur une même case vide, mais JAMAIS deux fois sur la même pièce adverse." },
-            { subtitle: "Règle 2", text: "Les pièces prises ne sont retirées du damier qu'une fois la rafle terminée et la pièce posée." },
-            { subtitle: "Effet", text: "Cela permet d'utiliser une pièce adverse déjà 'prise' (mais pas encore retirée) comme butoir pour arrêter la course d'une dame ou d'un pion." }
+            { subtitle: "Règle Clé", text: "Les pièces prises ne sont retirées du damier qu'à la FIN de la rafle. Une pièce prise reste donc sur le damier pendant la rafle et fait obstacle (butoir)." },
+            { subtitle: "Démonstration", text: "Ci-dessous, une illustration classique. Si les Blancs jouent, ils peuvent forcer un gain grâce à cette règle.", diagram: { 48: 1, 49: 1, 18: 4, 29: 1, 32: 1, 38: 1, 42: 1, 47: 1, 15: 2 }, turn: 'white', caption: "Coup Turc : La Dame Noire prendra plusieurs pions mais sera bloquée par une pièce qu'elle vient de capturer." }
         ]
     },
     {
@@ -151,9 +223,9 @@ const fiches = [
         title: "Tactique : Coup du Pivot (Barrage)",
         icon: LayoutGrid,
         content: [
-            { subtitle: "Concept", text: "Aussi appelé 'Coup du Barrage'. C'est un thème de fin de partie." },
-            { subtitle: "Mécanisme", text: "La dame se place devant un de ses propres pions à la bande pour enfermer ou limiter les mouvements de l'adversaire." },
-            { subtitle: "Objectif", text: "Forcer l'adversaire à jouer un coup perdant en réduisant ses options de mobilité." }
+            { subtitle: "Concept", text: "Thème de fin de partie où une Dame utilise un de ses propres pions pour bloquer l'adversaire." },
+            { subtitle: "Mécanisme", text: "La Dame se place sur la case juste devant son pion de bande (ex: case 31 devant 36, ou 4 devant 9). L'adversaire est alors paralysé." },
+            { subtitle: "Exemple", text: "Les Blancs gagnent en enfermant la Dame Noire.", diagram: { 36: 1, 31: 3, 45: 4 }, turn: 'white', caption: "Barrage : La Dame Blanche 31 bloque la Dame Noire 45 grâce au pion 36." }
         ]
     },
     {
@@ -240,6 +312,13 @@ export default function Academy() {
                                         <p className="text-[#4a3728] leading-relaxed text-lg pl-4 border-l-2 border-[#e8dcc5]">
                                             {section.text}
                                         </p>
+                                        {section.diagram && (
+                                            <AcademyDiagram 
+                                                setup={section.diagram} 
+                                                turn={section.turn} 
+                                                caption={section.caption}
+                                            />
+                                        )}
                                     </div>
                                 ))}
                             </div>
