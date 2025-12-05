@@ -94,6 +94,25 @@ export default async function handler(req) {
         }
     }
 
+    // Broadcast Result to Realtime Socket (Activity Feed & Lobby)
+    try {
+        const bc = new BroadcastChannel("global_updates");
+        bc.postMessage({
+            channels: ['activity', 'lobby', 'tournaments'], // Broadcast to relevant channels
+            payload: {
+                type: 'game_finished',
+                gameId: game.id,
+                game: game, // Full game object for feed
+                winnerId: winnerId,
+                whiteId: whiteId,
+                blackId: blackId
+            }
+        });
+        setTimeout(() => bc.close(), 100); // Clean up
+    } catch(e) {
+        console.error("Broadcast failed", e);
+    }
+
     // 1. Update ELO
     if (whiteId && blackId && whiteId !== blackId) { // Don't rate solo games
         const [whiteUser, blackUser] = await Promise.all([
