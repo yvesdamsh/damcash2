@@ -421,6 +421,31 @@ export default function TournamentDetail() {
                                         {isFollowing ? 'Suivi' : 'Suivre'}
                                     </Button>
                                 )}
+                                <Button 
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-[#d4c5b0]"
+                                    onClick={async () => {
+                                        const toastId = toast.loading("Ajout au calendrier...");
+                                        try {
+                                            const res = await base44.functions.invoke('addToGoogleCalendar', { tournamentId: tournament.id });
+                                            if (res.data.success) {
+                                                toast.success("Ajouté à Google Agenda !", { id: toastId });
+                                                window.open(res.data.link, '_blank');
+                                            } else {
+                                                if (res.data.needsAuth) {
+                                                    toast.error("Veuillez connecter Google Calendar via l'assistant", { id: toastId });
+                                                } else {
+                                                    toast.error("Erreur lors de l'ajout", { id: toastId });
+                                                }
+                                            }
+                                        } catch (e) {
+                                            toast.error("Erreur de connexion", { id: toastId });
+                                        }
+                                    }}
+                                >
+                                    <Calendar className="w-4 h-4 mr-2" /> Agenda
+                                </Button>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">

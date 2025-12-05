@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 
 export default function Tournaments() {
@@ -45,6 +46,8 @@ export default function Tournaments() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterGameType, setFilterGameType] = useState('all'); // Default to all or specific
     const [myTournamentIds, setMyTournamentIds] = useState(new Set());
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+    const [currentMonth, setCurrentMonth] = useState(new Date());
 
     useEffect(() => {
         const init = async () => {
@@ -117,6 +120,25 @@ export default function Tournaments() {
                         <Trophy className="w-10 h-10 text-yellow-600" /> Tournois
                     </h1>
                     <p className="text-[#6b5138] mt-2">Affrontez les meilleurs joueurs et remportez la coupe !</p>
+                </div>
+
+                <div className="flex bg-[#e8dcc5] p-1 rounded-lg border border-[#d4c5b0]">
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className={`${viewMode === 'list' ? 'bg-white shadow text-[#4a3728]' : 'text-[#8c7b6a] hover:text-[#4a3728]'}`}
+                    >
+                        <LayoutGrid className="w-4 h-4 mr-2" /> Liste
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setViewMode('calendar')}
+                        className={`${viewMode === 'calendar' ? 'bg-white shadow text-[#4a3728]' : 'text-[#8c7b6a] hover:text-[#4a3728]'}`}
+                    >
+                        <CalendarIcon className="w-4 h-4 mr-2" /> Calendrier
+                    </Button>
                 </div>
                 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -412,7 +434,8 @@ export default function Tournaments() {
             </div>
 
             {/* Filters & Controls */}
-            <div className="mb-8 space-y-4">
+            {viewMode === 'list' && (
+                <div className="mb-8 space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 justify-between">
                     {/* Search & Filters */}
                     <div className="flex flex-col md:flex-row gap-4 flex-1">
@@ -484,7 +507,9 @@ export default function Tournaments() {
                     </TabsList>
                 </Tabs>
             </div>
+            )}
 
+            {viewMode === 'list' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tournaments
                     .filter(t => {
@@ -578,6 +603,78 @@ export default function Tournaments() {
                     <Trophy className="w-16 h-16 mx-auto text-[#d4c5b0] mb-4" />
                     <h3 className="text-xl font-bold text-[#6b5138]">Aucun tournoi pour le moment</h3>
                     <p className="text-gray-500">Soyez le premier à en créer un !</p>
+                </div>
+            )}
+            </div>
+            ) : (
+                // CALENDAR VIEW
+                <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
+                    {/* Calendar Header */}
+                    <div className="flex items-center justify-between p-4 bg-[#f5f0e6] border-b border-[#d4c5b0]">
+                        <h2 className="text-xl font-bold text-[#4a3728] capitalize">
+                            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+                        </h2>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                                <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(new Date())}>
+                                Aujourd'hui
+                            </Button>
+                            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                                <ChevronRight className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Calendar Grid */}
+                    <div className="grid grid-cols-7 border-b border-[#d4c5b0] bg-[#e8dcc5]">
+                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+                            <div key={day} className="p-2 text-center text-xs font-bold text-[#4a3728] uppercase">
+                                {day}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 auto-rows-[minmax(100px,auto)] bg-[#fdfbf7]">
+                        {(() => {
+                            const monthStart = startOfMonth(currentMonth);
+                            const monthEnd = endOfMonth(monthStart);
+                            const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+                            const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+                            const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+                            return days.map((day, idx) => {
+                                const dayTournaments = tournaments.filter(t => isSameDay(new Date(t.start_date), day));
+                                const isCurrentMonth = isSameMonth(day, monthStart);
+                                const isToday = isSameDay(day, new Date());
+
+                                return (
+                                    <div 
+                                        key={day.toString()} 
+                                        className={`min-h-[100px] p-2 border-b border-r border-[#f0e6d2] relative ${
+                                            !isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'text-[#4a3728]'
+                                        } ${isToday ? 'bg-yellow-50' : ''}`}
+                                    >
+                                        <div className={`text-right text-xs font-bold mb-1 ${isToday ? 'text-yellow-600' : ''}`}>
+                                            {format(day, 'd')}
+                                        </div>
+                                        <div className="space-y-1">
+                                            {dayTournaments.map(t => (
+                                                <Link to={`/TournamentDetail?id=${t.id}`} key={t.id}>
+                                                    <div className={`text-[10px] p-1 rounded truncate cursor-pointer hover:opacity-80 flex items-center gap-1 ${
+                                                        t.game_type === 'chess' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
+                                                    }`}>
+                                                        {t.game_type === 'chess' ? <Crown className="w-3 h-3 flex-shrink-0" /> : <Gamepad2 className="w-3 h-3 flex-shrink-0" />}
+                                                        <span className="truncate">{t.name}</span>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
+                    </div>
                 </div>
             )}
         </div>
