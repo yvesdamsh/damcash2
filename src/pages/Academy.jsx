@@ -208,6 +208,11 @@ export default function Academy() {
                                         {fiche.id}
                                     </span>
                                     <span className="truncate">{fiche.title}</span>
+                                    {fiche.id >= 13 && (
+                                        <span className="ml-2 px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                                            NOUVEAU
+                                        </span>
+                                    )}
                                     {activeFiche.id === fiche.id && <ChevronRight className="w-4 h-4 ml-auto" />}
                                 </button>
                             ))}
