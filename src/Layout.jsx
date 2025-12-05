@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
+import IntroAnimation from '@/components/IntroAnimation';
 import { 
   Trophy, 
   User, 
@@ -31,6 +32,15 @@ import {
     const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
     const [user, setUser] = React.useState(null);
+    const [showIntro, setShowIntro] = React.useState(!window.hasShownIntro);
+
+    React.useEffect(() => {
+        if (!window.hasShownIntro) {
+            window.hasShownIntro = true;
+            const timer = setTimeout(() => setShowIntro(false), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {
@@ -160,6 +170,17 @@ import {
 
     return (
         <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative">
+            <AnimatePresence>
+                {showIntro && (
+                    <motion.div 
+                        className="fixed inset-0 z-[200]"
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1 }}
+                    >
+                        <IntroAnimation />
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Background Wood Texture */}
             <div 
                 className="fixed inset-0 z-0 opacity-40 pointer-events-none"

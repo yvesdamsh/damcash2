@@ -15,7 +15,6 @@ import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
-import IntroAnimation from '@/components/IntroAnimation';
 
 export default function Home() {
     // Guest User Logic
@@ -113,18 +112,14 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
-            const minLoadTime = new Promise(resolve => setTimeout(resolve, 5000));
-            const authCheck = base44.auth.me().catch(() => null);
-
             try {
-                const [_, currentUser] = await Promise.all([minLoadTime, authCheck]);
+                // Check authentication state
+                let currentUser = await base44.auth.me().catch(() => null);
                 
                 if (currentUser) {
                     setUser(currentUser);
                     setShowSplash(false);
                 } else {
-                    // If no user, we still stop loading but showSplash remains true (default)
-                    // This allows the welcome screen to appear after the intro
                     setLoading(false);
                     return; 
                 }
@@ -417,7 +412,7 @@ export default function Home() {
         await fetchData(guest);
     };
 
-    if (loading) return <IntroAnimation />;
+    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
 
     if (showSplash && !user) {
         return <SplashScreen onPlayAsGuest={handleGuestPlay} />;
