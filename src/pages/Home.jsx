@@ -113,7 +113,7 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
-            const minLoadTime = new Promise(resolve => setTimeout(resolve, 3000));
+            const minLoadTime = new Promise(resolve => setTimeout(resolve, 5000));
             const authCheck = base44.auth.me().catch(() => null);
 
             try {

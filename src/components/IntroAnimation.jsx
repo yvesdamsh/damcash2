@@ -1,7 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 export default function IntroAnimation() {
+    useEffect(() => {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'); // Majestic reveal sound
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log("Audio autoplay prevented:", e));
+    }, []);
+
     return (
         <div className="fixed inset-0 z-[200] bg-[#4a3728] flex flex-col items-center justify-center overflow-hidden">
             {/* Animated Background Texture */}
