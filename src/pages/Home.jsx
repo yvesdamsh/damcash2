@@ -443,11 +443,11 @@ export default function Home() {
             {/* Game Config Dialog */}
             {configOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                        <CardHeader>
+                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[85vh]">
+                        <CardHeader className="flex-shrink-0 border-b border-[#d4c5b0]/20">
                             <CardTitle className="text-[#4a3728]">Configuration de la partie</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-6">
+                        <CardContent className="space-y-6 flex-1 overflow-y-auto p-6">
                             {/* Presets */}
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#6b5138]">Modes Rapides</label>
@@ -568,13 +568,13 @@ export default function Home() {
                                 </div>
                             )}
 
-                            <div className="flex gap-3 pt-4">
-                                <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
-                                <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={handleStartGame}>
-                                    {isPrivateConfig ? "Créer Privée" : "Jouer"}
-                                </Button>
-                            </div>
                         </CardContent>
+                        <div className="p-4 border-t border-[#d4c5b0]/20 flex-shrink-0 flex gap-3 bg-[#fdfbf7] rounded-b-xl">
+                            <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
+                            <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={handleStartGame}>
+                                {isPrivateConfig ? "Créer Privée" : "Jouer"}
+                            </Button>
+                        </div>
                     </Card>
                 </div>
             )}
