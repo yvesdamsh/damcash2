@@ -32,8 +32,6 @@ const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
     }, [setup, turn]);
 
     const handlePieceDrop = (fromR, fromC, toR, toC) => {
-        // Simple move execution for demonstration (no rule validation enforcement for free exploration)
-        // OR we can enforce valid moves. Let's enforce to be helpful.
         const validMoves = getValidMoves(board, currentTurn);
         const move = validMoves.find(m => 
             m.from.r === fromR && m.from.c === fromC && 
@@ -53,25 +51,37 @@ const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
     };
 
     return (
-        <div className="my-6 flex flex-col items-center">
-            <div className="w-full max-w-[350px] aspect-square relative">
+        <div className="my-8 flex flex-col items-center bg-[#f8f5f0] p-4 rounded-xl border border-[#d4c5b0] shadow-sm">
+            <div className="w-full max-w-[400px] flex justify-between items-center mb-3 px-1">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#4a3728]">
+                    <div className={`w-4 h-4 rounded-full border shadow-sm ${currentTurn === 'white' ? 'bg-white border-gray-300' : 'bg-[#2c2c2c] border-black'}`} />
+                    <span>Trait aux {currentTurn === 'white' ? 'Blancs' : 'Noirs'}</span>
+                </div>
+                <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-xs font-bold bg-white border border-[#d4c5b0] text-[#6b5138] px-3 py-1.5 rounded-full hover:bg-[#f5f0e6] transition-all shadow-sm"
+                >
+                    <RotateCcw className="w-3 h-3" /> Réinitialiser
+                </button>
+            </div>
+
+            <div className="w-full max-w-[400px] aspect-square relative shadow-xl rounded-lg overflow-hidden border-4 border-[#4a3728]">
                 <CheckerBoard 
                     board={board} 
                     currentTurn={currentTurn}
-                    playerColor={currentTurn} // Allow playing both sides
+                    playerColor={currentTurn}
                     validMoves={getValidMoves(board, currentTurn)}
                     onSquareClick={() => {}} 
                     onPieceDrop={handlePieceDrop}
                     isSoloMode={true}
                 />
-                <button 
-                    onClick={reset}
-                    className="absolute -bottom-12 right-0 flex items-center gap-2 text-sm font-bold text-[#6b5138] bg-[#e8dcc5] px-3 py-1 rounded hover:bg-[#d4c5b0]"
-                >
-                    <RotateCcw className="w-4 h-4" /> Réinitialiser
-                </button>
             </div>
-            {caption && <p className="mt-4 text-sm text-center text-gray-500 italic">{caption}</p>}
+            
+            {caption && (
+                <div className="mt-4 w-full max-w-[400px] bg-yellow-50 border-l-4 border-yellow-500 p-3 text-sm text-[#4a3728] italic rounded-r">
+                    {caption}
+                </div>
+            )}
         </div>
     );
 };
