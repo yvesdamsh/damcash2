@@ -39,28 +39,20 @@ export function LanguageProvider({ children }) {
   };
 
   const t = (key, params = {}) => {
-    const keys = key.split('.');
-    let value = translations[language];
-    
-    for (const k of keys) {
-      value = value?.[k];
-      if (!value) break;
-    }
+    // Direct lookup for flat keys (e.g. "home.welcome")
+    let value = translations[language]?.[key];
 
     if (!value) {
         // Fallback to English
-        let fallback = translations['en'];
-        for (const k of keys) {
-            fallback = fallback?.[k];
-            if (!fallback) break;
-        }
-        value = fallback || key;
+        value = translations['en']?.[key] || key;
     }
 
     // Replace params
-    Object.keys(params).forEach(param => {
-      value = value.replace(`{{${param}}}`, params[param]);
-    });
+    if (value && typeof value === 'string') {
+        Object.keys(params).forEach(param => {
+            value = value.replace(`{{${param}}}`, params[param]);
+        });
+    }
 
     return value;
   };

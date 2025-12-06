@@ -1,385 +1,154 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { BookOpen, ChevronRight, GraduationCap, Sword, LayoutGrid, Trophy, RotateCcw } from 'lucide-react';
-import CheckerBoard from '@/components/CheckerBoard';
-import { executeMove, getValidMoves } from '@/components/checkersLogic';
-
-const createBoardFromSetup = (setup) => {
-    const board = Array(10).fill(null).map(() => Array(10).fill(0));
-    if (!setup) return board;
-
-    Object.entries(setup).forEach(([square, type]) => {
-        const n = parseInt(square);
-        const row = Math.floor((n - 1) / 5);
-        const colIndex = (n - 1) % 5;
-        const col = row % 2 === 0 ? (colIndex * 2 + 1) : (colIndex * 2);
-        if (row >= 0 && row < 10 && col >= 0 && col < 10) {
-            board[row][col] = type;
-        }
-    });
-    return board;
-};
-
-const AcademyDiagram = ({ setup, turn = 'white', caption }) => {
-    const [board, setBoard] = useState(createBoardFromSetup(setup));
-    const [currentTurn, setCurrentTurn] = useState(turn);
-    const [selectedSquare, setSelectedSquare] = useState(null);
-
-    useEffect(() => {
-        setBoard(createBoardFromSetup(setup));
-        setCurrentTurn(turn);
-        setSelectedSquare(null);
-    }, [setup, turn]);
-
-    const allValidMoves = React.useMemo(() => getValidMoves(board, currentTurn), [board, currentTurn]);
-
-    const displayedMoves = React.useMemo(() => {
-        if (!selectedSquare) return [];
-        return allValidMoves.filter(m => m.from.r === selectedSquare[0] && m.from.c === selectedSquare[1]);
-    }, [selectedSquare, allValidMoves]);
-
-    const handleSquareClick = (r, c) => {
-        const piece = board[r][c];
-        
-        // If clicking own piece, select it
-        if (piece !== 0) {
-            const isWhitePiece = piece === 1 || piece === 3;
-            const isTurnWhite = currentTurn === 'white';
-            if (isWhitePiece === isTurnWhite) {
-                setSelectedSquare([r, c]);
-                return;
-            }
-        }
-
-        // If clicking empty square and we have selection, try to move
-        if (selectedSquare && piece === 0) {
-            const move = allValidMoves.find(m => 
-                m.from.r === selectedSquare[0] && m.from.c === selectedSquare[1] && 
-                m.to.r === r && m.to.c === c
-            );
-
-            if (move) {
-                const { newBoard } = executeMove(board, [selectedSquare[0], selectedSquare[1]], [r, c], move.captured);
-                setBoard(newBoard);
-                setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
-                setSelectedSquare(null);
-            } else {
-                setSelectedSquare(null);
-            }
-        } else {
-            setSelectedSquare(null);
-        }
-    };
-
-    const handlePieceDrop = (fromR, fromC, toR, toC) => {
-        const move = allValidMoves.find(m => 
-            m.from.r === fromR && m.from.c === fromC && 
-            m.to.r === toR && m.to.c === toC
-        );
-
-        if (move) {
-            const { newBoard } = executeMove(board, [fromR, fromC], [toR, toC], move.captured);
-            setBoard(newBoard);
-            setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
-            setSelectedSquare(null);
-        }
-    };
-
-    const reset = () => {
-        setBoard(createBoardFromSetup(setup));
-        setCurrentTurn(turn);
-        setSelectedSquare(null);
-    };
-
-    return (
-        <div className="my-8 flex flex-col items-center bg-[#f8f5f0] p-4 rounded-xl border border-[#d4c5b0] shadow-sm">
-            <div className="w-full max-w-[400px] flex justify-between items-center mb-3 px-1">
-                <div className="flex items-center gap-2 text-sm font-bold text-[#4a3728]">
-                    <div className={`w-4 h-4 rounded-full border shadow-sm ${currentTurn === 'white' ? 'bg-white border-gray-300' : 'bg-[#2c2c2c] border-black'}`} />
-                    <span>Trait aux {currentTurn === 'white' ? 'Blancs' : 'Noirs'}</span>
-                </div>
-                <button
-                    onClick={reset}
-                    className="flex items-center gap-1.5 text-xs font-bold bg-white border border-[#d4c5b0] text-[#6b5138] px-3 py-1.5 rounded-full hover:bg-[#f5f0e6] transition-all shadow-sm"
-                >
-                    <RotateCcw className="w-3 h-3" /> Réinitialiser
-                </button>
-            </div>
-
-            <div className="w-full max-w-[400px] aspect-square relative shadow-xl rounded-lg overflow-hidden border-4 border-[#4a3728]">
-                <CheckerBoard 
-                    board={board} 
-                    currentTurn={currentTurn}
-                    playerColor={currentTurn}
-                    validMoves={displayedMoves}
-                    selectedSquare={selectedSquare}
-                    onSquareClick={handleSquareClick}
-                    onPieceDrop={handlePieceDrop}
-                    isSoloMode={true}
-                />
-            </div>
-            
-            {caption && (
-                <div className="mt-4 w-full max-w-[400px] bg-yellow-50 border-l-4 border-yellow-500 p-3 text-sm text-[#4a3728] italic rounded-r">
-                    {caption}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const fiches = [
-    {
-        id: 1,
-        title: "Le Damier",
-        icon: LayoutGrid,
-        content: [
-            { subtitle: "Structure", text: "Damier de 100 cases (10 × 10). Cases sombres numérotées de 1 à 50. On joue uniquement sur les cases foncées." },
-            { subtitle: "Orientation", text: "Les blancs commencent. Les numéros croissent de gauche à droite et du haut vers le bas." },
-            { subtitle: "Cases spéciales", text: "Ligne des dames : Cases 1 à 5 pour les blancs (promotion). Cases 46 à 50 pour les noirs." },
-            { subtitle: "Groupes", text: "4 groupes de 13 cases chacun. Les cases d'un même groupe sont atteignables par prise." }
-        ]
-    },
-    {
-        id: 2,
-        title: "Position Initiale",
-        icon: LayoutGrid,
-        content: [
-            { subtitle: "Départ normal", text: "Blancs : cases 31 à 50. Noirs : cases 1 à 30." },
-            { subtitle: "Entraînement (10 pions)", text: "Noirs : 1 à 5. Blancs : 46 à 50. Permet des parties rapides pour apprendre les finales." },
-            { subtitle: "Handicap", text: "On peut retirer 1 ou 2 pions pour équilibrer les niveaux." }
-        ]
-    },
-    {
-        id: 3,
-        title: "La Marche",
-        icon: ChevronRight,
-        content: [
-            { subtitle: "Déplacement", text: "Un pion avance en diagonale d'une seule case. Il ne recule pas (sauf prise)." },
-            { subtitle: "Notation", text: "31-26. Les Blancs commencent toujours." },
-            { subtitle: "Terminologie", text: "'Coup' peut désigner un mouvement simple, une combinaison ou un tour complet (blanc + noir)." }
-        ]
-    },
-    {
-        id: 4,
-        title: "La Prise",
-        icon: Sword,
-        content: [
-            { subtitle: "Obligation", text: "La prise est obligatoire." },
-            { subtitle: "Mécanique", text: "Pion → Pion ennemi → Case vide." },
-            { subtitle: "Direction (Frison)", text: "Diagonale, Verticale et Horizontale." },
-            { subtitle: "Notation", text: "31x33." }
-        ]
-    },
-    {
-        id: 5,
-        title: "Prise Multiple & Majoritaire",
-        icon: Sword,
-        content: [
-            { subtitle: "Rafle", text: "Un pion continue à prendre tant qu'il peut. La rafle est obligatoire." },
-            { subtitle: "Règle Majoritaire", text: "Le joueur DOIT prendre dans la variante où il capture le PLUS de pièces." },
-            { subtitle: "Détail", text: "On ne retire les pions qu'à la fin. On peut repasser sur une case vide mais pas sur une pièce déjà prise." }
-        ]
-    },
-    {
-        id: 6,
-        title: "La Dame",
-        icon: GraduationCap,
-        content: [
-            { subtitle: "Promotion", text: "Ligne 1-5 (Blancs) ou 46-50 (Noirs)." },
-            { subtitle: "Déplacement", text: "Diagonale, avant & arrière, toute distance." },
-            { subtitle: "Prise", text: "Survole les cases libres. Priorité si égalité de nombre : La Dame DOIT prendre." },
-            { subtitle: "Valeur", text: "3 Dames = 5,5 Pions (pour calcul majoritaire)." }
-        ]
-    },
-    {
-        id: 7,
-        title: "Règle des 3 coups",
-        icon: BookOpen,
-        content: [
-            { subtitle: "Dame Bloquée", text: "Max 3 coups sans prise d'affilée. Au 4ème, elle doit prendre ou un pion doit bouger." },
-            { subtitle: "Libération", text: "Si elle capture, le compteur est remis à zéro." },
-            { subtitle: "Exception", text: "Ne s'applique pas si le joueur a plusieurs dames et plus de pions." }
-        ]
-    },
-    {
-        id: 8,
-        title: "Finale 2 Dames vs 1",
-        icon: Sword,
-        content: [
-            { subtitle: "Règle des 7 coups", text: "Le joueur avec 2 dames a 7 coups pour gagner contre 1 dame seule. Sinon, c'est remise." }
-        ]
-    },
-    {
-        id: 9,
-        title: "Les Remises",
-        icon: LayoutGrid,
-        content: [
-            { subtitle: "Dame contre Dame", text: "Remise si aucune capture possible (sauf exceptions 5 vs 46)." },
-            { subtitle: "Diagonale 46-5", text: "Si contrôlée par l'adversaire empêchant le passage : remise." },
-            { subtitle: "Blocage Lignes", text: "Lignes 47-15 ou 4-36 bloquées : remise." }
-        ]
-    },
-    {
-        id: 10,
-        title: "Gagner ou Perdre",
-        icon: Trophy,
-        content: [
-            { subtitle: "Défaite", text: "Plus de pions OU plus de coups légaux (blocage)." },
-            { subtitle: "Tactiques", text: "Enfermement, Opposition, Encerclement." }
-        ]
-    },
-    {
-        id: 11,
-        title: "Notation",
-        icon: BookOpen,
-        content: [
-            { subtitle: "Complète", text: "31-26 (Marche), 31x33 (Prise)." },
-            { subtitle: "Position", text: "Pions : N°, Dames : 'D' + N°." },
-            { subtitle: "Courte", text: "Arrivée seulement. Ex: '27 2' pour une séquence." }
-        ]
-    },
-    {
-        id: 12,
-        title: "Stratégie",
-        icon: GraduationCap,
-        content: [
-            { subtitle: "Attaques", text: "Depuis cases liées (45,46...), sacrifice de dame, rafles." },
-            { subtitle: "Ouvertures", text: "32-27 (60%), 31-26 (35%)." },
-            { subtitle: "Milieu de jeu", text: "Construire les ailes, contrôler le centre (27, 32), éviter les trous." }
-        ]
-    },
-    {
-        id: 13,
-        title: "Règle : Prise Majoritaire",
-        icon: Sword,
-        content: [
-            { subtitle: "Principe", text: "On doit OBLIGATOIREMENT prendre du côté du plus grand nombre de pièces." },
-            { subtitle: "Valeur", text: "Une Dame compte pour 1 pièce, comme un pion. La qualité des pièces ne compte pas, seule la quantité importe." },
-            { subtitle: "Exemple", text: "Dans la position ci-dessous, les Blancs (qui jouent) peuvent prendre 1 pion (vers la gauche) ou 2 pions (vers la droite). Ils DOIVENT prendre les 2 pions.", diagram: { 38: 1, 33: 2, 32: 2, 23: 2, 28: 2, 42: 2 }, turn: 'white', caption: "Les Blancs en 38 doivent prendre 2 pions (33 et 23) et non 1 seul (32)." },
-            { subtitle: "Égalité", text: "Si le nombre de pièces à prendre est identique sur plusieurs chemins, le joueur a le libre choix." }
-        ]
-    },
-    {
-        id: 14,
-        title: "Tactique : Le Coup Turc",
-        icon: BookOpen,
-        content: [
-            { subtitle: "Définition", text: "Une manœuvre tactique basée sur la règle de la prise différée." },
-            { subtitle: "Règle Clé", text: "Les pièces prises ne sont retirées du damier qu'à la FIN de la rafle. Une pièce prise reste donc sur le damier pendant la rafle et fait obstacle (butoir)." },
-            { subtitle: "Démonstration", text: "Le diagramme pour le Coup Turc sera bientôt disponible. En attendant, retenez que ce coup utilise une pièce capturée comme obstacle." }
-        ]
-    },
-    {
-        id: 15,
-        title: "Tactique : Coup du Pivot (Barrage)",
-        icon: LayoutGrid,
-        content: [
-            { subtitle: "Concept", text: "Thème de fin de partie où une Dame utilise un de ses propres pions pour bloquer l'adversaire." },
-            { subtitle: "Mécanisme", text: "La Dame se place sur la case juste devant son pion de bande (ex: case 31 devant 36, ou 4 devant 9). L'adversaire est alors paralysé." },
-            { subtitle: "Exemple", text: "Les Blancs gagnent en enfermant la Dame Noire.", diagram: { 36: 1, 31: 3, 45: 4 }, turn: 'white', caption: "Barrage : La Dame Blanche 31 bloque la Dame Noire 45 grâce au pion 36." }
-        ]
-    },
-    {
-        id: 16,
-        title: "Répertoire Tactique FFJD",
-        icon: Trophy,
-        content: [
-            { subtitle: "Coups Classiques", text: "Coup de la Bombe, Coup de l'Africain, Coup du Marquis, Coup de la Souricière." },
-            { subtitle: "Coups Techniques", text: "Coup du Chapelet, Coup de l'Éponge, Coup du Tiroir, Coup de l'Express." },
-            { subtitle: "Fins de Partie", text: "Coup de l'Enfermé, Coup du Tric-Trac, Coup du Butoir." },
-            { subtitle: "Source", text: "Ces thèmes sont étudiés dans les écoles de la Fédération Française de Jeu de Dames (FFJD) et la Ligue Rhône-Alpes." }
-        ]
-    }
-];
+import { BookOpen, Puzzle, Swords, Brain, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Academy() {
-    const [activeFiche, setActiveFiche] = useState(fiches[0]);
+    const { t, language } = useLanguage();
+    const navigate = useNavigate();
+    const [lessons, setLessons] = useState([]);
+    const [puzzles, setPuzzles] = useState([]);
+    const [activeTab, setActiveTab] = useState('lessons');
+    const [gameType, setGameType] = useState('checkers');
+
+    useEffect(() => {
+        const fetchContent = async () => {
+            try {
+                // Fetch lessons
+                const allLessons = await base44.entities.Lesson.filter({ game_type: gameType });
+                setLessons(allLessons.sort((a,b) => (a.order || 0) - (b.order || 0)));
+                
+                // Fetch puzzles (sample)
+                const allPuzzles = await base44.entities.Puzzle.filter({ game_type: gameType }, {}, 10);
+                setPuzzles(allPuzzles);
+            } catch (e) {
+                console.error("Academy fetch error", e);
+            }
+        };
+        fetchContent();
+    }, [gameType]);
 
     return (
-        <div className="max-w-6xl mx-auto p-6 pb-20">
-            <div className="text-center mb-10 space-y-4">
-                <h1 className="text-4xl font-black text-[#4a3728] flex items-center justify-center gap-3" style={{ fontFamily: 'Georgia, serif' }}>
-                    <GraduationCap className="w-10 h-10 text-yellow-600" />
-                    Académie Damcash
+        <div className="max-w-6xl mx-auto p-6">
+            <div className="text-center mb-10">
+                <h1 className="text-4xl font-bold text-[#4a3728] mb-2 flex items-center justify-center gap-3">
+                    <Brain className="w-10 h-10" /> {t('academy.title')}
                 </h1>
-                <p className="text-[#6b5138] text-lg font-medium max-w-2xl mx-auto">
-                    Maîtrisez les subtilités du jeu de dames, des règles fondamentales aux stratégies avancées. 
-                    Inclus des cours officiels de la Fédération Française de Jeu de Dames (FFJD).
-                </p>
+                <p className="text-[#6b5138]">{t('academy.subtitle')}</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:h-[600px] h-auto">
-                {/* Sidebar List */}
-                <div className="lg:col-span-4 bg-white/80 backdrop-blur border border-[#d4c5b0] rounded-xl overflow-hidden shadow-lg flex flex-col h-80 lg:h-auto">
-                    <div className="p-4 bg-[#4a3728] text-[#e8dcc5] font-bold text-lg flex items-center gap-2">
-                        <BookOpen className="w-5 h-5" />
-                        Sommaire
-                    </div>
-                    <ScrollArea className="flex-1">
-                        <div className="p-2 space-y-1">
-                            {fiches.map((fiche) => (
-                                <button
-                                    key={fiche.id}
-                                    onClick={() => setActiveFiche(fiche)}
-                                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-all ${
-                                        activeFiche.id === fiche.id 
-                                            ? 'bg-[#e8dcc5] text-[#4a3728] font-bold shadow-sm' 
-                                            : 'hover:bg-[#f5f0e6] text-gray-600'
-                                    }`}
-                                >
-                                    <span className="bg-white/50 w-6 h-6 rounded-full flex items-center justify-center text-xs border border-[#d4c5b0]">
-                                        {fiche.id}
-                                    </span>
-                                    <span className="truncate">{fiche.title}</span>
-                                    {fiche.id >= 13 && (
-                                        <span className="ml-2 px-1.5 py-0.5 bg-green-500 text-white text-[10px] font-bold rounded-full animate-pulse">
-                                            NOUVEAU
-                                        </span>
-                                    )}
-                                    {activeFiche.id === fiche.id && <ChevronRight className="w-4 h-4 ml-auto" />}
-                                </button>
-                            ))}
-                        </div>
-                    </ScrollArea>
+            <div className="flex justify-center mb-8">
+                <div className="bg-[#e8dcc5] p-1 rounded-full flex gap-1">
+                    <button 
+                        onClick={() => setGameType('checkers')}
+                        className={`px-6 py-2 rounded-full font-bold transition-all ${gameType === 'checkers' ? 'bg-[#4a3728] text-[#e8dcc5]' : 'text-[#4a3728] hover:bg-[#d4c5b0]'}`}
+                    >
+                        ⚪ {t('game.checkers')}
+                    </button>
+                    <button 
+                        onClick={() => setGameType('chess')}
+                        className={`px-6 py-2 rounded-full font-bold transition-all ${gameType === 'chess' ? 'bg-[#4a3728] text-[#e8dcc5]' : 'text-[#4a3728] hover:bg-[#d4c5b0]'}`}
+                    >
+                        ♟️ {t('game.chess')}
+                    </button>
                 </div>
+            </div>
 
-                {/* Content Card */}
-                <div className="lg:col-span-8">
-                    <Card className="h-full bg-[#fdfbf7] border-[#d4c5b0] shadow-xl flex flex-col overflow-hidden">
-                        <CardHeader className="bg-gradient-to-r from-[#4a3728] to-[#6b5138] text-[#e8dcc5] py-6">
-                            <CardTitle className="text-3xl flex items-center gap-3">
-                                {React.createElement(activeFiche.icon, { className: "w-8 h-8 opacity-80" })}
-                                Fiche {activeFiche.id} : {activeFiche.title}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-8 flex-1 overflow-y-auto">
-                            <div className="space-y-6">
-                                {activeFiche.content.map((section, idx) => (
-                                    <div key={idx} className="bg-white p-6 rounded-xl border border-[#e8dcc5] shadow-sm">
-                                        <h3 className="text-[#b8860b] font-bold text-lg mb-2 uppercase tracking-wide flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-[#b8860b] rounded-full"></span>
-                                            {section.subtitle}
-                                        </h3>
-                                        <p className="text-[#4a3728] leading-relaxed text-lg pl-4 border-l-2 border-[#e8dcc5]">
-                                            {section.text}
-                                        </p>
-                                        {section.diagram && (
-                                            <AcademyDiagram 
-                                                setup={section.diagram} 
-                                                turn={section.turn} 
-                                                caption={section.caption}
-                                            />
-                                        )}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 bg-[#e8dcc5]">
+                    <TabsTrigger value="lessons" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <BookOpen className="w-4 h-4 mr-2" /> {t('academy.lessons')}
+                    </TabsTrigger>
+                    <TabsTrigger value="puzzles" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <Puzzle className="w-4 h-4 mr-2" /> {t('academy.puzzles')}
+                    </TabsTrigger>
+                    <TabsTrigger value="practice" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <Swords className="w-4 h-4 mr-2" /> {t('academy.practice')}
+                    </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="lessons" className="mt-6 space-y-6">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {lessons.length > 0 ? lessons.map(lesson => (
+                            <Card key={lesson.id} className="border-[#d4c5b0] hover:shadow-lg transition-shadow bg-white">
+                                <CardHeader>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge variant="secondary" className="bg-[#f0e6d2] text-[#6b5138] capitalize">
+                                            {lesson.difficulty}
+                                        </Badge>
+                                        <Badge variant="outline" className="border-[#d4c5b0] text-[#8c7b6a] capitalize">
+                                            {lesson.category}
+                                        </Badge>
                                     </div>
-                                ))}
+                                    <CardTitle className="text-[#4a3728]">{lesson.title}</CardTitle>
+                                    <CardDescription className="line-clamp-2">{lesson.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12]" onClick={() => navigate(`/Lesson/${lesson.id}`)}>
+                                        {t('academy.start_lesson')} <ChevronRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )) : (
+                            <div className="col-span-full text-center py-12 text-gray-500">
+                                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                <p>Aucune leçon disponible pour le moment.</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="puzzles" className="mt-6">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {puzzles.length > 0 ? puzzles.map(puzzle => (
+                            <Card key={puzzle.id} className="border-[#d4c5b0] hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => navigate(`/Puzzle/${puzzle.id}`)}>
+                                <CardContent className="p-4 flex flex-col items-center text-center">
+                                    <Puzzle className="w-8 h-8 text-[#b8860b] mb-3" />
+                                    <h3 className="font-bold text-[#4a3728] mb-1">{puzzle.title || 'Problème Tactique'}</h3>
+                                    <div className="text-xs text-[#6b5138] mb-3">{puzzle.theme}</div>
+                                    <div className="flex gap-2 text-xs">
+                                        <Badge className="bg-[#f0e6d2] text-[#6b5138]">{puzzle.rating}</Badge>
+                                        <Badge variant="outline">{puzzle.difficulty}</Badge>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )) : (
+                            <div className="col-span-full text-center py-12 text-gray-500">
+                                <Puzzle className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                <p>Aucun problème disponible.</p>
+                            </div>
+                        )}
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="practice" className="mt-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Card className="border-[#d4c5b0] bg-gradient-to-br from-[#fdfbf7] to-[#f0e6d2]">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5" /> Finales</CardTitle>
+                                <CardDescription>Maîtrisez les techniques de fin de partie.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Endgames?type=${gameType}`)}>S'entraîner</Button>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-[#d4c5b0] bg-gradient-to-br from-[#fdfbf7] to-[#f0e6d2]">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Tactiques</CardTitle>
+                                <CardDescription>Exercices ciblés sur les combinaisons.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Tactics?type=${gameType}`)}>S'entraîner</Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
