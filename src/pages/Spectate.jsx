@@ -21,26 +21,20 @@ export default function Spectate() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchGames = async () => {
+        const fetchGames = async (showLoading = true) => {
             try {
-                setLoading(true);
+                if (showLoading) setLoading(true);
                 const query = { is_private: false };
                 
                 if (filters.status !== 'all') query.status = filters.status;
                 if (filters.game_type !== 'all') query.game_type = filters.game_type;
                 
-                // Note: ELO filtering on backend might be limited, so we filter client-side for now as well to be safe,
-                // but passing it if backend supports it is good.
-                // Also tournament_query might need exact ID or we assume it's an ID for now.
                 if (filters.tournament_query) query.tournament_id = filters.tournament_query;
 
                 // Fetch games
                 const games = await base44.entities.Game.filter(query, '-updated_date', 50);
 
-                // Enhance games with ELO data if needed (could be heavy, for now we rely on stored names/ids)
-                // If we want to sort by "High Rank", we might need to fetch player stats.
                 // Optimization: fetch unique user IDs from these games.
-                
                 const playerIds = new Set();
                 games.forEach(g => {
                     if(g.white_player_id) playerIds.add(g.white_player_id);
@@ -57,7 +51,7 @@ export default function Spectate() {
                 const enhancedGames = games.map(g => {
                     const white = userMap[g.white_player_id];
                     const black = userMap[g.black_player_id];
-                    const avgElo = ((white?.elo_chess || 1200) + (black?.elo_chess || 1200)) / 2; // Simple avg using chess elo as proxy or check game type
+                    const avgElo = ((white?.elo_chess || 1200) + (black?.elo_chess || 1200)) / 2; 
                     return { ...g, white, black, avgElo };
                 });
 
@@ -78,8 +72,8 @@ export default function Spectate() {
             }
         };
 
-        fetchGames();
-        const interval = setInterval(fetchGames, 10000); // Refresh every 10s
+        fetchGames(true); // Initial load shows spinner
+        const interval = setInterval(() => fetchGames(false), 10000); // Background refresh does not
         return () => clearInterval(interval);
     }, [filters]);
 
