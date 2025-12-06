@@ -98,7 +98,7 @@ export default function Lobby() {
                 status: 'waiting',
                 game_type: type,
                 white_player_id: currentUser.id,
-                white_player_name: currentUser.full_name || currentUser.username || 'Hôte',
+                white_player_name: currentUser.full_name || currentUser.username || t('lobby.me'),
                 current_turn: 'white',
                 board_state: initialBoard,
                 is_private: false, // Public
@@ -143,7 +143,7 @@ export default function Lobby() {
                 status: 'waiting',
                 game_type: type,
                 white_player_id: currentUser.id,
-                white_player_name: currentUser.full_name || 'Joueur 1',
+                white_player_name: currentUser.full_name || t('lobby.me'),
                 current_turn: 'white',
                 board_state: initialBoard,
                 is_private: true,
@@ -165,11 +165,11 @@ export default function Lobby() {
                 recipient_id: opponent.id,
                 type: "game",
                 title: t('lobby.challenge_received'),
-                message: `${currentUser.full_name || 'Un joueur'} ${t('lobby.challenge_msg')} ${type === 'chess' ? t('game.chess') : t('game.checkers')}.`,
+                message: `${currentUser.full_name || t('common.player')} ${t('lobby.challenge_msg')} ${type === 'chess' ? t('game.chess') : t('game.checkers')}.`,
                 link: `/Game?id=${newGame.id}`
             });
 
-            toast.success(`${t('lobby.challenge_sent')} ${opponent.full_name || 'Joueur'} !`);
+            toast.success(`${t('lobby.challenge_sent')} ${opponent.full_name || t('common.player')} !`);
             navigate(`/Game?id=${newGame.id}`);
 
         } catch (e) {
@@ -408,7 +408,7 @@ export default function Lobby() {
                                         )}
                                     </TabsList>
                                     <TabsContent value="global" className="flex-1 mt-2 h-full">
-                                        <LobbyChat channelId="global" channelName="Salon Général" currentUser={currentUser} />
+                                        <LobbyChat channelId="global" channelName={t('lobby.chat_global')} currentUser={currentUser} />
                                     </TabsContent>
                                     {myTeam && (
                                         <TabsContent value="team" className="flex-1 mt-2 h-full">

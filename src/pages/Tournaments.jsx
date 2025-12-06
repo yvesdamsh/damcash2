@@ -497,7 +497,7 @@ export default function Tournaments() {
             <div className="mb-10">
                 <div className="flex items-center gap-2 mb-4">
                     <Crown className="w-6 h-6 text-yellow-600" />
-                    <h2 className="text-2xl font-bold text-[#4a3728]">Événements Officiels</h2>
+                    <h2 className="text-2xl font-bold text-[#4a3728]">{t('tournaments.official_title')}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {tournaments
@@ -511,20 +511,20 @@ export default function Tournaments() {
                                 <CardContent className="p-4 relative z-10">
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="bg-yellow-500 text-[#2c1e12] text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                                            {t.recurrence === 'daily' ? 'Quotidien' : t.recurrence === 'weekly' ? 'Hebdo' : 'Officiel'}
+                                            {t.recurrence === 'daily' ? t('tournaments.recurrence_daily') : t.recurrence === 'weekly' ? t('tournaments.weekly_badge') : t('tournaments.official_badge')}
                                         </div>
                                         {t.game_type === 'chess' ? <Crown className="w-4 h-4" /> : <Gamepad2 className="w-4 h-4" />}
                                     </div>
                                     <h3 className="font-bold text-lg leading-tight mb-1 truncate">{t.name}</h3>
                                     <div className="flex items-center gap-2 text-xs opacity-80 mb-3">
                                         <Calendar className="w-3 h-3" />
-                                        {format(new Date(t.start_date), 'HH:mm')}
+                                        {formatDate(new Date(t.start_date), 'HH:mm')}
                                         <span>•</span>
                                         <span>{t.time_control}</span>
                                     </div>
                                     <Link to={`/TournamentDetail?id=${t.id}`}>
                                         <Button size="sm" className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-xs h-8">
-                                            Rejoindre
+                                            {t('tournaments.join_btn')}
                                         </Button>
                                     </Link>
                                 </CardContent>
@@ -532,7 +532,7 @@ export default function Tournaments() {
                         ))}
                     {tournaments.filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing')).length === 0 && (
                          <div className="col-span-full bg-white/50 p-4 rounded-lg text-center text-gray-500 border border-dashed border-gray-300">
-                             Aucun événement officiel à venir prochainement.
+                             {t('tournaments.no_official')}
                          </div>
                     )}
                 </div>

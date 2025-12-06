@@ -105,6 +105,7 @@ export const translations = {
     "common.login_chat": "Log in to chat",
     "common.be_first_post": "Be the first to post!",
     "common.search_player_placeholder": "Search for a player...",
+    "common.player": "Player",
     
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "The Senegalese Grandmaster",
@@ -350,6 +351,7 @@ export const translations = {
     "common.login_chat": "Войдите, чтобы общаться",
     "common.be_first_post": "Будьте первым, кто напишет!",
     "common.search_player_placeholder": "Поиск игрока...",
+    "common.player": "Игрок",
 
     "legend.babasy.name": "Баба Си",
     "legend.babasy.subtitle": "Сенегальский гроссмейстер",
@@ -593,6 +595,7 @@ export const translations = {
     "common.login_chat": "Zum Chatten einloggen",
     "common.be_first_post": "Sei der Erste, der postet!",
     "common.search_player_placeholder": "Spieler suchen...",
+    "common.player": "Spieler",
 
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "Der senegalesische Großmeister",
@@ -836,6 +839,7 @@ export const translations = {
     "common.login_chat": "登录以聊天",
     "common.be_first_post": "成为第一个发帖的人！",
     "common.search_player_placeholder": "搜索玩家...",
+    "common.player": "玩家",
 
     "legend.babasy.name": "巴巴·西",
     "legend.babasy.subtitle": "塞内加尔特级大师",
@@ -1079,6 +1083,7 @@ export const translations = {
     "common.login_chat": "Log in om te chatten",
     "common.be_first_post": "Wees de eerste die iets plaatst!",
     "common.search_player_placeholder": "Zoek een speler...",
+    "common.player": "Speler",
 
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "De Senegalese Grootmeester",
