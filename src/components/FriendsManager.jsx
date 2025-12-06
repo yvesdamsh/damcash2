@@ -146,12 +146,11 @@ export default function FriendsManager() {
             toast.success("Ami ajouté !");
             
             // Notify requester
-            await base44.entities.Notification.create({
+            await base44.functions.invoke('sendNotification', {
                 recipient_id: requesterId,
                 type: "success",
                 title: "Demande acceptée",
-                message: `${currentUser.username || currentUser.full_name} a accepté votre demande.`,
-                read: false
+                message: `${currentUser.username || currentUser.full_name} a accepté votre demande.`
             });
 
             loadData();
@@ -213,7 +212,7 @@ export default function FriendsManager() {
                 status: 'pending'
             });
 
-            await base44.entities.Notification.create({
+            await base44.functions.invoke('sendNotification', {
                 recipient_id: challengeTarget.id,
                 type: "game",
                 title: "Défi reçu",
