@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Globe } from "lucide-react";
 
 const languages = [
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'en', name: 'English', flag: '🇺🇸' },
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
@@ -23,15 +24,20 @@ export default function LanguageSwitcher({ variant = "default" }) {
 
   if (variant === "minimal") {
       return (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-center">
             {languages.map(lang => (
                 <button
                     key={lang.code}
                     onClick={() => changeLanguage(lang.code)}
-                    className={`text-xl hover:scale-110 transition-transform ${language === lang.code ? 'opacity-100' : 'opacity-50 grayscale hover:grayscale-0'}`}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-sm transition-all ${
+                        language === lang.code 
+                        ? 'bg-[#e8dcc5] text-[#4a3728] font-bold shadow-sm scale-105' 
+                        : 'text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white opacity-80'
+                    }`}
                     title={lang.name}
                 >
-                    {lang.flag}
+                    <span className="text-lg">{lang.flag}</span>
+                    <span className="uppercase text-xs">{lang.code}</span>
                 </button>
             ))}
         </div>
