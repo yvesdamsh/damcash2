@@ -43,7 +43,7 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                 
                 {league.status === 'active' && (
                     <div className="bg-blue-50 p-2 rounded text-xs text-blue-800 mt-2">
-                        <span className="font-bold">{t('leagues.promotion')}</span> Top 15% • <span className="font-bold">{t('leagues.relegation')}</span> Bottom 15%
+                        <span className="font-bold">{t('leagues.promotion')}</span> {t('league.promotion_desc')} • <span className="font-bold">{t('leagues.relegation')}</span> {t('league.relegation_desc')}
                     </div>
                 )}
 
