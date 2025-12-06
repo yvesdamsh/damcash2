@@ -33,6 +33,10 @@ Deno.serve(async (req) => {
     socket.gameId = gameId;
     socket.user = user;
 
+    // Rate Limiter
+    const RATE_LIMIT_MS = 200;
+    let lastMessageTime = 0;
+
     socket.onopen = () => {
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
