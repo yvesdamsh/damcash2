@@ -89,7 +89,7 @@ export default function Academy() {
                                     <CardDescription className="line-clamp-2">{lesson.description}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12]" onClick={() => navigate(`/Lesson/${lesson.id}`)}>
+                                    <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12]" onClick={() => navigate(`/Lesson?id=${lesson.id}`)}>
                                         {t('academy.start_lesson')} <ChevronRight className="w-4 h-4 ml-2" />
                                     </Button>
                                 </CardContent>
@@ -106,7 +106,7 @@ export default function Academy() {
                 <TabsContent value="puzzles" className="mt-6">
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {puzzles.length > 0 ? puzzles.map(puzzle => (
-                            <Card key={puzzle.id} className="border-[#d4c5b0] hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => navigate(`/Puzzle/${puzzle.id}`)}>
+                            <Card key={puzzle.id} className="border-[#d4c5b0] hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => navigate(`/Puzzle?id=${puzzle.id}`)}>
                                 <CardContent className="p-4 flex flex-col items-center text-center">
                                     <Puzzle className="w-8 h-8 text-[#b8860b] mb-3" />
                                     <h3 className="font-bold text-[#4a3728] mb-1">{puzzle.title || 'Problème Tactique'}</h3>

@@ -20,6 +20,7 @@ import ReplayCenter from './pages/ReplayCenter';
 import Shop from './pages/Shop';
 import Academy from './pages/Academy';
 import AdminDashboard from './pages/AdminDashboard';
+import Lesson from './pages/Lesson';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +47,7 @@ export const PAGES = {
     "Shop": Shop,
     "Academy": Academy,
     "AdminDashboard": AdminDashboard,
+    "Lesson": Lesson,
 }
 
 export const pagesConfig = {
