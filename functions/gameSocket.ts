@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
             connections.set(gameId, new Set());
         }
         connections.get(gameId).add(socket);
+        
+        // Send immediate state sync request if needed
+        // Or rely on client to fetch initial state
     };
 
     socket.onmessage = async (event) => {

@@ -278,6 +278,9 @@ export default function Game() {
             }
         };
         fetchGame();
+        // Poll for updates every 5 seconds to fix potential sync issues
+        const interval = setInterval(fetchGame, 5000);
+        return () => clearInterval(interval);
     }, [id]);
 
     // Robust WebSocket Connection
@@ -1394,7 +1397,12 @@ export default function Game() {
                 />
 
                 {/* Board Area - Centered and Natural Size */}
-                <div className="flex justify-center w-full">
+                <div className="flex flex-col items-center w-full">
+                    {game && (
+                        <div className="mb-2 text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138]">
+                            Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}
+                        </div>
+                    )}
                     <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0">
                             {game.game_type === 'checkers' 
                             ? <CheckerBoard 
