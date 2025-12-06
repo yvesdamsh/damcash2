@@ -5,7 +5,7 @@ import { ArrowRight, Clock, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 
-export default function RejoinGameDialog({ games, open, onOpenChange }) {
+export default function RejoinGameDialog({ games, open, onOpenChange, currentUser }) {
     const navigate = useNavigate();
     const { t } = useLanguage();
 
@@ -38,7 +38,7 @@ export default function RejoinGameDialog({ games, open, onOpenChange }) {
                                 </span>
                                 <span className="text-xs text-[#6b5138] flex items-center gap-1 mt-1">
                                     <User className="w-3 h-3" />
-                                    vs {game.white_player_name === 'Vous' ? game.black_player_name : game.white_player_name}
+                                    vs {currentUser && game.white_player_id === currentUser.id ? game.black_player_name : game.white_player_name}
                                 </span>
                             </div>
                             <Button size="sm" className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">

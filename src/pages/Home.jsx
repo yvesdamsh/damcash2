@@ -120,7 +120,10 @@ export default function Home() {
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
             
-            const active = [...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
+            // Deduplicate games (in case user is both white and black, e.g. solo)
+            const allGames = [...myGamesWhite, ...myGamesBlack];
+            const uniqueGames = Array.from(new Map(allGames.map(g => [g.id, g])).values());
+            const active = uniqueGames.sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
             setInvitations(myInvites);
             
@@ -448,7 +451,8 @@ export default function Home() {
             <RejoinGameDialog 
                 games={activeGames} 
                 open={rejoinOpen} 
-                onOpenChange={setRejoinOpen} 
+                onOpenChange={setRejoinOpen}
+                currentUser={user}
             />
 
             {/* Searching Overlay */}
