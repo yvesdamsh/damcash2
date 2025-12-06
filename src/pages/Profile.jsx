@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon, ShoppingBag, LogOut } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import { fr } from 'date-fns/locale';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 
 export default function Profile() {
+    const { t, formatDate } = useLanguage();
     const [user, setUser] = useState(null);
     const [isOwnProfile, setIsOwnProfile] = useState(false);
     const [stats, setStats] = useState(null);
@@ -57,46 +59,41 @@ export default function Profile() {
         wood: "border-[#5c4033] ring-4 ring-[#8b5a2b]"
     };
 
+    // Badges logic remains untranslated for system logic, but notifications should ideally use keys or be generic
+    // For now, keeping system logic as is to avoid breaking complex logic, assuming backend keys or static strings for badge names
     const checkAndAwardBadges = async (currentUser, currentStats) => {
         const newBadges = [];
         const existingBadges = await base44.entities.UserBadge.filter({ user_id: currentUser.id });
         const hasBadge = (name) => existingBadges.some(b => b.name === name);
 
-        // 1. Games Played
         if ((currentStats.games_played || 0) >= 10 && !hasBadge('Débutant Motivé')) {
             newBadges.push({ name: 'Débutant Motivé', icon: 'Star', description: 'Joué 10 parties' });
         }
         if ((currentStats.games_played || 0) >= 50 && !hasBadge('Vétéran')) {
             newBadges.push({ name: 'Vétéran', icon: 'Shield', description: 'Joué 50 parties' });
         }
-
-        // 2. Wins
         if ((currentStats.wins_checkers || 0) >= 10 && !hasBadge('Maître des Dames')) {
             newBadges.push({ name: 'Maître des Dames', icon: 'Crown', description: '10 Victoires aux Dames' });
         }
         if ((currentStats.wins_chess || 0) >= 10 && !hasBadge('Stratège Échecs')) {
             newBadges.push({ name: 'Stratège Échecs', icon: 'Brain', description: '10 Victoires aux Échecs' });
         }
-
-        // 3. ELO
         if (((currentStats.elo_chess || 0) >= 1500 || (currentStats.elo_checkers || 0) >= 1500) && !hasBadge('Elite 1500')) {
             newBadges.push({ name: 'Elite 1500', icon: 'Trophy', description: 'Atteint 1500 ELO' });
         }
 
-        // Create new badges
         for (const b of newBadges) {
             await base44.entities.UserBadge.create({
                 user_id: currentUser.id,
                 name: b.name,
                 icon: b.icon,
-                tournament_id: 'system', // System awarded
+                tournament_id: 'system',
                 awarded_at: new Date().toISOString()
             });
-            // Notify
              await base44.entities.Notification.create({
                 recipient_id: currentUser.id,
                 type: "success",
-                title: "Nouveau Badge !",
+                title: "Nouveau Badge !", // Keeping hardcoded as system notification
                 message: `Vous avez débloqué le badge : ${b.name}`,
                 link: `/Profile`
             });
@@ -238,23 +235,21 @@ export default function Profile() {
     const checkersGames = (stats.wins_checkers || 0) + (stats.losses_checkers || 0);
     
     const pieData = [
-        { name: 'Victoires', value: totalWins, color: '#16a34a' },
-        { name: 'Défaites', value: totalLosses, color: '#dc2626' },
-        // Draws not explicitly in stats object but can be inferred or just ignored for now
+        { name: t('profile.win') || 'Victoires', value: totalWins, color: '#16a34a' },
+        { name: t('profile.loss') || 'Défaites', value: totalLosses, color: '#dc2626' },
     ];
 
     const gameModeData = [
-        { name: 'Échecs', value: chessGames, color: '#2563eb' },
-        { name: 'Dames', value: checkersGames, color: '#d97706' }
+        { name: t('game.chess'), value: chessGames, color: '#2563eb' },
+        { name: t('game.checkers'), value: checkersGames, color: '#d97706' }
     ];
 
-    // Graph Data Preparation
     const chartData = gameHistory.slice().reverse().map((g, i) => ({
         name: i + 1,
         elo: g.white_player_id === user.id ? g.white_player_elo : g.black_player_elo,
-        date: format(new Date(g.updated_date), 'd MMM'),
-        game: g.game_type === 'chess' ? 'Échecs' : 'Dames'
-    })).filter(d => d.elo); // Only keep games where elo was recorded
+        date: formatDate(g.updated_date, 'd MMM'),
+        game: g.game_type === 'chess' ? t('game.chess') : t('game.checkers')
+    })).filter(d => d.elo);
 
     return (
         <div className="max-w-5xl mx-auto px-0 sm:px-4 pb-20">
@@ -279,7 +274,7 @@ export default function Profile() {
                     <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-8 z-20 flex gap-2 flex-wrap justify-end">
                         {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
                             <Button size="sm" variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm h-8 sm:h-10 text-xs sm:text-sm">
-                                <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> Boutique
+                                <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> {t('profile.shop')}
                             </Button>
                         )}
                         
@@ -287,12 +282,12 @@ export default function Profile() {
                             <Dialog open={isEditing} onOpenChange={setIsEditing}>
                                 <DialogTrigger asChild>
                                     <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                                        <Edit className="w-4 h-4 mr-2" /> Modifier
+                                        <Edit className="w-4 h-4 mr-2" /> {t('profile.edit')}
                                     </Button>
                                 </DialogTrigger>
                             <DialogContent className="sm:max-w-[500px] bg-[#fdfbf7] border-[#d4c5b0]">
                                 <DialogHeader>
-                                    <DialogTitle className="text-[#4a3728]">Modifier le profil</DialogTitle>
+                                    <DialogTitle className="text-[#4a3728]">{t('profile.edit_title')}</DialogTitle>
                                 </DialogHeader>
                                 <div className="grid gap-6 py-4">
                                     <div className="flex flex-col items-center gap-4">
@@ -316,43 +311,43 @@ export default function Profile() {
                                                     <img src={editForm.banner_url} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                                        <Layout className="w-6 h-6 mr-2" /> Pas de bannière
+                                                        <Layout className="w-6 h-6 mr-2" /> {t('profile.no_banner')}
                                                     </div>
                                                 )}
                                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                                    <Camera className="w-6 h-6 text-white mr-2" /> Changer
+                                                    <Camera className="w-6 h-6 text-white mr-2" /> {t('profile.change_banner')}
                                                 </div>
                                                 <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'banner_url')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                            </div>
-                                        </div>
+                                                </div>
+                                                </div>
 
-                                        {uploading && <span className="text-xs text-blue-500 animate-pulse text-center">Téléchargement...</span>}
-                                    </div>
-                                    <div className="grid gap-4">
+                                                {uploading && <span className="text-xs text-blue-500 animate-pulse text-center">{t('profile.uploading')}</span>}
+                                                </div>
+                                                <div className="grid gap-4">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="username" className="text-[#6b5138]">Nom d'utilisateur</Label>
+                                            <Label htmlFor="username" className="text-[#6b5138]">{t('profile.username')}</Label>
                                             <Input id="username" value={editForm.username} onChange={(e) => setEditForm({...editForm, username: e.target.value})} className="border-[#d4c5b0] focus:ring-[#4a3728]" />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label htmlFor="name" className="text-[#6b5138]">Nom complet</Label>
+                                            <Label htmlFor="name" className="text-[#6b5138]">{t('profile.fullname')}</Label>
                                             <Input id="name" value={editForm.full_name} onChange={(e) => setEditForm({...editForm, full_name: e.target.value})} className="border-[#d4c5b0] focus:ring-[#4a3728]" />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label htmlFor="bio" className="text-[#6b5138]">Biographie</Label>
+                                            <Label htmlFor="bio" className="text-[#6b5138]">{t('profile.bio')}</Label>
                                             <textarea 
                                                 id="bio" 
                                                 className="flex min-h-[100px] w-full rounded-md border border-[#d4c5b0] bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#4a3728] disabled:cursor-not-allowed disabled:opacity-50"
                                                 value={editForm.bio} 
                                                 onChange={(e) => setEditForm({...editForm, bio: e.target.value})} 
-                                                placeholder="Parlez-nous de vous, de votre expérience aux échecs ou aux dames..." 
+                                                placeholder={t('profile.bio_placeholder')} 
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-2">
-                                                <Label>Thème Profil</Label>
+                                                <Label>{t('profile.theme')}</Label>
                                                 <Select value={editForm.profile_theme} onValueChange={(v) => setEditForm({...editForm, profile_theme: v})}>
                                                     <SelectTrigger className="border-[#d4c5b0]">
-                                                        <SelectValue placeholder="Thème" />
+                                                        <SelectValue placeholder={t('profile.theme')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         <SelectItem value="default">Classique (Bois)</SelectItem>
@@ -364,13 +359,13 @@ export default function Profile() {
                                                 </Select>
                                             </div>
                                             <div className="grid gap-2">
-                                                <Label>Cadre Avatar</Label>
+                                                <Label>{t('profile.frame')}</Label>
                                                 <Select value={editForm.avatar_frame} onValueChange={(v) => setEditForm({...editForm, avatar_frame: v})}>
                                                     <SelectTrigger className="border-[#d4c5b0]">
-                                                        <SelectValue placeholder="Cadre" />
+                                                        <SelectValue placeholder={t('profile.frame')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="none">Aucun</SelectItem>
+                                                        <SelectItem value="none">{t('common.none')}</SelectItem>
                                                         <SelectItem value="gold">Cercle d'Or</SelectItem>
                                                         <SelectItem value="silver">Argenté</SelectItem>
                                                         <SelectItem value="neon">Néon Cyber</SelectItem>
@@ -382,9 +377,9 @@ export default function Profile() {
                                     </div>
                                 </div>
                                 <div className="flex justify-end gap-2">
-                                    <Button variant="outline" onClick={() => setIsEditing(false)} className="border-[#d4c5b0] text-[#6b5138]">Annuler</Button>
+                                    <Button variant="outline" onClick={() => setIsEditing(false)} className="border-[#d4c5b0] text-[#6b5138]">{t('common.cancel')}</Button>
                                     <Button onClick={handleSaveProfile} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">
-                                        <Save className="w-4 h-4 mr-2" /> Enregistrer
+                                        <Save className="w-4 h-4 mr-2" /> {t('common.save')}
                                     </Button>
                                 </div>
                             </DialogContent>
@@ -395,12 +390,12 @@ export default function Profile() {
                             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                                 <DialogTrigger asChild>
                                     <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
-                                        <Palette className="w-4 h-4 mr-2" /> Personnaliser
+                                        <Palette className="w-4 h-4 mr-2" /> {t('profile.customize')}
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[400px] bg-[#fdfbf7] border-[#d4c5b0]">
                                     <DialogHeader>
-                                        <DialogTitle className="text-[#4a3728]">Personnalisation</DialogTitle>
+                                        <DialogTitle className="text-[#4a3728]">{t('profile.customize')}</DialogTitle>
                                     </DialogHeader>
                                     <GameSettings user={user} onUpdate={() => {
                                         base44.auth.me().then(setUser);
@@ -433,18 +428,18 @@ export default function Profile() {
                             <div className="mb-0 sm:mb-2 text-center md:text-left w-full md:w-auto flex flex-col items-center md:items-start">
                                 <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm">{user.username || user.full_name || 'Joueur'}</h1>
                                 
-                                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 mt-1">
+                                <div className="flex items-center justify-center md:justify-start gap-2 mb-2 mt-1 flex-wrap">
                                     <div className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-bold border border-yellow-200">
-                                        Niveau {user.level || 1}
+                                        {t('shop.locked_level', {level: user.level || 1})}
                                     </div>
                                     <div className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-bold border border-blue-200">
                                         XP: {user.xp || 0}
                                     </div>
                                     <div className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-bold border border-green-200 flex items-center gap-1">
-                                        <Shield className="w-3 h-3" /> Dames: {stats.elo_checkers || 1200}
+                                        <Shield className="w-3 h-3" /> {t('game.checkers')}: {stats.elo_checkers || 1200}
                                     </div>
                                     <div className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-bold border border-purple-200 flex items-center gap-1">
-                                        <Crown className="w-3 h-3" /> Échecs: {stats.elo_chess || 1200}
+                                        <Crown className="w-3 h-3" /> {t('game.chess')}: {stats.elo_chess || 1200}
                                     </div>
                                     <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden border border-gray-300">
                                         <div 
@@ -464,7 +459,7 @@ export default function Profile() {
                         <div className="flex gap-2 sm:gap-3 mt-2 md:mt-16 justify-center md:justify-start w-full md:w-auto flex-wrap">
                             <Link to="/Messages">
                                 <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md h-9 sm:h-10 text-sm">
-                                    <MessageSquare className="w-4 h-4 mr-2" /> Messages
+                                    <MessageSquare className="w-4 h-4 mr-2" /> {t('profile.messages')}
                                 </Button>
                             </Link>
                             {isOwnProfile && (
@@ -480,7 +475,7 @@ export default function Profile() {
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white shadow-md"
                                 >
-                                    <LogOut className="w-4 h-4 mr-2" /> Déconnexion
+                                    <LogOut className="w-4 h-4 mr-2" /> {t('nav.logout')}
                                 </Button>
                             )}
                             {badges.length > 0 && (
@@ -497,62 +492,61 @@ export default function Profile() {
 
                     <Tabs defaultValue="overview" className="mt-12">
                         <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 h-auto bg-[#f5f0e6] mb-8 gap-1 p-1">
-                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Vue d'ensemble</TabsTrigger>
-                            <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Statistiques</TabsTrigger>
-                            <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Historique</TabsTrigger>
-                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Badges</TabsTrigger>
+                            <TabsTrigger value="overview" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_overview')}</TabsTrigger>
+                            <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_stats')}</TabsTrigger>
+                            <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_history')}</TabsTrigger>
+                            <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_badges')}</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="overview">
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                                 <div className="lg:col-span-2 space-y-6">
                                     <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm">
-                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4">Détails du joueur</h3>
+                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4">{t('profile.details')}</h3>
                                         <div className="space-y-3 text-sm text-gray-700">
                                             <div className="flex items-center gap-2">
                                                 <Globe className="w-4 h-4 text-gray-400" />
-                                                <span>Pays: <span className="font-medium">{user.country || 'International'} 🌍</span></span>
+                                                <span>{t('profile.country')}: <span className="font-medium">{user.country || 'International'} 🌍</span></span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <CalendarIcon className="w-4 h-4 text-gray-400" />
-                                                <span>Membre depuis: <span className="font-medium">{format(new Date(user.created_date || Date.now()), 'd MMMM yyyy', { locale: fr })}</span></span>
+                                                <span>{t('profile.member_since')}: <span className="font-medium">{formatDate(user.created_date || Date.now())}</span></span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Clock className="w-4 h-4 text-gray-400" />
-                                                <span>Actif: <span className="font-medium text-green-600">En ligne</span></span>
+                                                <span>{t('profile.active')}: <span className="font-medium text-green-600">{t('common.online')}</span></span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Activity className="w-4 h-4 text-gray-400" />
-                                                <span>Taux de complétion: <span className="font-medium">100%</span></span>
+                                                <span>{t('profile.completion')}: <span className="font-medium">100%</span></span>
                                             </div>
                                             <div className="pt-2 border-t border-gray-100 mt-2">
-                                                <p className="text-gray-500 mb-1">Temps total à jouer:</p>
-                                                <p className="font-mono font-bold text-[#6b5138]">{Math.floor((stats.games_played * 15) / 60)} heures estimées</p>
+                                                <p className="text-gray-500 mb-1">{t('profile.total_time')}</p>
+                                                <p className="font-mono font-bold text-[#6b5138]">{Math.floor((stats.games_played * 15) / 60)} {t('profile.hours_estimated')}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-6">
-                                    {/* Favorite Games */}
                                     <div className="bg-white/50 rounded-xl p-6 border border-[#d4c5b0]">
-                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> Parties Favorites</h3>
+                                        <h3 className="text-lg font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Star className="w-5 h-5 text-yellow-500 fill-yellow-500" /> {t('profile.favorite_games')}</h3>
                                         {favoriteGames.length > 0 ? (
                                             <div className="space-y-3">
                                                 {favoriteGames.map(game => (
                                                     <div key={game.id} onClick={() => navigate(`/Game?id=${game.id}`)} className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-[#fdfbf7] cursor-pointer border border-transparent hover:border-[#d4c5b0] transition-all">
                                                         <div>
-                                                            <div className="font-bold text-[#4a3728]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'}</div>
+                                                            <div className="font-bold text-[#4a3728]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div>
                                                             <div className="text-xs text-gray-500">vs {game.white_player_id === user.id ? game.black_player_name : game.white_player_name}</div>
                                                         </div>
-                                                        <Button size="sm" variant="ghost" className="text-[#6b5138] hover:text-[#4a3728]">Revoir</Button>
+                                                        <Button size="sm" variant="ghost" className="text-[#6b5138] hover:text-[#4a3728]">{t('profile.review')}</Button>
                                                     </div>
                                                 ))}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                                                 <Star className="w-8 h-8 mb-2 opacity-20" />
-                                                <p>Aucune partie favorite</p>
+                                                <p>{t('profile.no_favorites')}</p>
                                             </div>
                                         )}
                                     </div>
@@ -566,7 +560,7 @@ export default function Profile() {
                                 <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
-                                            <TrendingUp className="w-5 h-5 text-green-600" /> Progression ELO
+                                            <TrendingUp className="w-5 h-5 text-green-600" /> {t('profile.elo_progression')}
                                         </CardTitle>
                                         <div className="flex gap-2 text-xs">
                                             <Button variant="ghost" size="sm" className="h-7 px-2 bg-white border shadow-sm text-[#6b5138]">1m</Button>
@@ -600,27 +594,22 @@ export default function Profile() {
                                         </ResponsiveContainer>
                                     ) : (
                                         <div className="flex items-center justify-center h-full text-gray-400">
-                                            <p>Jouez plus de parties pour voir votre progression !</p>
+                                            <p>{t('profile.play_more')}</p>
                                         </div>
                                     )}
                                 </CardContent>
                             </Card>
 
-                            {/* Detailed Info Grid */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                                {/* Detailed Stats Section - Moved to Stats Tab, but kept a summary here if needed. 
-                                    Actually, we moved charts to 'stats' tab. 
-                                    So we just keep the structure clean here.
-                                */}
                             </div>
                         </TabsContent>
 
                         <TabsContent value="stats">
                             <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm mb-6">
-                                <h3 className="text-lg font-bold text-[#4a3728] mb-4">Répartition des Performances</h3>
+                                <h3 className="text-lg font-bold text-[#4a3728] mb-4">{t('profile.performance_dist')}</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                                     <div className="h-60 flex flex-col items-center justify-center">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">Ratio Victoires/Défaites</h4>
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">{t('profile.ratio')}</h4>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie 
@@ -640,7 +629,7 @@ export default function Profile() {
                                         </ResponsiveContainer>
                                     </div>
                                     <div className="h-60 flex flex-col items-center justify-center">
-                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">Modes de jeu préférés</h4>
+                                        <h4 className="text-sm font-bold text-gray-500 uppercase mb-2">{t('profile.preferred_modes')}</h4>
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie 
@@ -668,11 +657,11 @@ export default function Profile() {
                                 <Card className="bg-white border-[#d4c5b0] shadow-sm hover:shadow-md transition-shadow">
                                     <CardContent className="p-6 flex items-center justify-between">
                                         <div>
-                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">Dames</p>
+                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">{t('game.checkers')}</p>
                                             <div className="text-4xl font-black text-[#4a3728]">{stats.elo_checkers || 1200}</div>
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">Rank #{ranks.checkers}</span>
-                                                <span className="text-xs text-gray-400">{stats.games_played_checkers || 0} parties</span>
+                                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">{t('profile.rank')} #{ranks.checkers}</span>
+                                                <span className="text-xs text-gray-400">{stats.games_played_checkers || 0} {t('profile.games')}</span>
                                             </div>
                                         </div>
                                         <div className="w-16 h-16 bg-[#f5f0e6] rounded-full flex items-center justify-center">
@@ -683,11 +672,11 @@ export default function Profile() {
                                 <Card className="bg-white border-[#d4c5b0] shadow-sm hover:shadow-md transition-shadow">
                                     <CardContent className="p-6 flex items-center justify-between">
                                         <div>
-                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">Échecs</p>
+                                            <p className="text-gray-500 text-sm font-bold uppercase tracking-wide mb-1">{t('game.chess')}</p>
                                             <div className="text-4xl font-black text-[#4a3728]">{stats.elo_chess || 1200}</div>
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-bold">Rank #{ranks.chess}</span>
-                                                <span className="text-xs text-gray-400">{stats.games_played_chess || 0} parties</span>
+                                                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-bold">{t('profile.rank')} #{ranks.chess}</span>
+                                                <span className="text-xs text-gray-400">{stats.games_played_chess || 0} {t('profile.games')}</span>
                                             </div>
                                         </div>
                                         <div className="w-16 h-16 bg-[#f5f0e6] rounded-full flex items-center justify-center">
@@ -704,19 +693,19 @@ export default function Profile() {
                                 {gameHistory.length === 0 ? (
                                     <div className="p-12 text-center text-gray-500">
                                         <History className="w-12 h-12 mx-auto opacity-20 mb-2" />
-                                        <p>Aucun historique disponible.</p>
-                                        <Link to="/" className="text-[#6b5138] hover:underline font-bold mt-2 inline-block">Jouer une partie !</Link>
+                                        <p>{t('profile.no_history')}</p>
+                                        <Link to="/" className="text-[#6b5138] hover:underline font-bold mt-2 inline-block">{t('profile.play_one')}</Link>
                                     </div>
                                 ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm text-left">
                                             <thead className="text-xs text-gray-500 uppercase bg-gray-50">
                                                 <tr>
-                                                    <th className="px-6 py-3">Date</th>
-                                                    <th className="px-6 py-3">Jeu</th>
-                                                    <th className="px-6 py-3">Adversaire</th>
-                                                    <th className="px-6 py-3 text-center">Résultat</th>
-                                                    <th className="px-6 py-3 text-right">Action</th>
+                                                    <th className="px-6 py-3">{t('profile.date')}</th>
+                                                    <th className="px-6 py-3">{t('profile.game')}</th>
+                                                    <th className="px-6 py-3">{t('profile.opponent')}</th>
+                                                    <th className="px-6 py-3 text-center">{t('profile.result')}</th>
+                                                    <th className="px-6 py-3 text-right">{t('profile.action')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -728,26 +717,26 @@ export default function Profile() {
                                                     return (
                                                         <tr key={game.id} className="bg-white border-b hover:bg-gray-50">
                                                             <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
-                                                                {format(new Date(game.updated_date), 'dd MMM yyyy', { locale: fr })}
+                                                                {formatDate(game.updated_date, 'dd MMM yyyy')}
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <span className={`px-2 py-1 rounded text-xs font-bold ${game.game_type === 'chess' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                                    {game.game_type === 'chess' ? 'Échecs' : 'Dames'}
+                                                                    {game.game_type === 'chess' ? t('game.chess') : t('game.checkers')}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-6 py-4">{opponentName || 'Anonyme'}</td>
+                                                            <td className="px-6 py-4">{opponentName || t('common.anonymous')}</td>
                                                             <td className="px-6 py-4 text-center">
                                                                 {isDraw ? (
-                                                                    <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">Nul</span>
+                                                                    <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{t('profile.draw')}</span>
                                                                 ) : isWinner ? (
-                                                                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Victoire</span>
+                                                                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">{t('profile.win')}</span>
                                                                 ) : (
-                                                                    <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">Défaite</span>
+                                                                    <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">{t('profile.loss')}</span>
                                                                 )}
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
                                                                 <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)}>
-                                                                    <History className="w-3 h-3 mr-1" /> Revoir
+                                                                    <History className="w-3 h-3 mr-1" /> {t('profile.review')}
                                                                 </Button>
                                                             </td>
                                                         </tr>
@@ -775,15 +764,15 @@ export default function Profile() {
                                          <h3 className="font-bold text-[#4a3728] mb-1">{badge.name}</h3>
                                          <p className="text-xs text-gray-500 mb-2">{badge.description || 'Récompense prestigieuse'}</p>
                                          <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                                             Obtenu le {format(new Date(badge.awarded_at), 'dd/MM/yyyy')}
+                                             {t('profile.badge_obtained')} {formatDate(badge.awarded_at, 'dd/MM/yyyy')}
                                          </p>
                                      </CardContent>
                                  </Card>
                              )) : (
                                  <div className="col-span-full text-center py-12 text-gray-500 bg-white/50 rounded-xl border border-dashed border-gray-300">
                                      <Award className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                                     <p>Aucun badge débloqué pour le moment.</p>
-                                     <p className="text-sm">Jouez des parties pour gagner des récompenses !</p>
+                                     <p>{t('profile.no_badges')}</p>
+                                     <p className="text-sm">{t('profile.earn_badges')}</p>
                                  </div>
                              )}
                          </div>

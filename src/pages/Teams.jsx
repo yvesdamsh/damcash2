@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Plus, Search, Shield } from 'lucide-react';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 export default function Teams() {
+    const { t } = useLanguage();
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -40,8 +42,8 @@ export default function Teams() {
     };
 
     const handleCreateTeam = async () => {
-        if (!newTeamName) return toast.error("Nom requis");
-        if (!user) return toast.error("Connectez-vous");
+        if (!newTeamName) return toast.error(t('teams.error_name'));
+        if (!user) return toast.error(t('teams.error_login'));
 
         try {
             // 1. Create Team
@@ -63,12 +65,12 @@ export default function Teams() {
                 joined_at: new Date().toISOString()
             });
 
-            toast.success("Équipe créée !");
+            toast.success(t('teams.success_create'));
             setIsCreateOpen(false);
             fetchTeams();
         } catch (e) {
             console.error(e);
-            toast.error("Erreur création équipe");
+            toast.error(t('teams.error_create'));
         }
     };
 
@@ -81,43 +83,43 @@ export default function Teams() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
                     <h1 className="text-4xl font-black text-[#4a3728] flex items-center gap-3" style={{ fontFamily: 'Georgia, serif' }}>
-                        <Shield className="w-10 h-10 text-[#d45c30]" /> ÉQUIPES
+                        <Shield className="w-10 h-10 text-[#d45c30]" /> {t('teams.title')}
                     </h1>
-                    <p className="text-[#6b5138]">Rejoignez un clan ou créez le vôtre pour la gloire !</p>
+                    <p className="text-[#6b5138]">{t('teams.subtitle')}</p>
                 </div>
 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
                         <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
-                            <Plus className="w-5 h-5" /> Créer une Équipe
+                            <Plus className="w-5 h-5" /> {t('teams.create_btn')}
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0]">
                         <DialogHeader>
-                            <DialogTitle>Nouvelle Équipe</DialogTitle>
+                            <DialogTitle>{t('teams.create_title')}</DialogTitle>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
                             <div className="space-y-2">
-                                <Label>Nom de l'équipe</Label>
+                                <Label>{t('teams.form_name')}</Label>
                                 <Input 
                                     value={newTeamName}
                                     onChange={e => setNewTeamName(e.target.value)}
-                                    placeholder="Les Lions de l'Atlas"
+                                    placeholder="The Atlas Lions"
                                     className="border-[#d4c5b0]"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label>Description</Label>
+                                <Label>{t('teams.form_desc')}</Label>
                                 <Input 
                                     value={newTeamDesc}
                                     onChange={e => setNewTeamDesc(e.target.value)}
-                                    placeholder="Une devise ou une courte description..."
+                                    placeholder="..."
                                     className="border-[#d4c5b0]"
                                 />
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={handleCreateTeam} className="bg-[#4a3728]">Créer</Button>
+                            <Button onClick={handleCreateTeam} className="bg-[#4a3728]">{t('teams.create_submit')}</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -128,13 +130,13 @@ export default function Teams() {
                 <Input 
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher une équipe..."
+                    placeholder={t('teams.search_placeholder')}
                     className="border-none shadow-none focus-visible:ring-0"
                 />
             </div>
 
             {loading ? (
-                <div className="text-center p-8">Chargement...</div>
+                <div className="text-center p-8">{t('common.loading')}</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredTeams.map(team => (
@@ -147,17 +149,17 @@ export default function Teams() {
                                     <div>
                                         <CardTitle className="text-xl text-[#4a3728]">{team.name}</CardTitle>
                                         <div className="text-xs text-gray-500">
-                                            Créé le {new Date(team.created_at).toLocaleDateString()}
+                                            {t('teams.created_on')} {new Date(team.created_at).toLocaleDateString()}
                                         </div>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-gray-600 text-sm line-clamp-2 h-10">
-                                        {team.description || "Aucune description"}
+                                        {team.description || t('common.none')}
                                     </p>
                                     <div className="mt-4 flex gap-4 text-xs font-bold text-[#6b5138]">
-                                        <div>🏆 {team.stats?.tournament_wins || 0} Titres</div>
-                                        <div>⚔️ {team.stats?.wins || 0} Victoires</div>
+                                        <div>🏆 {team.stats?.tournament_wins || 0} {t('teams.titles')}</div>
+                                        <div>⚔️ {team.stats?.wins || 0} {t('teams.wins')}</div>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -165,7 +167,7 @@ export default function Teams() {
                     ))}
                     {filteredTeams.length === 0 && (
                         <div className="col-span-full text-center p-12 text-gray-400 border-2 border-dashed rounded-xl">
-                            Aucune équipe trouvée.
+                            {t('teams.no_teams')}
                         </div>
                     )}
                 </div>

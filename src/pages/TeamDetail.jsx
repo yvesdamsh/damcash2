@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, Link } from 'react-router-dom';
+import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Shield, Calendar, ArrowLeft, Check, X, Crown } from 'lucide-react';
@@ -9,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 
 export default function TeamDetail() {
+    const { t } = useLanguage();
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
@@ -46,7 +48,7 @@ export default function TeamDetail() {
     const pendingMembers = members.filter(m => m.status === 'pending');
 
     const handleJoin = async () => {
-        if (!user) return toast.error("Connectez-vous");
+        if (!user) return toast.error(t('teams.error_login'));
         try {
             const newMember = await base44.entities.TeamMember.create({
                 team_id: team.id,
@@ -58,16 +60,16 @@ export default function TeamDetail() {
                 joined_at: new Date().toISOString()
             });
             setMembers([...members, newMember]);
-            toast.success("Demande envoyée !");
+            toast.success(t('team.success_join'));
         } catch (e) {
-            toast.error("Erreur lors de la demande");
+            toast.error(t('common.error'));
         }
     };
 
     const handleLeave = async () => {
         if (!myMembership) return;
         if (isLeader && activeMembers.length > 1) {
-            return toast.error("Le chef ne peut pas quitter s'il reste des membres. Transférez le leadership ou dissolvez l'équipe.");
+            return toast.error(t('team.error_leader_leave'));
         }
         try {
             await base44.entities.TeamMember.delete(myMembership.id);
@@ -78,9 +80,9 @@ export default function TeamDetail() {
                 return;
             }
             setMembers(members.filter(m => m.id !== myMembership.id));
-            toast.success("Vous avez quitté l'équipe");
+            toast.success(t('team.success_leave'));
         } catch (e) {
-            toast.error("Erreur");
+            toast.error(t('common.error'));
         }
     };
 
@@ -89,25 +91,25 @@ export default function TeamDetail() {
             if (action === 'accept') {
                 await base44.entities.TeamMember.update(memberId, { status: 'active' });
                 setMembers(members.map(m => m.id === memberId ? { ...m, status: 'active' } : m));
-                toast.success("Membre accepté");
+                toast.success(t('team.success_accept'));
             } else if (action === 'kick' || action === 'reject') {
                 await base44.entities.TeamMember.delete(memberId);
                 setMembers(members.filter(m => m.id !== memberId));
-                toast.success(action === 'kick' ? "Membre exclu" : "Demande rejetée");
+                toast.success(action === 'kick' ? t('team.success_kick') : t('team.success_reject'));
             }
         } catch (e) {
-            toast.error("Erreur action");
+            toast.error(t('common.error'));
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Chargement...</div>;
-    if (!team) return <div className="p-8 text-center">Équipe introuvable</div>;
+    if (loading) return <div className="p-8 text-center">{t('common.loading')}</div>;
+    if (!team) return <div className="p-8 text-center">Not Found</div>;
 
     return (
         <div className="max-w-5xl mx-auto p-4 space-y-6">
             <Link to="/Teams">
                 <Button variant="ghost" className="gap-2 text-gray-600">
-                    <ArrowLeft className="w-4 h-4" /> Retour aux équipes
+                    <ArrowLeft className="w-4 h-4" /> {t('team.back')}
                 </Button>
             </Link>
 
@@ -126,26 +128,26 @@ export default function TeamDetail() {
                             <p className="text-gray-600 mt-1">{team.description}</p>
                             <div className="flex gap-4 mt-4 text-sm text-gray-500">
                                 <div className="flex items-center gap-1">
-                                    <Users className="w-4 h-4" /> {activeMembers.length} Membres
+                                    <Users className="w-4 h-4" /> {activeMembers.length} {t('team.members_count')}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" /> Créé le {new Date(team.created_at).toLocaleDateString()}
+                                    <Calendar className="w-4 h-4" /> {t('team.created_on')} {new Date(team.created_at).toLocaleDateString()}
                                 </div>
                             </div>
                         </div>
                         <div>
                             {!myMembership && (
                                 <Button onClick={handleJoin} className="bg-green-600 hover:bg-green-700">
-                                    Rejoindre l'équipe
+                                    {t('team.join')}
                                 </Button>
                             )}
                             {myMembership && myMembership.status === 'active' && (
                                 <Button onClick={handleLeave} variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
-                                    Quitter
+                                    {t('team.leave')}
                                 </Button>
                             )}
                             {myMembership && myMembership.status === 'pending' && (
-                                <Button disabled variant="secondary">Demande envoyée</Button>
+                                <Button disabled variant="secondary">{t('team.pending')}</Button>
                             )}
                         </div>
                     </div>
@@ -154,9 +156,9 @@ export default function TeamDetail() {
 
             <Tabs defaultValue="members" className="w-full">
                 <TabsList className="bg-[#e8dcc5]">
-                    <TabsTrigger value="members" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Membres</TabsTrigger>
-                    {isLeader && <TabsTrigger value="requests" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Demandes ({pendingMembers.length})</TabsTrigger>}
-                    <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Statistiques</TabsTrigger>
+                    <TabsTrigger value="members" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('team.tab_members')}</TabsTrigger>
+                    {isLeader && <TabsTrigger value="requests" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('team.tab_requests')} ({pendingMembers.length})</TabsTrigger>}
+                    <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('team.tab_stats')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="members" className="mt-6">
@@ -183,7 +185,7 @@ export default function TeamDetail() {
                                         variant="ghost" 
                                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                     >
-                                        Exclure
+                                        {t('team.kick')}
                                     </Button>
                                 )}
                             </Card>
@@ -193,7 +195,7 @@ export default function TeamDetail() {
 
                 <TabsContent value="requests">
                     {pendingMembers.length === 0 ? (
-                        <div className="text-center p-8 text-gray-500">Aucune demande en attente</div>
+                        <div className="text-center p-8 text-gray-500">{t('team.no_requests')}</div>
                     ) : (
                         <div className="grid grid-cols-1 gap-4">
                              {pendingMembers.map(member => (
@@ -207,10 +209,10 @@ export default function TeamDetail() {
                                     </div>
                                     <div className="flex gap-2">
                                         <Button onClick={() => handleAction(member.id, 'accept')} size="sm" className="bg-green-600 hover:bg-green-700">
-                                            <Check className="w-4 h-4 mr-1" /> Accepter
+                                            <Check className="w-4 h-4 mr-1" /> {t('team.accept')}
                                         </Button>
                                         <Button onClick={() => handleAction(member.id, 'reject')} size="sm" variant="outline" className="text-red-600 border-red-200">
-                                            <X className="w-4 h-4 mr-1" /> Refuser
+                                            <X className="w-4 h-4 mr-1" /> {t('team.reject')}
                                         </Button>
                                     </div>
                                 </Card>
@@ -225,15 +227,15 @@ export default function TeamDetail() {
                             <div className="grid grid-cols-3 gap-4 text-center">
                                 <div className="p-4 bg-gray-50 rounded-lg">
                                     <div className="text-2xl font-bold text-[#4a3728]">{team.stats?.wins || 0}</div>
-                                    <div className="text-sm text-gray-500">Victoires</div>
+                                    <div className="text-sm text-gray-500">{t('team.stats_wins')}</div>
                                 </div>
                                 <div className="p-4 bg-gray-50 rounded-lg">
                                     <div className="text-2xl font-bold text-[#4a3728]">{team.stats?.losses || 0}</div>
-                                    <div className="text-sm text-gray-500">Défaites</div>
+                                    <div className="text-sm text-gray-500">{t('team.stats_losses')}</div>
                                 </div>
                                 <div className="p-4 bg-gray-50 rounded-lg">
                                     <div className="text-2xl font-bold text-[#4a3728]">{team.stats?.tournament_wins || 0}</div>
-                                    <div className="text-sm text-gray-500">Tournois Gagnés</div>
+                                    <div className="text-sm text-gray-500">{t('team.stats_tournaments')}</div>
                                 </div>
                             </div>
                         </CardContent>
