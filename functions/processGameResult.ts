@@ -1,10 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { z } from 'npm:zod@^3.24.2';
+
+const gameResultSchema = z.object({
+    gameId: z.string().min(1, "Game ID is required")
+});
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
-    const { gameId } = await req.json();
+    const body = await req.json();
+    
+    const validation = gameResultSchema.safeParse(body);
+    if (!validation.success) {
+        return Response.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
+    }
 
-    if (!gameId) return Response.json({ error: 'Missing gameId' }, { status: 400 });
+    const { gameId } = validation.data;
 
     // Lock logic via check
     const game = await base44.asServiceRole.entities.Game.get(gameId);

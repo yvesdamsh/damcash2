@@ -1,12 +1,21 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { z } from 'npm:zod@^3.24.2';
+
+const sendMessageSchema = z.object({
+    recipientId: z.string().min(1, "Recipient ID is required"),
+    content: z.string().min(1, "Content is required").max(2000, "Content too long")
+});
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
-    const { recipientId, content } = await req.json();
-
-    if (!recipientId || !content) {
-        return Response.json({ error: "Missing parameters" }, { status: 400 });
+    const body = await req.json();
+    
+    const validation = sendMessageSchema.safeParse(body);
+    if (!validation.success) {
+        return Response.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
     }
+
+    const { recipientId, content } = validation.data;
 
     try {
         const user = await base44.auth.me();

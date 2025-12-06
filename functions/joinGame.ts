@@ -1,6 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { z } from 'npm:zod@^3.24.2';
 
 const gameUpdates = new BroadcastChannel('game_updates');
+
+const joinGameSchema = z.object({
+    gameId: z.string().min(1, "Game ID is required")
+});
 
 export default async function handler(req) {
     if (req.method !== 'POST') {
@@ -15,10 +20,14 @@ export default async function handler(req) {
             return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { gameId } = await req.json();
-        if (!gameId) {
-            return Response.json({ error: "Missing gameId" }, { status: 400 });
+        const body = await req.json();
+        const validation = joinGameSchema.safeParse(body);
+
+        if (!validation.success) {
+            return Response.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
         }
+
+        const { gameId } = validation.data;
 
         // Get the game to check status and vacancy
         const game = await base44.entities.Game.get(gameId);

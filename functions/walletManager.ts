@@ -1,9 +1,49 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { z } from 'npm:zod@^3.24.2';
+
+const walletSchema = z.object({
+    action: z.enum(['get_balance', 'deposit', 'pay_entry_fee']),
+    userId: z.string().optional(),
+    amount: z.number().optional(),
+    gameId: z.string().optional()
+}).superRefine((data, ctx) => {
+    if (data.action === 'deposit') {
+        if (data.amount === undefined || data.amount <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Amount must be positive for deposit",
+                path: ["amount"]
+            });
+        }
+    }
+    if (data.action === 'pay_entry_fee') {
+        if (!data.gameId) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Game ID is required for entry fee",
+                path: ["gameId"]
+            });
+        }
+        if (data.amount === undefined || data.amount <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Amount must be positive for entry fee",
+                path: ["amount"]
+            });
+        }
+    }
+});
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
-    const body = await req.json();
-    const { action, userId, amount, gameId } = body;
+    const rawBody = await req.json();
+
+    const validation = walletSchema.safeParse(rawBody);
+    if (!validation.success) {
+        return Response.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
+    }
+
+    const { action, userId, amount, gameId } = validation.data;
 
     // Check Auth (unless service role bypass is safe, but here we prefer secure checks)
     const user = await base44.auth.me();
