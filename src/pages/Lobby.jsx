@@ -334,7 +334,7 @@ export default function Lobby() {
                                                         <span className="text-xs text-gray-400">vs</span>
                                                         <span>{game.black_player_name}</span>
                                                     </div>
-                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} min</div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} {t('common.min')}</div>
                                                 </div>
                                             </div>
                                             <Button onClick={() => navigate(`/Game?id=${game.id}`)} variant="outline" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
@@ -381,7 +381,7 @@ export default function Lobby() {
                                                 </div>
                                                 <div>
                                                     <div className="font-bold text-[#4a3728]">{game.white_player_name} <span className="font-normal text-gray-500">{t('lobby.waiting')}</span></div>
-                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} min</div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} {t('common.min')}</div>
                                                 </div>
                                             </div>
                                             <Button onClick={() => handleJoinGame(game.id)} className="bg-[#6b5138] hover:bg-[#5c4430]">
