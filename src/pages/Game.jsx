@@ -941,7 +941,11 @@ export default function Game() {
             
             // Then notify via socket to wake up opponents
             if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' }));
+                // Send full state update to avoid fetch latency on opponent side
+                socket.send(JSON.stringify({ 
+                    type: 'STATE_UPDATE', 
+                    payload: updateData 
+                }));
             }
         } catch (e) {
             console.error("Move save error", e);

@@ -61,6 +61,13 @@ Deno.serve(async (req) => {
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
             } 
+            else if (data.type === 'STATE_UPDATE') {
+                 // Broadcast state directly to avoid fetch latency
+                 const { payload } = data;
+                 const msg = { type: 'GAME_UPDATE', payload };
+                 broadcast(gameId, msg, null);
+                 gameUpdates.postMessage({ gameId, ...msg });
+            } 
             else if (data.type === 'CHAT_MESSAGE') {
                 const { sender_id, sender_name, content } = data.payload;
                 
