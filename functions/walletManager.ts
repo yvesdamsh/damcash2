@@ -1,16 +1,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import { z } from 'npm:zod@^3.24.2';
 
-const RATE_LIMITS = new Map();
-const checkRateLimit = (userId) => {
+const RATE_LIMIT = new Map();
+const LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 20;
+
+function checkRateLimit(ip) {
     const now = Date.now();
-    const userLimit = RATE_LIMITS.get(userId) || { count: 0, start: now };
-    if (now - userLimit.start > 60000) { userLimit.count = 0; userLimit.start = now; }
-    if (userLimit.count >= 10) return false;
-    userLimit.count++;
-    RATE_LIMITS.set(userId, userLimit);
-    return true;
-};
+    const record = RATE_LIMIT.get(ip) || { count: 0, start: now };
+    if (now - record.start > LIMIT_WINDOW) { record.count = 0; record.start = now; }
+    record.count++;
+    RATE_LIMIT.set(ip, record);
+    return record.count <= MAX_REQUESTS;
+}
 
 const walletSchema = z.object({
     action: z.enum(['get_balance', 'deposit', 'pay_entry_fee']),
@@ -46,6 +48,9 @@ const walletSchema = z.object({
 });
 
 export default async function handler(req) {
+    const clientIp = (req.headers.get("x-forwarded-for") || "unknown").split(',')[0].trim();
+    if (!checkRateLimit(clientIp)) return Response.json({ error: "Too many requests" }, { status: 429 });
+
     const base44 = createClientFromRequest(req);
     const rawBody = await req.json();
 
@@ -59,10 +64,6 @@ export default async function handler(req) {
     // Check Auth (unless service role bypass is safe, but here we prefer secure checks)
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-    if (!checkRateLimit(user.id)) {
-        return Response.json({ error: 'Rate limit exceeded' }, { status: 429 });
-    }
 
     // Helper to get or create wallet
     const getWallet = async (uid) => {

@@ -1,6 +1,22 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+const RATE_LIMIT = new Map();
+const LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 30;
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const record = RATE_LIMIT.get(ip) || { count: 0, start: now };
+    if (now - record.start > LIMIT_WINDOW) { record.count = 0; record.start = now; }
+    record.count++;
+    RATE_LIMIT.set(ip, record);
+    return record.count <= MAX_REQUESTS;
+}
+
 export default async function handler(req) {
+    const clientIp = (req.headers.get("x-forwarded-for") || "unknown").split(',')[0].trim();
+    if (!checkRateLimit(clientIp)) return Response.json({ error: "Too many requests" }, { status: 429 });
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
