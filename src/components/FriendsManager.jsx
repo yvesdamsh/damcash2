@@ -323,11 +323,15 @@ export default function FriendsManager() {
                                                         <AvatarImage src={friend.avatar_url} />
                                                         <AvatarFallback>{friend.username?.[0] || '?'}</AvatarFallback>
                                                     </Avatar>
-                                                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" title="En ligne"></span>
+                                                    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-white rounded-full ${
+                                                        (Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? 'bg-green-500' : 'bg-gray-300'
+                                                    }`} title={(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}></span>
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-medium text-[#4a3728]">{friend.username || friend.full_name}</p>
-                                                    <p className="text-[10px] text-gray-500">En ligne</p>
+                                                    <p className="text-[10px] text-gray-500">
+                                                        {(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
