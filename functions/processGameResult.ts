@@ -21,15 +21,51 @@ export default async function handler(req) {
     const { gameId } = validation.data;
 
     // Lock logic via check
-    const game = await base44.asServiceRole.entities.Game.get(gameId);
-    if (!game || game.status !== 'finished' || game.elo_processed) {
-        return Response.json({ message: 'Game not finished or already processed' });
-    }
+    let game = await base44.asServiceRole.entities.Game.get(gameId);
+    if (!game) return Response.json({ error: 'Game not found' }, { status: 404 });
 
-    // Security Check: Ensure caller is authorized
-    if (user && user.role !== 'admin' && game.white_player_id !== user.id && game.black_player_id !== user.id) {
+    // Security: Ensure caller is authorized (Admin or Participant)
+    const isParticipant = user && (game.white_player_id === user.id || game.black_player_id === user.id);
+    if (!user || (user.role !== 'admin' && !isParticipant)) {
          return Response.json({ error: "Unauthorized" }, { status: 403 });
     }
+
+    // Handle Game Termination Request (from client)
+    if (body.outcome) {
+        if (game.status !== 'playing' && game.status !== 'waiting') {
+             // If already finished, we might be here for payout processing only
+             if (game.elo_processed) return Response.json({ message: 'Game already processed' });
+        } else {
+            // Validate Outcome
+            // Trusted Client Model: We trust the players to report correct result for now.
+            // In a real app, we'd verify move history or have both players sign the result.
+            const { winnerId, result } = body.outcome;
+            
+            // Validate winnerId is one of the players or null (draw)
+            if (winnerId && winnerId !== game.white_player_id && winnerId !== game.black_player_id) {
+                return Response.json({ error: "Invalid winner ID" }, { status: 400 });
+            }
+
+            // Update Game to Finished
+            await base44.asServiceRole.entities.Game.update(gameId, {
+                status: 'finished',
+                winner_id: winnerId || null,
+                reason: result || 'resignation', // e.g. 'checkmate', 'resignation', 'draw'
+                ended_at: new Date().toISOString()
+            });
+            
+            // Refresh local game object
+            game = await base44.asServiceRole.entities.Game.get(gameId);
+        }
+    } else {
+        // Legacy/Manual call without outcome (assumes game already marked finished in DB)
+        if (game.status !== 'finished' || game.elo_processed) {
+            return Response.json({ message: 'Game not finished or already processed' });
+        }
+    }
+
+    // Double check processing flag
+    if (game.elo_processed) return Response.json({ message: 'Already processed' });
 
     // Mark as processed immediately to avoid double run
     await base44.asServiceRole.entities.Game.update(gameId, { elo_processed: true });

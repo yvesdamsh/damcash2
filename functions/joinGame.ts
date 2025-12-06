@@ -56,6 +56,35 @@ export default async function handler(req) {
             return Response.json({ error: "Game is full" }, { status: 400 });
         }
 
+        // SECURITY: Handle Entry Fee
+        if (game.entry_fee && game.entry_fee > 0) {
+            const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: user.id });
+            let wallet = wallets[0];
+            if (!wallet) wallet = await base44.asServiceRole.entities.Wallet.create({ user_id: user.id, balance: 0 });
+
+            if ((wallet.balance || 0) < game.entry_fee) {
+                return Response.json({ error: "Insufficient funds for entry fee" }, { status: 402 });
+            }
+
+            // Deduct Fee
+            await base44.asServiceRole.entities.Wallet.update(wallet.id, {
+                balance: wallet.balance - game.entry_fee
+            });
+
+            // Record Transaction
+            await base44.asServiceRole.entities.Transaction.create({
+                user_id: user.id,
+                type: 'entry_fee',
+                amount: -game.entry_fee,
+                game_id: gameId,
+                status: 'completed',
+                description: 'Mise de jeu (Join)'
+            });
+
+            // Add to Prize Pool
+            updateData.prize_pool = (game.prize_pool || 0) + game.entry_fee;
+        }
+
         // Perform Update
         const updatedGame = await base44.asServiceRole.entities.Game.update(gameId, updateData);
 
