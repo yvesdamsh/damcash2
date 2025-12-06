@@ -1,41 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Loader2, RefreshCw } from 'lucide-react';
+import { Eye, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const PAGE_SIZE = 20;
+
 export default function AdminGames() {
-    const [games, setGames] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
     const navigate = useNavigate();
 
-    const fetchGames = async () => {
-        setLoading(true);
-        try {
-            const res = await base44.entities.Game.list('-updated_date', 50);
-            setGames(res);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchGames();
-    }, []);
+    const { data: games = [], isLoading, refetch } = useQuery({
+        queryKey: ['adminGames', page],
+        queryFn: async () => {
+            const skip = (page - 1) * PAGE_SIZE;
+            return await base44.entities.Game.filter({}, '-updated_date', PAGE_SIZE, skip);
+        },
+        keepPreviousData: true
+    });
 
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-[#4a3728]">Gestion des Parties</h2>
-                <Button onClick={fetchGames} variant="outline" size="sm"><RefreshCw className="w-4 h-4 mr-2"/> Actualiser</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2"/> Actualiser</Button>
+                    <div className="flex items-center gap-1 ml-4">
+                        <Button variant="outline" size="icon" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                            <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm w-16 text-center">Page {page}</span>
+                        <Button variant="outline" size="icon" onClick={() => setPage(p => p + 1)} disabled={games.length < PAGE_SIZE}>
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                {loading ? (
+                {isLoading ? (
                     <div className="p-8 flex justify-center"><Loader2 className="animate-spin" /></div>
                 ) : (
                     <Table>

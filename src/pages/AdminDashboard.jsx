@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, AlertCircle, LayoutDashboard, Users, Gamepad2, ShoppingBag, Trophy } from 'lucide-react';
+import { Loader2, AlertCircle, LayoutDashboard, Users, Gamepad2, ShoppingBag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminUsers from '@/components/admin/AdminUsers';
@@ -10,7 +10,6 @@ import AdminShop from '@/components/admin/AdminShop';
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
-    const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -21,12 +20,7 @@ export default function AdminDashboard() {
                 const user = await base44.auth.me();
                 if (!user || user.role !== 'admin') {
                     setError("Accès non autorisé.");
-                    setLoading(false);
-                    return;
                 }
-                // Initial stats load
-                const response = await base44.functions.invoke('getAdminStats');
-                if (response.status === 200) setStats(response.data);
             } catch (err) {
                 console.error(err);
                 setError(err.message);
@@ -36,25 +30,6 @@ export default function AdminDashboard() {
         };
         checkAuth();
     }, []);
-
-    const downloadCSV = (data, filename) => {
-        if (!data || !data.length) return;
-        const headers = Object.keys(data[0]).join(',');
-        const rows = data.map(row => Object.values(row).map(v => `"${v}"`).join(','));
-        const csvContent = [headers, ...rows].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    };
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-[#f5f0e6]">
@@ -110,7 +85,7 @@ export default function AdminDashboard() {
 
                     <div className="bg-white/50 backdrop-blur-sm border border-[#d4c5b0] rounded-xl p-6 shadow-sm min-h-[500px]">
                         <TabsContent value="overview" className="mt-0">
-                            <AdminOverview stats={stats} onDownloadCSV={downloadCSV} />
+                            <AdminOverview />
                         </TabsContent>
                         <TabsContent value="users" className="mt-0">
                             <AdminUsers />

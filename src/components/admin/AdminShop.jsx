@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,67 +11,47 @@ import { Plus, Pencil, Trash2, Loader2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AdminShop() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
+    const queryClient = useQueryClient();
 
-    const fetchProducts = async () => {
-        setLoading(true);
-        try {
-            const res = await base44.entities.Product.list();
-            setProducts(res);
-        } catch (e) {
-            toast.error("Erreur chargement produits");
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { data: products = [], isLoading } = useQuery({
+        queryKey: ['adminProducts'],
+        queryFn: () => base44.entities.Product.list()
+    });
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    const handleDelete = async (id) => {
-        if (!confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
-        try {
-            await base44.entities.Product.delete(id);
+    const deleteMutation = useMutation({
+        mutationFn: (id) => base44.entities.Product.delete(id),
+        onSuccess: () => {
             toast.success("Produit supprimé");
-            fetchProducts();
-        } catch (e) {
-            toast.error("Erreur suppression");
-        }
+            queryClient.invalidateQueries(['adminProducts']);
+        },
+        onError: () => toast.error("Erreur suppression")
+    });
+
+    const saveMutation = useMutation({
+        mutationFn: ({ id, data }) => id ? base44.entities.Product.update(id, data) : base44.entities.Product.create(data),
+        onSuccess: () => {
+            toast.success("Produit enregistré");
+            queryClient.invalidateQueries(['adminProducts']);
+            setIsDialogOpen(false);
+        },
+        onError: () => toast.error("Erreur enregistrement")
+    });
+
+    const handleDelete = (id) => {
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) deleteMutation.mutate(id);
     };
 
     const ProductForm = ({ product, onClose }) => {
         const [formData, setFormData] = useState(product || {
-            name: '',
-            description: '',
-            type: 'avatar',
-            price: 0,
-            image_url: '',
-            value: '',
-            required_level: 1,
-            is_active: true
+            name: '', description: '', type: 'avatar', price: 0, image_url: '', value: '', required_level: 1, is_active: true
         });
 
-        const handleSubmit = async (e) => {
+        const handleSubmit = (e) => {
             e.preventDefault();
-            try {
-                const data = { ...formData, price: Number(formData.price), required_level: Number(formData.required_level) };
-                if (product) {
-                    await base44.entities.Product.update(product.id, data);
-                    toast.success("Produit modifié");
-                } else {
-                    await base44.entities.Product.create(data);
-                    toast.success("Produit créé");
-                }
-                onClose();
-                fetchProducts();
-            } catch (e) {
-                console.error(e);
-                toast.error("Erreur enregistrement");
-            }
+            const data = { ...formData, price: Number(formData.price), required_level: Number(formData.required_level) };
+            saveMutation.mutate({ id: product?.id, data });
         };
 
         return (
@@ -116,11 +97,13 @@ export default function AdminShop() {
                     <div className="flex items-end pb-2">
                         <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
                             <input type="checkbox" checked={formData.is_active} onChange={e => setFormData({...formData, is_active: e.target.checked})} className="rounded border-gray-300" />
-                            Actif (Visible en boutique)
+                            Actif
                         </label>
                     </div>
                 </div>
-                <Button type="submit" className="w-full bg-[#4a3728]">Enregistrer</Button>
+                <Button type="submit" className="w-full bg-[#4a3728]">
+                    {saveMutation.isPending ? <Loader2 className="animate-spin" /> : "Enregistrer"}
+                </Button>
             </form>
         );
     };
@@ -136,58 +119,46 @@ export default function AdminShop() {
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{editingProduct ? 'Modifier Produit' : 'Nouveau Produit'}</DialogTitle>
-                        </DialogHeader>
+                        <DialogHeader><DialogTitle>{editingProduct ? 'Modifier Produit' : 'Nouveau Produit'}</DialogTitle></DialogHeader>
                         <ProductForm product={editingProduct} onClose={() => setIsDialogOpen(false)} />
                     </DialogContent>
                 </Dialog>
             </div>
 
             <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Image</TableHead>
-                            <TableHead>Nom</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Prix</TableHead>
-                            <TableHead>Niveau</TableHead>
-                            <TableHead>Statut</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {products.map((product) => (
-                            <TableRow key={product.id}>
-                                <TableCell>
-                                    {product.image_url ? (
-                                        <img src={product.image_url} className="w-10 h-10 rounded object-cover bg-gray-100" />
-                                    ) : <ShoppingBag className="w-6 h-6 text-gray-300" />}
-                                </TableCell>
-                                <TableCell className="font-medium">{product.name}</TableCell>
-                                <TableCell className="capitalize">{product.type}</TableCell>
-                                <TableCell className="font-bold text-[#b8860b]">{product.price} D$</TableCell>
-                                <TableCell>Lvl {product.required_level}</TableCell>
-                                <TableCell>
-                                    <span className={`px-2 py-1 rounded-full text-xs ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {product.is_active ? 'Actif' : 'Inactif'}
-                                    </span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <Button size="icon" variant="ghost" onClick={() => { setEditingProduct(product); setIsDialogOpen(true); }}>
-                                            <Pencil className="w-4 h-4" />
-                                        </Button>
-                                        <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(product.id)}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
+                {isLoading ? <div className="p-8 flex justify-center"><Loader2 className="animate-spin" /></div> : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Image</TableHead>
+                                <TableHead>Nom</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Prix</TableHead>
+                                <TableHead>Niveau</TableHead>
+                                <TableHead>Statut</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {products.map((product) => (
+                                <TableRow key={product.id}>
+                                    <TableCell>{product.image_url ? <img src={product.image_url} className="w-10 h-10 rounded object-cover bg-gray-100" /> : <ShoppingBag className="w-6 h-6 text-gray-300" />}</TableCell>
+                                    <TableCell className="font-medium">{product.name}</TableCell>
+                                    <TableCell className="capitalize">{product.type}</TableCell>
+                                    <TableCell className="font-bold text-[#b8860b]">{product.price} D$</TableCell>
+                                    <TableCell>Lvl {product.required_level}</TableCell>
+                                    <TableCell><span className={`px-2 py-1 rounded-full text-xs ${product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{product.is_active ? 'Actif' : 'Inactif'}</span></TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Button size="icon" variant="ghost" onClick={() => { setEditingProduct(product); setIsDialogOpen(true); }}><Pencil className="w-4 h-4" /></Button>
+                                            <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(product.id)}><Trash2 className="w-4 h-4" /></Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
             </div>
         </div>
     );
