@@ -39,7 +39,11 @@ export default function PublicForum() {
 
     const fetchPosts = async () => {
         try {
-            const data = await base44.entities.ForumPost.list('-created_date', 50);
+            // Filter posts from last 24 hours
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            const data = await base44.entities.ForumPost.filter({
+                created_date: { $gte: oneDayAgo }
+            }, '-created_date', 50);
             setPosts(data.reverse()); // Show newest at bottom like chat
         } catch (e) {
             console.error(e);
