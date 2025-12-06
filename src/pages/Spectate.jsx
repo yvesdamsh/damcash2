@@ -148,7 +148,7 @@ export default function Spectate() {
 
                                 <Button className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] font-bold group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-colors">
                                     {game.status === 'playing' ? <><Eye className="w-4 h-4 mr-2" /> {t('tv.watch')}</> : <><History className="w-4 h-4 mr-2" /> {t('tv.review')}</>}
-                                </Button
+                                </Button>
                             </CardContent>
                         </Card>
                     ))
