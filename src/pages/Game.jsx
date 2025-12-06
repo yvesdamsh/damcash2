@@ -1295,8 +1295,8 @@ export default function Game() {
 
     return (
         <div className="min-h-screen bg-[#f0e6d2] pb-10">
-            {/* 1. Video Chat Top (Fixed or Scrollable? Let's keep it at top flow) */}
-            <div className="w-full bg-black/5 border-b border-[#d4c5b0] sticky top-0 z-50 backdrop-blur-sm">
+            {/* 1. Video Chat Top (Mobile: Sticky, Desktop: Fixed Corner) */}
+            <div className="z-50 backdrop-blur-sm w-full sticky top-0 bg-black/5 border-b border-[#d4c5b0] md:fixed md:bottom-4 md:right-4 md:w-80 md:top-auto md:bg-transparent md:border-none md:shadow-none">
                  <VideoChat 
                     gameId={game.id} 
                     currentUser={currentUser} 
@@ -1306,7 +1306,7 @@ export default function Game() {
                     externalSignals={syncedSignals}
                 />
                 {isSpectator && (
-                    <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
+                    <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse md:rounded-b-xl">
                         <EyeIcon className="w-3 h-3" /> {t('game.spectator_mode')}
                     </div>
                 )}
