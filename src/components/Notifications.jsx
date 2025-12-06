@@ -139,8 +139,8 @@ export default function Notifications() {
                 <Button variant="ghost" size="icon" className="relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white rounded-full text-xs">
-                            {unreadCount > 9 ? '9+' : unreadCount}
+                        <Badge className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white rounded-full text-xs border border-[#4a3728] dark:border-[#e8dcc5]">
+                            {unreadCount}
                         </Badge>
                     )}
                 </Button>
