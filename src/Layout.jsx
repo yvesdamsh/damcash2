@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import IntroAnimation from '@/components/IntroAnimation';
+import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { 
   Trophy, 
   User, 
