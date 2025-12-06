@@ -740,7 +740,10 @@ export default function Game() {
             });
             
             if (status === 'finished') {
-                base44.functions.invoke('processGameResult', { gameId: game.id });
+                base44.functions.invoke('processGameResult', { 
+                    gameId: game.id, 
+                    outcome: { winnerId, result: 'win' } 
+                });
             }
     
             setBoard(newBoard);
@@ -885,7 +888,10 @@ export default function Game() {
         });
 
         if (status === 'finished') {
-            base44.functions.invoke('processGameResult', { gameId: game.id });
+            base44.functions.invoke('processGameResult', { 
+                gameId: game.id, 
+                outcome: { winnerId, result: gameStatus } 
+            });
         }
 
         setBoard(newBoard);
@@ -960,7 +966,7 @@ export default function Game() {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'MOVE',
-                    payload: { updateData, move: moveData }
+                    payload: { updateData }
                 }));
             }
         }
@@ -1080,8 +1086,14 @@ export default function Game() {
 
     const handleAcceptDraw = async () => {
         if (!game) return;
-        await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null });
-        base44.functions.invoke('processGameResult', { gameId: game.id });
+        // Secure Server-Side End
+        await base44.functions.invoke('processGameResult', { 
+            gameId: game.id, 
+            outcome: { winnerId: null, result: 'draw_agreement' } 
+        });
+        // Optimistic update
+        setGame(prev => ({ ...prev, status: 'finished', winner_id: null, draw_offer_by: null }));
+        
         soundManager.play('win');
         toast.success(t('game.draw_accepted'));
     };
@@ -1106,9 +1118,10 @@ export default function Game() {
         const winnerName = color === 'white' ? game.black_player_name : game.white_player_name;
         
         try {
-            await base44.entities.Game.update(game.id, { 
-                status: 'finished', 
-                winner_id: winnerId 
+            // Secure Server-Side End
+            await base44.functions.invoke('processGameResult', { 
+                gameId: game.id, 
+                outcome: { winnerId, result: 'timeout' } 
             });
             
             // Notify
@@ -1348,8 +1361,11 @@ export default function Game() {
                                         setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
                                         setShowResult(true);
                                         if (!isAiGame) {
-                                            await base44.entities.Game.update(game.id, { status: newStatus, winner_id: winnerId });
-                                            base44.functions.invoke('processGameResult', { gameId: game.id });
+                                            // Secure Server-Side End
+                                            await base44.functions.invoke('processGameResult', { 
+                                                gameId: game.id, 
+                                                outcome: { winnerId, result: 'resignation' } 
+                                            });
                                         }
                                         soundManager.play('loss');
                                     }}
