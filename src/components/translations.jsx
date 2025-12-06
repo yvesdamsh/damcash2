@@ -17,6 +17,24 @@ export const translations = {
     "nav.admin": "Admin",
     "nav.logout": "Logout",
 
+    // History
+    "history.no_games": "No finished games.",
+    "history.play_now": "Play!",
+    "history.date": "Date",
+    "history.game": "Game",
+    "history.opponent": "Opponent",
+    "history.result": "Result",
+    "history.action": "Action",
+    "history.unknown": "Unknown",
+    "history.draw": "Draw",
+    "history.win": "Win",
+    "history.loss": "Loss",
+    "history.export_notion": "Export to Notion",
+    "history.review": "Review",
+    "history.export_success": "Exported to Notion successfully!",
+    "history.export_error": "Error during export",
+    "history.export_connection_error": "Connection error or service unavailable",
+
     // Shop
     "shop.title": "Shop",
     "shop.subtitle": "Customize your experience with your DamCoins.",
@@ -303,6 +321,24 @@ export const translations = {
     "nav.admin": "Админ",
     "nav.logout": "Выйти",
 
+    // History
+    "history.no_games": "Нет завершенных игр.",
+    "history.play_now": "Играть!",
+    "history.date": "Дата",
+    "history.game": "Игра",
+    "history.opponent": "Соперник",
+    "history.result": "Результат",
+    "history.action": "Действие",
+    "history.unknown": "Неизвестно",
+    "history.draw": "Ничья",
+    "history.win": "Победа",
+    "history.loss": "Поражение",
+    "history.export_notion": "Экспорт в Notion",
+    "history.review": "Обзор",
+    "history.export_success": "Успешно экспортировано в Notion!",
+    "history.export_error": "Ошибка при экспорте",
+    "history.export_connection_error": "Ошибка соединения или сервис недоступен",
+
     // Shop
     "shop.title": "Магазин",
     "shop.subtitle": "Настройте свой профиль за DamCoins.",
@@ -583,6 +619,24 @@ export const translations = {
     "nav.profile": "Profil",
     "nav.admin": "Admin",
     "nav.logout": "Abmelden",
+
+    // History
+    "history.no_games": "Keine beendeten Spiele.",
+    "history.play_now": "Spielen!",
+    "history.date": "Datum",
+    "history.game": "Spiel",
+    "history.opponent": "Gegner",
+    "history.result": "Ergebnis",
+    "history.action": "Aktion",
+    "history.unknown": "Unbekannt",
+    "history.draw": "Remis",
+    "history.win": "Sieg",
+    "history.loss": "Niederlage",
+    "history.export_notion": "Export nach Notion",
+    "history.review": "Überprüfen",
+    "history.export_success": "Erfolgreich nach Notion exportiert!",
+    "history.export_error": "Fehler beim Export",
+    "history.export_connection_error": "Verbindungsfehler oder Dienst nicht verfügbar",
 
     // Shop
     "shop.title": "Shop",
@@ -868,6 +922,24 @@ export const translations = {
     "nav.admin": "管理",
     "nav.logout": "登出",
 
+    // History
+    "history.no_games": "没有已完成的对局。",
+    "history.play_now": "玩！",
+    "history.date": "日期",
+    "history.game": "游戏",
+    "history.opponent": "对手",
+    "history.result": "结果",
+    "history.action": "操作",
+    "history.unknown": "未知",
+    "history.draw": "和局",
+    "history.win": "胜利",
+    "history.loss": "失败",
+    "history.export_notion": "导出到 Notion",
+    "history.review": "回顾",
+    "history.export_success": "成功导出到 Notion！",
+    "history.export_error": "导出时出错",
+    "history.export_connection_error": "连接错误或服务不可用",
+
     // Shop
     "shop.title": "商店",
     "shop.subtitle": "使用 DamCoins以此定制您的体验。",
@@ -1152,6 +1224,24 @@ export const translations = {
     "nav.admin": "Beheer",
     "nav.logout": "Uitloggen",
 
+    // History
+    "history.no_games": "Geen voltooide spellen.",
+    "history.play_now": "Spelen!",
+    "history.date": "Datum",
+    "history.game": "Spel",
+    "history.opponent": "Tegenstander",
+    "history.result": "Resultaat",
+    "history.action": "Actie",
+    "history.unknown": "Onbekend",
+    "history.draw": "Remise",
+    "history.win": "Winst",
+    "history.loss": "Verlies",
+    "history.export_notion": "Exporteren naar Notion",
+    "history.review": "Bekijken",
+    "history.export_success": "Succesvol geëxporteerd naar Notion!",
+    "history.export_error": "Fout tijdens exporteren",
+    "history.export_connection_error": "Verbindingsfout of dienst niet beschikbaar",
+
     // Shop
     "shop.title": "Winkel",
     "shop.subtitle": "Pas je ervaring aan met je DamCoins.",
@@ -1435,6 +1525,24 @@ export const translations = {
     "nav.profile": "Profil",
     "nav.admin": "Admin",
     "nav.logout": "Déconnexion",
+
+    // History
+    "history.no_games": "Aucune partie terminée.",
+    "history.play_now": "Jouer !",
+    "history.date": "Date",
+    "history.game": "Jeu",
+    "history.opponent": "Adversaire",
+    "history.result": "Résultat",
+    "history.action": "Action",
+    "history.unknown": "Inconnu",
+    "history.draw": "Nul",
+    "history.win": "Victoire",
+    "history.loss": "Défaite",
+    "history.export_notion": "Exporter vers Notion",
+    "history.review": "Revoir",
+    "history.export_success": "Exporté vers Notion avec succès !",
+    "history.export_error": "Erreur lors de l'export",
+    "history.export_connection_error": "Erreur de connexion ou service indisponible",
 
     // Shop
     "shop.title": "Boutique",

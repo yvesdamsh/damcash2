@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, ArrowLeft, Trophy, History, Calendar, Star, FileText } from 'lucide-react';
 import { toast } from "sonner";
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function GameHistory() {
+    const { t, formatDate } = useLanguage();
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
@@ -62,14 +62,14 @@ export default function GameHistory() {
         try {
             const response = await base44.functions.invoke('exportGameToNotion', { gameId });
             if (response.data.success) {
-                toast.success("Exporté vers Notion avec succès !");
+                toast.success(t('history.export_success'));
                 window.open(response.data.url, '_blank');
             } else {
-                toast.error(response.data.error || "Erreur lors de l'export");
+                toast.error(response.data.error || t('history.export_error'));
             }
         } catch (error) {
             console.error(error);
-            toast.error("Erreur de connexion ou service indisponible");
+            toast.error(t('history.export_connection_error'));
         } finally {
             setExportingId(null);
         }
@@ -80,25 +80,25 @@ export default function GameHistory() {
     return (
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-20">
             <div className="mb-6 flex items-center gap-4">
-                <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-[#d4c5b0]"><ArrowLeft className="w-5 h-5 mr-2" /> Retour</Button>
-                <h1 className="text-3xl font-bold text-[#4a3728] flex items-center gap-3"><History className="w-8 h-8" /> Historique</h1>
+                <Button variant="ghost" onClick={() => navigate('/')} className="hover:bg-[#d4c5b0]"><ArrowLeft className="w-5 h-5 mr-2" /> {t('common.back')}</Button>
+                <h1 className="text-3xl font-bold text-[#4a3728] flex items-center gap-3"><History className="w-8 h-8" /> {t('nav.history')}</h1>
             </div>
 
             <Card className="bg-white/90 border-[#d4c5b0] shadow-xl">
                 <CardContent className="p-0">
                     {games.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500"><p>Aucune partie terminée.</p><Link to="/" className="text-[#6b5138] hover:underline font-bold mt-2 inline-block">Jouer !</Link></div>
+                        <div className="p-8 text-center text-gray-500"><p>{t('history.no_games')}</p><Link to="/" className="text-[#6b5138] hover:underline font-bold mt-2 inline-block">{t('history.play_now')}</Link></div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-[#f5f0e6] border-b border-[#e8dcc5]">
                                     <tr>
-                                        <th className="p-4 text-left text-[#4a3728]">Date</th>
-                                        <th className="p-4 text-left text-[#4a3728]">Jeu</th>
-                                        <th className="p-4 text-left text-[#4a3728]">Adversaire</th>
-                                        <th className="p-4 text-center text-[#4a3728]">Résultat</th>
+                                        <th className="p-4 text-left text-[#4a3728]">{t('history.date')}</th>
+                                        <th className="p-4 text-left text-[#4a3728]">{t('history.game')}</th>
+                                        <th className="p-4 text-left text-[#4a3728]">{t('history.opponent')}</th>
+                                        <th className="p-4 text-center text-[#4a3728]">{t('history.result')}</th>
                                         <th className="p-4 text-center text-[#4a3728]"><Star className="w-4 h-4 inline" /></th>
-                                        <th className="p-4 text-right">Action</th>
+                                        <th className="p-4 text-right">{t('history.action')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#f0e6d2]">
@@ -110,11 +110,11 @@ export default function GameHistory() {
                                         const isFav = favorites.includes(game.id);
                                         return (
                                             <tr key={game.id} className="hover:bg-[#faf7f2] transition-colors">
-                                                <td className="p-4 text-sm text-gray-600 flex items-center gap-2"><Calendar className="w-4 h-4 opacity-50" />{format(new Date(game.updated_date), 'dd MMM yyyy', { locale: fr })}</td>
-                                                <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold uppercase ${game.game_type === 'chess' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{game.game_type === 'chess' ? 'Échecs' : 'Dames'}</span></td>
-                                                <td className="p-4 font-medium text-[#4a3728]">{opponentName || 'Inconnu'}</td>
+                                                <td className="p-4 text-sm text-gray-600 flex items-center gap-2"><Calendar className="w-4 h-4 opacity-50" />{formatDate(game.updated_date, 'dd MMM yyyy')}</td>
+                                                <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-bold uppercase ${game.game_type === 'chess' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span></td>
+                                                <td className="p-4 font-medium text-[#4a3728]">{opponentName || t('history.unknown')}</td>
                                                 <td className="p-4 text-center">
-                                                    {isDraw ? <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100">Nul</span> : isWinner ? <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 flex items-center justify-center"><Trophy className="w-3 h-3 mr-1"/>Victoire</span> : <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">Défaite</span>}
+                                                    {isDraw ? <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100">{t('history.draw')}</span> : isWinner ? <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 flex items-center justify-center"><Trophy className="w-3 h-3 mr-1"/>{t('history.win')}</span> : <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">{t('history.loss')}</span>}
                                                 </td>
                                                 <td className="p-4 text-center">
                                                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => toggleFavorite(game.id)}>
@@ -129,11 +129,11 @@ export default function GameHistory() {
                                                             onClick={() => handleExportToNotion(game.id)}
                                                             disabled={exportingId === game.id}
                                                             className="text-gray-500 hover:text-[#4a3728]"
-                                                            title="Exporter vers Notion"
+                                                            title={t('history.export_notion')}
                                                         >
                                                             {exportingId === game.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                                                         </Button>
-                                                        <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Revoir</Button>
+                                                        <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">{t('history.review')}</Button>
                                                     </div>
                                                 </td>
                                             </tr>
