@@ -398,6 +398,19 @@ const quiescence = (board, alpha, beta, maximizingPlayer, turn, aiColor) => {
     }
 };
 
+const RATE_LIMIT = new Map();
+const LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 30;
+
+function checkRateLimit(ip) {
+    const now = Date.now();
+    const record = RATE_LIMIT.get(ip) || { count: 0, start: now };
+    if (now - record.start > LIMIT_WINDOW) { record.count = 0; record.start = now; }
+    record.count++;
+    RATE_LIMIT.set(ip, record);
+    return record.count <= MAX_REQUESTS;
+}
+
 // --- Minimax ---
 
 const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, activePiece = null, deadline = null) => {
@@ -462,6 +475,9 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, act
 
 Deno.serve(async (req) => {
     try {
+        const clientIp = (req.headers.get("x-forwarded-for") || "unknown").split(',')[0].trim();
+        if (!checkRateLimit(clientIp)) return Response.json({ error: "Too many requests" }, { status: 429 });
+
         const base44 = createClientFromRequest(req);
         const { board, turn, difficulty = 'medium', userElo = 1200, activePiece, timeLeft } = await req.json();
 
