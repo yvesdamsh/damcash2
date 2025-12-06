@@ -1494,6 +1494,10 @@ export const translations = {
     "common.all": "Tous",
     "common.none": "Aucun",
     "common.player": "Joueur",
+    "common.anonymous": "Anonyme",
+    "common.min": "min",
+    "chat.placeholder": "Message...",
+    "chat.login": "Connectez-vous pour discuter",
     "common.new_like": "Nouveau Like",
     "common.liked_post": "a aimé votre message",
 
