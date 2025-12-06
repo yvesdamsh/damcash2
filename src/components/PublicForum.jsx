@@ -90,8 +90,8 @@ export default function PublicForum() {
                 await base44.entities.Notification.create({
                     recipient_id: post.author_id,
                     type: 'forum',
-                    title: 'Nouveau Like',
-                    message: `${user.full_name || user.username} a aimé votre message sur le forum.`,
+                    title: t('common.new_like'),
+                    message: `${user.full_name || user.username} ${t('common.liked_post')}`,
                     read: false
                 });
             }
