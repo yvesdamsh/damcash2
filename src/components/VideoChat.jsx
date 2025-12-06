@@ -12,7 +12,7 @@ const ICE_SERVERS = {
     ]
 };
 
-export default function VideoChat({ gameId, currentUser, opponentId, socket, lastSignal, externalSignals }) {
+export default function VideoChat({ gameId, currentUser, opponentId, socket, externalSignals }) {
     const { t } = useLanguage();
     const [isCallActive, setIsCallActive] = useState(false);
     const [localStream, setLocalStream] = useState(null);
@@ -26,6 +26,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
     const peerConnection = useRef(null);
     const pendingOffer = useRef(null);
     const processedSignalsRef = useRef(new Set());
+    const iceCandidatesBuffer = useRef([]); // Buffer for candidates arriving before remote description
 
     useEffect(() => {
         if (localStream && localVideoRef.current) {
@@ -39,22 +40,39 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         }
     }, [remoteStream, isCallActive]);
 
-    // Handle incoming signals via Socket props
+    // Direct Socket Listener for Real-Time Signals (Bypasses React State Batching)
     useEffect(() => {
-        if (lastSignal) {
-            handleSignalMessage(lastSignal);
-        }
-    }, [lastSignal]);
+        if (!socket) return;
+
+        const handleMessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'SIGNAL') {
+                    const payload = msg.payload;
+                    if (payload.recipient_id === currentUser?.id && payload.sender_id !== currentUser?.id) {
+                        handleSignalMessage(payload);
+                    }
+                }
+            } catch (e) {
+                console.error("Socket message error", e);
+            }
+        };
+
+        // Use addEventListener to coexist with other listeners
+        socket.addEventListener('message', handleMessage);
+        return () => socket.removeEventListener('message', handleMessage);
+    }, [socket, currentUser]);
 
     const cleanup = () => {
         if (localStream) {
             localStream.getTracks().forEach(track => track.stop());
         }
-        if (peerConnection.current && typeof peerConnection.current.close === 'function') {
+        if (peerConnection.current) {
             peerConnection.current.close();
         }
         peerConnection.current = null;
         pendingOffer.current = null;
+        iceCandidatesBuffer.current = [];
         setLocalStream(null);
         setRemoteStream(null);
         setIsCallActive(false);
@@ -65,12 +83,27 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         return cleanup;
     }, []);
 
+    const processBufferedCandidates = async () => {
+        if (!peerConnection.current || !peerConnection.current.remoteDescription) return;
+        
+        while (iceCandidatesBuffer.current.length > 0) {
+            const candidate = iceCandidatesBuffer.current.shift();
+            try {
+                await peerConnection.current.addIceCandidate(candidate);
+            } catch (e) {
+                console.error("Error adding buffered candidate", e);
+            }
+        }
+    };
+
     const createPeerConnection = () => {
-        if (peerConnection.current && peerConnection.current.close) peerConnection.current.close();
+        if (peerConnection.current) {
+            try { peerConnection.current.close(); } catch(e) {}
+        }
 
         const pc = new RTCPeerConnection(ICE_SERVERS);
 
-        pc.onicecandidate = async (event) => {
+        pc.onicecandidate = (event) => {
             if (event.candidate) {
                 sendSignal('candidate', JSON.stringify(event.candidate));
             }
@@ -129,15 +162,20 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         } else if (msg.type === 'answer') {
             if (peerConnection.current && peerConnection.current.signalingState !== 'stable') {
                 await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data));
+                await processBufferedCandidates();
                 setStatus('connected');
             }
         } else if (msg.type === 'candidate') {
-            if (peerConnection.current && peerConnection.current.remoteDescription) {
+            const candidate = new RTCIceCandidate(data);
+            if (peerConnection.current && peerConnection.current.remoteDescription && peerConnection.current.remoteDescription.type) {
                 try {
-                    await peerConnection.current.addIceCandidate(new RTCIceCandidate(data));
+                    await peerConnection.current.addIceCandidate(candidate);
                 } catch (e) {
                     console.error("Error adding ice candidate", e);
                 }
+            } else {
+                // Buffer candidate if remote description is not set yet
+                iceCandidatesBuffer.current.push(candidate);
             }
         } else if (msg.type === 'reject') {
             toast.error(t('game.call_rejected'));
@@ -151,7 +189,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
     const rejectCall = async () => {
         sendSignal('reject', '{}');
         setStatus('idle');
-        peerConnection.current = null;
+        pendingOffer.current = null;
     };
 
     const answerCall = async () => {
@@ -168,6 +206,8 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
             stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
             await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            await processBufferedCandidates();
+            
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
@@ -179,7 +219,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         }
     };
 
-    // Handle external signals (from centralized polling)
+    // Handle external signals (from centralized polling/DB)
     useEffect(() => {
         if (externalSignals && externalSignals.length > 0) {
             const processSignals = async () => {

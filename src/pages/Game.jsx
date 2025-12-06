@@ -56,7 +56,7 @@ export default function Game() {
     const [showResignConfirm, setShowResignConfirm] = useState(false);
     const [socket, setSocket] = useState(null);
     const [reactions, setReactions] = useState([]);
-    const [lastSignal, setLastSignal] = useState(null);
+    // lastSignal removed - VideoChat handles it directly
     const [inviteOpen, setInviteOpen] = useState(false);
     const [syncedMessages, setSyncedMessages] = useState([]);
     const [syncedSignals, setSyncedSignals] = useState([]);
@@ -329,9 +329,7 @@ export default function Game() {
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
-                if (data.payload.recipient_id === currentUser?.id && data.payload.sender_id !== currentUser?.id) {
-                    setLastSignal(data.payload);
-                }
+                // Signal handled directly in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
                 if (data.payload) {
                     setSyncedMessages(prev => {
@@ -1315,7 +1313,6 @@ export default function Game() {
                     currentUser={currentUser} 
                     opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
                     socket={socket}
-                    lastSignal={lastSignal}
                     externalSignals={syncedSignals}
                 />
                 {isSpectator && (
