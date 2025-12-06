@@ -223,8 +223,9 @@ export default function DirectChat({ friend, onClose, currentUser }) {
                     </Avatar>
                     <div>
                         <div className="font-bold text-sm">{friend.username || friend.full_name}</div>
-                        <div className="text-[10px] text-green-400 flex items-center gap-1">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div> En ligne
+                        <div className={`text-[10px] ${Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000 ? 'text-green-400' : 'text-gray-400'} flex items-center gap-1`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000 ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+                            {Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000 ? 'En ligne' : 'Hors ligne'}
                         </div>
                     </div>
                 </div>

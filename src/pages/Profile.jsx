@@ -457,11 +457,18 @@ export default function Profile() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-2 sm:gap-3 mt-2 md:mt-16 justify-center md:justify-start w-full md:w-auto flex-wrap">
-                            <Link to="/Messages">
-                                <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md h-9 sm:h-10 text-sm">
-                                    <MessageSquare className="w-4 h-4 mr-2" /> {t('profile.messages')}
-                                </Button>
-                            </Link>
+                            <Button 
+                                onClick={() => {
+                                    if (isOwnProfile) {
+                                        navigate('/Messages');
+                                    } else {
+                                        navigate(`/Messages?userId=${user.id}`);
+                                    }
+                                }}
+                                className="bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md h-9 sm:h-10 text-sm"
+                            >
+                                <MessageSquare className="w-4 h-4 mr-2" /> {isOwnProfile ? t('profile.messages') : t('common.send_message') || "Envoyer message"}
+                            </Button>
                             <Button 
                                 variant="secondary"
                                 onClick={() => {

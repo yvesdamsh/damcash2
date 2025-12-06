@@ -47,8 +47,35 @@ export default function Messages() {
                 // Check URL param
                 const params = new URLSearchParams(location.search);
                 const urlConvId = params.get('conversationId');
+                const urlUserId = params.get('userId');
+
                 if (urlConvId && myConvos.find(c => c.id === urlConvId)) {
                     setSelectedConvId(urlConvId);
+                } else if (urlUserId) {
+                    // Try to find existing conversation with this user
+                    const existing = myConvos.find(c => c.participants.includes(urlUserId));
+                    if (existing) {
+                        setSelectedConvId(existing.id);
+                    } else {
+                        // Create new conversation if it doesn't exist
+                        try {
+                            const newConv = await base44.entities.Conversation.create({
+                                participants: [u.id, urlUserId],
+                                last_message_at: new Date().toISOString(),
+                                last_message_preview: 'Nouvelle conversation'
+                            });
+                            setConversations(prev => [newConv, ...prev]);
+                            setSelectedConvId(newConv.id);
+                            
+                            // Fetch user details if not already in map
+                            if (!uMap[urlUserId]) {
+                                const targetUser = await base44.entities.User.get(urlUserId);
+                                setUsersMap(prev => ({...prev, [urlUserId]: targetUser}));
+                            }
+                        } catch (err) {
+                            console.error("Error creating conversation", err);
+                        }
+                    }
                 } else if (myConvos.length > 0 && window.innerWidth >= 768) {
                     setSelectedConvId(myConvos[0].id);
                 }
@@ -201,8 +228,9 @@ export default function Messages() {
                                         </Avatar>
                                         <div>
                                             <div className="font-bold text-[#4a3728]">{other.username || other.full_name}</div>
-                                            <div className="text-xs text-green-600 flex items-center gap-1">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" /> En ligne
+                                            <div className={`text-xs ${Date.now() - new Date(other.last_seen).getTime() < 5 * 60 * 1000 ? 'text-green-600' : 'text-gray-400'} flex items-center gap-1`}>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${Date.now() - new Date(other.last_seen).getTime() < 5 * 60 * 1000 ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                                {Date.now() - new Date(other.last_seen).getTime() < 5 * 60 * 1000 ? 'En ligne' : 'Hors ligne'}
                                             </div>
                                         </div>
                                     </>
