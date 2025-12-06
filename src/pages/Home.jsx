@@ -128,8 +128,12 @@ export default function Home() {
             setInvitations(myInvites);
             
             if (checkRejoin && active.length > 0 && !hasShownRejoin) {
-                setRejoinOpen(true);
-                setHasShownRejoin(true);
+                const hasSeen = sessionStorage.getItem('damcash_rejoin_seen');
+                if (!hasSeen) {
+                    setRejoinOpen(true);
+                    setHasShownRejoin(true);
+                    sessionStorage.setItem('damcash_rejoin_seen', 'true');
+                }
             }
         } catch(e) {
             console.error("Refresh error", e);
