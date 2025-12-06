@@ -66,20 +66,20 @@ export default function Profile() {
         const existingBadges = await base44.entities.UserBadge.filter({ user_id: currentUser.id });
         const hasBadge = (name) => existingBadges.some(b => b.name === name);
 
-        if ((currentStats.games_played || 0) >= 10 && !hasBadge('Débutant Motivé')) {
-            newBadges.push({ name: 'Débutant Motivé', icon: 'Star', description: 'Joué 10 parties' });
+        if ((currentStats.games_played || 0) >= 10 && !hasBadge(t('badges.beginner'))) {
+            newBadges.push({ name: t('badges.beginner'), icon: 'Star', description: t('badges.desc_beginner') });
         }
-        if ((currentStats.games_played || 0) >= 50 && !hasBadge('Vétéran')) {
-            newBadges.push({ name: 'Vétéran', icon: 'Shield', description: 'Joué 50 parties' });
+        if ((currentStats.games_played || 0) >= 50 && !hasBadge(t('badges.veteran'))) {
+            newBadges.push({ name: t('badges.veteran'), icon: 'Shield', description: t('badges.desc_veteran') });
         }
-        if ((currentStats.wins_checkers || 0) >= 10 && !hasBadge('Maître des Dames')) {
-            newBadges.push({ name: 'Maître des Dames', icon: 'Crown', description: '10 Victoires aux Dames' });
+        if ((currentStats.wins_checkers || 0) >= 10 && !hasBadge(t('badges.checkers_master'))) {
+            newBadges.push({ name: t('badges.checkers_master'), icon: 'Crown', description: t('badges.desc_checkers_master') });
         }
-        if ((currentStats.wins_chess || 0) >= 10 && !hasBadge('Stratège Échecs')) {
-            newBadges.push({ name: 'Stratège Échecs', icon: 'Brain', description: '10 Victoires aux Échecs' });
+        if ((currentStats.wins_chess || 0) >= 10 && !hasBadge(t('badges.chess_strategist'))) {
+            newBadges.push({ name: t('badges.chess_strategist'), icon: 'Brain', description: t('badges.desc_chess_strategist') });
         }
-        if (((currentStats.elo_chess || 0) >= 1500 || (currentStats.elo_checkers || 0) >= 1500) && !hasBadge('Elite 1500')) {
-            newBadges.push({ name: 'Elite 1500', icon: 'Trophy', description: 'Atteint 1500 ELO' });
+        if (((currentStats.elo_chess || 0) >= 1500 || (currentStats.elo_checkers || 0) >= 1500) && !hasBadge(t('badges.elite_1500'))) {
+            newBadges.push({ name: t('badges.elite_1500'), icon: 'Trophy', description: t('badges.desc_elite_1500') });
         }
 
         for (const b of newBadges) {
@@ -93,8 +93,8 @@ export default function Profile() {
              await base44.entities.Notification.create({
                 recipient_id: currentUser.id,
                 type: "success",
-                title: "Nouveau Badge !", // Keeping hardcoded as system notification
-                message: `Vous avez débloqué le badge : ${b.name}`,
+                title: t('badges.new_badge_title'),
+                message: t('badges.new_badge_msg', { name: b.name }),
                 link: `/Profile`
             });
         }
@@ -305,7 +305,7 @@ export default function Profile() {
                                         
                                         {/* Banner Upload */}
                                         <div className="w-full space-y-2">
-                                            <Label>Bannière de profil</Label>
+                                            <Label>{t('profile.banner_label')}</Label>
                                             <div className="h-24 w-full rounded-lg bg-gray-100 relative group overflow-hidden border border-[#d4c5b0]">
                                                 {editForm.banner_url ? (
                                                     <img src={editForm.banner_url} className="w-full h-full object-cover" />
@@ -350,11 +350,11 @@ export default function Profile() {
                                                         <SelectValue placeholder={t('profile.theme')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="default">Classique (Bois)</SelectItem>
-                                                        <SelectItem value="blue">Nuit Bleue</SelectItem>
-                                                        <SelectItem value="gold">Or Royal</SelectItem>
-                                                        <SelectItem value="forest">Forêt Sombre</SelectItem>
-                                                        <SelectItem value="purple">Violet Mystique</SelectItem>
+                                                        <SelectItem value="default">{t('profile.theme_default')}</SelectItem>
+                                                        <SelectItem value="blue">{t('profile.theme_blue')}</SelectItem>
+                                                        <SelectItem value="gold">{t('profile.theme_gold')}</SelectItem>
+                                                        <SelectItem value="forest">{t('profile.theme_forest')}</SelectItem>
+                                                        <SelectItem value="purple">{t('profile.theme_purple')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -365,11 +365,11 @@ export default function Profile() {
                                                         <SelectValue placeholder={t('profile.frame')} />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="none">{t('common.none')}</SelectItem>
-                                                        <SelectItem value="gold">Cercle d'Or</SelectItem>
-                                                        <SelectItem value="silver">Argenté</SelectItem>
-                                                        <SelectItem value="neon">Néon Cyber</SelectItem>
-                                                        <SelectItem value="wood">Bois Rustique</SelectItem>
+                                                        <SelectItem value="none">{t('profile.frame_none')}</SelectItem>
+                                                        <SelectItem value="gold">{t('profile.frame_gold')}</SelectItem>
+                                                        <SelectItem value="silver">{t('profile.frame_silver')}</SelectItem>
+                                                        <SelectItem value="neon">{t('profile.frame_neon')}</SelectItem>
+                                                        <SelectItem value="wood">{t('profile.frame_wood')}</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>
@@ -426,7 +426,7 @@ export default function Profile() {
                                 )}
                             </motion.div>
                             <div className="mb-0 sm:mb-2 text-center md:text-left w-full md:w-auto flex flex-col items-center md:items-start">
-                                <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm">{user.username || user.full_name || 'Joueur'}</h1>
+                                <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm">{user.username || user.full_name || t('profile.default_player')}</h1>
                                 
                                 <div className="flex items-center justify-center md:justify-start gap-2 mb-2 mt-1 flex-wrap">
                                     <div className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs font-bold border border-yellow-200">
@@ -471,11 +471,11 @@ export default function Profile() {
                                     // Ah, I don't see toast in the file content I read. Wait.
                                     // I'll just let it be a silent copy or simple alert if I can't find toast.
                                     // Actually, I'll check if I can import toast.
-                                    alert("Lien du profil copié !");
+                                    alert(t('profile.link_copied'));
                                 }}
                                 className="bg-white text-[#4a3728] hover:bg-gray-100 shadow-md h-9 sm:h-10 text-sm border border-[#d4c5b0]"
                             >
-                                <Share2 className="w-4 h-4 mr-2" /> Partager
+                                <Share2 className="w-4 h-4 mr-2" /> {t('profile.share')}
                             </Button>
                             {isOwnProfile && (
                                 <Button 

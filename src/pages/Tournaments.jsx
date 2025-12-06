@@ -155,7 +155,7 @@ export default function Tournaments() {
 
     const handleCreate = async () => {
         if (!newTournament.name || !newTournament.start_date) {
-            toast.error("Veuillez remplir tous les champs");
+            toast.error(t('tournaments.fill_all_fields'));
             return;
         }
         try {
@@ -172,17 +172,13 @@ export default function Tournaments() {
                 elo_max: parseInt(newTournament.elo_max) || 3000
             });
             
-            // Broadcast new tournament
-            // We need to fetch the created one to send it or just trigger refresh.
-            // create returns the object? Yes usually.
-            // Let's assume we fetch or just trigger refresh.
-            sendMessage({ type: 'tournament_created' }); // Trigger refresh for others
+            sendMessage({ type: 'tournament_created' }); 
 
-            toast.success("Tournoi créé !");
+            toast.success(t('tournaments.create_success'));
             setIsCreateOpen(false);
             fetchTournaments();
         } catch (e) {
-            toast.error("Erreur lors de la création");
+            toast.error(t('tournaments.create_error'));
         }
     };
 
@@ -661,7 +657,7 @@ export default function Tournaments() {
                     })
                     .map(tournament => (
                     <Card key={tournament.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
-                         {tournament.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
+                         {tournament.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">{t('tournaments.private_badge')}</div>}
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
                                 <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-2 inline-block ${
@@ -736,7 +732,7 @@ export default function Tournaments() {
 
                     {/* Calendar Grid */}
                     <div className="grid grid-cols-7 border-b border-[#d4c5b0] bg-[#e8dcc5]">
-                        {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
+                        {[t('tournaments.days_mon'), t('tournaments.days_tue'), t('tournaments.days_wed'), t('tournaments.days_thu'), t('tournaments.days_fri'), t('tournaments.days_sat'), t('tournaments.days_sun')].map(day => (
                             <div key={day} className="p-2 text-center text-xs font-bold text-[#4a3728] uppercase">
                                 {day}
                             </div>
