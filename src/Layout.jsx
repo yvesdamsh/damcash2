@@ -203,27 +203,16 @@ function LayoutContent({ children }) {
         meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
     }, []);
 
-    // Apply theme to document root for Portals (Popovers, Dialogs)
-    React.useEffect(() => {
-        const root = window.document.documentElement;
-        root.classList.remove('light', 'dark');
-        let effectiveTheme = appTheme;
-        if (appTheme === 'system') {
-            effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        root.classList.add(effectiveTheme);
-    }, [appTheme]);
-
     const themeClasses = {
         light: "bg-[#e8dcc5] text-slate-900",
-        dark: "bg-[#1c1917] text-[#e7e5e4]", // Warm dark (Stone-900)
-        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-[#1c1917] text-[#e7e5e4]" : "bg-[#e8dcc5] text-slate-900"
+        dark: "bg-slate-900 text-[#e8dcc5]",
+        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-900 text-[#e8dcc5]" : "bg-[#e8dcc5] text-slate-900"
     };
 
     const navTheme = {
         light: "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]",
-        dark: "bg-[#292524] text-[#e7e5e4] border-[#44403c]", // Stone-800
-        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-[#292524] text-[#e7e5e4] border-[#44403c]" : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]"
+        dark: "bg-slate-950 text-gray-200 border-slate-800",
+        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-950 text-gray-200 border-slate-800" : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]"
     };
 
     const activeTheme = themeClasses[appTheme] || themeClasses.light;

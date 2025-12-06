@@ -136,17 +136,17 @@ export default function Notifications() {
             if (open) fetchNotifications();
         }}>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-current hover:bg-white/10 transition-colors">
+                <Button variant="ghost" size="icon" className="relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
                     <Bell className="w-5 h-5" />
                     {unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white rounded-full text-xs shadow-sm">
+                        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white rounded-full text-xs">
                             {unreadCount > 9 ? '9+' : unreadCount}
                         </Badge>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 border-0 shadow-xl bg-[#fdfbf7] dark:bg-[#292524] dark:text-[#e7e5e4] z-[200]" align="end">
-                <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] dark:border-[#44403c] bg-[#4a3728] dark:bg-[#1c1917] text-[#e8dcc5]">
+            <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7]" align="end">
+                <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] bg-[#4a3728] text-[#e8dcc5]">
                     <h4 className="font-bold">Notifications</h4>
                     <div className="flex gap-2">
                         {!pushEnabled && (
@@ -161,18 +161,18 @@ export default function Notifications() {
                         )}
                     </div>
                 </div>
-                <ScrollArea className="h-[300px] bg-[#fdfbf7] dark:bg-[#292524]">
+                <ScrollArea className="h-[300px]">
                     {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                        <div className="p-8 text-center text-gray-500 text-sm">
                             Aucune notification
                         </div>
                     ) : (
-                        <div className="divide-y divide-[#e8dcc5] dark:divide-[#44403c]">
+                        <div className="divide-y divide-[#e8dcc5]">
                             {notifications.map((notification) => (
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`p-4 cursor-pointer hover:bg-[#f0e6d2] dark:hover:bg-[#44403c] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6] dark:bg-[#1c1917]' : 'bg-[#fdfbf7] dark:bg-[#292524]'}`}
+                                    className={`p-4 cursor-pointer hover:bg-[#f0e6d2] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6]' : ''}`}
                                 >
                                     <div className="flex justify-between items-start gap-2">
                                         <div className="mt-1">
@@ -186,10 +186,10 @@ export default function Notifications() {
                                             {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
                                         </div>
                                         <div className="flex-1">
-                                            <h5 className={`text-sm mb-1 text-[#4a3728] dark:text-[#d6c4b0] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
+                                            <h5 className={`text-sm mb-1 text-[#4a3728] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
                                                 {notification.title}
                                             </h5>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                            <p className="text-xs text-gray-600 line-clamp-2">
                                                 {notification.message}
                                             </p>
                                             

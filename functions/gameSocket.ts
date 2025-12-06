@@ -33,10 +33,6 @@ Deno.serve(async (req) => {
     socket.gameId = gameId;
     socket.user = user;
 
-    // Rate Limiter
-    const RATE_LIMIT_MS = 200;
-    let lastMessageTime = 0;
-
     socket.onopen = () => {
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
@@ -48,13 +44,6 @@ Deno.serve(async (req) => {
     };
 
     socket.onmessage = async (event) => {
-        const now = Date.now();
-        if (now - lastMessageTime < RATE_LIMIT_MS) {
-            // Ignore message if too fast (Spam protection)
-            return;
-        }
-        lastMessageTime = now;
-
         try {
             const data = JSON.parse(event.data);
             
