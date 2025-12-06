@@ -66,7 +66,12 @@ export default function RejoinGameDialog({ games, open, onOpenChange, currentUse
                                     </span>
                                     <span className="text-xs text-[#6b5138] flex items-center gap-1 mt-1">
                                         <User className="w-3 h-3" />
-                                        vs {currentUser && game.white_player_id === currentUser.id ? game.black_player_name : game.white_player_name}
+                                        {currentUser && game.white_player_id === currentUser.id 
+                                            ? `vs ${game.black_player_name}` 
+                                            : (currentUser && game.black_player_id === currentUser.id 
+                                                ? `vs ${game.white_player_name}` 
+                                                : `${game.white_player_name} vs ${game.black_player_name}`)
+                                        }
                                         <span className="text-gray-400 font-normal text-xs ml-2">#{game.access_code || game.id.substring(0, 4)}</span>
                                     </span>
                                 </div>

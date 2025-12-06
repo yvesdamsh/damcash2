@@ -120,10 +120,13 @@ export default function Home() {
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
             
-            // Deduplicate games (in case user is both white and black, e.g. solo)
+            // Deduplicate and STRICTLY filter games
             const allGames = [...myGamesWhite, ...myGamesBlack];
             const uniqueGames = Array.from(new Map(allGames.map(g => [g.id, g])).values());
-            const active = uniqueGames.sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
+            // Client-side safety check to ensure we only show games where we are actually a player
+            const active = uniqueGames
+                .filter(g => g.white_player_id === currentUser.id || g.black_player_id === currentUser.id)
+                .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
             setInvitations(myInvites);
             
@@ -676,7 +679,12 @@ export default function Home() {
                                             <div className="text-xs text-[#6b5138] flex items-center gap-1.5 mb-3 bg-black/5 p-1.5 rounded">
                                                 <User className="w-3 h-3 opacity-70" />
                                                 <span className="truncate font-medium">
-                                                    vs {user && game.white_player_id === user.id ? game.black_player_name : game.white_player_name}
+                                                    {user && game.white_player_id === user.id 
+                                                        ? `vs ${game.black_player_name}` 
+                                                        : (user && game.black_player_id === user.id 
+                                                            ? `vs ${game.white_player_name}` 
+                                                            : `${game.white_player_name} vs ${game.black_player_name}`)
+                                                    }
                                                 </span>
                                             </div>
                                             <Button size="sm" className={`w-full shadow-sm ${isMyTurn ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"}`}>
