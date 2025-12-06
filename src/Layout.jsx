@@ -22,7 +22,8 @@ import {
   Users,
   PlayCircle,
   ShoppingBag,
-  History
+  History,
+  LogIn
   } from 'lucide-react';
   import Notifications from '@/components/Notifications';
           import FriendsManager from '@/components/FriendsManager';
@@ -177,6 +178,10 @@ import {
         }
     };
 
+    const handleLogin = () => {
+        base44.auth.redirectToLogin(window.location.origin + '/Home');
+    };
+
     // handleLogout removed
 
     // Mobile Viewport Optimization
@@ -264,7 +269,7 @@ import {
                                     {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
                                 </button>
                                 
-                                {user && (
+                                {user ? (
                                     <button 
                                         onClick={handleLogout}
                                         className="p-2 rounded-full hover:bg-red-900/30 text-red-400 hover:text-red-300 transition-colors ml-2"
@@ -272,8 +277,17 @@ import {
                                     >
                                         <LogOut className="w-5 h-5" />
                                     </button>
+                                ) : (
+                                    <button 
+                                        onClick={handleLogin}
+                                        className="flex items-center gap-2 px-4 py-2 ml-2 rounded-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white transition-colors text-sm font-bold shadow-md border border-[#3d2b1f]"
+                                        title="Connexion"
+                                    >
+                                        <LogIn className="w-4 h-4" />
+                                        <span className="hidden lg:inline">{t('nav.login') || 'Connexion'}</span>
+                                    </button>
                                 )}
-                        </div>
+                                </div>
 
                         {/* Menu button (Visible on all screens) */}
                         <div className="flex items-center pl-4">
@@ -335,7 +349,7 @@ import {
                                     <LanguageSwitcher variant="minimal" />
                                 </div>
 
-                                {user && (
+                                {user ? (
                                     <button
                                         onClick={() => {
                                             handleLogout();
@@ -345,6 +359,17 @@ import {
                                     >
                                         <LogOut className="w-4 h-4 flex-shrink-0" />
                                         <span className="truncate">{t('nav.logout')}</span>
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            handleLogin();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#6B8E4E] hover:bg-[#5c4430] hover:text-green-400 flex items-center gap-2 overflow-hidden col-span-2"
+                                    >
+                                        <LogIn className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">{t('nav.login') || 'Connexion'}</span>
                                     </button>
                                 )}
                                 </div>
