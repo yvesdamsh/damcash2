@@ -394,6 +394,21 @@ export const translations = {
     "tv.watch": "Watch",
     "tv.review": "Review",
 
+    // Filters
+    "filters.title": "Advanced Search Filters",
+    "filters.game_mode": "Game Mode",
+    "filters.all": "All",
+    "filters.status_label": "Game Status",
+    "filters.status_placeholder": "Status",
+    "filters.status_live": "Live (Ongoing)",
+    "filters.status_finished": "Finished (Replay)",
+    "filters.status_waiting": "Waiting",
+    "filters.elo_min": "Min ELO",
+    "filters.ai_difficulty": "AI Difficulty",
+    "filters.tournament_league": "Tournament / League",
+    "filters.search_placeholder": "ID or Name...",
+    "filters.reset": "Reset Filters",
+
     // League Detail
     "league.back": "Back to leagues",
     "league.season": "Season",
@@ -814,6 +829,21 @@ export const translations = {
     "tv.tournament": "ТУРНИР",
     "tv.watch": "Смотреть",
     "tv.review": "Обзор",
+
+    // Filters
+    "filters.title": "Расширенные фильтры",
+    "filters.game_mode": "Режим игры",
+    "filters.all": "Все",
+    "filters.status_label": "Статус игры",
+    "filters.status_placeholder": "Статус",
+    "filters.status_live": "В эфире (Идет)",
+    "filters.status_finished": "Завершено (Повтор)",
+    "filters.status_waiting": "Ожидание",
+    "filters.elo_min": "Мин ELO",
+    "filters.ai_difficulty": "Сложность ИИ",
+    "filters.tournament_league": "Турнир / Лига",
+    "filters.search_placeholder": "ID или Имя...",
+    "filters.reset": "Сбросить фильтры",
 
     // League Detail
     "league.back": "Назад к лигам",
@@ -1239,6 +1269,21 @@ export const translations = {
     "tv.watch": "Zuschauen",
     "tv.review": "Rückblick",
 
+    // Filters
+    "filters.title": "Erweiterte Suchfilter",
+    "filters.game_mode": "Spielmodus",
+    "filters.all": "Alle",
+    "filters.status_label": "Spielstatus",
+    "filters.status_placeholder": "Status",
+    "filters.status_live": "Live (Laufend)",
+    "filters.status_finished": "Beendet (Wiederholung)",
+    "filters.status_waiting": "Warten",
+    "filters.elo_min": "Min ELO",
+    "filters.ai_difficulty": "KI-Schwierigkeit",
+    "filters.tournament_league": "Turnier / Liga",
+    "filters.search_placeholder": "ID oder Name...",
+    "filters.reset": "Filter zurücksetzen",
+
     // League Detail
     "league.back": "Zurück zu den Ligen",
     "league.season": "Saison",
@@ -1663,6 +1708,21 @@ export const translations = {
     "tv.watch": "观看",
     "tv.review": "回顾",
 
+    // Filters
+    "filters.title": "高级搜索过滤器",
+    "filters.game_mode": "游戏模式",
+    "filters.all": "全部",
+    "filters.status_label": "游戏状态",
+    "filters.status_placeholder": "状态",
+    "filters.status_live": "直播 (进行中)",
+    "filters.status_finished": "已结束 (回放)",
+    "filters.status_waiting": "等待中",
+    "filters.elo_min": "最低 ELO",
+    "filters.ai_difficulty": "AI 难度",
+    "filters.tournament_league": "锦标赛 / 联赛",
+    "filters.search_placeholder": "ID 或 名称...",
+    "filters.reset": "重置过滤器",
+
     // League Detail
     "league.back": "返回联赛列表",
     "league.season": "赛季",
@@ -2086,6 +2146,21 @@ export const translations = {
     "tv.tournament": "TOERNOOI",
     "tv.watch": "Kijken",
     "tv.review": "Bekijken",
+
+    // Filters
+    "filters.title": "Geavanceerde Filters",
+    "filters.game_mode": "Spelmodus",
+    "filters.all": "Alles",
+    "filters.status_label": "Spelstatus",
+    "filters.status_placeholder": "Status",
+    "filters.status_live": "Live (Bezig)",
+    "filters.status_finished": "Afgelopen (Replay)",
+    "filters.status_waiting": "Wachten",
+    "filters.elo_min": "Min ELO",
+    "filters.ai_difficulty": "AI Moeilijkheid",
+    "filters.tournament_league": "Toernooi / Competitie",
+    "filters.search_placeholder": "ID of Naam...",
+    "filters.reset": "Filters Resetten",
 
     // League Detail
     "league.back": "Terug naar competities",
@@ -2519,6 +2594,21 @@ export const translations = {
     "tv.tournament": "TOURNOI",
     "tv.watch": "Regarder",
     "tv.review": "Revoir",
+
+    // Filters
+    "filters.title": "Filtres de recherche avancée",
+    "filters.game_mode": "Mode de jeu",
+    "filters.all": "Tous",
+    "filters.status_label": "Statut de la partie",
+    "filters.status_placeholder": "Statut",
+    "filters.status_live": "En cours (Live)",
+    "filters.status_finished": "Terminé (Replay)",
+    "filters.status_waiting": "En attente",
+    "filters.elo_min": "ELO Min",
+    "filters.ai_difficulty": "Difficulté IA",
+    "filters.tournament_league": "Tournoi / Ligue",
+    "filters.search_placeholder": "ID ou Nom...",
+    "filters.reset": "Réinitialiser les filtres",
 
     // League Detail
     "league.back": "Retour aux ligues",
