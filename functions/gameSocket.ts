@@ -45,12 +45,29 @@ Deno.serve(async (req) => {
                 // Persist Move
                 const { updateData } = data.payload;
                 if (updateData) {
-                    // Override with server timestamp for consistency
-                    updateData.last_move_at = new Date().toISOString();
-
-                    await base44.asServiceRole.entities.Game.update(gameId, updateData);
+                    // SECURITY: Sanitize input. Prevent overwriting sensitive fields like winner_id or status.
+                    // Only allow gameplay related fields.
+                    const allowedFields = [
+                        'board_state', 'current_turn', 'moves', 
+                        'white_seconds_left', 'black_seconds_left', 
+                        'draw_offer_by', 'takeback_requested_by',
+                        'white_player_elo', 'black_player_elo', // Allowed to sync cached elo if needed
+                        'opening_name'
+                    ];
                     
-                    const msg = { type: 'GAME_UPDATE', payload: updateData };
+                    const sanitizedUpdate = {};
+                    for (const key of allowedFields) {
+                        if (updateData[key] !== undefined) {
+                            sanitizedUpdate[key] = updateData[key];
+                        }
+                    }
+                    
+                    // Override with server timestamp for consistency
+                    sanitizedUpdate.last_move_at = new Date().toISOString();
+
+                    await base44.asServiceRole.entities.Game.update(gameId, sanitizedUpdate);
+                    
+                    const msg = { type: 'GAME_UPDATE', payload: sanitizedUpdate };
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
                 }

@@ -62,10 +62,14 @@ export default async function handler(req) {
         return Response.json({ balance: wallet.balance });
     }
 
-    // 2. Deposit (Demo)
+    // 2. Deposit (Restricted to Admin)
     if (action === 'deposit') {
+        if (user.role !== 'admin') return Response.json({ error: 'Unauthorized' }, { status: 403 });
         if (amount <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
-        const wallet = await getWallet(userId || user.id);
+        
+        // Allow admin to deposit to anyone
+        const targetUserId = userId || user.id;
+        const wallet = await getWallet(targetUserId);
         
         await base44.asServiceRole.entities.Wallet.update(wallet.id, { 
             balance: (wallet.balance || 0) + amount 
@@ -84,11 +88,16 @@ export default async function handler(req) {
     }
 
     // 3. Deduct for Game (Entry Fee)
-    // This should ideally be called by server when creating/joining game, but we can expose it securely
-    // Or trust client for now with validation
     if (action === 'pay_entry_fee') {
         if (!gameId || !amount) return Response.json({ error: 'Missing params' }, { status: 400 });
-        const wallet = await getWallet(userId || user.id);
+
+        // Security: Only allow users to pay for themselves unless admin
+        if (userId && userId !== user.id && user.role !== 'admin') {
+            return Response.json({ error: 'Unauthorized to use this wallet' }, { status: 403 });
+        }
+
+        const targetUserId = userId || user.id;
+        const wallet = await getWallet(targetUserId);
 
         if ((wallet.balance || 0) < amount) {
             return Response.json({ error: 'Insufficient funds' }, { status: 400 });
