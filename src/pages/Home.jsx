@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
