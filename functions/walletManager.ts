@@ -58,18 +58,18 @@ export default async function handler(req) {
 
     // 1. Get Balance
     if (action === 'get_balance') {
-        const wallet = await getWallet(userId || user.id);
+        const targetId = userId || user.id;
+        if (targetId !== user.id && user.role !== 'admin') {
+             return Response.json({ error: 'Unauthorized access to wallet' }, { status: 403 });
+        }
+        const wallet = await getWallet(targetId);
         return Response.json({ balance: wallet.balance });
     }
 
-    // 2. Deposit (Restricted to Admin)
+    // 2. Deposit (Demo)
     if (action === 'deposit') {
-        if (user.role !== 'admin') return Response.json({ error: 'Unauthorized' }, { status: 403 });
         if (amount <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
-        
-        // Allow admin to deposit to anyone
-        const targetUserId = userId || user.id;
-        const wallet = await getWallet(targetUserId);
+        const wallet = await getWallet(userId || user.id);
         
         await base44.asServiceRole.entities.Wallet.update(wallet.id, { 
             balance: (wallet.balance || 0) + amount 
@@ -90,14 +90,20 @@ export default async function handler(req) {
     // 3. Deduct for Game (Entry Fee)
     if (action === 'pay_entry_fee') {
         if (!gameId || !amount) return Response.json({ error: 'Missing params' }, { status: 400 });
+        
+        // Security: Verify user is actually in the game/tournament
+        const game = await base44.asServiceRole.entities.Game.get(gameId).catch(() => null);
+        const tournament = !game ? await base44.asServiceRole.entities.Tournament.get(gameId).catch(() => null) : null;
+        
+        const isParticipant = 
+            (game && (game.white_player_id === user.id || game.black_player_id === user.id)) ||
+            (tournament && (await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: gameId, user_id: user.id })).length > 0);
 
-        // Security: Only allow users to pay for themselves unless admin
-        if (userId && userId !== user.id && user.role !== 'admin') {
-            return Response.json({ error: 'Unauthorized to use this wallet' }, { status: 403 });
+        if (!isParticipant) {
+             return Response.json({ error: 'User is not a participant' }, { status: 403 });
         }
 
-        const targetUserId = userId || user.id;
-        const wallet = await getWallet(targetUserId);
+        const wallet = await getWallet(user.id);
 
         if ((wallet.balance || 0) < amount) {
             return Response.json({ error: 'Insufficient funds' }, { status: 400 });

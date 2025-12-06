@@ -9,6 +9,10 @@ export default async function handler(req) {
     const base44 = createClientFromRequest(req);
     const body = await req.json();
     
+    const user = await base44.auth.me();
+    // Allow admin or system (if local) or players to trigger processing
+    // But ideally restrict to players involved in the game or admin
+    
     const validation = gameResultSchema.safeParse(body);
     if (!validation.success) {
         return Response.json({ error: "Invalid input", details: validation.error.format() }, { status: 400 });
@@ -20,6 +24,11 @@ export default async function handler(req) {
     const game = await base44.asServiceRole.entities.Game.get(gameId);
     if (!game || game.status !== 'finished' || game.elo_processed) {
         return Response.json({ message: 'Game not finished or already processed' });
+    }
+
+    // Security Check: Ensure caller is authorized
+    if (user && user.role !== 'admin' && game.white_player_id !== user.id && game.black_player_id !== user.id) {
+         return Response.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     // Mark as processed immediately to avoid double run

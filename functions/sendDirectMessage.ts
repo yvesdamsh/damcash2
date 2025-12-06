@@ -23,11 +23,14 @@ export default async function handler(req) {
 
         // Find or create conversation
         let conversationId;
-        const allConvos = await base44.asServiceRole.entities.Conversation.list();
-        let conversation = allConvos.find(c => 
-            c.participants.includes(user.id) && 
-            c.participants.includes(recipientId)
-        );
+        // Optimized filter
+        // Note: Base44 might not support complex array intersection in filter, so we filter by one participant and check the other in code
+        // This is much better than listing ALL conversations
+        const userConvos = await base44.asServiceRole.entities.Conversation.filter({ 
+            participants: { '$in': [user.id] } 
+        });
+        
+        let conversation = userConvos.find(c => c.participants.includes(recipientId));
 
         if (!conversation) {
             conversation = await base44.asServiceRole.entities.Conversation.create({
