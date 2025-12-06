@@ -298,27 +298,10 @@ export default function Game() {
             
             if (data.type === 'GAME_UPDATE') {
                 if (data.payload) {
-                    setGame(prev => {
-                        if (!prev) return { ...data.payload };
-                        try {
-                            const prevMoves = prev.moves ? JSON.parse(prev.moves) : [];
-                            const newMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
-                            if (newMoves.length === 0 && prevMoves.length > 0) return { ...prev, ...data.payload };
-                            if (newMoves.length < prevMoves.length) {
-                                console.warn("Ignoring stale game update");
-                                return prev;
-                            }
-                        } catch(e) {}
-                        return { ...prev, ...data.payload };
-                    });
-                } else {
-                    // Refetch if payload missing
-                    const fetchGame = async () => {
-                        const fetched = await base44.entities.Game.get(id);
-                        setGame(fetched);
-                    };
-                    fetchGame();
+                    setGame(prev => ({ ...prev, ...data.payload }));
                 }
+            } else if (data.type === 'GAME_REFETCH') {
+                base44.entities.Game.get(id).then(setGame);
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
@@ -924,20 +907,27 @@ export default function Game() {
         }
 
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
-        // We update local state immediately so the UI reflects the move.
-        // The socket check in onmessage will prevent overwriting this with an old state.
         setGame(prev => ({ ...prev, ...updateData }));
 
         if (game.id === 'local-ai') return;
 
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'MOVE',
-                payload: { updateData }
-            }));
-        } else {
-            // Fallback if socket failed
+        // ALWAYS write to DB directly for maximum reliability
+        try {
             await base44.entities.Game.update(game.id, updateData);
+            
+            // Then notify via socket to wake up opponents
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' }));
+            }
+        } catch (e) {
+            console.error("Move save error", e);
+            // If DB write fails, try socket as backup (which does server-side write)
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'MOVE',
+                    payload: { updateData }
+                }));
+            }
         }
     };
 

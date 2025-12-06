@@ -50,19 +50,16 @@ Deno.serve(async (req) => {
 
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
                     
-                    // Broadcast locally
-                    broadcast(gameId, {
-                        type: 'GAME_UPDATE',
-                        payload: updateData
-                    }, null);
-
-                    // Broadcast to other instances
-                    gameUpdates.postMessage({
-                        gameId,
-                        type: 'GAME_UPDATE',
-                        payload: updateData
-                    });
+                    const msg = { type: 'GAME_UPDATE', payload: updateData };
+                    broadcast(gameId, msg, null);
+                    gameUpdates.postMessage({ gameId, ...msg });
                 }
+            } 
+            else if (data.type === 'MOVE_NOTIFY') {
+                 // Just broadcast the notification to trigger refetch
+                 const msg = { type: 'GAME_REFETCH' };
+                 broadcast(gameId, msg, null);
+                 gameUpdates.postMessage({ gameId, ...msg });
             } 
             else if (data.type === 'CHAT_MESSAGE') {
                 const { sender_id, sender_name, content } = data.payload;

@@ -178,7 +178,33 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         }
     };
 
-    const sendSignal = (type, data) => {
+    // Poll for DB signals (Backup for Socket)
+    useEffect(() => {
+        if (!currentUser || !gameId) return;
+        
+        const pollSignals = async () => {
+            try {
+                const signals = await base44.entities.SignalMessage.filter({ 
+                    recipient_id: currentUser.id,
+                    game_id: gameId 
+                }, '-created_date', 5); // Get recent signals
+                
+                signals.forEach(sig => {
+                    // Check if signal is new (simplistic check: we could store last processed ID)
+                    // For now, we process all recent ones and client logic dedups state (e.g. ignore offer if connected)
+                    // Better: delete signal after processing
+                    handleSignalMessage({ type: sig.type, data: sig.data });
+                    base44.entities.SignalMessage.delete(sig.id); // Consume signal
+                });
+            } catch (e) {}
+        };
+
+        const interval = setInterval(pollSignals, 3000);
+        return () => clearInterval(interval);
+    }, [currentUser, gameId]);
+
+    const sendSignal = async (type, data) => {
+        // 1. Send via Socket (Fast)
         if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({
                 type: 'SIGNAL',
@@ -190,10 +216,19 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
                     data: data
                 }
             }));
-        } else {
-            // Fallback to HTTP if socket closed? (Rare if in game)
-            // For now assume socket is robust
-            console.warn("Socket not ready for signal");
+        }
+        
+        // 2. Write to DB (Reliable Backup)
+        try {
+            await base44.entities.SignalMessage.create({
+                game_id: gameId,
+                sender_id: currentUser.id,
+                recipient_id: opponentId,
+                type: type,
+                data: data
+            });
+        } catch (e) {
+            console.error("Signal DB save error", e);
         }
     };
 
