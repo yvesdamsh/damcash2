@@ -45,13 +45,16 @@ Deno.serve(async (req) => {
                 // Persist Move
                 const { updateData } = data.payload;
                 if (updateData) {
+                    // Override with server timestamp for consistency
+                    updateData.last_move_at = new Date().toISOString();
+
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
                     
                     // Broadcast locally
                     broadcast(gameId, {
                         type: 'GAME_UPDATE',
                         payload: updateData
-                    }, null); // null sender means broadcast to all, or maybe we want to exclude sender? usually safe to send to all.
+                    }, null);
 
                     // Broadcast to other instances
                     gameUpdates.postMessage({

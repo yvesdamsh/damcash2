@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
@@ -264,13 +264,18 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
-    // Initial Fetch
+    // Initial Fetch & Polling
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         const fetchGame = async () => {
             try {
                 const fetchedGame = await base44.entities.Game.get(id);
-                setGame(fetchedGame);
+                setGame(prev => {
+                    // Only update if changes detected to avoid jitter, or if forced
+                    // But for simple objects, simple replace is okay.
+                    // Check if moves changed to play sound? handled in other effect.
+                    return fetchedGame;
+                });
                 setLoading(false);
             } catch (e) {
                 console.error("Error fetching game", e);
@@ -278,10 +283,12 @@ export default function Game() {
             }
         };
         fetchGame();
-        // Poll for updates every 5 seconds to fix potential sync issues
-        const interval = setInterval(fetchGame, 5000);
+        
+        // Dynamic polling: faster when playing
+        const intervalMs = game?.status === 'playing' ? 2000 : 5000;
+        const interval = setInterval(fetchGame, intervalMs);
         return () => clearInterval(interval);
-    }, [id]);
+    }, [id, game?.status]);
 
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
@@ -1399,8 +1406,29 @@ export default function Game() {
                 {/* Board Area - Centered and Natural Size */}
                 <div className="flex flex-col items-center w-full">
                     {game && (
-                        <div className="mb-2 text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138]">
-                            Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}
+                        <div className="mb-2 flex items-center gap-3">
+                            <div className="text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138] flex items-center gap-2">
+                                <span>Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}</span>
+                                <div className="h-4 w-px bg-[#6b5138]/20"></div>
+                                {socket && socket.readyState === 1 ? (
+                                    <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
+                                ) : (
+                                    <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
+                                )}
+                            </div>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
+                                onClick={async () => {
+                                    toast.info("Synchronisation...");
+                                    const g = await base44.entities.Game.get(game.id);
+                                    setGame(g);
+                                }}
+                                title="Forcer la synchronisation"
+                            >
+                                <RefreshCw className="w-3 h-3" />
+                            </Button>
                         </div>
                     )}
                     <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0">
