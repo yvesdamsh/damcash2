@@ -25,25 +25,27 @@ import {
   History,
   LogIn
   } from 'lucide-react';
-  import Notifications from '@/components/Notifications';
-          import FriendsManager from '@/components/FriendsManager';
-          import WalletBalance from '@/components/WalletBalance';
-          import { RealTimeProvider } from '@/components/RealTimeContext';
+import Notifications from '@/components/Notifications';
+import SettingsMenu from '@/components/SettingsMenu';
+import FriendsManager from '@/components/FriendsManager';
+import WalletBalance from '@/components/WalletBalance';
+import { RealTimeProvider } from '@/components/RealTimeContext';
 
-                          export default function Layout({ children }) {
-                    return (
-                      <LanguageProvider>
-                        <RealTimeProvider>
-                          <LayoutContent>{children}</LayoutContent>
-                        </RealTimeProvider>
-                      </LanguageProvider>
-                    );
-                          }
+export default function Layout({ children }) {
+    return (
+      <LanguageProvider>
+        <RealTimeProvider>
+          <LayoutContent>{children}</LayoutContent>
+        </RealTimeProvider>
+      </LanguageProvider>
+    );
+}
 
-                          function LayoutContent({ children }) {
-                              const { t, language } = useLanguage();
-                              const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-                              const [soundEnabled, setSoundEnabled] = React.useState(true);
+function LayoutContent({ children }) {
+    const { t, language } = useLanguage();
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [soundEnabled, setSoundEnabled] = React.useState(true);
+    const [appTheme, setAppTheme] = React.useState(localStorage.getItem('appTheme') || 'light');
     const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
     const navigate = useNavigate();
@@ -126,6 +128,12 @@ import {
         setSoundEnabled(saved !== 'false');
     }, []);
 
+    // Theme Management
+    const handleThemeChange = (newTheme) => {
+        setAppTheme(newTheme);
+        localStorage.setItem('appTheme', newTheme);
+    };
+
     React.useEffect(() => {
         const checkUser = async () => {
             try {
@@ -195,8 +203,23 @@ import {
         meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
     }, []);
 
+    const themeClasses = {
+        light: "bg-[#e8dcc5] text-slate-900",
+        dark: "bg-slate-900 text-[#e8dcc5]",
+        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-900 text-[#e8dcc5]" : "bg-[#e8dcc5] text-slate-900"
+    };
+
+    const navTheme = {
+        light: "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]",
+        dark: "bg-slate-950 text-gray-200 border-slate-800",
+        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-950 text-gray-200 border-slate-800" : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]"
+    };
+
+    const activeTheme = themeClasses[appTheme] || themeClasses.light;
+    const activeNavTheme = navTheme[appTheme] || navTheme.light;
+
     return (
-        <div className="min-h-screen font-sans text-slate-900 bg-[#e8dcc5] bg-opacity-80 relative">
+        <div className={`min-h-screen font-sans bg-opacity-80 relative transition-colors duration-300 ${activeTheme}`}>
             <AnimatePresence>
                 {showIntro && (
                     <motion.div 
@@ -219,7 +242,7 @@ import {
             />
 
             {/* Navbar */}
-            <nav className="relative z-[100] bg-[#4a3728] text-[#e8dcc5] shadow-lg border-b-4 border-[#2c1e12]">
+            <nav className={`relative z-[100] shadow-lg border-b-4 transition-colors duration-300 ${activeNavTheme}`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
@@ -256,8 +279,10 @@ import {
                                               Lvl {user.level || 1}
                                           </div>
                                       </div>
-                                      <Notifications />
-                                      <FriendsManager />
+                                      {/* Moved Notifications to mobile-friendly area */}
+                                      <div className="hidden md:block">
+                                          <FriendsManager />
+                                      </div>
                                   </>
                                 )}
 
@@ -289,11 +314,14 @@ import {
                                 )}
                                 </div>
 
-                        {/* Menu button (Visible on all screens) */}
-                        <div className="flex items-center pl-4">
+                        {/* Mobile/Global Actions (Notifications, Settings, Menu) */}
+                        <div className="flex items-center gap-1 pl-2">
+                            {user && <Notifications />}
+                            <SettingsMenu currentTheme={appTheme} onThemeChange={handleThemeChange} />
+                            
                             <button
                                 onClick={toggleMenu}
-                                className="inline-flex items-center justify-center p-2 rounded-md text-[#d4c5b0] hover:bg-[#5c4430] focus:outline-none"
+                                className="inline-flex items-center justify-center p-2 rounded-md text-[#d4c5b0] hover:bg-white/10 focus:outline-none ml-1"
                             >
                                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                             </button>
