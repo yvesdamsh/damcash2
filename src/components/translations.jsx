@@ -3152,6 +3152,9 @@ export const translations = {
     "home.ai_hard": "Difficile",
     "home.ai_expert": "Expert",
     "home.ai_grandmaster": "Grand Maître",
+    "home.chess_subtitle": "Le jeu des rois, pure stratégie",
+    "home.level_placeholder": "Niveau",
+    "home.play_vs_ai": "Jouer vs IA",
 
     // Lobby
     "lobby.title": "LOBBY JOUEURS",

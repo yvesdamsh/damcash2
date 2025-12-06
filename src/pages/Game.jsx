@@ -111,7 +111,7 @@ export default function Game() {
                 id: 'local-ai',
                 status: 'playing',
                 game_type: type,
-                white_player_name: currentUser ? (currentUser.username || 'Vous') : 'Vous',
+                white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
                 black_player_name: `AI (${difficulty})`,
                 white_player_id: currentUser?.id || 'guest',
                 black_player_id: 'ai',
@@ -234,7 +234,7 @@ export default function Game() {
                         // Generate fallback guest if needed
                         user = {
                             id: 'guest_' + Math.random().toString(36).substr(2, 9),
-                            full_name: 'Spectateur',
+                            full_name: t('common.spectator'),
                             email: 'guest@damcash.com',
                             is_guest: true
                         };
@@ -388,7 +388,7 @@ export default function Game() {
                      executeChessMoveFinal(validMove);
                 }
             } else {
-                toast.error("Coup anticipé impossible");
+                toast.error(t('game.premove_impossible'));
                 setPremove(null);
             }
         } else {
@@ -398,7 +398,7 @@ export default function Game() {
             if (validMove) {
                 executeCheckersMove(validMove);
             } else {
-                toast.error("Coup anticipé impossible");
+                toast.error(t('game.premove_impossible'));
                 setPremove(null);
             }
         }
@@ -416,15 +416,15 @@ export default function Game() {
             let newFavs = currentUser.favorite_games || [];
             if (isSaved) {
                 newFavs = newFavs.filter(g => g !== id);
-                toast.success("Partie retirée des favoris");
+                toast.success(t('game.removed_favorite'));
             } else {
                 newFavs = [...newFavs, id];
-                toast.success("Partie sauvegardée pour analyse");
+                toast.success(t('game.added_favorite'));
             }
             await base44.auth.updateMe({ favorite_games: newFavs });
             setIsSaved(!isSaved);
         } catch (e) {
-            toast.error("Erreur lors de la sauvegarde");
+            toast.error(t('game.save_error'));
         }
     };
 
@@ -578,14 +578,14 @@ export default function Game() {
                 if (fromR === toR && fromC === toC) {
                     if (premove) {
                         setPremove(null);
-                        toast.info("Coup anticipé annulé");
+                        toast.info(t('game.premove_cancelled'));
                     }
                     return;
                 }
                 
                 // Set new premove
                 setPremove({ from: {r: fromR, c: fromC}, to: {r: toR, c: toC} });
-                toast.info("Coup anticipé programmé");
+                toast.info(t('game.premove_set'));
             }
             return;
         }
@@ -632,7 +632,7 @@ export default function Game() {
         if (!isMyTurn) {
              if (premove) {
                  setPremove(null);
-                 toast.info("Coup anticipé annulé");
+                 toast.info(t('game.premove_cancelled'));
              }
              return;
         }
@@ -856,7 +856,7 @@ export default function Game() {
             san += "#";
         } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
-            let reason = "Nulle";
+            let reason = t('game.reason_draw');
             if (gameStatus === 'stalemate') reason = t('game.stalemate');
             else if (gameStatus === 'draw_50_moves') reason = t('game.draw_50');
             else if (gameStatus === 'draw_repetition') reason = t('game.draw_repetition');
@@ -1447,7 +1447,7 @@ export default function Game() {
                                 size="icon" 
                                 className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
                                 onClick={async () => {
-                                    toast.info("Synchronisation...");
+                                    toast.info(t('game.syncing'));
                                     const g = await base44.entities.Game.get(game.id);
                                     setGame(g);
                                 }}

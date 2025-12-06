@@ -27,7 +27,7 @@ export default function Home() {
         if (!guest) {
             guest = {
                 id: 'guest_' + Math.random().toString(36).substr(2, 9),
-                full_name: 'Invité ' + Math.floor(Math.random() * 1000),
+                full_name: t('common.guest') + ' ' + Math.floor(Math.random() * 1000),
                 email: 'guest@damcash.com',
                 is_guest: true
             };
@@ -277,7 +277,7 @@ export default function Home() {
                 status: 'waiting',
                 game_type: gameType,
                 white_player_id: user.id,
-                white_player_name: user.full_name || 'Joueur 1',
+                white_player_name: user.full_name || t('common.player_1'),
                 white_player_elo: myElo,
                 current_turn: 'white',
                 board_state: initialBoard,
@@ -298,7 +298,7 @@ export default function Home() {
                     ...commonGameData,
                     is_private: true,
                     access_code: code,
-                    white_player_name: user.full_name || 'Hôte'
+                    white_player_name: user.full_name || t('common.host')
                 });
 
                 // Pay Fee After Creation (Now we have ID)
@@ -309,7 +309,7 @@ export default function Home() {
                         gameId: newGame.id 
                     });
                     if (payRes.status !== 200 || (payRes.data && payRes.data.error)) {
-                        alert("Fonds insuffisants ! Partie annulée.");
+                        alert(t('game.insufficient_funds'));
                         // Should ideally delete game or mark cancelled
                         return;
                     }
@@ -364,7 +364,7 @@ export default function Home() {
                 if (matchFound) {
                     await base44.entities.Game.update(matchFound.id, {
                         black_player_id: user.id,
-                        black_player_name: user.full_name || 'Joueur 2',
+                        black_player_name: user.full_name || t('common.player_2'),
                         black_player_elo: myElo,
                         status: 'playing'
                     });
@@ -396,8 +396,8 @@ export default function Home() {
 
             const newGame = await base44.entities.Game.create({
                 status: 'playing', game_type: gameType,
-                white_player_id: user.id, white_player_name: user.full_name || 'Moi',
-                black_player_id: user.id, black_player_name: (user.full_name || 'Moi') + ' (Clone)',
+                white_player_id: user.id, white_player_name: user.full_name || t('game.me'),
+                black_player_id: user.id, black_player_name: (user.full_name || t('game.me')) + t('common.clone'),
                 current_turn: 'white', board_state: initialBoard, is_private: true
             });
             navigate(`/Game?id=${newGame.id}`);
@@ -417,11 +417,11 @@ export default function Home() {
             if (games.length > 0) {
                 const game = games[0];
                  await base44.entities.Game.update(game.id, {
-                    black_player_id: user.id, black_player_name: user.full_name || 'Invité', status: 'playing'
+                    black_player_id: user.id, black_player_name: user.full_name || t('common.guest'), status: 'playing'
                 });
                 navigate(`/Game?id=${game.id}`);
             } else {
-                alert("Partie introuvable ou déjà complète");
+                alert(t('game.not_found_or_full'));
             }
         } catch (error) {
             console.error("Join failed", error);
@@ -653,7 +653,7 @@ export default function Home() {
                                         <div className="flex gap-2">
                                             <Select value={aiLevel} onValueChange={setAiLevel}>
                                                 <SelectTrigger className="h-10 bg-white text-[#4a3728] border-none font-bold">
-                                                    <SelectValue placeholder="Niveau" />
+                                                    <SelectValue placeholder={t('home.level_placeholder')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
@@ -665,7 +665,7 @@ export default function Home() {
                                                 onClick={() => navigate(`/Game?id=local-ai&difficulty=${aiLevel}&type=${gameType}`)}
                                                 className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold h-10"
                                             >
-                                                Jouer vs IA
+                                                {t('home.play_vs_ai')}
                                             </Button>
                                         </div>
                                     </div>
@@ -692,7 +692,7 @@ export default function Home() {
                                             if(!user) return;
                                             setInviteDialogOpen(false);
                                             const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
-                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || 'Hôte', current_turn: 'white', board_state: initialBoard, is_private: true });
+                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
                                             
                                             await base44.entities.Invitation.create({ 
                                                 from_user_id: user.id, 
@@ -706,8 +706,8 @@ export default function Home() {
                                             await base44.functions.invoke('sendNotification', {
                                                 recipient_id: invitedUser.id,
                                                 type: "game",
-                                                title: "Invitation à jouer",
-                                                message: `${user.full_name || 'Un ami'} vous invite à une partie privée.`,
+                                                title: t('home.invite_friend'),
+                                                message: t('home.invite_from') + ` ${user.full_name || t('common.anonymous')}`,
                                                 link: `/Game?id=${newGame.id}`
                                             });
 
