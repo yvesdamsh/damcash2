@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function Lobby() {
+    const { t } = useLanguage();
     const [users, setUsers] = useState([]);
     const [publicGames, setPublicGames] = useState([]);
     const [activeGames, setActiveGames] = useState([]);
@@ -106,10 +108,10 @@ export default function Lobby() {
             // Notify Lobby
             sendMessage({ type: 'game_created', game: newGame });
 
-            toast.success("Partie publique créée !");
+            toast.success(t('lobby.game_created'));
             navigate(`/Game?id=${newGame.id}`);
         } catch (e) {
-            toast.error("Erreur création partie");
+            toast.error(t('lobby.create_error'));
         }
     };
 
@@ -120,11 +122,11 @@ export default function Lobby() {
             if (res.data?.error) {
                 toast.error(res.data.error);
             } else {
-                toast.success("Partie rejointe !");
+                toast.success(t('lobby.joined_success'));
                 navigate(`/Game?id=${gameId}`);
             }
         } catch (e) {
-            toast.error("Erreur lors de la connexion");
+            toast.error(t('lobby.join_error'));
         }
     };
 
@@ -162,17 +164,17 @@ export default function Lobby() {
             await base44.functions.invoke('sendNotification', {
                 recipient_id: opponent.id,
                 type: "game",
-                title: "Défi reçu !",
-                message: `${currentUser.full_name || 'Un joueur'} vous défie aux ${type === 'chess' ? 'Échecs' : 'Dames'}.`,
+                title: t('lobby.challenge_received'),
+                message: `${currentUser.full_name || 'Un joueur'} ${t('lobby.challenge_msg')} ${type === 'chess' ? t('game.chess') : t('game.checkers')}.`,
                 link: `/Game?id=${newGame.id}`
             });
 
-            toast.success(`Défi envoyé à ${opponent.full_name || 'Joueur'} !`);
+            toast.success(`${t('lobby.challenge_sent')} ${opponent.full_name || 'Joueur'} !`);
             navigate(`/Game?id=${newGame.id}`);
 
         } catch (e) {
             console.error(e);
-            toast.error("Erreur lors de l'envoi du défi");
+            toast.error(t('lobby.challenge_error'));
         }
     };
 
@@ -197,7 +199,7 @@ export default function Lobby() {
         if (players.length === 0) return (
             <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
                 <Search className="w-10 h-10 mb-2 opacity-50" />
-                <p>Aucun joueur de {type === 'chess' ? 'Échecs' : 'Dames'} en ligne pour le moment.</p>
+                <p>{t('lobby.no_players', { type: type === 'chess' ? t('game.chess') : t('game.checkers') })}</p>
             </div>
         );
 
@@ -214,19 +216,19 @@ export default function Lobby() {
                                     </div>
                                     <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
                                         status === 'playing' ? 'bg-red-500' : 'bg-green-500'
-                                    }`} title={status === 'playing' ? "En jeu" : "En ligne"}></div>
+                                    }`} title={status === 'playing' ? t('lobby.status_playing') : t('lobby.status_online')}></div>
                                 </div>
                                 <div>
                                     <div className="font-bold text-[#4a3728] flex items-center gap-1">
                                         {player.full_name || 'Joueur'}
-                                        {player.id === currentUser?.id && <span className="text-xs text-gray-500">(Moi)</span>}
+                                        {player.id === currentUser?.id && <span className="text-xs text-gray-500">({t('lobby.me')})</span>}
                                     </div>
                                     <div className="text-xs text-[#6b5138] flex items-center gap-2">
                                         <Crown className="w-3 h-3 text-yellow-600" />
                                         ELO: {type === 'chess' ? (player.elo_chess || 1200) : (player.elo_checkers || 1200)}
                                     </div>
                                     <div className="text-[10px] text-gray-500 mt-0.5 font-medium">
-                                        {status === 'playing' ? <span className="text-red-500">En partie</span> : <span className="text-green-600">Disponible</span>}
+                                        {status === 'playing' ? <span className="text-red-500">{t('lobby.playing')}</span> : <span className="text-green-600">{t('lobby.available')}</span>}
                                     </div>
                                 </div>
                             </div>
@@ -238,20 +240,20 @@ export default function Lobby() {
                                             variant="outline"
                                             className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
                                             onClick={() => navigate(`/Game?id=${gameId}`)}
-                                            title="Regarder la partie"
+                                            title={t('lobby.watch')}
                                         >
                                             <Play className="w-4 h-4 mr-2" />
-                                            Regarder
+                                            {t('lobby.watch')}
                                         </Button>
                                     ) : (
                                         <Button 
                                             size="sm" 
                                             className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
                                             onClick={() => handleChallenge(player, type)}
-                                            title="Inviter à jouer"
+                                            title={t('lobby.invite')}
                                         >
                                             <Swords className="w-4 h-4 mr-2" />
-                                            Inviter
+                                            {t('lobby.invite')}
                                         </Button>
                                     )}
                                 </div>
@@ -266,8 +268,8 @@ export default function Lobby() {
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-8">
             <div className="text-center mb-8">
-                <h1 className="text-4xl font-black text-[#4a3728] mb-2 font-serif">SALON DES JOUEURS</h1>
-                <p className="text-[#6b5138]">Trouvez des adversaires en ligne et lancez des défis en temps réel.</p>
+                <h1 className="text-4xl font-black text-[#4a3728] mb-2 font-serif">{t('lobby.title')}</h1>
+                <p className="text-[#6b5138]">{t('lobby.subtitle')}</p>
             </div>
 
             <Tabs defaultValue="games" className="w-full">
@@ -275,7 +277,7 @@ export default function Lobby() {
                     <TabsTrigger value="games" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Swords className="w-5 h-5" />
-                            <span>Jouer</span>
+                            <span>{t('lobby.tab_play')}</span>
                             <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {publicGames.length}
                             </span>
@@ -284,7 +286,7 @@ export default function Lobby() {
                     <TabsTrigger value="spectate" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Eye className="w-5 h-5" />
-                            <span>Regarder</span>
+                            <span>{t('lobby.tab_spectate')}</span>
                             <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {activeGames.filter(g => !g.is_private).length}
                             </span>
@@ -293,7 +295,7 @@ export default function Lobby() {
                     <TabsTrigger value="checkers" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Circle className="w-5 h-5" />
-                            <span>Joueurs de Dames</span>
+                            <span>{t('lobby.tab_checkers_players')}</span>
                             <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {users.filter(u => (u.default_game || 'checkers') === 'checkers').length}
                             </span>
@@ -302,7 +304,7 @@ export default function Lobby() {
                     <TabsTrigger value="chess" className="w-full data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] bg-[#e8dcc5]/50 md:bg-transparent text-[#6b5138] font-bold py-3 rounded-lg transition-all border md:border-none border-[#d4c5b0]">
                         <div className="flex items-center justify-center gap-2">
                             <Gamepad2 className="w-5 h-5" />
-                            <span>Joueurs d'Échecs</span>
+                            <span>{t('lobby.tab_chess_players')}</span>
                             <span className="ml-2 text-xs bg-black/10 data-[state=active]:bg-white/20 px-2 py-0.5 rounded-full">
                                 {users.filter(u => u.default_game === 'chess').length}
                             </span>
@@ -317,7 +319,7 @@ export default function Lobby() {
                                 {activeGames.filter(g => !g.is_private).length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
                                         <Eye className="w-10 h-10 mb-2 opacity-50" />
-                                        <p>Aucune partie en cours à regarder.</p>
+                                        <p>{t('lobby.no_spectate')}</p>
                                     </div>
                                 ) : (
                                     activeGames.filter(g => !g.is_private).map(game => (
@@ -332,11 +334,11 @@ export default function Lobby() {
                                                         <span className="text-xs text-gray-400">vs</span>
                                                         <span>{game.black_player_name}</span>
                                                     </div>
-                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'} • {game.initial_time || 10} min</div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} min</div>
                                                 </div>
                                             </div>
                                             <Button onClick={() => navigate(`/Game?id=${game.id}`)} variant="outline" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
-                                                <Eye className="w-4 h-4 mr-2" /> Regarder
+                                                <Eye className="w-4 h-4 mr-2" /> {t('lobby.watch')}
                                             </Button>
                                         </Card>
                                     ))
@@ -346,7 +348,7 @@ export default function Lobby() {
                         <div className="lg:w-96 hidden lg:block">
                              <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
                                  <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
-                                 <p>Discutez du match dans le salon général</p>
+                                 <p>{t('lobby.chat_hint')}</p>
                              </div>
                         </div>
                     </div>
@@ -357,17 +359,17 @@ export default function Lobby() {
                         <div className="flex-1">
                             <div className="mb-6 flex gap-4 justify-center">
                                 <Button onClick={() => handleCreatePublicGame('checkers')} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
-                                    <Circle className="w-4 h-4" /> Créer Dames
+                                    <Circle className="w-4 h-4" /> {t('lobby.create_checkers')}
                                 </Button>
                                 <Button onClick={() => handleCreatePublicGame('chess')} className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white gap-2">
-                                    <Gamepad2 className="w-4 h-4" /> Créer Échecs
+                                    <Gamepad2 className="w-4 h-4" /> {t('lobby.create_chess')}
                                 </Button>
                             </div>
 
                             {publicGames.length === 0 ? (
                                  <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
                                     <Swords className="w-10 h-10 mb-2 opacity-50" />
-                                    <p>Aucune partie publique en attente. Créez-en une !</p>
+                                    <p>{t('lobby.no_games')}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-4">
@@ -378,12 +380,12 @@ export default function Lobby() {
                                                     {game.game_type === 'chess' ? <Gamepad2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-[#4a3728]">{game.white_player_name} <span className="font-normal text-gray-500">attend...</span></div>
-                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? 'Échecs' : 'Dames'} • {game.initial_time || 10} min</div>
+                                                    <div className="font-bold text-[#4a3728]">{game.white_player_name} <span className="font-normal text-gray-500">{t('lobby.waiting')}</span></div>
+                                                    <div className="text-xs text-[#6b5138]">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')} • {game.initial_time || 10} min</div>
                                                 </div>
                                             </div>
                                             <Button onClick={() => handleJoinGame(game.id)} className="bg-[#6b5138] hover:bg-[#5c4430]">
-                                                Rejoindre
+                                                {t('lobby.join')}
                                             </Button>
                                         </Card>
                                     ))}
@@ -397,11 +399,11 @@ export default function Lobby() {
                                 <Tabs defaultValue="global" className="h-full flex flex-col">
                                     <TabsList className="w-full bg-[#e8dcc5]">
                                         <TabsTrigger value="global" className="flex-1 data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
-                                            <MessagesSquare className="w-4 h-4 mr-2" /> Général
+                                            <MessagesSquare className="w-4 h-4 mr-2" /> {t('lobby.chat_global')}
                                         </TabsTrigger>
                                         {myTeam && (
                                             <TabsTrigger value="team" className="flex-1 data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
-                                                <Users className="w-4 h-4 mr-2" /> Équipe
+                                                <Users className="w-4 h-4 mr-2" /> {t('lobby.chat_team')}
                                             </TabsTrigger>
                                         )}
                                     </TabsList>
@@ -425,22 +427,22 @@ export default function Lobby() {
                              {/* Simple Player Filter */}
                              <div className="bg-white p-3 rounded-lg shadow-sm border border-[#d4c5b0] mb-4 flex flex-wrap gap-4 items-end">
                                 <div className="flex-1 min-w-[200px]">
-                                    <Label className="text-xs text-gray-500">Rechercher un joueur</Label>
+                                    <Label className="text-xs text-gray-500">{t('lobby.search_player')}</Label>
                                     <Input 
-                                        placeholder="Nom du joueur..." 
+                                        placeholder={t('lobby.player_name_placeholder')} 
                                         value={playerFilter.name}
                                         onChange={(e) => setPlayerFilter(prev => ({ ...prev, name: e.target.value }))}
                                         className="h-9"
                                     />
                                 </div>
                                 <div className="w-32">
-                                    <Label className="text-xs text-gray-500">ELO Min</Label>
+                                    <Label className="text-xs text-gray-500">{t('lobby.elo_min')}</Label>
                                     <Select value={playerFilter.elo_min.toString()} onValueChange={(v) => setPlayerFilter(prev => ({ ...prev, elo_min: parseInt(v) }))}>
                                         <SelectTrigger className="h-9">
                                             <SelectValue placeholder="0" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="0">Tous</SelectItem>
+                                            <SelectItem value="0">{t('lobby.all')}</SelectItem>
                                             <SelectItem value="1000">1000+</SelectItem>
                                             <SelectItem value="1200">1200+</SelectItem>
                                             <SelectItem value="1500">1500+</SelectItem>
@@ -455,7 +457,7 @@ export default function Lobby() {
                         <div className="lg:w-96 hidden lg:block">
                              <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
                                  <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
-                                 <p>Le chat est disponible dans l'onglet "Parties Publiques"</p>
+                                 <p>{t('lobby.chat_unavailable_hint')}</p>
                              </div>
                         </div>
                     </div>
@@ -467,22 +469,22 @@ export default function Lobby() {
                              {/* Simple Player Filter */}
                              <div className="bg-white p-3 rounded-lg shadow-sm border border-[#d4c5b0] mb-4 flex flex-wrap gap-4 items-end">
                                 <div className="flex-1 min-w-[200px]">
-                                    <Label className="text-xs text-gray-500">Rechercher un joueur</Label>
+                                    <Label className="text-xs text-gray-500">{t('lobby.search_player')}</Label>
                                     <Input 
-                                        placeholder="Nom du joueur..." 
+                                        placeholder={t('lobby.player_name_placeholder')} 
                                         value={playerFilter.name}
                                         onChange={(e) => setPlayerFilter(prev => ({ ...prev, name: e.target.value }))}
                                         className="h-9"
                                     />
                                 </div>
                                 <div className="w-32">
-                                    <Label className="text-xs text-gray-500">ELO Min</Label>
+                                    <Label className="text-xs text-gray-500">{t('lobby.elo_min')}</Label>
                                     <Select value={playerFilter.elo_min.toString()} onValueChange={(v) => setPlayerFilter(prev => ({ ...prev, elo_min: parseInt(v) }))}>
                                         <SelectTrigger className="h-9">
                                             <SelectValue placeholder="0" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="0">Tous</SelectItem>
+                                            <SelectItem value="0">{t('lobby.all')}</SelectItem>
                                             <SelectItem value="1000">1000+</SelectItem>
                                             <SelectItem value="1200">1200+</SelectItem>
                                             <SelectItem value="1500">1500+</SelectItem>
@@ -497,7 +499,7 @@ export default function Lobby() {
                         <div className="lg:w-96 hidden lg:block">
                              <div className="h-[600px] bg-white rounded-lg border border-[#d4c5b0] p-4 flex flex-col justify-center items-center text-center text-[#6b5138]">
                                  <MessagesSquare className="w-12 h-12 mb-2 opacity-20" />
-                                 <p>Le chat est disponible dans l'onglet "Parties Publiques"</p>
+                                 <p>{t('lobby.chat_unavailable_hint')}</p>
                              </div>
                         </div>
                     </div>
