@@ -93,6 +93,11 @@ export const translations = {
     "home.easier": "Easier",
     "home.create_private_btn": "Create Private",
     "home.play": "Play",
+    "home.ai_easy": "Easy",
+    "home.ai_medium": "Medium",
+    "home.ai_hard": "Hard",
+    "home.ai_expert": "Expert",
+    "home.ai_grandmaster": "Grandmaster",
 
     // Lobby
     "lobby.title": "PLAYERS LOBBY",
@@ -311,6 +316,11 @@ export const translations = {
     "home.easier": "Слабее",
     "home.create_private_btn": "Создать",
     "home.play": "Играть",
+    "home.ai_easy": "Легкий",
+    "home.ai_medium": "Средний",
+    "home.ai_hard": "Сложный",
+    "home.ai_expert": "Эксперт",
+    "home.ai_grandmaster": "Гроссмейстер",
 
     // Lobby
     "lobby.title": "ИГРОВОЕ ЛОББИ",
@@ -527,6 +537,11 @@ export const translations = {
     "home.easier": "Schwächer",
     "home.create_private_btn": "Erstellen",
     "home.play": "Spielen",
+    "home.ai_easy": "Leicht",
+    "home.ai_medium": "Mittel",
+    "home.ai_hard": "Schwer",
+    "home.ai_expert": "Experte",
+    "home.ai_grandmaster": "Großmeister",
 
     // Lobby
     "lobby.title": "SPIELER-LOBBY",
@@ -743,6 +758,11 @@ export const translations = {
     "home.easier": "更弱",
     "home.create_private_btn": "创建",
     "home.play": "开始",
+    "home.ai_easy": "简单",
+    "home.ai_medium": "中等",
+    "home.ai_hard": "困难",
+    "home.ai_expert": "专家",
+    "home.ai_grandmaster": "特级大师",
 
     // Lobby
     "lobby.title": "玩家大厅",
@@ -959,6 +979,11 @@ export const translations = {
     "home.easier": "Zwakker",
     "home.create_private_btn": "Maken",
     "home.play": "Spelen",
+    "home.ai_easy": "Makkelijk",
+    "home.ai_medium": "Gemiddeld",
+    "home.ai_hard": "Moeilijk",
+    "home.ai_expert": "Expert",
+    "home.ai_grandmaster": "Grootmeester",
 
     // Lobby
     "lobby.title": "SPELERS LOBBY",
@@ -1175,7 +1200,12 @@ export const translations = {
     "home.easier": "Plus faible",
     "home.create_private_btn": "Créer Privé",
     "home.play": "Jouer",
-    
+    "home.ai_easy": "Facile",
+    "home.ai_medium": "Moyen",
+    "home.ai_hard": "Difficile",
+    "home.ai_expert": "Expert",
+    "home.ai_grandmaster": "Grand Maître",
+
     // Lobby
     "lobby.title": "LOBBY JOUEURS",
     "lobby.subtitle": "Trouvez des adversaires et défiez-les en temps réel.",

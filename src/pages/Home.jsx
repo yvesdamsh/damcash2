@@ -641,7 +641,7 @@ export default function Home() {
                                                     variant="outline" 
                                                     className="bg-white border-[#e8dcc5] text-[#4a3728] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-8 text-[10px] capitalize px-1 font-bold"
                                                 >
-                                                    {lvl}
+                                                    {t(`home.ai_${lvl}`)}
                                                 </Button>
                                             ))}
                                         </div>
