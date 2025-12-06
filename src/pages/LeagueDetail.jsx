@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useLocation, Link } from 'react-router-dom';
 import { Trophy, Medal, Crown, Shield, User, ArrowUpCircle, ArrowDownCircle, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/components/LanguageContext';
 
 const TierIcon = ({ tier }) => {
     const colors = {
@@ -16,6 +17,7 @@ const TierIcon = ({ tier }) => {
 };
 
 export default function LeagueDetail() {
+    const { t } = useLanguage();
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('id');
@@ -43,8 +45,8 @@ export default function LeagueDetail() {
         fetchDetails();
     }, [id]);
 
-    if (loading) return <div className="p-8 text-center">Chargement...</div>;
-    if (!league) return <div className="p-8 text-center">Ligue introuvable</div>;
+    if (loading) return <div className="p-8 text-center">{t('league.loading')}</div>;
+    if (!league) return <div className="p-8 text-center">{t('league.not_found')}</div>;
 
     // Determine active tier tab
     const currentTier = searchParams.get('tier') || 'bronze';
@@ -55,7 +57,7 @@ export default function LeagueDetail() {
         <div className="max-w-5xl mx-auto p-4">
             <div className="mb-8">
                 <Link to="/Leagues" className="text-[#6b5138] hover:underline flex items-center gap-1 mb-4">
-                    <ChevronLeft className="w-4 h-4" /> Retour aux ligues
+                    <ChevronLeft className="w-4 h-4" /> {t('league.back')}
                 </Link>
                 <div className="bg-[#4a3728] rounded-xl p-8 text-[#e8dcc5] shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
@@ -64,9 +66,9 @@ export default function LeagueDetail() {
                     <h1 className="text-4xl font-black mb-2">{league.name}</h1>
                     <p className="text-xl opacity-80 mb-4">{league.description}</p>
                     <div className="flex gap-4 text-sm font-bold">
-                        <span className="bg-black/20 px-3 py-1 rounded-full">Saison {league.season}</span>
-                        <span className="bg-black/20 px-3 py-1 rounded-full">{league.game_type === 'chess' ? 'Échecs' : 'Dames'}</span>
-                        <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status}</span>
+                        <span className="bg-black/20 px-3 py-1 rounded-full">{t('league.season')} {league.season}</span>
+                        <span className="bg-black/20 px-3 py-1 rounded-full">{league.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
+                        <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status === 'active' ? t('leagues.status_active') : (league.status === 'upcoming' ? t('leagues.status_upcoming') : league.status)}</span>
                     </div>
                 </div>
             </div>
@@ -74,33 +76,32 @@ export default function LeagueDetail() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Rewards Card */}
                 <div className="bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 rounded-xl p-6 shadow-sm">
-                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> Récompenses Saison</h3>
+                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> {t('league.rewards_title')}</h3>
                     <div className="space-y-3 text-sm">
                         <div className="flex items-center gap-3 bg-white p-2 rounded border border-yellow-100">
-                            <div className="bg-yellow-100 p-1.5 rounded-full text-yellow-700 font-bold text-xs">1er</div>
-                            <span className="font-medium text-[#6b5138]">{league.rewards?.first || "Titre de Champion"}</span>
+                            <div className="bg-yellow-100 p-1.5 rounded-full text-yellow-700 font-bold text-xs">{t('league.first_place')}</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.first || t('league.reward_champion')}</span>
                         </div>
                         <div className="flex items-center gap-3 bg-white p-2 rounded border border-gray-100">
-                            <div className="bg-gray-100 p-1.5 rounded-full text-gray-600 font-bold text-xs">2ème</div>
-                            <span className="font-medium text-[#6b5138]">{league.rewards?.second || "Badge Argent"}</span>
+                            <div className="bg-gray-100 p-1.5 rounded-full text-gray-600 font-bold text-xs">{t('league.second_place')}</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.second || t('league.reward_silver')}</span>
                         </div>
                         <div className="flex items-center gap-3 bg-white p-2 rounded border border-orange-100">
-                            <div className="bg-orange-100 p-1.5 rounded-full text-orange-700 font-bold text-xs">3ème</div>
-                            <span className="font-medium text-[#6b5138]">{league.rewards?.third || "Badge Bronze"}</span>
+                            <div className="bg-orange-100 p-1.5 rounded-full text-orange-700 font-bold text-xs">{t('league.third_place')}</div>
+                            <span className="font-medium text-[#6b5138]">{league.rewards?.third || t('league.reward_bronze')}</span>
                         </div>
                         <div className="mt-4 pt-4 border-t border-dashed border-gray-200 text-xs text-gray-500">
-                            <p className="mb-1 font-bold text-blue-600">Promotion :</p>
-                            <p>{league.rewards?.tier_promotion || "Top 15% montent de division"}</p>
+                            <p className="mb-1 font-bold text-blue-600">{t('league.promotion_title')}</p>
+                            <p>{league.rewards?.tier_promotion || t('league.promotion_desc')}</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Rules Card */}
                 <div className="bg-white border border-[#d4c5b0] rounded-xl p-6 shadow-sm md:col-span-2">
-                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-[#6b5138]" /> Règles & Format</h3>
+                    <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Shield className="w-5 h-5 text-[#6b5138]" /> {t('league.rules_title')}</h3>
                     <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-                        {league.rules_summary || 
-                        "• Format : Saisonnier (30 jours)\n• Système de points : Victoire +3, Nul +1, Défaite +0\n• Matchmaking : Basé sur le rang de division\n• Inactivité : Pénalité après 7 jours sans jouer"}
+                        {league.rules_summary || t('league.rules_default')}
                     </p>
                 </div>
             </div>
@@ -110,10 +111,10 @@ export default function LeagueDetail() {
                     <div className="flex flex-col gap-4 w-full">
                         <div className="flex justify-between items-center">
                             <h2 className="text-xl font-bold text-[#4a3728] flex items-center gap-2">
-                                <Crown className="w-5 h-5 text-yellow-600" /> Classement
+                                <Crown className="w-5 h-5 text-yellow-600" /> {t('league.standings_title')}
                             </h2>
                             <div className="text-sm text-gray-500">
-                                {filteredParticipants.length} joueurs dans cette division
+                                {filteredParticipants.length} {t('league.players_in_division')}
                             </div>
                         </div>
                         
@@ -127,16 +128,10 @@ export default function LeagueDetail() {
                                     onClick={() => {
                                         const newParams = new URLSearchParams(location.search);
                                         newParams.set('tier', tier);
-                                        window.history.replaceState({}, '', `${location.pathname}?${newParams.toString()}`);
-                                        // Force re-render essentially by causing route change or state update? 
-                                        // Actually react-router might not trigger re-render if we just push state manually without navigate, 
-                                        // but useLocation hook listens. Let's use simple link or state logic.
-                                        // Simplest is to use state for tier if we didn't strictly need URL param, but URL param is good for sharing.
-                                        // Let's just navigate.
                                         window.location.search = newParams.toString();
                                     }}
                                 >
-                                    <TierIcon tier={tier} /> {tier}
+                                    <TierIcon tier={tier} /> {t(`league.tier_${tier}`)}
                                 </Button>
                             ))}
                         </div>
@@ -147,11 +142,11 @@ export default function LeagueDetail() {
                     <table className="w-full text-left">
                         <thead className="bg-[#f5f0e6] text-[#6b5138] text-xs uppercase font-bold">
                             <tr>
-                                <th className="p-4 w-16 text-center">Rang</th>
-                                <th className="p-4">Joueur</th>
-                                <th className="p-4 w-32">Division</th>
-                                <th className="p-4 w-24 text-center">V / D / N</th>
-                                <th className="p-4 w-24 text-right">Points</th>
+                                <th className="p-4 w-16 text-center">{t('league.rank')}</th>
+                                <th className="p-4">{t('league.player')}</th>
+                                <th className="p-4 w-32">{t('league.division')}</th>
+                                <th className="p-4 w-24 text-center">{t('league.stats')}</th>
+                                <th className="p-4 w-24 text-right">{t('league.points')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#f0e6d2]">
@@ -174,7 +169,7 @@ export default function LeagueDetail() {
                                     <td className="p-4">
                                         <div className="flex items-center gap-2 capitalize text-sm">
                                             <TierIcon tier={p.rank_tier} />
-                                            {p.rank_tier}
+                                            {t(`league.tier_${p.rank_tier}`)}
                                         </div>
                                     </td>
                                     <td className="p-4 text-center text-sm text-gray-600 font-mono">
@@ -190,7 +185,7 @@ export default function LeagueDetail() {
                             {participants.length === 0 && (
                                 <tr>
                                     <td colSpan="5" className="p-8 text-center text-gray-400 italic">
-                                        Aucun participant pour le moment. Soyez le premier !
+                                        {t('league.no_participants')}
                                     </td>
                                 </tr>
                             )}
