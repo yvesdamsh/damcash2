@@ -194,7 +194,7 @@ export default function Lobby() {
             return true;
         });
 
-        if (loading) return <div className="p-8 text-center text-gray-500">Chargement...</div>;
+        if (loading) return <div className="p-8 text-center text-gray-500">{t('common.loading')}</div>;
         
         if (players.length === 0) return (
             <div className="flex flex-col items-center justify-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0] text-[#6b5138]">
@@ -220,7 +220,7 @@ export default function Lobby() {
                                 </div>
                                 <div>
                                     <div className="font-bold text-[#4a3728] flex items-center gap-1">
-                                        {player.full_name || 'Joueur'}
+                                        {player.full_name || t('common.player')}
                                         {player.id === currentUser?.id && <span className="text-xs text-gray-500">({t('lobby.me')})</span>}
                                     </div>
                                     <div className="text-xs text-[#6b5138] flex items-center gap-2">

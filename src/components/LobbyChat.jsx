@@ -3,10 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, User, Users, Hash } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function LobbyChat({ channelId, channelName, currentUser, height = "500px" }) {
+    const { t, formatDate } = useLanguage();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [socket, setSocket] = useState(null);
@@ -64,7 +64,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
         const msgData = {
             channel_id: channelId,
             sender_id: currentUser.id,
-            sender_name: currentUser.full_name || currentUser.username || 'Anonyme',
+            sender_name: currentUser.full_name || currentUser.username || t('common.anonymous'),
             sender_avatar: currentUser.avatar_url,
             content: newMessage,
             created_at: new Date().toISOString()
@@ -108,7 +108,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
                                 <div className="flex items-baseline gap-2 mb-1">
                                     <span className="text-xs font-bold text-[#6b5138]">{msg.sender_name}</span>
                                     <span className="text-[10px] text-gray-400">
-                                        {msg.created_at && format(new Date(msg.created_at), 'HH:mm', { locale: fr })}
+                                        {msg.created_at && formatDate(msg.created_at, 'HH:mm')}
                                     </span>
                                 </div>
                                 <div className={`px-3 py-2 rounded-lg text-sm break-words ${
@@ -129,7 +129,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
                 <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder={currentUser ? "Message..." : "Connectez-vous"}
+                    placeholder={currentUser ? t('chat.placeholder') : t('chat.login')}
                     disabled={!currentUser}
                     className="bg-white border-[#d4c5b0]"
                 />
