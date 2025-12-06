@@ -789,10 +789,11 @@ export default function Home() {
                                             
                                             await base44.functions.invoke('sendNotification', {
                                                 recipient_id: invitedUser.id,
-                                                type: "game",
+                                                type: "game_invite",
                                                 title: t('home.invite_friend'),
                                                 message: t('home.invite_from') + ` ${user.full_name || t('common.anonymous')}`,
-                                                link: `/Game?id=${newGame.id}`
+                                                link: `/Game?id=${newGame.id}`,
+                                                metadata: { gameId: newGame.id }
                                             });
 
                                             toast.success(`Invitation envoyée à ${invitedUser.username || invitedUser.full_name}`);

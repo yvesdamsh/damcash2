@@ -21,7 +21,8 @@ export function RealTimeProvider({ children }) {
             if (!data) return;
             
             // Global Notification Handling
-            if (data.type === 'message' || data.type === 'game' || data.type === 'info' || data.type === 'success') {
+            // Accept all notification types if they have a title and message
+            if (data.title && data.message) {
                 // Avoid spam if in game chat
                 if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {
                     return;

@@ -214,10 +214,11 @@ export default function FriendsManager() {
 
             await base44.functions.invoke('sendNotification', {
                 recipient_id: challengeTarget.id,
-                type: "game",
+                type: "game_invite",
                 title: "Défi reçu",
                 message: `${currentUser.username || 'Ami'} vous défie aux ${challengeConfig.gameType === 'chess' ? 'Échecs' : 'Dames'} (${challengeConfig.time}+${challengeConfig.increment})`,
-                link: `/Game?id=${game.id}`
+                link: `/Game?id=${game.id}`,
+                metadata: { gameId: game.id }
             });
 
             toast.success(`Défi envoyé à ${challengeTarget.username}`);

@@ -112,10 +112,11 @@ export default function PlayerSearchBar() {
 
             await base44.functions.invoke('sendNotification', {
                 recipient_id: user.id,
-                type: "game",
+                type: "game_invite",
                 title: "Invitation",
                 message: `${currentUser.full_name} vous invite à jouer`,
-                link: `/Game?id=${newGame.id}`
+                link: `/Game?id=${newGame.id}`,
+                metadata: { gameId: newGame.id }
             });
 
             navigate(`/Game?id=${newGame.id}`);
