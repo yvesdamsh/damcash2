@@ -17,6 +17,16 @@ export const translations = {
     "nav.admin": "Admin",
     "nav.logout": "Logout",
 
+    // Replay Center
+    "replay.title": "Replay Center",
+    "replay.subtitle": "Analyze your games, learn from mistakes, and relive your victories.",
+    "replay.full_history": "Full History",
+    "replay.favorites": "Favorite Games",
+    "replay.recent": "Recently Played",
+    "replay.no_favorites": "You have no favorite games.",
+    "replay.favorite_hint": "Click the star in a game to save it here.",
+    "replay.no_recent": "No recent games.",
+
     // History
     "history.no_games": "No finished games.",
     "history.play_now": "Play!",
@@ -513,6 +523,16 @@ export const translations = {
     "nav.admin": "Админ",
     "nav.logout": "Выйти",
 
+    // Replay Center
+    "replay.title": "Центр повторов",
+    "replay.subtitle": "Анализируйте игры, учитесь на ошибках и переживайте победы заново.",
+    "replay.full_history": "Полная история",
+    "replay.favorites": "Избранные игры",
+    "replay.recent": "Недавние",
+    "replay.no_favorites": "У вас нет избранных игр.",
+    "replay.favorite_hint": "Нажмите звездочку в игре, чтобы сохранить ее здесь.",
+    "replay.no_recent": "Нет недавних игр.",
+
     // History
     "history.no_games": "Нет завершенных игр.",
     "history.play_now": "Играть!",
@@ -1003,6 +1023,16 @@ export const translations = {
     "nav.profile": "Profil",
     "nav.admin": "Admin",
     "nav.logout": "Abmelden",
+
+    // Replay Center
+    "replay.title": "Replay-Center",
+    "replay.subtitle": "Analysiere deine Spiele, lerne aus Fehlern und erlebe deine Siege erneut.",
+    "replay.full_history": "Vollständiger Verlauf",
+    "replay.favorites": "Favoriten",
+    "replay.recent": "Kürzlich gespielt",
+    "replay.no_favorites": "Du hast keine favorisierten Spiele.",
+    "replay.favorite_hint": "Klicke auf den Stern im Spiel, um es hier zu speichern.",
+    "replay.no_recent": "Keine kürzlichen Spiele.",
 
     // History
     "history.no_games": "Keine beendeten Spiele.",
@@ -1498,6 +1528,16 @@ export const translations = {
     "nav.admin": "管理",
     "nav.logout": "登出",
 
+    // Replay Center
+    "replay.title": "回放中心",
+    "replay.subtitle": "分析您的对局，从错误中学习，重温您的胜利。",
+    "replay.full_history": "完整历史",
+    "replay.favorites": "收藏对局",
+    "replay.recent": "最近游玩",
+    "replay.no_favorites": "您没有收藏的对局。",
+    "replay.favorite_hint": "点击游戏中的星星将其保存到这里。",
+    "replay.no_recent": "没有最近的对局。",
+
     // History
     "history.no_games": "没有已完成的对局。",
     "history.play_now": "玩！",
@@ -1992,6 +2032,16 @@ export const translations = {
     "nav.admin": "Beheer",
     "nav.logout": "Uitloggen",
 
+    // Replay Center
+    "replay.title": "Replay Centrum",
+    "replay.subtitle": "Analyseer je spellen, leer van fouten en beleef je overwinningen opnieuw.",
+    "replay.full_history": "Volledige Geschiedenis",
+    "replay.favorites": "Favoriete Spellen",
+    "replay.recent": "Recent Gespeeld",
+    "replay.no_favorites": "Je hebt geen favoriete spellen.",
+    "replay.favorite_hint": "Klik op de ster in een spel om het hier op te slaan.",
+    "replay.no_recent": "Geen recente spellen.",
+
     // History
     "history.no_games": "Geen voltooide spellen.",
     "history.play_now": "Spelen!",
@@ -2485,6 +2535,16 @@ export const translations = {
     "nav.profile": "Profil",
     "nav.admin": "Admin",
     "nav.logout": "Déconnexion",
+
+    // Replay Center
+    "replay.title": "Centre de Replay",
+    "replay.subtitle": "Analysez vos parties, apprenez de vos erreurs et revivez vos victoires.",
+    "replay.full_history": "Historique Complet",
+    "replay.favorites": "Parties Favorites",
+    "replay.recent": "Récemment Jouées",
+    "replay.no_favorites": "Vous n'avez aucune partie favorite.",
+    "replay.favorite_hint": "Cliquez sur l'étoile dans une partie pour la sauvegarder ici.",
+    "replay.no_recent": "Aucune partie récente.",
 
     // History
     "history.no_games": "Aucune partie terminée.",

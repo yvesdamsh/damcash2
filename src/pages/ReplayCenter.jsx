@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, History, Star, PlayCircle, Trophy, ArrowRight, Search, Filter } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function ReplayCenter() {
+    const { t, formatDate } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [favorites, setFavorites] = useState([]);
     const [history, setHistory] = useState([]);
@@ -72,16 +72,16 @@ export default function ReplayCenter() {
                                 {isFavorite && <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />}
                             </div>
                             <div className="text-xs text-gray-500">
-                                {format(new Date(game.updated_date), 'dd MMM yyyy', { locale: fr })}
+                                {formatDate(game.updated_date, 'dd MMM yyyy')}
                             </div>
                         </div>
                     </div>
                     <div className="text-right">
                         <div className={`text-sm font-bold ${isWinner ? 'text-green-600' : isDraw ? 'text-gray-600' : 'text-red-500'}`}>
-                            {isWinner ? 'Victoire' : isDraw ? 'Nul' : 'Défaite'}
+                            {isWinner ? t('history.win') : isDraw ? t('history.draw') : t('history.loss')}
                         </div>
                         <Button variant="ghost" size="sm" className="h-6 px-0 text-[#6b5138] hover:bg-transparent hover:underline">
-                            Revoir <ArrowRight className="w-3 h-3 ml-1" />
+                            {t('history.review')} <ArrowRight className="w-3 h-3 ml-1" />
                         </Button>
                     </div>
                 </CardContent>
@@ -96,13 +96,13 @@ export default function ReplayCenter() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-4xl font-black text-[#4a3728] flex items-center gap-3 font-serif">
-                        <PlayCircle className="w-10 h-10" /> Replay Center
+                        <PlayCircle className="w-10 h-10" /> {t('replay.title')}
                     </h1>
-                    <p className="text-[#6b5138]">Analysez vos parties, apprenez de vos erreurs et revivez vos victoires.</p>
+                    <p className="text-[#6b5138]">{t('replay.subtitle')}</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" className="border-[#d4c5b0] text-[#6b5138]" onClick={() => navigate('/GameHistory')}>
-                        <History className="w-4 h-4 mr-2" /> Historique Complet
+                        <History className="w-4 h-4 mr-2" /> {t('replay.full_history')}
                     </Button>
                 </div>
             </div>
@@ -110,10 +110,10 @@ export default function ReplayCenter() {
             <Tabs defaultValue="favorites" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 bg-[#e8dcc5]">
                     <TabsTrigger value="favorites" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
-                        <Star className="w-4 h-4 mr-2" /> Parties Favorites ({favorites.length})
+                        <Star className="w-4 h-4 mr-2" /> {t('replay.favorites')} ({favorites.length})
                     </TabsTrigger>
                     <TabsTrigger value="recent" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
-                        <History className="w-4 h-4 mr-2" /> Récemment Jouées
+                        <History className="w-4 h-4 mr-2" /> {t('replay.recent')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -121,8 +121,8 @@ export default function ReplayCenter() {
                     {favorites.length === 0 ? (
                         <div className="text-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0]">
                             <Star className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                            <p className="text-gray-500">Vous n'avez aucune partie favorite.</p>
-                            <p className="text-sm text-gray-400">Cliquez sur l'étoile dans une partie pour la sauvegarder ici.</p>
+                            <p className="text-gray-500">{t('replay.no_favorites')}</p>
+                            <p className="text-sm text-gray-400">{t('replay.favorite_hint')}</p>
                         </div>
                     ) : (
                         <div className="grid md:grid-cols-2 gap-4">
@@ -135,8 +135,8 @@ export default function ReplayCenter() {
                     {history.length === 0 ? (
                         <div className="text-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0]">
                             <History className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                            <p className="text-gray-500">Aucune partie récente.</p>
-                            <Button onClick={() => navigate('/')} variant="link" className="text-[#4a3728]">Jouer maintenant</Button>
+                            <p className="text-gray-500">{t('replay.no_recent')}</p>
+                            <Button onClick={() => navigate('/')} variant="link" className="text-[#4a3728]">{t('history.play_now')}</Button>
                         </div>
                     ) : (
                         <div className="grid md:grid-cols-2 gap-4">
