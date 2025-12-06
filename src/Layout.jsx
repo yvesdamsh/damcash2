@@ -331,6 +331,9 @@ import {
                                     {soundEnabled ? <Volume2 className="w-4 h-4 flex-shrink-0" /> : <VolumeX className="w-4 h-4 flex-shrink-0" />}
                                     <span className="truncate">{soundEnabled ? t('nav.sound.on') : t('nav.sound.off')}</span>
                                 </button>
+                                <div className="px-3 py-2 col-span-2 flex justify-center bg-[#5c4430]/30 rounded-md">
+                                    <LanguageSwitcher variant="minimal" />
+                                </div>
                                 <div className="px-3 py-2">
                                     <LanguageSwitcher variant="minimal" />
                                 </div>
