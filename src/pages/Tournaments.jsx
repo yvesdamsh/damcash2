@@ -46,7 +46,7 @@ export default function Tournaments() {
     const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [filterGameType, setFilterGameType] = useState('all'); // Default to all or specific
+    const [filterGameType, setFilterGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [myTournamentIds, setMyTournamentIds] = useState(new Set());
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -87,6 +87,7 @@ export default function Tournaments() {
             const mode = localStorage.getItem('gameMode') || 'checkers';
             setGameMode(mode);
             setNewTournament(prev => ({ ...prev, game_type: mode }));
+            setFilterGameType(mode);
         };
         window.addEventListener('gameModeChanged', handleModeChange);
         handleModeChange(); // Init
@@ -501,7 +502,7 @@ export default function Tournaments() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {tournaments
-                        .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing'))
+                        .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing') && t.game_type === gameMode)
                         .slice(0, 4)
                         .map(tournament => (
                             <Card key={tournament.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group">
