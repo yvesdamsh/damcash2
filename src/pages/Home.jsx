@@ -469,21 +469,21 @@ export default function Home() {
                                         onClick={() => setGameConfig({...gameConfig, time: 1, increment: 0})}
                                         className={gameConfig.time === 1 && gameConfig.increment === 0 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
                                     >
-                                        ⚡ Bullet (1+0)
+                                        ⚡ {t('home.mode_bullet')}
                                     </Button>
                                     <Button 
                                         variant="outline" 
                                         onClick={() => setGameConfig({...gameConfig, time: 3, increment: 2})}
                                         className={gameConfig.time === 3 && gameConfig.increment === 2 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
                                     >
-                                        🔥 Blitz (3+2)
+                                        🔥 {t('home.mode_blitz')}
                                     </Button>
                                     <Button 
                                         variant="outline" 
                                         onClick={() => setGameConfig({...gameConfig, time: 10, increment: 0})}
                                         className={gameConfig.time === 10 && gameConfig.increment === 0 ? "bg-[#6b5138] text-white hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
                                     >
-                                        🐢 Rapide (10+0)
+                                        🐢 {t('home.mode_rapid')}
                                     </Button>
                                 </div>
                             </div>
