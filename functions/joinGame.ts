@@ -1,19 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import { z } from 'npm:zod@^3.24.2';
 
-const RATE_LIMIT = new Map();
-const LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS = 10;
-
-function checkRateLimit(ip) {
-    const now = Date.now();
-    const record = RATE_LIMIT.get(ip) || { count: 0, start: now };
-    if (now - record.start > LIMIT_WINDOW) { record.count = 0; record.start = now; }
-    record.count++;
-    RATE_LIMIT.set(ip, record);
-    return record.count <= MAX_REQUESTS;
-}
-
 const gameUpdates = new BroadcastChannel('game_updates');
 
 const joinGameSchema = z.object({
@@ -21,9 +8,6 @@ const joinGameSchema = z.object({
 });
 
 export default async function handler(req) {
-    const clientIp = (req.headers.get("x-forwarded-for") || "unknown").split(',')[0].trim();
-    if (!checkRateLimit(clientIp)) return Response.json({ error: "Too many requests" }, { status: 429 });
-
     if (req.method !== 'POST') {
         return new Response("Method not allowed", { status: 405 });
     }
@@ -44,6 +28,16 @@ export default async function handler(req) {
         }
 
         const { gameId } = validation.data;
+
+        // Check active games limit
+        const [activeWhite, activeBlack] = await Promise.all([
+            base44.entities.Game.filter({ white_player_id: user.id, status: 'playing' }),
+            base44.entities.Game.filter({ black_player_id: user.id, status: 'playing' })
+        ]);
+
+        if (activeWhite.length > 0 || activeBlack.length > 0) {
+            return Response.json({ error: "Vous avez déjà une partie en cours." }, { status: 400 });
+        }
 
         // Get the game to check status and vacancy
         const game = await base44.entities.Game.get(gameId);

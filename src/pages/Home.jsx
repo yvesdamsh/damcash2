@@ -235,13 +235,27 @@ export default function Home() {
         }
     };
 
+    const canStartNewGame = () => {
+        if (activeGames.length > 0) {
+            // Using alert/toast to notify user
+            // Assuming toast is available via sonner (imported globally usually or need import)
+            // Home.js doesn't import toast yet? Let's check imports.
+            // It doesn't. I'll add import or use alert.
+            alert(t('home.limit_reached') || "Vous avez déjà une partie en cours. Terminez-la avant d'en commencer une nouvelle.");
+            return false;
+        }
+        return true;
+    };
+
     const handleQuickMatch = () => {
+        if (!canStartNewGame()) return;
         // Guest check handled in init
         setIsPrivateConfig(false);
         setConfigOpen(true);
     };
 
     const handleCreatePrivate = () => {
+        if (!canStartNewGame()) return;
         setIsPrivateConfig(true);
         setConfigOpen(true);
     };
@@ -421,6 +435,8 @@ export default function Home() {
     const handleJoinByCode = async (e) => {
         e.preventDefault();
         if (!joinCode) return;
+        
+        if (!canStartNewGame()) return;
 
         try {
             const games = await base44.entities.Game.filter({ access_code: joinCode.toUpperCase(), status: 'waiting' }, {}, 1);
