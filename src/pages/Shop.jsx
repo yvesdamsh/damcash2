@@ -86,7 +86,7 @@ export default function Shop() {
                 <CardContent className="p-4">
                     <div className="flex justify-between items-start mb-2">
                         <div>
-                            <h3 className="font-bold text-[#4a3728] line-clamp-1">{product.name}</h3>
+                            <h3 className="font-bold text-[#4a3728] line-clamp-1">{t(product.name)}</h3>
                             <p className="text-xs text-gray-500">
                                 {product.type === 'avatar' ? t('shop.type_avatar') : 
                                  product.type === 'theme' ? t('shop.type_theme') : 
@@ -94,7 +94,7 @@ export default function Shop() {
                             </p>
                         </div>
                     </div>
-                    <p className="text-sm text-[#6b5138] mb-4 line-clamp-2 h-10">{product.description}</p>
+                    <p className="text-sm text-[#6b5138] mb-4 line-clamp-2 h-10">{t(product.description)}</p>
                     
                     {isOwned ? (
                         <Button disabled className="w-full bg-gray-100 text-gray-400 border-0">
