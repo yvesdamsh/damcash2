@@ -9,10 +9,17 @@ import { format } from 'date-fns';
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
-export default function GameChat({ gameId, currentUser, socket, players }) {
+export default function GameChat({ gameId, currentUser, socket, players, externalMessages }) {
     const { t } = useLanguage();
     const [messages, setMessages] = useState([]);
     
+    // Sync with external messages (polling source)
+    useEffect(() => {
+        if (externalMessages) {
+            setMessages(externalMessages);
+        }
+    }, [externalMessages]);
+
     const quickReplies = [
         t('chat.quick.well_played'),
         t('chat.quick.thanks'),
@@ -24,35 +31,18 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
     const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef(null);
 
-    // Fetch history on mount & Poll for updates (Backup for socket)
+    // Internal polling removed in favor of parent component polling
+    // But we keep initial fetch just in case parent hasn't loaded yet
     useEffect(() => {
-        const fetchHistory = async () => {
-            try {
+        if (!gameId) return;
+        const initialFetch = async () => {
+             try {
                 const history = await base44.entities.ChatMessage.list({ game_id: gameId }, { created_date: 1 }, 50);
-                setMessages(prev => {
-                    // Dedup
-                    const newMsgs = history.filter(h => !prev.some(p => p.id === h.id));
-                    if (newMsgs.length === 0) return prev;
-                    return [...prev, ...newMsgs].sort((a,b) => new Date(a.created_date) - new Date(b.created_date));
-                });
-            } catch (e) {
-                console.error("Failed to load chat history", e);
-            }
+                setMessages(history);
+            } catch (e) {}
         };
-        
-        if (gameId) {
-            fetchHistory();
-            const interval = setInterval(fetchHistory, 2000);
-            
-            // Also update on focus
-            const onFocus = () => fetchHistory();
-            window.addEventListener('focus', onFocus);
-            
-            return () => {
-                clearInterval(interval);
-                window.removeEventListener('focus', onFocus);
-            };
-        }
+        // Only fetch if we don't have messages yet
+        if (messages.length === 0) initialFetch();
     }, [gameId]);
 
     // Handle Socket Messages

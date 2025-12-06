@@ -58,6 +58,8 @@ export default function Game() {
     const [reactions, setReactions] = useState([]);
     const [lastSignal, setLastSignal] = useState(null);
     const [inviteOpen, setInviteOpen] = useState(false);
+    const [syncedMessages, setSyncedMessages] = useState([]);
+    const [syncedSignals, setSyncedSignals] = useState([]);
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -264,42 +266,45 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
-    // Initial Fetch & Polling
+    // Consolidated Polling (Game, Chat, Signals)
+    // Uses backend function to bypass cache and ensure real-time sync
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         
-        const fetchGame = async () => {
+        const syncState = async () => {
             try {
-                // Use list with filter to potentially bypass single-item cache quirks if any
-                const games = await base44.entities.Game.filter({ id: id });
-                if (games && games.length > 0) {
-                    const fetchedGame = games[0];
-                    setGame(prev => {
-                        // Deep compare moves length to avoid unnecessary re-renders if needed, 
-                        // but for now simple replacement ensures we have latest state.
-                        // If status changed or moves added, we definitely want it.
-                        return fetchedGame;
-                    });
+                const res = await base44.functions.invoke('pollGameUpdates', { gameId: id });
+                if (res.data) {
+                    const { game: fetchedGame, messages, signals } = res.data;
+                    
+                    if (fetchedGame) {
+                        setGame(fetchedGame);
+                    }
+                    
+                    if (messages) {
+                        setSyncedMessages(messages);
+                    }
+                    
+                    if (signals && signals.length > 0) {
+                        setSyncedSignals(signals);
+                    }
                 }
                 setLoading(false);
             } catch (e) {
-                console.error("Error fetching game", e);
-                // Don't toast error on polling to avoid spam, just log
+                console.error("Sync error", e);
                 setLoading(false);
             }
         };
 
-        fetchGame();
+        syncState();
         
-        // Fixed interval polling - decouple from socket state to prevent churn
-        // Always poll frequently to ensure sync (2s)
-        const interval = setInterval(fetchGame, 2000);
+        // 2s Interval for high responsiveness
+        const interval = setInterval(syncState, 2000);
 
-        // Also fetch on window focus (for mobile tab switching)
-        const onFocus = () => fetchGame();
+        const onFocus = () => syncState();
         window.addEventListener('focus', onFocus);
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') fetchGame();
+            if (document.visibilityState === 'visible') syncState();
         });
 
         return () => {
@@ -1287,6 +1292,7 @@ export default function Game() {
                     opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
                     socket={socket}
                     lastSignal={lastSignal}
+                    externalSignals={syncedSignals}
                 />
                 {isSpectator && (
                     <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
@@ -1613,7 +1619,15 @@ export default function Game() {
                         </Button>
                     </div>
                     <div className="flex-1 overflow-hidden bg-[#fdfbf7]">
-                        {activeTab === 'chat' && <GameChat gameId={game.id} currentUser={currentUser} socket={socket} players={{white: game.white_player_id, black: game.black_player_id}} />}
+                        {activeTab === 'chat' && (
+                            <GameChat 
+                                gameId={game.id} 
+                                currentUser={currentUser} 
+                                socket={socket} 
+                                players={{white: game.white_player_id, black: game.black_player_id}} 
+                                externalMessages={syncedMessages}
+                            />
+                        )}
                         {activeTab === 'moves' && (
                             <MoveHistory 
                                 moves={movesList} 
