@@ -24,7 +24,7 @@ export default function RejoinGameDialog({ games, open, onOpenChange }) {
                     </DialogDescription>
                 </DialogHeader>
                 
-                <div className="space-y-3 mt-2">
+                <div className="space-y-3 mt-2 max-h-[60vh] overflow-y-auto pr-1">
                     {games.map(game => (
                         <div 
                             key={game.id} 

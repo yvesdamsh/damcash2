@@ -52,6 +52,7 @@ export default function Home() {
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [rejoinOpen, setRejoinOpen] = useState(false);
+    const [hasShownRejoin, setHasShownRejoin] = useState(false);
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
@@ -98,7 +99,7 @@ export default function Home() {
     const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
     const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
 
-    const fetchData = async (currentUser) => {
+    const fetchData = async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
         try {
             // Parallel fetching for games
@@ -122,8 +123,10 @@ export default function Home() {
             const active = [...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
             setInvitations(myInvites);
-            if (active.length > 0) {
+            
+            if (checkRejoin && active.length > 0 && !hasShownRejoin) {
                 setRejoinOpen(true);
+                setHasShownRejoin(true);
             }
         } catch(e) {
             console.error("Refresh error", e);
@@ -168,12 +171,12 @@ export default function Home() {
                     }
                 }
                 
-                await fetchData(currentUser);
+                await fetchData(currentUser, true);
 
                 // Start polling only if authenticated
                 setInterval(async () => {
                     const u = await base44.auth.me().catch(()=>null);
-                    if (u) fetchData(u);
+                    if (u) fetchData(u, false);
                 }, 30000);
 
                 } catch (e) {
