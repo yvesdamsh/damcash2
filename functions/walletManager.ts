@@ -1,6 +1,17 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import { z } from 'npm:zod@^3.24.2';
 
+const RATE_LIMITS = new Map();
+const checkRateLimit = (userId) => {
+    const now = Date.now();
+    const userLimit = RATE_LIMITS.get(userId) || { count: 0, start: now };
+    if (now - userLimit.start > 60000) { userLimit.count = 0; userLimit.start = now; }
+    if (userLimit.count >= 10) return false;
+    userLimit.count++;
+    RATE_LIMITS.set(userId, userLimit);
+    return true;
+};
+
 const walletSchema = z.object({
     action: z.enum(['get_balance', 'deposit', 'pay_entry_fee']),
     userId: z.string().optional(),
@@ -48,6 +59,10 @@ export default async function handler(req) {
     // Check Auth (unless service role bypass is safe, but here we prefer secure checks)
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!checkRateLimit(user.id)) {
+        return Response.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
 
     // Helper to get or create wallet
     const getWallet = async (uid) => {
