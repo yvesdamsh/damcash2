@@ -184,7 +184,34 @@ async function finishTournament(tournament, base44) {
     }
 
     // Sort based on Tie Breaker setting
-    const sorted = participants.sort((a, b) => {
+    // Team Mode Aggregation
+    let finalRanking = participants;
+
+    if (tournament.team_mode) {
+        const teamScores = {}; // team_id -> { score, wins, buchholz, ... }
+        
+        participants.forEach(p => {
+            if (p.team_id) {
+                if (!teamScores[p.team_id]) {
+                    teamScores[p.team_id] = { 
+                        team_id: p.team_id, 
+                        user_name: `Équipe ${p.team_id.substring(0,4)}`, // Placeholder name if not available
+                        score: 0, 
+                        wins: 0, 
+                        buchholz: 0,
+                        user_id: p.user_id // Store one user ID for reference (e.g. captain) but winner is team
+                    };
+                }
+                teamScores[p.team_id].score += (p.score || 0);
+                teamScores[p.team_id].wins += (p.wins || 0);
+                teamScores[p.team_id].buchholz += (p.buchholz || 0);
+            }
+        });
+        
+        finalRanking = Object.values(teamScores);
+    }
+
+    const sorted = finalRanking.sort((a, b) => {
         // 1. Score (Primary)
         if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
         
@@ -221,10 +248,14 @@ async function finishTournament(tournament, base44) {
     const winner = sorted[0];
     if (!winner) return; // Should not happen if len > 0
 
-    await base44.asServiceRole.entities.Tournament.update(tournament.id, { 
-        status: 'finished',
-        winner_id: winner.user_id 
-    });
+    const updateData = { status: 'finished' };
+    if (tournament.team_mode) {
+        updateData.winner_team_id = winner.team_id;
+    } else {
+        updateData.winner_id = winner.user_id;
+    }
+
+    await base44.asServiceRole.entities.Tournament.update(tournament.id, updateData);
 
     // Handle Recurrence
     if (tournament.recurrence && tournament.recurrence !== 'none') {
@@ -248,7 +279,9 @@ async function finishTournament(tournament, base44) {
             delete newTournament.current_round;
             delete newTournament.status; // Reset to open
             delete newTournament.access_code; // Maybe keep or generate new? Let's generate new if private
-            
+            delete newTournament.winner_id;
+            delete newTournament.winner_team_id;
+
             newTournament.start_date = nextStart.toISOString();
             if (tournament.end_date) {
                 const duration = new Date(tournament.end_date) - new Date(tournament.start_date);
@@ -317,14 +350,42 @@ async function finishTournament(tournament, base44) {
         }
     }
 
-    // Badge for Winner
-    await base44.asServiceRole.entities.UserBadge.create({
-        user_id: winner.user_id,
-        tournament_id: tournament.id,
-        name: `Champion ${tournament.name}`,
-        icon: 'Trophy',
-        awarded_at: new Date().toISOString()
-    });
+    // Badge for Winner (Individual or Team)
+    if (tournament.team_mode && winner.team_id) {
+        // Award to all team members (assuming we can fetch them)
+        const teamMembers = await base44.asServiceRole.entities.TeamMember.filter({ team_id: winner.team_id, status: 'active' });
+        for (const member of teamMembers) {
+            await base44.asServiceRole.entities.UserBadge.create({
+                user_id: member.user_id,
+                tournament_id: tournament.id,
+                name: tournament.badge_name || `Champion ${tournament.name} (Équipe)`,
+                icon: tournament.badge_icon || 'Trophy',
+                awarded_at: new Date().toISOString()
+            });
+            
+            // Notify Member
+            await base44.asServiceRole.entities.Notification.create({
+                recipient_id: member.user_id,
+                type: "success",
+                title: "Victoire d'Équipe !",
+                message: `Votre équipe a remporté le tournoi ${tournament.name} ! Vous avez reçu un badge.`,
+                link: `/Profile`
+            });
+        }
+        
+        // Update Tournament with Winner Team
+        await base44.asServiceRole.entities.Tournament.update(tournament.id, { winner_team_id: winner.team_id });
+
+    } else {
+        // Individual
+        await base44.asServiceRole.entities.UserBadge.create({
+            user_id: winner.user_id,
+            tournament_id: tournament.id,
+            name: tournament.badge_name || `Champion ${tournament.name}`,
+            icon: tournament.badge_icon || 'Trophy',
+            awarded_at: new Date().toISOString()
+        });
+    }
 
     // Notify Followers of Winner
     const followers = await base44.asServiceRole.entities.TournamentFollow.filter({ tournament_id: tournament.id });

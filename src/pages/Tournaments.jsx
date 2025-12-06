@@ -443,6 +443,38 @@ export default function Tournaments() {
                                 </div>
                             </div>
 
+                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div className="grid gap-2">
+                                    <Label>Badge Vainqueur (Nom)</Label>
+                                    <Input 
+                                        value={newTournament.badge_name || ''} 
+                                        onChange={e => setNewTournament({...newTournament, badge_name: e.target.value})}
+                                        placeholder="Ex: Champion d'Hiver"
+                                        className="border-[#d4c5b0]"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Icône Badge</Label>
+                                    <Select 
+                                        value={newTournament.badge_icon || 'Trophy'} 
+                                        onValueChange={v => setNewTournament({...newTournament, badge_icon: v})}
+                                    >
+                                        <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Trophy">Trophée 🏆</SelectItem>
+                                            <SelectItem value="Crown">Couronne 👑</SelectItem>
+                                            <SelectItem value="Star">Étoile ⭐</SelectItem>
+                                            <SelectItem value="Medal">Médaille 🥇</SelectItem>
+                                            <SelectItem value="Zap">Éclair ⚡</SelectItem>
+                                            <SelectItem value="Shield">Bouclier 🛡️</SelectItem>
+                                            <SelectItem value="Flame">Flamme 🔥</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
                             <div className="grid gap-2 mt-2">
                                 <Label>Règles personnalisées</Label>
                                 <textarea 

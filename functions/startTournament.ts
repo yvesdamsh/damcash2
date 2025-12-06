@@ -100,7 +100,8 @@ export default async function handler(req) {
         
         // Invoke swissPairing which now handles ELO seeding and Byes
         try {
-            await base44.asServiceRole.functions.invoke('swissPairing', { tournamentId: tournament.id });
+            // Pass team_mode to swissPairing to handle team constraints if needed
+            await base44.asServiceRole.functions.invoke('swissPairing', { tournamentId: tournament.id, teamMode: tournament.team_mode });
             return Response.json({ success: true, message: 'Swiss started with ELO seeding' });
         } catch (e) {
             console.error("Swiss pairing invoke failed", e);
