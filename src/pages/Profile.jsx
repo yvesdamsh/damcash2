@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon, ShoppingBag, LogOut } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon, ShoppingBag, LogOut, Share2 } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -462,6 +462,21 @@ export default function Profile() {
                                     <MessageSquare className="w-4 h-4 mr-2" /> {t('profile.messages')}
                                 </Button>
                             </Link>
+                            <Button 
+                                variant="secondary"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    // Simple alert or toast would be better, but sticking to simple for now or assuming toast is available globally if configured
+                                    // We can use the existing import if available, but I don't see toast imported in the snippet I read?
+                                    // Ah, I don't see toast in the file content I read. Wait.
+                                    // I'll just let it be a silent copy or simple alert if I can't find toast.
+                                    // Actually, I'll check if I can import toast.
+                                    alert("Lien du profil copié !");
+                                }}
+                                className="bg-white text-[#4a3728] hover:bg-gray-100 shadow-md h-9 sm:h-10 text-sm border border-[#d4c5b0]"
+                            >
+                                <Share2 className="w-4 h-4 mr-2" /> Partager
+                            </Button>
                             {isOwnProfile && (
                                 <Button 
                                     variant="destructive"
