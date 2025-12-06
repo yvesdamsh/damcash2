@@ -638,6 +638,58 @@ export default function Home() {
 
 
             <div className="space-y-8">
+                    {/* Active Games Section */}
+                    {activeGames.length > 0 && (
+                        <Card className="bg-white/90 border-l-4 border-l-amber-500 shadow-lg animate-in slide-in-from-top-4">
+                            <CardHeader className="pb-3 border-b border-gray-100">
+                                <CardTitle className="text-xl text-[#3d2b1f] flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-amber-600" /> 
+                                    {t('home.active_games') || "Parties en cours"}
+                                    <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200">
+                                        {activeGames.length}
+                                    </Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pt-4">
+                                {activeGames.map(game => {
+                                    const isMyTurn = (user && game.current_turn === 'white' && game.white_player_id === user.id) || 
+                                                     (user && game.current_turn === 'black' && game.black_player_id === user.id);
+                                    return (
+                                        <div 
+                                            key={game.id} 
+                                            className={`flex flex-col p-3 border rounded-lg transition-all cursor-pointer hover:shadow-md ${
+                                                isMyTurn ? 'bg-amber-50 border-amber-300 ring-1 ring-amber-200' : 'bg-white border-gray-200 hover:border-amber-400'
+                                            }`}
+                                            onClick={() => navigate(`/Game?id=${game.id}`)}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="font-bold text-[#4a3728] flex items-center gap-1.5">
+                                                    <span className="text-lg">{game.game_type === 'chess' ? '♟️' : '⚪'}</span>
+                                                    <span className="text-sm">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
+                                                </div>
+                                                {isMyTurn && (
+                                                    <Badge className="bg-amber-600 hover:bg-amber-700 text-[10px] px-1.5 h-5 shadow-sm">
+                                                        {t('game.your_turn') || "À toi !"}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-[#6b5138] flex items-center gap-1.5 mb-3 bg-black/5 p-1.5 rounded">
+                                                <User className="w-3 h-3 opacity-70" />
+                                                <span className="truncate font-medium">
+                                                    vs {user && game.white_player_id === user.id ? game.black_player_name : game.white_player_name}
+                                                </span>
+                                            </div>
+                                            <Button size="sm" className={`w-full shadow-sm ${isMyTurn ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"}`}>
+                                                {isMyTurn ? <Sword className="w-3 h-3 mr-1.5" /> : <Eye className="w-3 h-3 mr-1.5" />}
+                                                {isMyTurn ? (t('common.play') || "Jouer") : (t('common.watch') || "Voir")}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Game Actions - Moved to Top */}
                     <div className="grid md:grid-cols-2 gap-8">
                         <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
