@@ -960,7 +960,7 @@ export default function Game() {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
                     type: 'MOVE',
-                    payload: { updateData }
+                    payload: { updateData, move: moveData }
                 }));
             }
         }
