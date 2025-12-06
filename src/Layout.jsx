@@ -29,15 +29,18 @@ import {
 
                           export default function Layout({ children }) {
                     return (
-                      <RealTimeProvider>
+                      <LanguageProvider>
+                        <RealTimeProvider>
                           <LayoutContent>{children}</LayoutContent>
-                      </RealTimeProvider>
+                        </RealTimeProvider>
+                      </LanguageProvider>
                     );
                           }
 
                           function LayoutContent({ children }) {
-                    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-    const [soundEnabled, setSoundEnabled] = React.useState(true);
+                              const { t, language } = useLanguage();
+                              const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+                              const [soundEnabled, setSoundEnabled] = React.useState(true);
     const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
     const location = useLocation();
     const navigate = useNavigate();
@@ -145,21 +148,21 @@ import {
 
     // Filter items based on auth state to save space
     const navItems = [
-        { label: 'Accueil', path: '/Home', icon: Home, public: true },
-        { label: 'TV', path: '/Spectate', icon: EyeIcon, public: true },
-        { label: 'Salon', path: '/Lobby', icon: Users, public: true },
-        { label: 'Ligues', path: '/Leagues', icon: Shield, public: true },
-        { label: 'Tournois', path: '/Tournaments', icon: Flag, public: true },
-        { label: 'Classement', path: '/Leaderboard', icon: Trophy, public: true },
-        { label: 'Boutique', path: '/Shop', icon: ShoppingBag, public: true },
-        { label: 'Académie', path: '/Academy', icon: Brain, public: true },
+        { label: t('nav.home'), path: '/Home', icon: Home, public: true },
+        { label: t('nav.tv'), path: '/Spectate', icon: EyeIcon, public: true },
+        { label: t('nav.lobby'), path: '/Lobby', icon: Users, public: true },
+        { label: t('nav.leagues'), path: '/Leagues', icon: Shield, public: true },
+        { label: t('nav.tournaments'), path: '/Tournaments', icon: Flag, public: true },
+        { label: t('nav.leaderboard'), path: '/Leaderboard', icon: Trophy, public: true },
+        { label: t('nav.shop'), path: '/Shop', icon: ShoppingBag, public: true },
+        { label: t('nav.academy'), path: '/Academy', icon: Brain, public: true },
         // Private items
-        { label: 'Historique', path: '/GameHistory', icon: History, public: false },
-        { label: 'Replays', path: '/ReplayCenter', icon: PlayCircle, public: false },
-        { label: 'Équipes', path: '/Teams', icon: Users, public: false },
-        { label: 'Entraînement', path: '/Training', icon: Brain, public: false },
-        { label: 'Profil', path: '/Profile', icon: User, public: false },
-        ...(user?.role === 'admin' ? [{ label: 'Admin', path: '/AdminDashboard', icon: Shield, public: false }] : []),
+        { label: t('nav.history'), path: '/GameHistory', icon: History, public: false },
+        { label: t('nav.replays'), path: '/ReplayCenter', icon: PlayCircle, public: false },
+        { label: t('nav.teams'), path: '/Teams', icon: Users, public: false },
+        { label: t('nav.training'), path: '/Training', icon: Brain, public: false },
+        { label: t('nav.profile'), path: '/Profile', icon: User, public: false },
+        ...(user?.role === 'admin' ? [{ label: t('nav.admin'), path: '/AdminDashboard', icon: Shield, public: false }] : []),
         ].filter(item => user || item.public);
 
     const handleLogout = async () => {
@@ -226,7 +229,8 @@ import {
 
                         {/* Desktop Actions (Nav items moved to hamburger) */}
                         <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
-                                {/* Game Mode Toggle */}
+                              <LanguageSwitcher />
+                              {/* Game Mode Toggle */}
                                 <button
                                     onClick={toggleGameMode}
                                     className={`px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm
@@ -235,7 +239,7 @@ import {
                                             : 'bg-[#e8dcc5] text-[#4a3728] border-[#d4c5b0] hover:bg-[#d4c5b0]'
                                         }`}
                                 >
-                                    {gameMode === 'chess' ? '♟️ Échecs' : '⚪ Dames'}
+                                    {gameMode === 'chess' ? `♟️ ${t('game.chess')}` : `⚪ ${t('game.checkers')}`}
                                 </button>
 
                                 {user && (
@@ -313,7 +317,7 @@ import {
                                     className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
                                     <span className="flex-shrink-0">{gameMode === 'chess' ? '♟️' : '⚪'}</span>
-                                    <span className="truncate">Mode: {gameMode === 'chess' ? 'Échecs' : 'Dames'}</span>
+                                    <span className="truncate">{gameMode === 'chess' ? t('nav.mode.chess') : t('nav.mode.checkers')}</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -323,8 +327,11 @@ import {
                                     className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
                                     {soundEnabled ? <Volume2 className="w-4 h-4 flex-shrink-0" /> : <VolumeX className="w-4 h-4 flex-shrink-0" />}
-                                    <span className="truncate">Son: {soundEnabled ? 'Activé' : 'Désactivé'}</span>
+                                    <span className="truncate">{soundEnabled ? t('nav.sound.on') : t('nav.sound.off')}</span>
                                 </button>
+                                <div className="px-3 py-2">
+                                    <LanguageSwitcher variant="minimal" />
+                                </div>
                                 {user && (
                                     <button
                                         onClick={() => {
@@ -334,10 +341,10 @@ import {
                                         className="text-left px-3 py-2 rounded-md text-sm font-medium text-red-400 hover:bg-[#5c4430] hover:text-red-300 flex items-center gap-2 overflow-hidden col-span-2"
                                     >
                                         <LogOut className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate">Déconnexion</span>
+                                        <span className="truncate">{t('nav.logout')}</span>
                                     </button>
                                 )}
-                            </div>
+                                </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

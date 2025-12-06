@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
 
 export default function Home() {
+    const { t } = useLanguage();
     // Guest User Logic
     const getGuestUser = () => {
         let guest = JSON.parse(localStorage.getItem('damcash_guest'));
@@ -442,10 +444,10 @@ export default function Home() {
                             <Sword className="w-8 h-8 text-[#b8860b] animate-pulse" />
                         </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-[#e8dcc5] mb-2">Recherche d'adversaire...</h2>
-                    <p className="text-[#e8dcc5]/70 mb-8 text-center max-w-xs">Nous parcourons le lobby pour trouver le meilleur match pour vous.</p>
+                    <h2 className="text-2xl font-bold text-[#e8dcc5] mb-2">{t('home.search_opponent')}</h2>
+                    <p className="text-[#e8dcc5]/70 mb-8 text-center max-w-xs">{t('home.searching_desc')}</p>
                     <Button variant="outline" onClick={() => { setIsSearching(false); setIsCreating(false); }} className="border-[#e8dcc5]/30 text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728]">
-                        Annuler
+                        {t('home.cancel')}
                     </Button>
                 </div>
             )}
@@ -455,12 +457,12 @@ export default function Home() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[65vh] md:max-h-[85vh]">
                         <CardHeader className="flex-shrink-0 border-b border-[#d4c5b0]/20">
-                            <CardTitle className="text-[#4a3728]">Configuration de la partie</CardTitle>
+                            <CardTitle className="text-[#4a3728]">{t('home.config_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6 flex-1 overflow-y-auto p-6">
                             {/* Presets */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">Modes Rapides</label>
+                                <label className="text-sm font-medium text-[#6b5138]">{t('home.rapid_modes')}</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <Button 
                                         variant="outline" 
@@ -487,7 +489,7 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">Cadence (Minutes)</label>
+                                <label className="text-sm font-medium text-[#6b5138]">{t('home.cadence')}</label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {[1, 3, 5, 10, 15, 30, 60].map(t => (
                                         <Button 
@@ -503,7 +505,7 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">Incrément (Secondes)</label>
+                                <label className="text-sm font-medium text-[#6b5138]">{t('home.increment')}</label>
                                 <div className="flex gap-2">
                                     {[0, 1, 2, 3, 5, 10].map(inc => (
                                         <Button 
@@ -519,7 +521,7 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">Série (Nombre de jeux)</label>
+                                <label className="text-sm font-medium text-[#6b5138]">{t('home.series')}</label>
                                 <div className="flex gap-2">
                                     {[1, 3, 7, 9, 20].map(s => (
                                         <Button 
@@ -535,7 +537,7 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">Mise (DamCoins)</label>
+                                <label className="text-sm font-medium text-[#6b5138]">{t('home.stake')}</label>
                                 <div className="flex gap-2">
                                     {[0, 10, 50, 100, 500].map(s => (
                                         <Button 
@@ -550,20 +552,20 @@ export default function Home() {
                                 </div>
                                 {gameConfig.stake > 0 && (
                                     <p className="text-xs text-yellow-700 italic text-center">
-                                        Pot total: {gameConfig.stake * 2} D$ (Commission 10% au gagnant)
+                                        {t('home.pot_total', { amount: gameConfig.stake * 2 })}
                                     </p>
                                 )}
                             </div>
 
                             {!isPrivateConfig && (
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[#6b5138]">Niveau Préféré</label>
+                                    <label className="text-sm font-medium text-[#6b5138]">{t('home.pref_level')}</label>
                                     <div className="grid grid-cols-2 gap-2">
                                         {[
-                                            { id: 'any', label: 'Tout niveau' },
-                                            { id: 'similar', label: 'Similaire (+/- 200)' },
-                                            { id: 'harder', label: 'Plus fort' },
-                                            { id: 'easier', label: 'Moins fort' }
+                                            { id: 'any', label: t('home.any_level') },
+                                            { id: 'similar', label: t('home.similar') },
+                                            { id: 'harder', label: t('home.harder') },
+                                            { id: 'easier', label: t('home.easier') }
                                         ].map(opt => (
                                             <Button 
                                                 key={opt.id}
@@ -580,9 +582,9 @@ export default function Home() {
 
                         </CardContent>
                         <div className="p-4 border-t border-[#d4c5b0]/20 flex-shrink-0 flex gap-3 bg-[#fdfbf7] rounded-b-xl">
-                            <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>Annuler</Button>
+                            <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>{t('common.cancel')}</Button>
                             <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={handleStartGame}>
-                                {isPrivateConfig ? "Créer Privée" : "Jouer"}
+                                {isPrivateConfig ? t('home.create_private_btn') : t('home.play')}
                             </Button>
                         </div>
                     </Card>
@@ -594,18 +596,18 @@ export default function Home() {
                     DAMCASH
                 </h1>
                 <h2 className="text-3xl font-bold text-[#6b5138] mt-2">
-                    {gameType === 'checkers' ? 'Dames 3D' : 'Échecs'}
+                    {gameType === 'checkers' ? `3D ${t('game.checkers')}` : t('game.chess')}
                 </h2>
                 <p className="text-xl text-[#6b5138] font-medium">
-                    {gameType === 'checkers' ? "L'expérience ultime du jeu de dames en ligne" : "Le jeu des rois, stratégie pure"}
+                    {gameType === 'checkers' ? t('home.subtitle') : "Le jeu des rois, stratégie pure"}
                 </p>
             </div>
 
             <PlayerSearchBar />
 
             <div className="flex justify-center gap-4 mb-8">
-                <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ Dames</button>
-                <button onClick={() => saveGameTypePref('chess')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'chess' ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'}`}>♟️ Échecs</button>
+                <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ {t('game.checkers')}</button>
+                <button onClick={() => saveGameTypePref('chess')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'chess' ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'}`}>♟️ {t('game.chess')}</button>
             </div>
 
 
@@ -617,20 +619,20 @@ export default function Home() {
                             <div className="absolute top-4 right-4">
                                 <Link to="/GameHistory">
                                     <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
-                                        <History className="w-4 h-4 mr-2" /> Historique
+                                        <History className="w-4 h-4 mr-2" /> {t('nav.history')}
                                     </Button>
                                 </Link>
                             </div>
-                            <CardHeader><CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> Partie Rapide</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> {t('home.quick_match')}</CardTitle></CardHeader>
                             <CardContent className="space-y-6">
-                                <p className="opacity-90">Affrontez un joueur aléatoire en ligne instantanément.</p>
+                                <p className="opacity-90">{t('home.quick_match_desc')}</p>
                                 <div className="flex flex-col gap-3">
                                     <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
-                                        {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} JOUER MAINTENANT
+                                        {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} {t('home.play_now_btn')}
                                     </Button>
                                     
                                     <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
-                                        <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">Mode Solo vs IA</div>
+                                        <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">{t('home.solo_mode')}</div>
                                         <div className="grid grid-cols-3 gap-1">
                                             {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
                                                 <Button 
@@ -645,7 +647,7 @@ export default function Home() {
                                         </div>
                                     </div>
                                     <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full bg-white border-[#e8dcc5] text-[#4a3728] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 font-bold">
-                                        <Users className="w-4 h-4 mr-2" /> S'entraîner seul
+                                        <Users className="w-4 h-4 mr-2" /> {t('home.train_solo')}
                                     </Button>
                                 </div>
                             </CardContent>
@@ -653,12 +655,12 @@ export default function Home() {
 
                         <div className="space-y-6">
                             <Card className="bg-white/80 backdrop-blur border-[#d4c5b0] shadow-lg">
-                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728]"><Users className="w-6 h-6" /> Jouer avec un ami</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728]"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">Créer une partie privée</Button>
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">INVITER UN AMI</span></div></div>
+                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">{t('home.create_private')}</Button>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.invite_friend')}</span></div></div>
                                     <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white">
-                                        <Users className="w-4 h-4 mr-2" /> Chercher et Inviter un Joueur
+                                        <Users className="w-4 h-4 mr-2" /> {t('home.search_invite')}
                                     </Button>
                                     <UserSearchDialog 
                                         isOpen={inviteDialogOpen} 
@@ -690,15 +692,15 @@ export default function Home() {
                                             navigate(`/Game?id=${newGame.id}`);
                                         }}
                                     />
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">OU REJOINDRE</span></div></div>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.or_join')}</span></div></div>
                                     <form onSubmit={handleJoinByCode} className="flex gap-2">
                                         <Input placeholder="Code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
                                         <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
                                     </form>
-                                    <p className="text-[10px] text-gray-500 text-center">Demandez le code à votre ami</p>
+                                    <p className="text-[10px] text-gray-500 text-center">{t('home.ask_code')}</p>
                                 </CardContent>
                             </Card>
-                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> Apprendre à jouer</Button>
+                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> {t('home.learn_play')}</Button>
                         </div>
                     </div>
 
@@ -753,7 +755,7 @@ export default function Home() {
                                                 <div className="flex gap-3 mt-auto md:mt-0">
                                                     <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open(legends[currentLegendIndex].link, '_blank')}>
                                                         <BookOpen className="w-4 h-4 mr-2" />
-                                                        Lire sa biographie
+                                                        {t('common.read_bio')}
                                                     </Button>
                                                 </div>
                                             </div>
@@ -782,10 +784,10 @@ export default function Home() {
                                                 <div className="bg-[#4a3728] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
                                                     <div className="flex items-center gap-2">
                                                         <Eye className="w-5 h-5" />
-                                                        <h3 className="font-bold">À la une - Top Parties ({gameType === 'chess' ? 'Échecs' : 'Dames'})</h3>
+                                                        <h3 className="font-bold">{t('home.featured')} ({gameType === 'chess' ? t('game.chess') : t('game.checkers')})</h3>
                                                     </div>
                                                     <Button size="sm" variant="ghost" onClick={() => navigate('/Spectate')} className="text-[#e8dcc5] hover:text-white hover:bg-white/10 h-6 px-2 text-xs">
-                                                        Voir tout <ArrowRight className="w-3 h-3 ml-1" />
+                                                        {t('home.see_all')} <ArrowRight className="w-3 h-3 ml-1" />
                                                     </Button>
                                                 </div>
                                                 <div className="p-4 space-y-3 bg-[#fdfbf7]">
@@ -794,7 +796,7 @@ export default function Home() {
                                                             <div>
                                                                 <div className="text-sm font-bold text-[#4a3728] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>
                                                                 <div className="text-xs text-[#6b5138] capitalize flex items-center gap-2">
-                                                                    <span>{g.game_type === 'chess' ? '♟️' : '⚪'} {g.game_type}</span>
+                                                                    <span>{g.game_type === 'chess' ? '♟️' : '⚪'} {g.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
                                                                     {g.prize_pool > 0 && <span className="text-yellow-600 font-bold flex items-center gap-0.5"><span className="text-[10px]">D$</span>{g.prize_pool}</span>}
                                                                 </div>
                                                             </div>
@@ -802,9 +804,9 @@ export default function Home() {
                                                         </div>
                                                     )) : (
                                                         <div className="text-center text-sm text-gray-400 italic py-4">
-                                                            Aucune partie publique en cours.
+                                                            {t('home.no_games')}
                                                             <br/>
-                                                            <span className="text-xs">Créez-en une pour apparaître ici !</span>
+                                                            <span className="text-xs">{t('home.create_one')}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -817,12 +819,12 @@ export default function Home() {
                                         {invitations.length > 0 && (
                     <div className="mb-8">
                         <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
-                            <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> Invitations reçues</CardTitle></CardHeader>
+                            <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> {t('home.invitations')}</CardTitle></CardHeader>
                             <CardContent className="space-y-2 max-h-60 overflow-y-auto">
                                 {invitations.map(inv => (
                                     <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] rounded-lg border border-[#dde6d5]">
-                                        <div><div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div><div className="text-xs text-[#5c6e46]">invite aux {inv.game_type === 'chess' ? 'Échecs' : 'Dames'}</div></div>
-                                        <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">Accepter</Button>
+                                        <div><div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div><div className="text-xs text-[#5c6e46]">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div></div>
+                                        <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept')}</Button>
                                     </div>
                                 ))}
                             </CardContent>
