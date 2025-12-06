@@ -52,15 +52,15 @@ export default async function handler(req) {
             created_at: new Date().toISOString()
         });
 
-        // Notify recipient
-        await base44.asServiceRole.entities.Notification.create({
+        // Notify recipient (Real-time)
+        await base44.asServiceRole.functions.invoke('sendNotification', {
             recipient_id: recipientId,
             type: 'message',
-            sender_id: user.id,
             title: `Message de ${user.username || user.full_name}`,
             message: content.substring(0, 50),
             link: `/Messages?conversationId=${conversationId}`,
-            read: false
+            sender_id: user.id,
+            metadata: { conversationId }
         });
 
         return Response.json({ success: true, message });

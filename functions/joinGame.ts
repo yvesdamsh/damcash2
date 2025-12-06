@@ -66,6 +66,19 @@ export default async function handler(req) {
             payload: updatedGame
         });
 
+        // Notify opponent
+        const opponentId = updatedGame.white_player_id === user.id ? updatedGame.black_player_id : updatedGame.white_player_id;
+        if (opponentId) {
+            // We don't await this to avoid blocking response
+            base44.asServiceRole.functions.invoke('sendNotification', {
+                recipient_id: opponentId,
+                type: 'game',
+                title: 'Partie commencée !',
+                message: `${user.full_name || user.username || 'Un joueur'} a rejoint la partie. À vous de jouer !`,
+                link: `/Game?id=${gameId}`
+            }).catch(console.error);
+        }
+
         return Response.json({ success: true, game: updatedGame });
 
     } catch (e) {

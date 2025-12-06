@@ -109,6 +109,29 @@ export default async function handler(req) {
         }
     }
 
+    // Notify all participants
+    const notifChannel = new BroadcastChannel('notifications');
+    for (const p of participants) {
+        // Create Notification Entity
+        base44.asServiceRole.entities.Notification.create({
+            recipient_id: p.user_id,
+            type: 'tournament_update',
+            title: 'Tournoi commencé !',
+            message: `Le tournoi ${tournament.name} a commencé. Préparez-vous !`,
+            link: `/Tournaments?id=${tournament.id}`,
+            read: false
+        }).catch(console.error);
+
+        // Real-time Push
+        notifChannel.postMessage({
+            recipientId: p.user_id,
+            type: 'tournament_update',
+            title: 'Tournoi commencé !',
+            message: `Le tournoi ${tournament.name} a commencé. Préparez-vous !`,
+            link: `/Tournaments?id=${tournament.id}`
+        });
+    }
+
     // 3. Bracket (Single Elimination) - Seeded 1 vs N, 2 vs N-1...
     if (tournament.format === 'bracket') {
         await base44.asServiceRole.entities.Tournament.update(tournament.id, { status: 'ongoing', current_round: 1 });

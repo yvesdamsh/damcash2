@@ -57,13 +57,28 @@ export default async function handler(req) {
                 // Notify
                 if (newTier !== p.rank_tier) {
                     const isPromo = tiers.indexOf(newTier) < tiers.indexOf(p.rank_tier);
+                    const title = `Saison terminée : ${isPromo ? 'Promotion !' : 'Relégation'}`;
+                    const message = `Vous commencez la nouvelle saison en division ${newTier.toUpperCase()}.`;
+                    
+                    // Create Entity
                     await base44.asServiceRole.entities.Notification.create({
                         recipient_id: p.user_id,
                         type: "info",
-                        title: `Saison terminée : ${isPromo ? 'Promotion !' : 'Relégation'}`,
-                        message: `Vous commencez la nouvelle saison en division ${newTier.toUpperCase()}.`,
+                        title,
+                        message,
                         link: '/Leagues'
                     });
+
+                    // Real-time Push
+                    const notifChannel = new BroadcastChannel('notifications');
+                    notifChannel.postMessage({
+                        recipientId: p.user_id,
+                        type: 'info',
+                        title,
+                        message,
+                        link: '/Leagues'
+                    });
+                    notifChannel.close();
                 }
             }
 
