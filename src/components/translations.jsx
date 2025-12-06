@@ -1512,12 +1512,12 @@ export const translations = {
     "home.ai_grandmaster": "Grand Maître",
 
     // Lobby
-    "lobby.title": "LOBBY JOUEURS",
+    "lobby.title": "SALLES DE JEUX",
     "lobby.subtitle": "Trouvez des adversaires et défiez-les en temps réel.",
-    "lobby.tab_play": "Jouer",
-    "lobby.tab_spectate": "Regarder",
-    "lobby.tab_checkers_players": "Joueurs de Dames",
-    "lobby.tab_chess_players": "Joueurs d'Échecs",
+    "lobby.tab_play": "Parties",
+    "lobby.tab_spectate": "Spectateurs",
+    "lobby.tab_checkers_players": "Salle Dames",
+    "lobby.tab_chess_players": "Salle Échecs",
     "lobby.no_spectate": "Aucune partie à regarder.",
     "lobby.chat_hint": "Discutez dans le chat général",
     "lobby.create_checkers": "Créer Dames",
