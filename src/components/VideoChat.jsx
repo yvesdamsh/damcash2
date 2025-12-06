@@ -12,7 +12,7 @@ const ICE_SERVERS = {
     ]
 };
 
-export default function VideoChat({ gameId, currentUser, opponentId, socket, lastSignal }) {
+export default function VideoChat({ gameId, currentUser, opponentId, socket, lastSignal, externalSignals }) {
     const { t } = useLanguage();
     const [isCallActive, setIsCallActive] = useState(false);
     const [localStream, setLocalStream] = useState(null);
@@ -25,6 +25,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
     const remoteVideoRef = useRef(null);
     const peerConnection = useRef(null);
     const pendingOffer = useRef(null);
+    const processedSignalsRef = useRef(new Set());
 
     useEffect(() => {
         if (localStream && localVideoRef.current) {
@@ -178,32 +179,25 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         }
     };
 
-    // Poll for DB signals (Backup for Socket)
+    // Handle external signals (from centralized polling)
     useEffect(() => {
-        if (!currentUser || !gameId) return;
-        
-        const pollSignals = async () => {
-            try {
-                // Get signals created in last 10 seconds to avoid fetching old stuff?
-                // Actually filter by game_id and recipient is good.
-                const signals = await base44.entities.SignalMessage.filter({ 
-                    recipient_id: currentUser.id,
-                    game_id: gameId 
-                }, '-created_date', 10); 
-                
-                for (const sig of signals) {
-                    // Process locally
-                    handleSignalMessage({ type: sig.type, data: sig.data });
-                    // Delete immediately to prevent re-processing
-                    await base44.entities.SignalMessage.delete(sig.id).catch(() => {});
-                }
-            } catch (e) {}
-        };
+        if (externalSignals && externalSignals.length > 0) {
+            const processSignals = async () => {
+                for (const sig of externalSignals) {
+                    if (processedSignalsRef.current.has(sig.id)) continue;
+                    processedSignalsRef.current.add(sig.id);
 
-        // Poll more frequently for calls
-        const interval = setInterval(pollSignals, 2000);
-        return () => clearInterval(interval);
-    }, [currentUser, gameId]);
+                    handleSignalMessage({ type: sig.type, data: sig.data });
+                    
+                    // Delete to prevent re-processing
+                    try {
+                        await base44.entities.SignalMessage.delete(sig.id);
+                    } catch(e) {}
+                }
+            };
+            processSignals();
+        }
+    }, [externalSignals]);
 
     const sendSignal = async (type, data) => {
         // 1. Send via Socket (Fast)
