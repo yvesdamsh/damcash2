@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
@@ -647,7 +647,7 @@ export default function Home() {
                             <CardHeader className="pb-3 border-b border-gray-100">
                                 <CardTitle className="text-xl text-[#3d2b1f] flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-amber-600" /> 
-                                    {t('home.active_games_title')}
+                                    {t('home.active_games') || "Parties en cours"}
                                     <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200">
                                         {activeGames.length}
                                     </Badge>
