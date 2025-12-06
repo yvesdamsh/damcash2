@@ -106,6 +106,8 @@ export const translations = {
     "common.be_first_post": "Be the first to post!",
     "common.search_player_placeholder": "Search for a player...",
     "common.player": "Player",
+    "common.new_like": "New Like",
+    "common.liked_post": "liked your post",
     
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "The Senegalese Grandmaster",
@@ -352,6 +354,8 @@ export const translations = {
     "common.be_first_post": "Будьте первым, кто напишет!",
     "common.search_player_placeholder": "Поиск игрока...",
     "common.player": "Игрок",
+    "common.new_like": "Новый лайк",
+    "common.liked_post": "понравилось ваше сообщение",
 
     "legend.babasy.name": "Баба Си",
     "legend.babasy.subtitle": "Сенегальский гроссмейстер",
@@ -596,6 +600,8 @@ export const translations = {
     "common.be_first_post": "Sei der Erste, der postet!",
     "common.search_player_placeholder": "Spieler suchen...",
     "common.player": "Spieler",
+    "common.new_like": "Neues Gefällt mir",
+    "common.liked_post": "hat dein Beitrag gefallen",
 
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "Der senegalesische Großmeister",
@@ -840,6 +846,8 @@ export const translations = {
     "common.be_first_post": "成为第一个发帖的人！",
     "common.search_player_placeholder": "搜索玩家...",
     "common.player": "玩家",
+    "common.new_like": "新点赞",
+    "common.liked_post": "赞了你的帖子",
 
     "legend.babasy.name": "巴巴·西",
     "legend.babasy.subtitle": "塞内加尔特级大师",
@@ -1084,6 +1092,8 @@ export const translations = {
     "common.be_first_post": "Wees de eerste die iets plaatst!",
     "common.search_player_placeholder": "Zoek een speler...",
     "common.player": "Speler",
+    "common.new_like": "Nieuwe Like",
+    "common.liked_post": "vond je bericht leuk",
 
     "legend.babasy.name": "Baba Sy",
     "legend.babasy.subtitle": "De Senegalese Grootmeester",
