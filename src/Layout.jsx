@@ -319,7 +319,7 @@ function LayoutContent({ children }) {
                         {/* Mobile/Global Actions (Notifications, Settings, Menu) */}
                         <div className="flex items-center gap-1 pl-2">
                             {user && <Notifications />}
-                            <SettingsMenu currentTheme={appTheme} onThemeChange={handleThemeChange} />
+                            <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
                             <button
                                 onClick={toggleMenu}
