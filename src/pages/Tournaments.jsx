@@ -503,26 +503,26 @@ export default function Tournaments() {
                     {tournaments
                         .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing'))
                         .slice(0, 4)
-                        .map(t => (
-                            <Card key={t.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group">
+                        .map(tournament => (
+                            <Card key={tournament.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Trophy className="w-24 h-24" />
                                 </div>
                                 <CardContent className="p-4 relative z-10">
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="bg-yellow-500 text-[#2c1e12] text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                                            {t.recurrence === 'daily' ? t('tournaments.recurrence_daily') : t.recurrence === 'weekly' ? t('tournaments.weekly_badge') : t('tournaments.official_badge')}
+                                            {tournament.recurrence === 'daily' ? t('tournaments.recurrence_daily') : tournament.recurrence === 'weekly' ? t('tournaments.weekly_badge') : t('tournaments.official_badge')}
                                         </div>
-                                        {t.game_type === 'chess' ? <Crown className="w-4 h-4" /> : <Gamepad2 className="w-4 h-4" />}
+                                        {tournament.game_type === 'chess' ? <Crown className="w-4 h-4" /> : <Gamepad2 className="w-4 h-4" />}
                                     </div>
-                                    <h3 className="font-bold text-lg leading-tight mb-1 truncate">{t.name}</h3>
+                                    <h3 className="font-bold text-lg leading-tight mb-1 truncate">{tournament.name}</h3>
                                     <div className="flex items-center gap-2 text-xs opacity-80 mb-3">
                                         <Calendar className="w-3 h-3" />
-                                        {formatDate(new Date(t.start_date), 'HH:mm')}
+                                        {formatDate(new Date(tournament.start_date), 'HH:mm')}
                                         <span>•</span>
-                                        <span>{t.time_control}</span>
+                                        <span>{tournament.time_control}</span>
                                     </div>
-                                    <Link to={`/TournamentDetail?id=${t.id}`}>
+                                    <Link to={`/TournamentDetail?id=${tournament.id}`}>
                                         <Button size="sm" className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-xs h-8">
                                             {t('tournaments.join_btn')}
                                         </Button>
@@ -658,30 +658,30 @@ export default function Tournaments() {
                         
                         return true;
                     })
-                    .map(t => (
-                    <Card key={t.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
-                         {t.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
+                    .map(tournament => (
+                    <Card key={tournament.id} className="bg-white/90 border-[#d4c5b0] shadow-md hover:shadow-xl transition-all group relative">
+                         {tournament.is_private && <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-800 text-[10px] px-2 py-1 rounded-full font-bold border border-yellow-200 z-10">PRIVÉ</div>}
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
                                 <div className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wide mb-2 inline-block ${
-                                    t.status === 'open' ? 'bg-green-100 text-green-800' : 
-                                    t.status === 'ongoing' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                    tournament.status === 'open' ? 'bg-green-100 text-green-800' : 
+                                    tournament.status === 'ongoing' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                    {t.status === 'open' ? t('tournaments.status_open') : 
-                                     t.status === 'ongoing' ? t('tournaments.status_ongoing') : t('tournaments.status_finished')}
+                                    {tournament.status === 'open' ? t('tournaments.status_open') : 
+                                     tournament.status === 'ongoing' ? t('tournaments.status_ongoing') : t('tournaments.status_finished')}
                                 </div>
                                 <div className="text-[#8c7b6a] flex gap-2">
-                                    {t.team_mode && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">{t('tournaments.form_team_mode')}</span>}
-                                    {t.entry_fee > 0 && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">${t.entry_fee}</span>}
-                                    {t.game_type === 'chess' ? <Crown className="w-5 h-5" /> : <Gamepad2 className="w-5 h-5" />}
+                                    {tournament.team_mode && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">{t('tournaments.form_team_mode')}</span>}
+                                    {tournament.entry_fee > 0 && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">${tournament.entry_fee}</span>}
+                                    {tournament.game_type === 'chess' ? <Crown className="w-5 h-5" /> : <Gamepad2 className="w-5 h-5" />}
                                 </div>
                             </div>
                             <CardTitle className="text-xl text-[#4a3728] group-hover:text-[#6b5138] transition-colors">
-                                {t.name}
+                                {tournament.name}
                             </CardTitle>
                             <CardDescription className="flex items-center gap-2">
                                 <Calendar className="w-3 h-3" />
-                                {formatDate(new Date(t.start_date), 'dd MMM yyyy à HH:mm')}
+                                {formatDate(new Date(tournament.start_date), 'dd MMM yyyy à HH:mm')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -690,11 +690,11 @@ export default function Tournaments() {
                                     <Users className="w-4 h-4" />
                                     <span>{t('tournaments.participants')}</span>
                                 </div>
-                                <span className="font-bold">{t.current_round || 0} / {t.max_players}</span>
+                                <span className="font-bold">{tournament.current_round || 0} / {tournament.max_players}</span>
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Link to={`/TournamentDetail?id=${t.id}`} className="w-full">
+                            <Link to={`/TournamentDetail?id=${tournament.id}`} className="w-full">
                                 <Button className="w-full bg-[#e8dcc5] hover:bg-[#d4c5b0] text-[#4a3728] border border-[#d4c5b0] group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-all">
                                     {t('tournaments.view_btn')} <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
+import { useLanguage } from '@/components/LanguageContext';
 
 const LeagueCard = ({ league, onJoin, isJoined }) => {
     const { t } = useLanguage();
