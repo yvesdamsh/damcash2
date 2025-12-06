@@ -394,6 +394,21 @@ export const translations = {
     "tv.watch": "Watch",
     "tv.review": "Review",
 
+    // Academy
+    "academy.title": "Academy",
+    "academy.subtitle": "Improve your game with our interactive lessons and puzzles.",
+    "academy.lessons": "Lessons",
+    "academy.puzzles": "Puzzles",
+    "academy.practice": "Practice",
+    "academy.start_lesson": "Start Lesson",
+    "academy.solve_puzzle": "Solve",
+    "academy.difficulty": "Difficulty",
+    "academy.category": "Category",
+    "academy.next_puzzle": "Next Puzzle",
+    "academy.correct": "Correct!",
+    "academy.incorrect": "Incorrect, try again.",
+    "academy.show_solution": "Show Solution",
+
     // Academy (Extended)
     "academy.train_btn": "Train",
     "academy.endgames_title": "Endgames",
@@ -869,6 +884,21 @@ export const translations = {
     "tv.tournament": "ТУРНИР",
     "tv.watch": "Смотреть",
     "tv.review": "Обзор",
+
+    // Academy
+    "academy.title": "Академия",
+    "academy.subtitle": "Улучшайте игру с нашими уроками и задачами.",
+    "academy.lessons": "Уроки",
+    "academy.puzzles": "Задачи",
+    "academy.practice": "Практика",
+    "academy.start_lesson": "Начать урок",
+    "academy.solve_puzzle": "Решить",
+    "academy.difficulty": "Сложность",
+    "academy.category": "Категория",
+    "academy.next_puzzle": "Следующая задача",
+    "academy.correct": "Правильно!",
+    "academy.incorrect": "Неправильно, попробуйте еще.",
+    "academy.show_solution": "Показать решение",
 
     // Academy (Extended)
     "academy.train_btn": "Тренироваться",
@@ -1349,6 +1379,21 @@ export const translations = {
     "tv.watch": "Zuschauen",
     "tv.review": "Rückblick",
 
+    // Academy
+    "academy.title": "Akademie",
+    "academy.subtitle": "Verbessere dein Spiel mit unseren Lektionen und Rätseln.",
+    "academy.lessons": "Lektionen",
+    "academy.puzzles": "Rätsel",
+    "academy.practice": "Übung",
+    "academy.start_lesson": "Lektion starten",
+    "academy.solve_puzzle": "Lösen",
+    "academy.difficulty": "Schwierigkeit",
+    "academy.category": "Kategorie",
+    "academy.next_puzzle": "Nächstes Rätsel",
+    "academy.correct": "Richtig!",
+    "academy.incorrect": "Falsch, versuch es nochmal.",
+    "academy.show_solution": "Lösung zeigen",
+
     // Academy (Extended)
     "academy.train_btn": "Trainieren",
     "academy.endgames_title": "Endspiele",
@@ -1828,6 +1873,21 @@ export const translations = {
     "tv.watch": "观看",
     "tv.review": "回顾",
 
+    // Academy
+    "academy.title": "学院",
+    "academy.subtitle": "通过我们的互动课程和谜题提高您的水平。",
+    "academy.lessons": "课程",
+    "academy.puzzles": "谜题",
+    "academy.practice": "练习",
+    "academy.start_lesson": "开始课程",
+    "academy.solve_puzzle": "解决",
+    "academy.difficulty": "难度",
+    "academy.category": "类别",
+    "academy.next_puzzle": "下一题",
+    "academy.correct": "正确！",
+    "academy.incorrect": "错误，请重试。",
+    "academy.show_solution": "显示答案",
+
     // Academy (Extended)
     "academy.train_btn": "训练",
     "academy.endgames_title": "残局",
@@ -2306,6 +2366,21 @@ export const translations = {
     "tv.tournament": "TOERNOOI",
     "tv.watch": "Kijken",
     "tv.review": "Bekijken",
+
+    // Academy
+    "academy.title": "Academie",
+    "academy.subtitle": "Verbeter je spel met onze interactieve lessen en puzzels.",
+    "academy.lessons": "Lessen",
+    "academy.puzzles": "Puzzels",
+    "academy.practice": "Oefenen",
+    "academy.start_lesson": "Start Les",
+    "academy.solve_puzzle": "Oplossen",
+    "academy.difficulty": "Moeilijkheid",
+    "academy.category": "Categorie",
+    "academy.next_puzzle": "Volgende Puzzel",
+    "academy.correct": "Correct!",
+    "academy.incorrect": "Fout, probeer opnieuw.",
+    "academy.show_solution": "Toon Oplossing",
 
     // Academy (Extended)
     "academy.train_btn": "Trainen",
