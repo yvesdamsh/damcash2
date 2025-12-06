@@ -17,6 +17,7 @@ import UserSearchDialog from '@/components/UserSearchDialog';
 import PublicForum from '@/components/PublicForum';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
+import RejoinGameDialog from '@/components/RejoinGameDialog';
 
 export default function Home() {
     const { t } = useLanguage();
@@ -50,6 +51,7 @@ export default function Home() {
     const [configOpen, setConfigOpen] = useState(false);
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+    const [rejoinOpen, setRejoinOpen] = useState(false);
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
@@ -117,8 +119,12 @@ export default function Home() {
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
             
-            setActiveGames([...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date)));
+            const active = [...myGamesWhite, ...myGamesBlack].sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
+            setActiveGames(active);
             setInvitations(myInvites);
+            if (active.length > 0) {
+                setRejoinOpen(true);
+            }
         } catch(e) {
             console.error("Refresh error", e);
         }
@@ -435,6 +441,12 @@ export default function Home() {
     return (
         <div className="max-w-4xl mx-auto">
             <TutorialOverlay isOpen={showTutorial} onClose={() => setShowTutorial(false)} />
+            
+            <RejoinGameDialog 
+                games={activeGames} 
+                open={rejoinOpen} 
+                onOpenChange={setRejoinOpen} 
+            />
 
             {/* Searching Overlay */}
             {isSearching && (
