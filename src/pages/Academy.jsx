@@ -97,7 +97,7 @@ export default function Academy() {
                         )) : (
                             <div className="col-span-full text-center py-12 text-gray-500">
                                 <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                <p>Aucune leçon disponible pour le moment.</p>
+                                <p>{t('academy.no_lessons')}</p>
                             </div>
                         )}
                     </div>
@@ -109,7 +109,7 @@ export default function Academy() {
                             <Card key={puzzle.id} className="border-[#d4c5b0] hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => navigate(`/Puzzle?id=${puzzle.id}`)}>
                                 <CardContent className="p-4 flex flex-col items-center text-center">
                                     <Puzzle className="w-8 h-8 text-[#b8860b] mb-3" />
-                                    <h3 className="font-bold text-[#4a3728] mb-1">{puzzle.title || 'Problème Tactique'}</h3>
+                                    <h3 className="font-bold text-[#4a3728] mb-1">{puzzle.title || t('academy.puzzle_default_title')}</h3>
                                     <div className="text-xs text-[#6b5138] mb-3">{puzzle.theme}</div>
                                     <div className="flex gap-2 text-xs">
                                         <Badge className="bg-[#f0e6d2] text-[#6b5138]">{puzzle.rating}</Badge>
@@ -120,7 +120,7 @@ export default function Academy() {
                         )) : (
                             <div className="col-span-full text-center py-12 text-gray-500">
                                 <Puzzle className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                <p>Aucun problème disponible.</p>
+                                <p>{t('academy.no_puzzles')}</p>
                             </div>
                         )}
                     </div>
@@ -130,20 +130,20 @@ export default function Academy() {
                     <div className="grid md:grid-cols-2 gap-6">
                         <Card className="border-[#d4c5b0] bg-gradient-to-br from-[#fdfbf7] to-[#f0e6d2]">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5" /> Finales</CardTitle>
-                                <CardDescription>Maîtrisez les techniques de fin de partie.</CardDescription>
+                                <CardTitle className="flex items-center gap-2"><Swords className="w-5 h-5" /> {t('academy.endgames_title')}</CardTitle>
+                                <CardDescription>{t('academy.endgames_desc')}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Endgames?type=${gameType}`)}>S'entraîner</Button>
+                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Endgames?type=${gameType}`)}>{t('academy.train_btn')}</Button>
                             </CardContent>
                         </Card>
                         <Card className="border-[#d4c5b0] bg-gradient-to-br from-[#fdfbf7] to-[#f0e6d2]">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> Tactiques</CardTitle>
-                                <CardDescription>Exercices ciblés sur les combinaisons.</CardDescription>
+                                <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5" /> {t('academy.tactics_title')}</CardTitle>
+                                <CardDescription>{t('academy.tactics_desc')}</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Tactics?type=${gameType}`)}>S'entraîner</Button>
+                                <Button className="w-full bg-[#4a3728]" onClick={() => navigate(`/Practice/Tactics?type=${gameType}`)}>{t('academy.train_btn')}</Button>
                             </CardContent>
                         </Card>
                     </div>

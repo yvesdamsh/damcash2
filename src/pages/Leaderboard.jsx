@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function Leaderboard() {
+    const { t } = useLanguage();
     const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [gameType, setGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
@@ -59,7 +61,7 @@ export default function Leaderboard() {
     }, [gameType, timeframe, metric]);
 
     const handleFollow = async (targetId) => {
-        if (!currentUser) return toast.error("Connectez-vous pour suivre des joueurs");
+        if (!currentUser) return toast.error(t('leaderboard.toast_login'));
         try {
             if (followedIds.has(targetId)) {
                 // Unfollow
@@ -68,7 +70,7 @@ export default function Leaderboard() {
                 const next = new Set(followedIds);
                 next.delete(targetId);
                 setFollowedIds(next);
-                toast.success("Désabonné");
+                toast.success(t('leaderboard.toast_unfollow'));
             } else {
                 // Follow
                 await base44.entities.Follow.create({
@@ -77,10 +79,10 @@ export default function Leaderboard() {
                     created_at: new Date().toISOString()
                 });
                 setFollowedIds(prev => new Set(prev).add(targetId));
-                toast.success("Abonné !");
+                toast.success(t('leaderboard.toast_follow'));
             }
         } catch (e) {
-            toast.error("Erreur action");
+            toast.error(t('leaderboard.toast_error'));
         }
     };
 
@@ -89,9 +91,9 @@ export default function Leaderboard() {
             <div className="text-center space-y-2">
                 <h1 className="text-4xl font-black text-[#4a3728] flex items-center justify-center gap-3 uppercase tracking-wider">
                     <Trophy className="w-10 h-10 text-yellow-600" />
-                    Classement
+                    {t('leaderboard.title')}
                 </h1>
-                <p className="text-[#6b5138] font-medium">Les légendes de Damcash</p>
+                <p className="text-[#6b5138] font-medium">{t('leaderboard.subtitle')}</p>
             </div>
 
             {/* Filters */}
@@ -100,25 +102,25 @@ export default function Leaderboard() {
                 <div className="flex gap-2 items-center">
                     <Select value={metric} onValueChange={setMetric}>
                         <SelectTrigger className="w-[180px] border-[#d4c5b0]">
-                            <SelectValue placeholder="Métrique" />
+                            <SelectValue placeholder={t('leaderboard.metric')} />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="elo">🏆 Classement ELO</SelectItem>
-                            <SelectItem value="wins">⚔️ Victoires</SelectItem>
-                            <SelectItem value="tournament_wins">👑 Tournois Gagnés</SelectItem>
+                            <SelectItem value="elo">{t('leaderboard.metric_elo')}</SelectItem>
+                            <SelectItem value="wins">{t('leaderboard.metric_wins')}</SelectItem>
+                            <SelectItem value="tournament_wins">{t('leaderboard.metric_tournament_wins')}</SelectItem>
                         </SelectContent>
                     </Select>
 
                     {metric !== 'elo' && (
                         <Select value={timeframe} onValueChange={setTimeframe}>
                             <SelectTrigger className="w-[150px] border-[#d4c5b0]">
-                                <SelectValue placeholder="Période" />
+                                <SelectValue placeholder={t('leaderboard.timeframe')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all_time">Tout temps</SelectItem>
-                                <SelectItem value="monthly">Ce mois</SelectItem>
-                                <SelectItem value="weekly">Cette semaine</SelectItem>
-                                <SelectItem value="daily">Aujourd'hui</SelectItem>
+                                <SelectItem value="all_time">{t('leaderboard.timeframe_all_time')}</SelectItem>
+                                <SelectItem value="monthly">{t('leaderboard.timeframe_monthly')}</SelectItem>
+                                <SelectItem value="weekly">{t('leaderboard.timeframe_weekly')}</SelectItem>
+                                <SelectItem value="daily">{t('leaderboard.timeframe_daily')}</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
@@ -126,13 +128,13 @@ export default function Leaderboard() {
                     {metric === 'elo' && (
                          <Select value={tierFilter} onValueChange={setTierFilter}>
                             <SelectTrigger className="w-[150px] border-[#d4c5b0]">
-                                <SelectValue placeholder="Ligue" />
+                                <SelectValue placeholder={t('leaderboard.tier')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Toutes Ligues</SelectItem>
-                                <SelectItem value="Maître">Maître (+1800)</SelectItem>
-                                <SelectItem value="Pro">Pro (1200-1800)</SelectItem>
-                                <SelectItem value="Amateur">Amateur (-1200)</SelectItem>
+                                <SelectItem value="all">{t('leaderboard.tier_all')}</SelectItem>
+                                <SelectItem value="Maître">{t('leaderboard.tier_master')}</SelectItem>
+                                <SelectItem value="Pro">{t('leaderboard.tier_pro')}</SelectItem>
+                                <SelectItem value="Amateur">{t('leaderboard.tier_amateur')}</SelectItem>
                             </SelectContent>
                         </Select>
                     )}
@@ -142,12 +144,12 @@ export default function Leaderboard() {
             <Card className="bg-white/90 backdrop-blur border-[#d4c5b0] shadow-xl overflow-hidden">
                 <CardHeader className="bg-[#4a3728] text-[#e8dcc5] py-3">
                     <div className="grid grid-cols-12 gap-4 font-bold text-sm md:text-base items-center">
-                        <div className="col-span-2 text-center">Rang</div>
-                        <div className="col-span-6">Joueur</div>
+                        <div className="col-span-2 text-center">{t('leaderboard.col_rank')}</div>
+                        <div className="col-span-6">{t('leaderboard.col_player')}</div>
                         <div className="col-span-2 text-center">
-                            {metric === 'elo' ? 'ELO' : metric === 'wins' ? 'Victoires' : 'Titres'}
+                            {metric === 'elo' ? t('leaderboard.col_elo') : metric === 'wins' ? t('leaderboard.col_wins') : t('leaderboard.col_titles')}
                         </div>
-                        <div className="col-span-2 text-center">Suivre</div>
+                        <div className="col-span-2 text-center">{t('leaderboard.col_follow')}</div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0 min-h-[300px]">
@@ -158,7 +160,7 @@ export default function Leaderboard() {
                     ) : players.length === 0 ? (
                         <div className="flex flex-col justify-center items-center h-[300px] text-gray-400">
                             <Trophy className="w-12 h-12 mb-2 opacity-20" />
-                            <p>Aucune donnée trouvée pour cette période</p>
+                            <p>{t('leaderboard.no_data')}</p>
                         </div>
                     ) : (
                         players
@@ -217,7 +219,7 @@ export default function Leaderboard() {
                                                     </span>
                                                 )}
                                             </div>
-                                            {metric === 'elo' && <div className="text-xs text-gray-400">{player.games_played || 0} parties</div>}
+                                            {metric === 'elo' && <div className="text-xs text-gray-400">{player.games_played || 0} {t('leaderboard.games')}</div>}
                                         </div>
                                         {index === 0 && <Crown className="w-4 h-4 text-yellow-500 ml-auto hidden md:block" />}
                                     </div>
