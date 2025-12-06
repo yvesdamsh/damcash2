@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle, XCircle, HelpCircle, Play, RefreshCw } from 'lucide-react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 
 export default function PuzzleMode() {
     const [gameType, setGameType] = useState('chess');
+    const [difficulty, setDifficulty] = useState('medium');
     const [puzzle, setPuzzle] = useState(null);
     const [board, setBoard] = useState(initializeChessBoard());
     const [loading, setLoading] = useState(false);
@@ -22,7 +24,7 @@ export default function PuzzleMode() {
 
     useEffect(() => {
         fetchPuzzle();
-    }, [gameType]);
+    }, [gameType, difficulty]);
 
     const fetchPuzzle = async () => {
         setLoading(true);
@@ -33,7 +35,7 @@ export default function PuzzleMode() {
         setBoard(gameType === 'chess' ? initializeChessBoard() : initializeBoard());
         
         try {
-            const res = await base44.functions.invoke('getPuzzle', { gameType, difficulty: 'medium' });
+            const res = await base44.functions.invoke('getPuzzle', { gameType, difficulty });
             const p = res.data;
             setPuzzle(p);
             
@@ -164,9 +166,20 @@ export default function PuzzleMode() {
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex gap-2 w-full sm:w-auto items-center">
                     <Button className="flex-1 sm:flex-none" variant={gameType === 'chess' ? 'default' : 'outline'} onClick={() => setGameType('chess')}>Échecs</Button>
                     <Button className="flex-1 sm:flex-none" variant={gameType === 'checkers' ? 'default' : 'outline'} onClick={() => setGameType('checkers')}>Dames</Button>
+                    
+                    <Select value={difficulty} onValueChange={setDifficulty}>
+                        <SelectTrigger className="w-[130px] ml-2">
+                            <SelectValue placeholder="Niveau" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="easy">Facile</SelectItem>
+                            <SelectItem value="medium">Moyen</SelectItem>
+                            <SelectItem value="hard">Difficile</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <Button onClick={fetchPuzzle} disabled={loading} className="w-full sm:w-auto">
                     {loading ? <Loader2 className="animate-spin" /> : <RefreshCw className="mr-2 w-4 h-4" />} Nouveau Puzzle

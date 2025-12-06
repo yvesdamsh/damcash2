@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -42,6 +43,7 @@ export default function Home() {
     const [isSearching, setIsSearching] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [gameType, setGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
+    const [aiLevel, setAiLevel] = useState('medium');
     const [activeGames, setActiveGames] = useState([]);
     const [featuredGames, setFeaturedGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
@@ -633,17 +635,23 @@ export default function Home() {
                                     
                                     <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
                                         <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">{t('home.solo_mode')}</div>
-                                        <div className="grid grid-cols-3 gap-1">
-                                            {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
-                                                <Button 
-                                                    key={lvl}
-                                                    onClick={() => navigate(`/Game?id=local-ai&difficulty=${lvl}&type=${gameType}`)}
-                                                    variant="outline" 
-                                                    className="bg-white border-[#e8dcc5] text-[#4a3728] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-8 text-[10px] capitalize px-1 font-bold"
-                                                >
-                                                    {t(`home.ai_${lvl}`)}
-                                                </Button>
-                                            ))}
+                                        <div className="flex gap-2">
+                                            <Select value={aiLevel} onValueChange={setAiLevel}>
+                                                <SelectTrigger className="h-10 bg-white text-[#4a3728] border-none font-bold">
+                                                    <SelectValue placeholder="Niveau" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['easy', 'medium', 'hard', 'expert', 'grandmaster'].map(lvl => (
+                                                        <SelectItem key={lvl} value={lvl}>{t(`home.ai_${lvl}`)}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <Button 
+                                                onClick={() => navigate(`/Game?id=local-ai&difficulty=${aiLevel}&type=${gameType}`)}
+                                                className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold h-10"
+                                            >
+                                                Jouer vs IA
+                                            </Button>
                                         </div>
                                     </div>
                                     <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full bg-white border-[#e8dcc5] text-[#4a3728] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 font-bold">
