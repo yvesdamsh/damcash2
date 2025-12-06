@@ -647,7 +647,7 @@ export default function Home() {
                             <CardHeader className="pb-3 border-b border-gray-100">
                                 <CardTitle className="text-xl text-[#3d2b1f] flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-amber-600" /> 
-                                    {t('home.active_games') || "Parties en cours"}
+                                    {t('home.active_games_title')}
                                     <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200">
                                         {activeGames.length}
                                     </Badge>
