@@ -5,11 +5,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function Notifications() {
+    const { t, formatRelative } = useLanguage();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
@@ -162,7 +162,7 @@ export default function Notifications() {
                                                 {notification.message}
                                             </p>
                                             <span className="text-[10px] text-gray-400 mt-2 block">
-                                                {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true, locale: fr })}
+                                                {formatRelative(notification.created_date)}
                                             </span>
                                         </div>
                                         {!notification.read && (
