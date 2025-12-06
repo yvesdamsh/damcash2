@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Trophy, Calendar, Users, Plus, ArrowRight, Crown, Gamepad2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { useLanguage } from '@/components/LanguageContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function Tournaments() {
+    const { t, formatDate } = useLanguage();
     const [tournaments, setTournaments] = useState([]);
     const [user, setUser] = useState(null);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -189,9 +190,9 @@ export default function Tournaments() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-4xl font-bold text-[#4a3728] flex items-center gap-3" style={{ fontFamily: 'Georgia, serif' }}>
-                        <Trophy className="w-10 h-10 text-yellow-600" /> Tournois
+                        <Trophy className="w-10 h-10 text-yellow-600" /> {t('tournaments.title')}
                     </h1>
-                    <p className="text-[#6b5138] mt-2">Affrontez les meilleurs joueurs et remportez la coupe !</p>
+                    <p className="text-[#6b5138] mt-2">{t('tournaments.subtitle')}</p>
                 </div>
 
                 <div className="flex bg-[#e8dcc5] p-1 rounded-lg border border-[#d4c5b0]">
@@ -201,7 +202,7 @@ export default function Tournaments() {
                         onClick={() => setViewMode('list')}
                         className={`${viewMode === 'list' ? 'bg-white shadow text-[#4a3728]' : 'text-[#8c7b6a] hover:text-[#4a3728]'}`}
                     >
-                        <LayoutGrid className="w-4 h-4 mr-2" /> Liste
+                        <LayoutGrid className="w-4 h-4 mr-2" /> {t('tournaments.view_list')}
                     </Button>
                     <Button 
                         variant="ghost" 
@@ -209,23 +210,23 @@ export default function Tournaments() {
                         onClick={() => setViewMode('calendar')}
                         className={`${viewMode === 'calendar' ? 'bg-white shadow text-[#4a3728]' : 'text-[#8c7b6a] hover:text-[#4a3728]'}`}
                     >
-                        <CalendarIcon className="w-4 h-4 mr-2" /> Calendrier
+                        <CalendarIcon className="w-4 h-4 mr-2" /> {t('tournaments.view_calendar')}
                     </Button>
                 </div>
                 
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
                         <Button className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2 shadow-lg">
-                            <Plus className="w-5 h-5" /> Créer un tournoi
+                            <Plus className="w-5 h-5" /> {t('tournaments.create_btn')}
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0]">
                         <DialogHeader>
-                            <DialogTitle className="text-[#4a3728]">Nouveau Tournoi</DialogTitle>
+                            <DialogTitle className="text-[#4a3728]">{t('tournaments.create_title')}</DialogTitle>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label>Nom du tournoi</Label>
+                                <Label>{t('tournaments.form_name')}</Label>
                                 <Input 
                                     value={newTournament.name} 
                                     onChange={e => setNewTournament({...newTournament, name: e.target.value})}
@@ -235,11 +236,11 @@ export default function Tournaments() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                <Label>Jeu (Fixé par le mode)</Label>
-                                <Input value={newTournament.game_type === 'chess' ? 'Échecs' : 'Dames'} disabled className="bg-gray-100 border-[#d4c5b0]" />
+                                <Label>{t('tournaments.form_game')}</Label>
+                                <Input value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
                                 </div>
                                 <div className="grid gap-2">
-                                <Label>Format</Label>
+                                <Label>{t('tournaments.form_format')}</Label>
                                 <Select 
                                     value={newTournament.format || 'bracket'} 
                                     onValueChange={v => setNewTournament({...newTournament, format: v})}
@@ -248,15 +249,15 @@ export default function Tournaments() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="bracket">Arbre (Bracket)</SelectItem>
-                                        <SelectItem value="hybrid">Poules + Arbre</SelectItem>
-                                        <SelectItem value="swiss">Suisse</SelectItem>
-                                        <SelectItem value="arena">Arène</SelectItem>
+                                        <SelectItem value="bracket">{t('tournaments.format_bracket')}</SelectItem>
+                                        <SelectItem value="hybrid">{t('tournaments.format_hybrid')}</SelectItem>
+                                        <SelectItem value="swiss">{t('tournaments.format_swiss')}</SelectItem>
+                                        <SelectItem value="arena">{t('tournaments.format_arena')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>Joueurs Max</Label>
+                                    <Label>{t('tournaments.form_max_players')}</Label>
                                     <Select 
                                         value={newTournament.max_players} 
                                         onValueChange={v => setNewTournament({...newTournament, max_players: v})}
@@ -277,7 +278,7 @@ export default function Tournaments() {
 
                                             <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-2">
-                                            <Label>Frais d'entrée ($)</Label>
+                                            <Label>{t('tournaments.form_entry_fee')}</Label>
                                             <Input 
                                                 type="number"
                                                 min="0"
@@ -287,7 +288,7 @@ export default function Tournaments() {
                                             />
                                             </div>
                                             <div className="grid gap-2">
-                                            <Label>Cagnotte ($)</Label>
+                                            <Label>{t('tournaments.form_prize_pool')}</Label>
                                             <Input 
                                                 type="number"
                                                 min="0"
@@ -300,7 +301,7 @@ export default function Tournaments() {
 
                                             <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-2">
-                                            <Label>Rounds</Label>
+                                            <Label>{t('tournaments.form_rounds')}</Label>
                                             <Input 
                                                 type="number"
                                                 min="1"
@@ -310,7 +311,7 @@ export default function Tournaments() {
                                             />
                                             </div>
                                             <div className="grid gap-2">
-                                            <Label>Cadence</Label>
+                                            <Label>{t('tournaments.form_time_control')}</Label>
                                             <Select 
                                                 value={newTournament.time_control} 
                                                 onValueChange={v => setNewTournament({...newTournament, time_control: v})}
@@ -330,7 +331,7 @@ export default function Tournaments() {
                                             </div>
 
                                             <div className="grid gap-2">
-                                            <Label>Description des prix (Texte)</Label>
+                                            <Label>{t('tournaments.form_prizes')}</Label>
                                 <Input 
                                     value={newTournament.prizes || ''} 
                                     onChange={e => setNewTournament({...newTournament, prizes: e.target.value})}
@@ -339,7 +340,7 @@ export default function Tournaments() {
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Date de début</Label>
+                                <Label>{t('tournaments.form_start_date')}</Label>
                                 <Input 
                                     type="datetime-local"
                                     value={newTournament.start_date} 
@@ -356,12 +357,12 @@ export default function Tournaments() {
                                     onChange={e => setNewTournament({...newTournament, is_private: e.target.checked})}
                                     className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
                                 />
-                                <Label htmlFor="is_private" className="font-bold text-[#4a3728]">Tournoi Privé (Code requis)</Label>
+                                <Label htmlFor="is_private" className="font-bold text-[#4a3728]">{t('tournaments.form_private')}</Label>
                             </div>
                             
                             {newTournament.is_private && (
                                 <div className="grid gap-2 pl-6">
-                                    <Label>Code d'accès</Label>
+                                    <Label>{t('tournaments.form_access_code')}</Label>
                                     <Input 
                                         value={newTournament.access_code || ''} 
                                         onChange={e => setNewTournament({...newTournament, access_code: e.target.value.toUpperCase()})}
@@ -380,10 +381,10 @@ export default function Tournaments() {
                                         onChange={e => setNewTournament({...newTournament, team_mode: e.target.checked})}
                                         className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
                                     />
-                                    <Label htmlFor="team_mode" className="font-bold text-[#4a3728]">Tournoi par Équipe</Label>
+                                    <Label htmlFor="team_mode" className="font-bold text-[#4a3728]">{t('tournaments.form_team_mode')}</Label>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>Récurrence</Label>
+                                    <Label>{t('tournaments.form_recurrence')}</Label>
                                     <Select 
                                         value={newTournament.recurrence} 
                                         onValueChange={v => setNewTournament({...newTournament, recurrence: v})}
@@ -392,9 +393,9 @@ export default function Tournaments() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Aucune</SelectItem>
-                                            <SelectItem value="daily">Quotidien</SelectItem>
-                                            <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                                            <SelectItem value="none">{t('tournaments.recurrence_none')}</SelectItem>
+                                            <SelectItem value="daily">{t('tournaments.recurrence_daily')}</SelectItem>
+                                            <SelectItem value="weekly">{t('tournaments.recurrence_weekly')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -402,7 +403,7 @@ export default function Tournaments() {
 
                             <div className="grid grid-cols-2 gap-4 mt-2">
                                 <div className="grid gap-2">
-                                    <Label>ELO Min</Label>
+                                    <Label>{t('tournaments.form_elo_min')}</Label>
                                     <Input 
                                         type="number"
                                         min="0"
@@ -412,7 +413,7 @@ export default function Tournaments() {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>ELO Max</Label>
+                                    <Label>{t('tournaments.form_elo_max')}</Label>
                                     <Input 
                                         type="number"
                                         min="0"
@@ -425,7 +426,7 @@ export default function Tournaments() {
 
                             <div className="grid grid-cols-2 gap-4 mt-2">
                                 <div className="grid gap-2">
-                                    <Label>Départage</Label>
+                                    <Label>{t('tournaments.form_tie_breaker')}</Label>
                                     <Select 
                                         value={newTournament.tie_breaker || 'buchholz'} 
                                         onValueChange={v => setNewTournament({...newTournament, tie_breaker: v})}
@@ -434,10 +435,10 @@ export default function Tournaments() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="buchholz">Buchholz (Standard)</SelectItem>
+                                            <SelectItem value="buchholz">{t('tournaments.tie_buchholz')}</SelectItem>
                                             <SelectItem value="sonneborn_berger">Sonneborn-Berger</SelectItem>
-                                            <SelectItem value="head_to_head">Confrontation directe</SelectItem>
-                                            <SelectItem value="wins">Nombre de victoires</SelectItem>
+                                            <SelectItem value="head_to_head">{t('tournaments.tie_head_to_head')}</SelectItem>
+                                            <SelectItem value="wins">{t('tournaments.tie_wins')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -476,17 +477,17 @@ export default function Tournaments() {
                             </div>
 
                             <div className="grid gap-2 mt-2">
-                                <Label>Règles personnalisées</Label>
+                                <Label>{t('tournaments.form_custom_rules')}</Label>
                                 <textarea 
                                     value={newTournament.custom_rules} 
                                     onChange={e => setNewTournament({...newTournament, custom_rules: e.target.value})}
-                                    placeholder="Détails spécifiques (ex: interdiction de nul rapide...)"
+                                    placeholder="..."
                                     className="flex w-full rounded-md border border-[#d4c5b0] bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
                                 />
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button onClick={handleCreate} className="bg-[#4a3728] hover:bg-[#2c1e12]">Créer</Button>
+                            <Button onClick={handleCreate} className="bg-[#4a3728] hover:bg-[#2c1e12]">{t('tournaments.create_submit')}</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
@@ -546,7 +547,7 @@ export default function Tournaments() {
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
                             <Input 
-                                placeholder="Rechercher un tournoi..." 
+                                placeholder={t('tournaments.search_placeholder')} 
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
                                 className="pl-8 bg-white border-[#d4c5b0]"
@@ -555,24 +556,24 @@ export default function Tournaments() {
                         
                         <Select value={filterGameType} onValueChange={setFilterGameType}>
                             <SelectTrigger className="w-[180px] bg-white border-[#d4c5b0]">
-                                <SelectValue placeholder="Type de jeu" />
+                                <SelectValue placeholder={t('tournaments.filter_game')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tous les jeux</SelectItem>
-                                <SelectItem value="checkers">Dames</SelectItem>
-                                <SelectItem value="chess">Échecs</SelectItem>
+                                <SelectItem value="all">{t('tournaments.filter_all_games')}</SelectItem>
+                                <SelectItem value="checkers">{t('game.checkers')}</SelectItem>
+                                <SelectItem value="chess">{t('game.chess')}</SelectItem>
                             </SelectContent>
                         </Select>
 
                         <Select value={filterStatus} onValueChange={setFilterStatus}>
                             <SelectTrigger className="w-[180px] bg-white border-[#d4c5b0]">
-                                <SelectValue placeholder="Statut" />
+                                <SelectValue placeholder={t('tournaments.filter_status')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">Tous statuts</SelectItem>
-                                <SelectItem value="open">Inscriptions ouvertes</SelectItem>
-                                <SelectItem value="ongoing">En cours</SelectItem>
-                                <SelectItem value="finished">Terminés</SelectItem>
+                                <SelectItem value="all">{t('tournaments.filter_all_status')}</SelectItem>
+                                <SelectItem value="open">{t('tournaments.status_open')}</SelectItem>
+                                <SelectItem value="ongoing">{t('tournaments.status_ongoing')}</SelectItem>
+                                <SelectItem value="finished">{t('tournaments.status_finished')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -580,7 +581,7 @@ export default function Tournaments() {
                     {/* Join Private Code */}
                     <div className="flex gap-2">
                         <Input 
-                            placeholder="Code tournoi privé" 
+                            placeholder={t('tournaments.code_placeholder')} 
                             value={accessCodeInput}
                             onChange={e => setAccessCodeInput(e.target.value.toUpperCase())}
                             className="bg-white border-[#d4c5b0] w-40"
@@ -593,21 +594,21 @@ export default function Tournaments() {
                                 if (target) {
                                     window.location.href = `/TournamentDetail?id=${target.id}`;
                                 } else {
-                                    toast.error("Code invalide ou tournoi terminé");
+                                    toast.error(t('tournaments.error_code'));
                                 }
                             }}
                             className="bg-[#6b5138] hover:bg-[#5c4430]"
                         >
-                            Rejoindre
+                            {t('tournaments.join_btn')}
                         </Button>
                     </div>
                 </div>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="bg-[#e8dcc5]">
-                        <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Tous les tournois</TabsTrigger>
-                        <TabsTrigger value="my" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Mes tournois</TabsTrigger>
-                        <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">Historique</TabsTrigger>
+                        <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('tournaments.tab_all')}</TabsTrigger>
+                        <TabsTrigger value="my" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('tournaments.tab_my')}</TabsTrigger>
+                        <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('tournaments.tab_history')}</TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
@@ -666,11 +667,11 @@ export default function Tournaments() {
                                     t.status === 'open' ? 'bg-green-100 text-green-800' : 
                                     t.status === 'ongoing' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                    {t.status === 'open' ? 'Inscriptions ouvertes' : 
-                                     t.status === 'ongoing' ? 'En cours' : 'Terminé'}
+                                    {t.status === 'open' ? t('tournaments.status_open') : 
+                                     t.status === 'ongoing' ? t('tournaments.status_ongoing') : t('tournaments.status_finished')}
                                 </div>
                                 <div className="text-[#8c7b6a] flex gap-2">
-                                    {t.team_mode && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">ÉQUIPES</span>}
+                                    {t.team_mode && <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full font-bold">{t('tournaments.form_team_mode')}</span>}
                                     {t.entry_fee > 0 && <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">${t.entry_fee}</span>}
                                     {t.game_type === 'chess' ? <Crown className="w-5 h-5" /> : <Gamepad2 className="w-5 h-5" />}
                                 </div>
@@ -680,14 +681,14 @@ export default function Tournaments() {
                             </CardTitle>
                             <CardDescription className="flex items-center gap-2">
                                 <Calendar className="w-3 h-3" />
-                                {format(new Date(t.start_date), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                                {formatDate(new Date(t.start_date), 'dd MMM yyyy à HH:mm')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-center justify-between text-sm text-gray-600 bg-[#f5f0e6] p-3 rounded-lg">
                                 <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4" />
-                                    <span>Participants</span>
+                                    <span>{t('tournaments.participants')}</span>
                                 </div>
                                 <span className="font-bold">{t.current_round || 0} / {t.max_players}</span>
                             </div>
@@ -695,7 +696,7 @@ export default function Tournaments() {
                         <CardFooter>
                             <Link to={`/TournamentDetail?id=${t.id}`} className="w-full">
                                 <Button className="w-full bg-[#e8dcc5] hover:bg-[#d4c5b0] text-[#4a3728] border border-[#d4c5b0] group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-all">
-                                    Voir le tournoi <ArrowRight className="w-4 h-4 ml-2" />
+                                    {t('tournaments.view_btn')} <ArrowRight className="w-4 h-4 ml-2" />
                                 </Button>
                             </Link>
                         </CardFooter>
@@ -706,8 +707,8 @@ export default function Tournaments() {
             {tournaments.length === 0 && (
                 <div className="text-center py-20 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0]">
                     <Trophy className="w-16 h-16 mx-auto text-[#d4c5b0] mb-4" />
-                    <h3 className="text-xl font-bold text-[#6b5138]">Aucun tournoi pour le moment</h3>
-                    <p className="text-gray-500">Soyez le premier à en créer un !</p>
+                    <h3 className="text-xl font-bold text-[#6b5138]">{t('tournaments.no_tournaments')}</h3>
+                    <p className="text-gray-500">{t('tournaments.be_first')}</p>
                 </div>
             )}
             </div>
@@ -717,14 +718,14 @@ export default function Tournaments() {
                     {/* Calendar Header */}
                     <div className="flex items-center justify-between p-4 bg-[#f5f0e6] border-b border-[#d4c5b0]">
                         <h2 className="text-xl font-bold text-[#4a3728] capitalize">
-                            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+                            {formatDate(currentMonth, 'MMMM yyyy')}
                         </h2>
                         <div className="flex gap-2">
                             <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                                 <ChevronLeft className="w-4 h-4" />
                             </Button>
                             <Button variant="outline" size="icon" onClick={() => setCurrentMonth(new Date())}>
-                                Aujourd'hui
+                                {t('tournaments.calendar_today')}
                             </Button>
                             <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
                                 <ChevronRight className="w-4 h-4" />

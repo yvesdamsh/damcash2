@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 const LeagueCard = ({ league, onJoin, isJoined }) => {
+    const { t } = useLanguage();
     return (
         <motion.div 
             whileHover={{ y: -5 }}
@@ -18,11 +19,11 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                     <Trophy className="w-6 h-6 text-yellow-500" />
                     <div>
                         <h3 className="font-bold text-lg">{league.name}</h3>
-                        <span className="text-xs opacity-75">Saison {league.season} • {league.game_type === 'chess' ? 'Échecs' : 'Dames'}</span>
+                        <span className="text-xs opacity-75">{t('leagues.season')} {league.season} • {league.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
                     </div>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full ${league.status === 'active' ? 'bg-green-600' : 'bg-gray-600'}`}>
-                    {league.status === 'active' ? 'En cours' : 'À venir'}
+                    {league.status === 'active' ? t('leagues.status_active') : t('leagues.status_upcoming')}
                 </span>
             </div>
             <div className="p-4 flex-1 flex flex-col gap-4 bg-[#fdfbf7]">
@@ -31,17 +32,17 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                 <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        Fin : {new Date(league.end_date).toLocaleDateString()}
+                        {t('leagues.end_date')} {new Date(league.end_date).toLocaleDateString()}
                     </div>
                     <div className="flex items-center gap-1">
                         <Shield className="w-3 h-3" />
-                        Divisions actives
+                        {t('leagues.active_divisions')}
                     </div>
                 </div>
                 
                 {league.status === 'active' && (
                     <div className="bg-blue-50 p-2 rounded text-xs text-blue-800 mt-2">
-                        <span className="font-bold">Promotion:</span> Top 15% • <span className="font-bold">Relégation:</span> Bottom 15%
+                        <span className="font-bold">{t('leagues.promotion')}</span> Top 15% • <span className="font-bold">{t('leagues.relegation')}</span> Bottom 15%
                     </div>
                 )}
 
@@ -49,7 +50,7 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                     {isJoined ? (
                         <Link to={`/LeagueDetail?id=${league.id}`} className="w-full">
                             <Button className="w-full bg-[#6b5138] hover:bg-[#5c4430] gap-2">
-                                <Medal className="w-4 h-4" /> Voir mon classement
+                                <Medal className="w-4 h-4" /> {t('leagues.view_rank')}
                             </Button>
                         </Link>
                     ) : (
@@ -58,7 +59,7 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
                             disabled={league.status !== 'active'}
                             className="w-full bg-green-600 hover:bg-green-700 gap-2"
                         >
-                            Rejoindre la ligue <ChevronRight className="w-4 h-4" />
+                            {t('leagues.join_btn')} <ChevronRight className="w-4 h-4" />
                         </Button>
                     )}
                 </div>
@@ -68,6 +69,7 @@ const LeagueCard = ({ league, onJoin, isJoined }) => {
 };
 
 export default function LeaguesPage() {
+    const { t } = useLanguage();
     const [leagues, setLeagues] = useState([]);
     const [myParticipations, setMyParticipations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -154,20 +156,20 @@ export default function LeaguesPage() {
         } catch(e) { console.error(e); }
     };
 
-    if (loading) return <div className="p-8 text-center text-[#4a3728]">Chargement des ligues...</div>;
+    if (loading) return <div className="p-8 text-center text-[#4a3728]">{t('leagues.loading')}</div>;
 
     return (
         <div className="max-w-7xl mx-auto p-4 space-y-8">
             <div className="text-center mb-12">
                 <h1 className="text-4xl md:text-5xl font-black text-[#4a3728] mb-4 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
-                    LIGUES COMPÉTITIVES
+                    {t('leagues.title')}
                 </h1>
                 <p className="text-lg text-[#6b5138] max-w-2xl mx-auto">
-                    Rejoignez une saison, accumulez des points en jouant et grimpez les divisions pour gagner des récompenses exclusives.
+                    {t('leagues.subtitle')}
                 </p>
                 {/* Admin Button for setup */}
                 {leagues.length === 0 && (
-                    <Button onClick={createDemoLeague} variant="outline" className="mt-4">Créer Ligue Démo</Button>
+                    <Button onClick={createDemoLeague} variant="outline" className="mt-4">{t('leagues.create_demo')}</Button>
                 )}
             </div>
 
@@ -180,9 +182,9 @@ export default function LeaguesPage() {
                     if (filteredLeagues.length === 0) return null;
                     
                     const titles = {
-                        active: "Saisons en cours",
-                        upcoming: "À venir",
-                        completed: "Archives"
+                        active: t('leagues.active_seasons'),
+                        upcoming: t('leagues.upcoming_seasons'),
+                        completed: t('leagues.archived_seasons')
                     };
 
                     return (
@@ -209,7 +211,7 @@ export default function LeaguesPage() {
             {leagues.length === 0 && !loading && (
                 <div className="text-center py-12 bg-white/50 rounded-xl border-2 border-dashed border-[#d4c5b0]">
                     <Trophy className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-500">Aucune ligue active pour le moment.</p>
+                    <p className="text-gray-500">{t('leagues.no_leagues')}</p>
                 </div>
             )}
         </div>
