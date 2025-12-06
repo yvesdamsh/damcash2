@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon } from 'lucide-react';
@@ -33,6 +34,7 @@ import ReplayControls from '@/components/game/ReplayControls';
 import GameReactions from '@/components/game/GameReactions';
 
 export default function Game() {
+    const { t } = useLanguage();
     const [game, setGame] = useState(null);
     const [board, setBoard] = useState([]);
     const [selectedSquare, setSelectedSquare] = useState(null);
@@ -191,7 +193,7 @@ export default function Game() {
                 if (game.game_type === 'chess' && currentBoard.length > 0) {
                     if (isInCheck(currentBoard, game.current_turn)) {
                         // Sound removed as requested, keeping visual notification
-                        toast.warning("Échec au Roi !");
+                        toast.warning(t('game.check'));
                         // We don't mark soundPlayed=true here so the move sound or capture sound can play if applicable? 
                         // Actually, if it's check, usually we want a distinct feedback. 
                         // If sound is removed, we should probably fall back to move/capture sound logic or just play move sound.
@@ -831,10 +833,10 @@ export default function Game() {
         } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
             let reason = "Nulle";
-            if (gameStatus === 'stalemate') reason = "Pat (Stalemate)";
-            else if (gameStatus === 'draw_50_moves') reason = "Nulle (50 coups)";
-            else if (gameStatus === 'draw_repetition') reason = "Nulle (Répétition)";
-            else if (gameStatus === 'draw_insufficient') reason = "Nulle (Matériel insuffisant)";
+            if (gameStatus === 'stalemate') reason = t('game.stalemate');
+            else if (gameStatus === 'draw_50_moves') reason = t('game.draw_50');
+            else if (gameStatus === 'draw_repetition') reason = t('game.draw_repetition');
+            else if (gameStatus === 'draw_insufficient') reason = t('game.draw_material');
             toast.info(reason);
         } else {
             if (isInCheck(newBoard, nextTurn)) {
@@ -1009,17 +1011,17 @@ export default function Game() {
             setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
             setShowResult(false);
             setReplayIndex(-1);
-            toast.success("Nouvelle manche commencée ! Changement de couleurs.");
+            toast.success(t('game.new_round_started'));
         } catch (e) {
             console.error("Rematch error", e);
-            toast.error("Erreur lors du lancement de la revanche");
+            toast.error(t('game.rematch_error'));
         }
     };
 
     const copyInviteCode = () => {
         navigator.clipboard.writeText(game.access_code);
         setInviteCopied(true);
-        toast.success('Code copié !');
+        toast.success(t('game.code_copied'));
         setTimeout(() => setInviteCopied(false), 2000);
     };
 
@@ -1032,13 +1034,13 @@ export default function Game() {
             await base44.entities.Notification.create({
                 recipient_id: opponentId,
                 type: "info",
-                title: "Proposition de nulle",
-                message: `${currentUser.full_name || currentUser.username} propose une nulle.`,
+                title: t('game.draw_offer_sent_title'),
+                message: t('game.draw_offer_sent_msg', { name: currentUser.full_name || currentUser.username }),
                 link: `/Game?id=${game.id}`
             });
         }
         
-        toast.success("Nulle proposée");
+        toast.success(t('game.draw_offered'));
     };
 
     const handleAcceptDraw = async () => {
@@ -1046,13 +1048,13 @@ export default function Game() {
         await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null });
         base44.functions.invoke('processGameResult', { gameId: game.id });
         soundManager.play('win');
-        toast.success("Match nul !");
+        toast.success(t('game.draw_accepted'));
     };
 
     const handleDeclineDraw = async () => {
         if (!game) return;
         await base44.entities.Game.update(game.id, { draw_offer_by: null });
-        toast.error("Nulle refusée");
+        toast.error(t('game.draw_declined'));
     };
 
     const handleTimeout = async (color) => {
@@ -1077,10 +1079,10 @@ export default function Game() {
             // Notify
             if (currentUser?.id === winnerId) {
                 soundManager.play('win');
-                toast.success("Temps écoulé ! Vous gagnez !");
+                toast.success(t('game.time_out_win'));
             } else {
                 soundManager.play('loss');
-                toast.error("Temps écoulé !");
+                toast.error(t('game.time_out_loss'));
             }
 
             base44.functions.invoke('processGameResult', { gameId: game.id });
@@ -1100,7 +1102,7 @@ export default function Game() {
         if (moves.length === 0) return;
 
         await base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id });
-        toast.success("Demande d'annulation envoyée");
+        toast.success(t('game.takeback_sent'));
     };
 
     const handleAcceptTakeback = async () => {
@@ -1143,10 +1145,10 @@ export default function Game() {
                 // We'll leave time as is for simplicity (penalty for mistake).
             });
             
-            toast.success("Coup annulé");
+            toast.success(t('game.takeback_accepted'));
         } catch (e) {
             console.error(e);
-            toast.error("Erreur lors de l'annulation");
+            toast.error(t('game.takeback_error'));
         } finally {
             setTakebackLoading(false);
         }
@@ -1155,7 +1157,7 @@ export default function Game() {
     const handleDeclineTakeback = async () => {
         if (!game) return;
         await base44.entities.Game.update(game.id, { takeback_requested_by: null });
-        toast.error("Annulation refusée");
+        toast.error(t('game.takeback_declined'));
     };
 
     // Reactions Logic
@@ -1185,15 +1187,18 @@ export default function Game() {
              await base44.entities.Notification.create({
                 recipient_id: userToInvite.id,
                 type: "info",
-                title: "Invitation à regarder",
-                message: `${currentUser.username || 'Un ami'} vous invite à regarder sa partie de ${game.game_type === 'chess' ? 'Échecs' : 'Dames'}`,
+                title: t('game.spectate_invite_title'),
+                message: t('game.spectate_invite_msg', { 
+                    name: currentUser.username || t('common.anonymous'), 
+                    game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') 
+                }),
                 link: `/Game?id=${game.id}`,
                 sender_id: currentUser.id
             });
-            toast.success(`Invitation envoyée à ${userToInvite.username || 'l\'utilisateur'}`);
+            toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
             setInviteOpen(false);
         } catch (e) {
-            toast.error("Erreur lors de l'envoi");
+            toast.error(t('game.invite_error'));
         }
     };
 
@@ -1266,7 +1271,7 @@ export default function Game() {
                 />
                 {isSpectator && (
                     <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse">
-                        <EyeIcon className="w-3 h-3" /> MODE SPECTATEUR
+                        <EyeIcon className="w-3 h-3" /> {t('game.spectator_mode')}
                     </div>
                 )}
             </div>
@@ -1283,15 +1288,15 @@ export default function Game() {
                             animate={{ scale: 1, opacity: 1 }}
                             className="bg-[#fdfbf7] border border-[#d4c5b0] rounded-xl p-6 shadow-2xl max-w-sm w-full"
                         >
-                            <h3 className="text-xl font-bold text-[#4a3728] mb-2">Abandonner la partie ?</h3>
-                            <p className="text-[#6b5138] mb-6">Vous perdrez cette partie et des points ELO.</p>
+                            <h3 className="text-xl font-bold text-[#4a3728] mb-2">{t('game.resign_confirm_title')}</h3>
+                            <p className="text-[#6b5138] mb-6">{t('game.resign_confirm_desc')}</p>
                             <div className="flex gap-3 justify-end">
                                 <Button 
                                     variant="outline" 
                                     onClick={() => setShowResignConfirm(false)}
                                     className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
                                 >
-                                    Annuler
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button 
                                     onClick={async () => {
@@ -1314,7 +1319,7 @@ export default function Game() {
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white"
                                 >
-                                    Abandonner
+                                    {t('game.resign')}
                                 </Button>
                             </div>
                         </motion.div>
@@ -1340,7 +1345,7 @@ export default function Game() {
                 isOpen={inviteOpen} 
                 onClose={() => setInviteOpen(false)} 
                 onInvite={inviteSpectator} 
-                title="Inviter un spectateur"
+                title={t('game.invite_spectator')}
             />
 
             {/* Result Overlay */}
@@ -1362,7 +1367,7 @@ export default function Game() {
                 {(game.series_length >= 1) && (
                     <div className="flex justify-center items-center -mb-2 z-10 relative">
                         <div className="bg-[#4a3728] text-[#e8dcc5] px-4 py-1 rounded-full shadow-md border-2 border-[#e8dcc5] text-sm font-bold flex gap-3">
-                            <span>Manche {(game.series_score_white + game.series_score_black) - ((game.status === 'finished') ? 1 : 0) + 1} / {game.series_length}</span>
+                            <span>{t('game.round_display', { current: (game.series_score_white + game.series_score_black) - ((game.status === 'finished') ? 1 : 0) + 1, total: game.series_length })}</span>
                             <span className="text-yellow-500">|</span>
                             <span className="flex gap-2">
                                 <span className={game.series_score_white > game.series_score_black ? "text-green-400" : "text-white"}>
@@ -1451,7 +1456,7 @@ export default function Game() {
                 {game.prize_pool > 0 && (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 flex justify-between items-center text-[#6b5138]">
                         <div className="flex items-center gap-2 text-sm font-bold">
-                            <Coins className="w-4 h-4 text-yellow-600" /> Pot Total:
+                            <Coins className="w-4 h-4 text-yellow-600" /> {t('game.total_pot')}
                         </div>
                         <div className="text-lg font-black text-yellow-700">{game.prize_pool} D$</div>
                     </div>
@@ -1463,7 +1468,7 @@ export default function Game() {
                 <div className="flex gap-1">
                     <Button variant="ghost" size="sm" onClick={toggleSaveGame} className={isSaved ? "text-yellow-500 bg-yellow-50 hover:bg-yellow-100" : "text-gray-400 hover:text-yellow-500"}>
                         <Star className={`w-4 h-4 mr-2 ${isSaved ? "fill-yellow-500" : ""}`} />
-                        {isSaved ? 'Sauvegardée' : 'Favoris'}
+                        {isSaved ? t('game.saved') : t('game.favorite')}
                     </Button>
                 </div>
                         {game.moves && JSON.parse(game.moves).length > 0 && (
@@ -1484,7 +1489,7 @@ export default function Game() {
                         )}
 
                         <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]" onClick={() => setInviteOpen(true)}>
-                            <UserPlus className="w-4 h-4 mr-1" /> Inviter
+                            <UserPlus className="w-4 h-4 mr-1" /> {t('game.invite')}
                         </Button>
 
                         <Popover>
@@ -1510,7 +1515,7 @@ export default function Game() {
 
                         {game.status !== 'playing' && game.status !== 'waiting' && (
                             <Button variant="outline" size="sm" onClick={() => navigate('/Home')}>
-                                <ChevronLeft className="w-4 h-4 mr-1" /> Quitter
+                                <ChevronLeft className="w-4 h-4 mr-1" /> {t('game.leave')}
                             </Button>
                         )}
                     </div>
@@ -1525,7 +1530,7 @@ export default function Game() {
                             onClick={() => setActiveTab('chat')}
                             className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'chat' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
                         >
-                            <MessageSquare className="w-3 h-3 mr-1" /> Chat
+                            <MessageSquare className="w-3 h-3 mr-1" /> {t('game.chat_tab')}
                         </Button>
                         <Button 
                             variant="ghost" 
@@ -1533,7 +1538,7 @@ export default function Game() {
                             onClick={() => setActiveTab('moves')}
                             className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'moves' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
                         >
-                            <Copy className="w-3 h-3 mr-1" /> Coups
+                            <Copy className="w-3 h-3 mr-1" /> {t('game.moves_tab')}
                         </Button>
                         <Button 
                             variant="ghost" 
@@ -1542,7 +1547,7 @@ export default function Game() {
                             className={cn("text-xs hover:bg-[#5c4430] hover:text-white", activeTab === 'analysis' ? "bg-[#5c4430] text-white" : "text-[#d4c5b0]")}
                             disabled={game.status === 'playing'}
                         >
-                            <Trophy className="w-3 h-3 mr-1" /> Analyse IA
+                            <Trophy className="w-3 h-3 mr-1" /> {t('game.analysis_tab')}
                         </Button>
                     </div>
                     <div className="flex-1 overflow-hidden bg-[#fdfbf7]">

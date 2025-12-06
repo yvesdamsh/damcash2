@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, Phone, PhoneOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ const ICE_SERVERS = {
 };
 
 export default function VideoChat({ gameId, currentUser, opponentId, socket, lastSignal }) {
+    const { t } = useLanguage();
     const [isCallActive, setIsCallActive] = useState(false);
     const [localStream, setLocalStream] = useState(null);
     const [remoteStream, setRemoteStream] = useState(null);
@@ -79,7 +81,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
 
         pc.oniceconnectionstatechange = () => {
             if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-                toast.warning("Connexion instable...");
+                toast.warning(t('game.connection_unstable'));
                 if (pc.iceConnectionState === 'failed') {
                      pc.restartIce();
                 }
@@ -111,7 +113,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
             sendSignal('offer', JSON.stringify(offer));
         } catch (err) {
             console.error("Error starting call", err);
-            toast.error("Impossible d'accéder à la caméra/micro");
+            toast.error(t('game.media_error'));
             setStatus('idle');
         }
     };
@@ -137,10 +139,10 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
                 }
             }
         } else if (msg.type === 'reject') {
-            toast.error("Appel refusé");
+            toast.error(t('game.call_rejected'));
             cleanup();
         } else if (msg.type === 'hangup') {
-            toast.info("Appel terminé");
+            toast.info(t('game.call_ended'));
             cleanup();
         }
     };
@@ -171,7 +173,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
             sendSignal('answer', JSON.stringify(answer));
         } catch (err) {
             console.error("Error answering", err);
-            toast.error("Erreur lors de la réponse");
+            toast.error(t('game.answer_error'));
             rejectCall();
         }
     };
@@ -220,16 +222,16 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         <div className="bg-white/90 rounded-xl p-4 shadow-md border border-[#d4c5b0]">
             <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-[#4a3728] flex items-center gap-2">
-                    <Video className="w-4 h-4" /> Chat Vidéo
+                    <Video className="w-4 h-4" /> {t('game.video_chat')}
                 </h3>
                 {status === 'idle' && (
                     <Button size="sm" onClick={startCall} className="bg-[#6b5138] hover:bg-[#5c4430]">
-                        <Phone className="w-4 h-4 mr-2" /> Appeler
+                        <Phone className="w-4 h-4 mr-2" /> {t('game.call')}
                     </Button>
                 )}
                 {status === 'calling' && (
                     <div className="text-xs text-[#6b5138] flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Appel en cours...
+                        <Loader2 className="w-3 h-3 animate-spin" /> {t('game.calling')}
                     </div>
                 )}
                 {(status === 'connected' || isCallActive) && (
@@ -242,14 +244,14 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
             {status === 'incoming' && (
                 <div className="mb-3 p-3 bg-amber-100 border border-amber-300 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center gap-2 text-amber-900 font-medium">
-                        <Phone className="w-4 h-4 animate-bounce" /> Appel entrant...
+                        <Phone className="w-4 h-4 animate-bounce" /> {t('game.incoming_call')}
                     </div>
                     <div className="flex gap-2">
                         <Button size="sm" variant="ghost" onClick={rejectCall} className="text-red-600 hover:bg-red-100 hover:text-red-700">
-                            Refuser
+                            {t('game.decline_call')}
                         </Button>
                         <Button size="sm" onClick={answerCall} className="bg-green-600 hover:bg-green-700 text-white">
-                            Accepter
+                            {t('game.accept_call')}
                         </Button>
                     </div>
                 </div>
@@ -271,14 +273,14 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
                             </div>
                         )}
                         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-10">
-                            <button onClick={toggleMute} className={`p-2 rounded-full shadow-md transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-gray-700/80 text-white hover:bg-gray-600'}`} title={isMuted ? "Activer micro" : "Couper micro"}>
+                            <button onClick={toggleMute} className={`p-2 rounded-full shadow-md transition-all ${isMuted ? 'bg-red-500 text-white' : 'bg-gray-700/80 text-white hover:bg-gray-600'}`} title={isMuted ? t('game.unmute') : t('game.mute')}>
                                 {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                             </button>
-                            <button onClick={toggleVideo} className={`p-2 rounded-full shadow-md transition-all ${isVideoOff ? 'bg-red-500 text-white' : 'bg-gray-700/80 text-white hover:bg-gray-600'}`} title={isVideoOff ? "Activer caméra" : "Couper caméra"}>
+                            <button onClick={toggleVideo} className={`p-2 rounded-full shadow-md transition-all ${isVideoOff ? 'bg-red-500 text-white' : 'bg-gray-700/80 text-white hover:bg-gray-600'}`} title={isVideoOff ? t('game.camera_on') : t('game.camera_off')}>
                                 {isVideoOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
                             </button>
                         </div>
-                        <span className="absolute top-1 left-1 text-[10px] text-white/70 bg-black/30 px-1 rounded">Moi</span>
+                        <span className="absolute top-1 left-1 text-[10px] text-white/70 bg-black/30 px-1 rounded">{t('game.me')}</span>
                     </div>
                     <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
                         <video 
@@ -287,7 +289,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
                             playsInline 
                             className="w-full h-full object-cover" 
                         />
-                         <span className="absolute top-1 left-1 text-[10px] text-white/70 bg-black/30 px-1 rounded">Adversaire</span>
+                         <span className="absolute top-1 left-1 text-[10px] text-white/70 bg-black/30 px-1 rounded">{t('history.opponent')}</span>
                          {!remoteStream && status === 'connected' && (
                              <div className="absolute inset-0 flex items-center justify-center">
                                  <Loader2 className="w-6 h-6 text-white/50 animate-spin" />

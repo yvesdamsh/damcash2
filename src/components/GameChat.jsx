@@ -1,16 +1,26 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, MessageSquare, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 
-const QUICK_REPLIES = ["Bien joué ! 👏", "Merci !", "Oups... 😅", "Belle partie !", "🤔 Réfléchis...", "Vite ! ⏰"];
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
 export default function GameChat({ gameId, currentUser, socket, players }) {
+    const { t } = useLanguage();
     const [messages, setMessages] = useState([]);
+    
+    const quickReplies = [
+        t('chat.quick.well_played'),
+        t('chat.quick.thanks'),
+        t('chat.quick.oops'),
+        t('chat.quick.good_game'),
+        t('chat.quick.thinking'),
+        t('chat.quick.hurry')
+    ];
     const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef(null);
 
@@ -90,7 +100,7 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
         }
     };
 
-    if (!currentUser) return <div className="p-4 text-center text-gray-500 text-sm">Connectez-vous pour chatter</div>;
+    if (!currentUser) return <div className="p-4 text-center text-gray-500 text-sm">{t('chat.login_required')}</div>;
 
     return (
         <div className="flex flex-col h-full bg-[#fdfbf7]">
@@ -98,7 +108,7 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
                 {messages.length === 0 && (
                     <div className="text-center text-gray-400 text-xs italic mt-4">
                         <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-20" />
-                        Début de la discussion...
+                        {t('chat.start')}
                     </div>
                 )}
                 {messages.map((msg) => {
@@ -117,7 +127,7 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
                                         <div className="flex items-center gap-1 mb-0.5">
                                             <div className="text-[10px] font-bold opacity-70 text-[#4a3728]">{msg.sender_name}</div>
                                             {players && (msg.sender_id !== players.white && msg.sender_id !== players.black) && (
-                                                <span className="text-[8px] bg-gray-200 px-1 rounded text-gray-500 uppercase tracking-wide">Spectateur</span>
+                                                <span className="text-[8px] bg-gray-200 px-1 rounded text-gray-500 uppercase tracking-wide">{t('game.spectator')}</span>
                                             )}
                                         </div>
                                     )}
@@ -134,7 +144,7 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
             {/* Quick Replies & Input */}
             <div className="p-2 border-t border-[#d4c5b0] bg-white space-y-2">
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    {QUICK_REPLIES.map((reply, i) => (
+                    {quickReplies.map((reply, i) => (
                         <button
                             key={i}
                             onClick={() => handleSend(null, reply)}
@@ -171,7 +181,7 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
                     <Input
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Message..."
+                        placeholder={t('chat.placeholder')}
                         className="flex-1 border-[#d4c5b0] focus-visible:ring-[#4a3728] h-9 text-sm"
                     />
                     <Button type="submit" size="icon" className="bg-[#4a3728] hover:bg-[#2c1e12] h-9 w-9 shrink-0">

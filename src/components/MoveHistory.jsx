@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function MoveHistory({ moves, currentIndex, onSelectMove, gameType, isPlaying }) {
+    const { t } = useLanguage();
     const scrollRef = useRef(null);
 
     useEffect(() => {
@@ -45,7 +47,7 @@ export default function MoveHistory({ moves, currentIndex, onSelectMove, gameTyp
     return (
         <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-[#d4c5b0]">
             <div className="p-2 bg-[#f5f0e6] border-b border-[#d4c5b0] text-xs font-bold text-[#6b5138] uppercase tracking-wider text-center">
-                Historique des coups
+                {t('game.move_history_title')}
             </div>
             <ScrollArea className="flex-1 p-2" ref={scrollRef}>
                 <div className="space-y-1">
