@@ -31,13 +31,13 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         if (localStream && localVideoRef.current) {
             localVideoRef.current.srcObject = localStream;
         }
-    }, [localStream]);
+    }, [localStream, isCallActive]);
 
     useEffect(() => {
         if (remoteStream && remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
         }
-    }, [remoteStream]);
+    }, [remoteStream, isCallActive]);
 
     // Handle incoming signals via Socket props
     useEffect(() => {
