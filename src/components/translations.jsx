@@ -92,6 +92,8 @@ export const translations = {
     "common.read_bio": "Read Biography",
     "common.all": "All",
     "common.none": "None",
+    "common.accept": "Accept",
+    "common.decline": "Decline",
 
     // Home Page
     "home.welcome": "Welcome to DamCash",
@@ -473,6 +475,8 @@ export const translations = {
     "common.read_bio": "Читать биографию",
     "common.all": "Все",
     "common.none": "Нет",
+    "common.accept": "Принять",
+    "common.decline": "Отклонить",
 
     // Home
     "home.welcome": "Добро пожаловать в DamCash",
@@ -849,6 +853,8 @@ export const translations = {
     "common.read_bio": "Biografie lesen",
     "common.all": "Alle",
     "common.none": "Keine",
+    "common.accept": "Annehmen",
+    "common.decline": "Ablehnen",
 
     // Home
     "home.welcome": "Willkommen bei DamCash",
@@ -1228,6 +1234,8 @@ export const translations = {
     "common.read_bio": "阅读传记",
     "common.all": "全部",
     "common.none": "无",
+    "common.accept": "接受",
+    "common.decline": "拒绝",
 
     // Home
     "home.welcome": "欢迎来到 DamCash",
@@ -1607,6 +1615,8 @@ export const translations = {
     "common.read_bio": "Biografie lezen",
     "common.all": "Alle",
     "common.none": "Geen",
+    "common.accept": "Accepteren",
+    "common.decline": "Afwijzen",
 
     // Home
     "home.welcome": "Welkom bij DamCash",
@@ -1986,6 +1996,8 @@ export const translations = {
     "common.read_bio": "Lire la biographie",
     "common.all": "Tous",
     "common.none": "Aucun",
+    "common.accept": "Accepter",
+    "common.decline": "Refuser",
     "common.player": "Joueur",
     "common.anonymous": "Anonyme",
     "common.min": "min",
