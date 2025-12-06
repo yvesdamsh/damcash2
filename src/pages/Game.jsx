@@ -1516,9 +1516,24 @@ export default function Game() {
                         </Popover>
 
                         {game.status !== 'playing' && game.status !== 'waiting' && (
-                            <Button variant="outline" size="sm" onClick={() => navigate('/Home')}>
-                                <ChevronLeft className="w-4 h-4 mr-1" /> {t('game.leave')}
-                            </Button>
+                            (() => {
+                                // Series Exit Logic for Button
+                                const seriesLength = game.series_length || 1;
+                                const currentWhiteScore = (game.series_score_white || 0) + (game.winner_id === game.white_player_id ? 1 : game.winner_id ? 0 : 0.5);
+                                const currentBlackScore = (game.series_score_black || 0) + (game.winner_id === game.black_player_id ? 1 : game.winner_id ? 0 : 0.5);
+                                const isSeriesDecided = currentWhiteScore > seriesLength / 2 || currentBlackScore > seriesLength / 2 || (currentWhiteScore + currentBlackScore >= seriesLength);
+                                
+                                const isWhite = currentUser?.id === game.white_player_id;
+                                const myScore = isWhite ? currentWhiteScore : currentBlackScore;
+                                const opponentScore = isWhite ? currentBlackScore : currentWhiteScore;
+                                const canLeave = isSeriesDecided || (myScore < opponentScore);
+
+                                return canLeave ? (
+                                    <Button variant="outline" size="sm" onClick={() => navigate('/Home')}>
+                                        <ChevronLeft className="w-4 h-4 mr-1" /> {t('game.leave')}
+                                    </Button>
+                                ) : null;
+                            })()
                         )}
                     </div>
                 </div>

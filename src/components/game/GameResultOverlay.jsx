@@ -16,6 +16,23 @@ export default function GameResultOverlay({
     const isLoser = game.winner_id && game.winner_id !== currentUser?.id;
     const isDraw = !game.winner_id;
 
+    // Calculate Series Status
+    const seriesLength = game.series_length || 1;
+    const currentWhiteScore = (game.series_score_white || 0) + (game.winner_id === game.white_player_id ? 1 : game.winner_id ? 0 : 0.5);
+    const currentBlackScore = (game.series_score_black || 0) + (game.winner_id === game.black_player_id ? 1 : game.winner_id ? 0 : 0.5);
+    
+    const isSeriesDecided = currentWhiteScore > seriesLength / 2 || currentBlackScore > seriesLength / 2 || (currentWhiteScore + currentBlackScore >= seriesLength);
+    
+    const isWhite = currentUser?.id === game.white_player_id;
+    const myScore = isWhite ? currentWhiteScore : currentBlackScore;
+    const opponentScore = isWhite ? currentBlackScore : currentWhiteScore;
+    
+    // Rule: "Seul celui qui est mené au score peut arrêter de jouer"
+    // If series is NOT decided:
+    // - If Trailing (myScore < opponentScore): Can leave (Forfeit rest)
+    // - If Leading or Tied: Cannot leave
+    const canLeave = isSeriesDecided || (myScore < opponentScore);
+
     return (
         <motion.div 
             initial={{ opacity: 0 }} 
@@ -74,22 +91,32 @@ export default function GameResultOverlay({
                     </div>
                 )}
 
-                <button 
-                    onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-[#4a3728] hover:bg-black/5 rounded-full transition-colors"
-                    title="Fermer et analyser"
-                >
-                    <X className="w-6 h-6" />
-                </button>
+                {canLeave && (
+                    <button 
+                        onClick={onClose}
+                        className="absolute top-4 right-4 p-2 text-[#4a3728] hover:bg-black/5 rounded-full transition-colors"
+                        title="Fermer et analyser"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                )}
 
                 <div className="space-y-3">
                     <Button onClick={onRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
-                        <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1) ? "Manche Suivante" : "Rejouer"}
+                        <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? "Manche Suivante (Obligatoire)" : "Rejouer"}
                     </Button>
                     
-                    <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
-                        Retour à l'accueil
-                    </Button>
+                    {canLeave && (
+                        <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
+                            {!isSeriesDecided ? "Abandonner la série" : "Retour à l'accueil"}
+                        </Button>
+                    )}
+                    
+                    {!canLeave && (
+                        <p className="text-xs text-gray-500 italic mt-2">
+                            Vous ne pouvez pas quitter la série tant que vous n'êtes pas mené au score.
+                        </p>
+                    )}
                 </div>
             </motion.div>
         </motion.div>
