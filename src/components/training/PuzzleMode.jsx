@@ -5,14 +5,14 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle, HelpCircle, Play, RefreshCw } from 'lucide-react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
-import { executeMove } from '@/components/checkersLogic';
-import { executeChessMove, getValidChessMoves } from '@/components/chessLogic';
+import { executeMove, initializeBoard } from '@/components/checkersLogic';
+import { executeChessMove, getValidChessMoves, initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
 
 export default function PuzzleMode() {
     const [gameType, setGameType] = useState('chess');
     const [puzzle, setPuzzle] = useState(null);
-    const [board, setBoard] = useState([]);
+    const [board, setBoard] = useState(initializeChessBoard());
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('idle'); // idle, playing, solved, failed
     const [moveIndex, setMoveIndex] = useState(0);
@@ -20,12 +20,18 @@ export default function PuzzleMode() {
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [playerTurn, setPlayerTurn] = useState('white');
 
+    useEffect(() => {
+        fetchPuzzle();
+    }, [gameType]);
+
     const fetchPuzzle = async () => {
         setLoading(true);
         setPuzzle(null);
         setStatus('idle');
         setMoveIndex(0);
-        setBoard([]);
+        // Set empty board based on type to prevent "no board" visual during load
+        setBoard(gameType === 'chess' ? initializeChessBoard() : initializeBoard());
+        
         try {
             const res = await base44.functions.invoke('getPuzzle', { gameType, difficulty: 'medium' });
             const p = res.data;
@@ -159,8 +165,8 @@ export default function PuzzleMode() {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="flex gap-2 w-full sm:w-auto">
-                    <Button className="flex-1 sm:flex-none" variant={gameType === 'chess' ? 'default' : 'outline'} onClick={() => { setGameType('chess'); fetchPuzzle(); }}>Échecs</Button>
-                    <Button className="flex-1 sm:flex-none" variant={gameType === 'checkers' ? 'default' : 'outline'} onClick={() => { setGameType('checkers'); fetchPuzzle(); }}>Dames</Button>
+                    <Button className="flex-1 sm:flex-none" variant={gameType === 'chess' ? 'default' : 'outline'} onClick={() => setGameType('chess')}>Échecs</Button>
+                    <Button className="flex-1 sm:flex-none" variant={gameType === 'checkers' ? 'default' : 'outline'} onClick={() => setGameType('checkers')}>Dames</Button>
                 </div>
                 <Button onClick={fetchPuzzle} disabled={loading} className="w-full sm:w-auto">
                     {loading ? <Loader2 className="animate-spin" /> : <RefreshCw className="mr-2 w-4 h-4" />} Nouveau Puzzle
@@ -170,14 +176,16 @@ export default function PuzzleMode() {
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 flex justify-center">
                     <div className="w-full max-w-[500px] aspect-square relative">
-                         {loading ? (
-                             <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
-                                 <Loader2 className="w-10 h-10 animate-spin text-gray-400" />
+                         {/* Always render board, overlay loader if needed */}
+                         {gameType === 'checkers' ? 
+                            <CheckerBoard board={board} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={playerTurn} /> :
+                            <ChessBoard board={board} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={playerTurn} />
+                         }
+                         
+                         {loading && (
+                             <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-lg z-50">
+                                 <Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" />
                              </div>
-                         ) : (
-                             gameType === 'checkers' ? 
-                                <CheckerBoard board={board} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={playerTurn} /> :
-                                <ChessBoard board={board} onSquareClick={handleSquareClick} selectedSquare={selectedSquare} validMoves={validMoves} currentTurn={playerTurn} />
                          )}
                          
                          {status === 'solved' && (
