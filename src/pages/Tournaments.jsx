@@ -50,6 +50,17 @@ export default function Tournaments() {
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
+    // Debounced Search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            // Re-run fetch when search changes (if we implement backend search)
+            // For now, we filter client-side for search to stay snappy on small result sets (50),
+            // but we trigger fetch if we want to support backend search later.
+            // fetchTournaments(); 
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -57,7 +68,7 @@ export default function Tournaments() {
                 setUser(u);
                 // Ensure tournaments exist
                 await base44.functions.invoke('tournamentManager', {});
-                fetchTournaments();
+                // Initial fetch is now handled by the filter useEffect
                 
                 // Fetch my participations
                 if (u) {
@@ -95,10 +106,50 @@ export default function Tournaments() {
     });
 
     const fetchTournaments = async () => {
-        // Fetching more to allow client-side filtering effectively
-        const list = await base44.entities.Tournament.list('-start_date', 50);
-        setTournaments(list);
+        try {
+            // Build Query
+            const query = {};
+            
+            // 1. Status Filter
+            if (activeTab === 'history') {
+                query.status = 'finished';
+            } else if (filterStatus !== 'all') {
+                query.status = filterStatus;
+            } else {
+                // Default view (not history) usually hides finished or shows relevant
+                if (activeTab !== 'my') {
+                    // If we are in "All", maybe show everything? Or exclude finished?
+                    // Let's keep it simple: fetch all if no specific status filter, 
+                    // but usually we sort by date so finished ones drop off naturally or we can exclude them.
+                    // For now, let's NOT exclude finished by default to keep consistent with previous behavior if user scrolls,
+                    // but filtering on backend is better.
+                }
+            }
+
+            // 2. Game Type
+            if (filterGameType !== 'all') {
+                query.game_type = filterGameType;
+            }
+
+            // 3. Private/Public (Backend security usually handles data access, but we can filter public)
+            // If we want to filter private games that aren't ours, it's complex.
+            // Let's fetch mainly public + our own if possible, or just fetch list and let backend security limits apply?
+            // Assuming standard fetch returns what we can see.
+            
+            // Search optimization (if supported by backend)
+            // if (searchQuery) query.name = { $regex: searchQuery, $options: 'i' };
+
+            const list = await base44.entities.Tournament.filter(query, '-start_date', 50);
+            setTournaments(list);
+        } catch (e) {
+            console.error("Fetch tournaments error", e);
+        }
     };
+
+    // Refetch when filters change
+    useEffect(() => {
+        fetchTournaments();
+    }, [filterStatus, filterGameType, activeTab, user]);
 
     const handleCreate = async () => {
         if (!newTournament.name || !newTournament.start_date) {

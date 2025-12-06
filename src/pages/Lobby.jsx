@@ -26,11 +26,11 @@ export default function Lobby() {
 
     const fetchData = async () => {
         try {
-            // 1. Fetch Users (Online logic)
-            const allUsers = await base44.entities.User.list({ limit: 100, sort: { last_seen: -1 } });
-            const now = new Date();
-            const onlineThreshold = 10 * 60 * 1000; 
-            const onlineUsers = allUsers.filter(u => u.last_seen && (now - new Date(u.last_seen)) < onlineThreshold);
+            // 1. Fetch Users (Online logic) - Filtered on Backend
+            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const onlineUsers = await base44.entities.User.filter({ 
+                last_seen: { $gte: tenMinutesAgo } 
+            }, '-last_seen', 100);
             setUsers(onlineUsers);
 
             // 2. Fetch Public Waiting Games
