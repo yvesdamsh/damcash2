@@ -332,6 +332,13 @@ export default function Game() {
                 if (data.payload.recipient_id === currentUser?.id && data.payload.sender_id !== currentUser?.id) {
                     setLastSignal(data.payload);
                 }
+            } else if (data.type === 'CHAT_UPDATE') {
+                if (data.payload) {
+                    setSyncedMessages(prev => {
+                        if (prev.some(m => m.id === data.payload.id)) return prev;
+                        return [...prev, data.payload];
+                    });
+                }
             }
         }
     });
