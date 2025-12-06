@@ -134,6 +134,16 @@ function LayoutContent({ children }) {
         localStorage.setItem('appTheme', newTheme);
     };
 
+    // Apply global theme class
+    React.useEffect(() => {
+        const isDark = appTheme === 'dark' || (appTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, [appTheme]);
+
     React.useEffect(() => {
         const checkUser = async () => {
             try {
@@ -203,23 +213,15 @@ function LayoutContent({ children }) {
         meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
     }, []);
 
-    const themeClasses = {
-        light: "bg-[#e8dcc5] text-slate-900",
-        dark: "bg-slate-900 text-[#e8dcc5]",
-        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-900 text-[#e8dcc5]" : "bg-[#e8dcc5] text-slate-900"
-    };
+    // Elegant dark mode palette
+    const isDark = appTheme === 'dark' || (appTheme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    const navTheme = {
-        light: "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]",
-        dark: "bg-slate-950 text-gray-200 border-slate-800",
-        system: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? "bg-slate-950 text-gray-200 border-slate-800" : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]"
-    };
-
-    const activeTheme = themeClasses[appTheme] || themeClasses.light;
-    const activeNavTheme = navTheme[appTheme] || navTheme.light;
+    const activeNavTheme = isDark 
+        ? "bg-[#1a120b] text-[#e8dcc5] border-[#3d2b1f]" 
+        : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]";
 
     return (
-        <div className={`min-h-screen font-sans bg-opacity-80 relative transition-colors duration-300 ${activeTheme}`}>
+        <div className={`min-h-screen font-sans relative transition-colors duration-300 ${isDark ? 'bg-[#0f0a06] text-[#e8dcc5]' : 'bg-[#e8dcc5] text-slate-900'}`}>
             <AnimatePresence>
                 {showIntro && (
                     <motion.div 
@@ -233,11 +235,11 @@ function LayoutContent({ children }) {
             </AnimatePresence>
             {/* Background Wood Texture */}
             <div 
-                className="fixed inset-0 z-0 opacity-40 pointer-events-none"
+                className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${isDark ? 'opacity-10 mix-blend-overlay' : 'opacity-40'}`}
                 style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1575018288729-6e0993577181?q=80&w=2574&auto=format&fit=crop')`,
                     backgroundSize: 'cover',
-                    filter: 'sepia(0.3) contrast(1.1)'
+                    filter: isDark ? 'grayscale(0.5) contrast(1.2)' : 'sepia(0.3) contrast(1.1)'
                 }}
             />
 

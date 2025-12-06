@@ -498,15 +498,15 @@ export default function Home() {
 
             {/* Game Config Dialog */}
             {configOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <Card className="w-full max-w-md bg-[#fdfbf7] border-[#d4c5b0] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[65vh] md:max-h-[85vh]">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <Card className="w-full max-w-md bg-[#fdfbf7] dark:bg-[#1e1814] border-[#d4c5b0] dark:border-[#3d2b1f] shadow-2xl animate-in fade-in zoom-in-95 flex flex-col max-h-[65vh] md:max-h-[85vh]">
                         <CardHeader className="flex-shrink-0 border-b border-[#d4c5b0]/20">
-                            <CardTitle className="text-[#4a3728]">{t('home.config_title')}</CardTitle>
+                            <CardTitle className="text-[#4a3728] dark:text-[#e8dcc5]">{t('home.config_title')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6 flex-1 overflow-y-auto p-6">
                             {/* Presets */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">{t('home.rapid_modes')}</label>
+                                <label className="text-sm font-medium text-[#6b5138] dark:text-[#b09a85]">{t('home.rapid_modes')}</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <Button 
                                         variant="outline" 
@@ -533,14 +533,14 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">{t('home.cadence')}</label>
+                                <label className="text-sm font-medium text-[#6b5138] dark:text-[#b09a85]">{t('home.cadence')}</label>
                                 <div className="grid grid-cols-4 gap-2">
                                     {[1, 3, 5, 10, 15, 30, 60].map(t => (
                                         <Button 
                                             key={t}
                                             variant={gameConfig.time === t ? "default" : "outline"}
                                             onClick={() => setGameConfig({...gameConfig, time: t})}
-                                            className={gameConfig.time === t ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}
+                                            className={gameConfig.time === t ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138] dark:text-[#b09a85] dark:border-[#3d2b1f] dark:hover:bg-[#2c241b]"}
                                         >
                                             {t} min
                                         </Button>
@@ -549,14 +549,14 @@ export default function Home() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-[#6b5138]">{t('home.increment')}</label>
+                                <label className="text-sm font-medium text-[#6b5138] dark:text-[#b09a85]">{t('home.increment')}</label>
                                 <div className="flex gap-2">
                                     {[0, 1, 2, 3, 5, 10].map(inc => (
                                         <Button 
                                             key={inc}
                                             variant={gameConfig.increment === inc ? "default" : "outline"}
                                             onClick={() => setGameConfig({...gameConfig, increment: inc})}
-                                            className={`flex-1 ${gameConfig.increment === inc ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}`}
+                                            className={`flex-1 ${gameConfig.increment === inc ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138] dark:text-[#b09a85] dark:border-[#3d2b1f] dark:hover:bg-[#2c241b]"}`}
                                         >
                                             +{inc}
                                         </Button>
@@ -625,9 +625,9 @@ export default function Home() {
                             )}
 
                         </CardContent>
-                        <div className="p-4 border-t border-[#d4c5b0]/20 flex-shrink-0 flex gap-3 bg-[#fdfbf7] rounded-b-xl">
-                            <Button variant="outline" className="flex-1" onClick={() => setConfigOpen(false)}>{t('common.cancel')}</Button>
-                            <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12]" onClick={handleStartGame}>
+                        <div className="p-4 border-t border-[#d4c5b0]/20 flex-shrink-0 flex gap-3 bg-[#fdfbf7] dark:bg-[#1e1814] rounded-b-xl">
+                            <Button variant="outline" className="flex-1 dark:bg-transparent dark:border-[#3d2b1f] dark:text-[#b09a85]" onClick={() => setConfigOpen(false)}>{t('common.cancel')}</Button>
+                            <Button className="flex-1 bg-[#4a3728] hover:bg-[#2c1e12] dark:bg-[#4a3728] dark:text-[#e8dcc5]" onClick={handleStartGame}>
                                 {isPrivateConfig ? t('home.create_private_btn') : t('home.play')}
                             </Button>
                         </div>
@@ -636,13 +636,13 @@ export default function Home() {
             )}
 
             <div className="text-center mb-4 space-y-4">
-                <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
+                <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] dark:from-[#b8860b] dark:to-[#e8dcc5] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
                     DAMCASH
                 </h1>
-                <h2 className="text-3xl font-bold text-[#6b5138] mt-2">
+                <h2 className="text-3xl font-bold text-[#6b5138] dark:text-[#b09a85] mt-2">
                     {gameType === 'checkers' ? `3D ${t('game.checkers')}` : t('game.chess')}
                 </h2>
-                <p className="text-xl text-[#6b5138] font-medium">
+                <p className="text-xl text-[#6b5138] dark:text-[#8c7b6a] font-medium">
                     {gameType === 'checkers' ? t('home.subtitle') : t('home.chess_subtitle')}
                 </p>
             </div>
@@ -659,12 +659,12 @@ export default function Home() {
             <div className="space-y-8">
                     {/* Active Games Section */}
                     {activeGames.length > 0 && (
-                        <Card className="bg-white/90 border-l-4 border-l-amber-500 shadow-lg animate-in slide-in-from-top-4">
-                            <CardHeader className="pb-3 border-b border-gray-100">
-                                <CardTitle className="text-xl text-[#3d2b1f] flex items-center gap-2">
+                        <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-l-4 border-l-amber-500 shadow-lg animate-in slide-in-from-top-4 border-none">
+                            <CardHeader className="pb-3 border-b border-gray-100 dark:border-[#3d2b1f]">
+                                <CardTitle className="text-xl text-[#3d2b1f] dark:text-[#e8dcc5] flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-amber-600" /> 
                                     {t('home.active_games') || "Parties en cours"}
-                                    <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200">
+                                    <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-200">
                                         {activeGames.length}
                                     </Badge>
                                 </CardTitle>
@@ -677,12 +677,12 @@ export default function Home() {
                                         <div 
                                             key={game.id} 
                                             className={`flex flex-col p-3 border rounded-lg transition-all cursor-pointer hover:shadow-md ${
-                                                isMyTurn ? 'bg-amber-50 border-amber-300 ring-1 ring-amber-200' : 'bg-white border-gray-200 hover:border-amber-400'
+                                                isMyTurn ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800' : 'bg-white dark:bg-[#2a201a] border-gray-200 dark:border-[#3d2b1f] hover:border-amber-400 dark:hover:border-amber-600'
                                             }`}
                                             onClick={() => navigate(`/Game?id=${game.id}`)}
                                         >
                                             <div className="flex justify-between items-start mb-2">
-                                                <div className="font-bold text-[#4a3728] flex items-center gap-1.5">
+                                                <div className="font-bold text-[#4a3728] dark:text-[#e8dcc5] flex items-center gap-1.5">
                                                     <span className="text-lg">{game.game_type === 'chess' ? '♟️' : '⚪'}</span>
                                                     <span className="text-sm">{game.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
                                                 </div>
@@ -761,12 +761,12 @@ export default function Home() {
                         </Card>
 
                         <div className="space-y-6">
-                            <Card className="bg-white/80 backdrop-blur border-[#d4c5b0] shadow-lg">
-                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728]"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
+                            <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
+                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728] dark:text-[#e8dcc5]"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">{t('home.create_private')}</Button>
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.invite_friend')}</span></div></div>
-                                    <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white dark:border-[#b09a85] dark:text-[#b09a85] dark:hover:bg-[#b09a85] dark:hover:text-[#1e1814]">{t('home.create_private')}</Button>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300 dark:border-[#3d2b1f]" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-[#1e1814] px-2 text-gray-500">{t('home.invite_friend')}</span></div></div>
+                                    <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white dark:bg-[#b8860b] dark:hover:bg-[#d97706] dark:text-white">
                                         <Users className="w-4 h-4 mr-2" /> {t('home.search_invite')}
                                     </Button>
                                     <UserSearchDialog 
@@ -826,7 +826,7 @@ export default function Home() {
                                     </Button>
                                 </div>
 
-                                <Card className="overflow-hidden bg-[#fdfbf7] border-[#d4c5b0] shadow-xl h-[450px] md:h-[380px] relative">
+                                <Card className="overflow-hidden bg-[#fdfbf7] dark:bg-[#1e1814] border-[#d4c5b0] dark:border-[#3d2b1f] shadow-xl h-[450px] md:h-[380px] relative">
                                     <AnimatePresence mode="wait">
                                         <motion.div
                                             key={currentLegendIndex}
@@ -842,7 +842,7 @@ export default function Home() {
                                                     alt={legends[currentLegendIndex].name} 
                                                     className={`w-full h-full object-cover ${legends[currentLegendIndex].position || 'object-top'}`}
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7]" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7] dark:md:to-[#1e1814]" />
                                                 <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
                                                     <h3 className="text-xl font-bold">{legends[currentLegendIndex].name}</h3>
                                                     <p className="text-xs opacity-90">{legends[currentLegendIndex].badge}</p>
@@ -850,17 +850,17 @@ export default function Home() {
                                             </div>
                                             <div className="p-6 md:w-3/5 flex flex-col justify-center h-full">
                                                 <div className="hidden md:block mb-3">
-                                                    <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] mb-2">
+                                                    <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] dark:bg-[#3d2b1f] dark:text-[#e8dcc5] mb-2">
                                                         {legends[currentLegendIndex].badge}
                                                     </Badge>
-                                                    <h3 className="text-3xl font-black text-[#4a3728] mb-1">{legends[currentLegendIndex].name}</h3>
-                                                    <p className="text-sm text-[#8c6b4a] font-serif italic">{legends[currentLegendIndex].subtitle}</p>
+                                                    <h3 className="text-3xl font-black text-[#4a3728] dark:text-[#e8dcc5] mb-1">{legends[currentLegendIndex].name}</h3>
+                                                    <p className="text-sm text-[#8c6b4a] dark:text-[#a8907a] font-serif italic">{legends[currentLegendIndex].subtitle}</p>
                                                 </div>
-                                                <p className="text-[#6b5138] mb-6 text-sm leading-relaxed md:text-base line-clamp-5 md:line-clamp-none">
+                                                <p className="text-[#6b5138] dark:text-[#b09a85] mb-6 text-sm leading-relaxed md:text-base line-clamp-5 md:line-clamp-none">
                                                     {legends[currentLegendIndex].description}
                                                 </p>
                                                 <div className="flex gap-3 mt-auto md:mt-0">
-                                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5]" onClick={() => window.open(legends[currentLegendIndex].link, '_blank')}>
+                                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5] dark:border-[#e8dcc5] dark:text-[#e8dcc5] dark:hover:bg-[#e8dcc5] dark:hover:text-[#1e1814]" onClick={() => window.open(legends[currentLegendIndex].link, '_blank')}>
                                                         <BookOpen className="w-4 h-4 mr-2" />
                                                         {t('common.read_bio')}
                                                     </Button>
@@ -877,8 +877,8 @@ export default function Home() {
                                                 onClick={() => setCurrentLegendIndex(idx)}
                                                 className={`w-2 h-2 rounded-full transition-all ${
                                                     idx === currentLegendIndex 
-                                                        ? 'bg-[#4a3728] w-6' 
-                                                        : 'bg-[#d4c5b0] hover:bg-[#8c6b4a]'
+                                                        ? 'bg-[#4a3728] w-6 dark:bg-[#b8860b]' 
+                                                        : 'bg-[#d4c5b0] hover:bg-[#8c6b4a] dark:bg-[#3d2b1f]'
                                                 }`}
                                             />
                                         ))}
@@ -887,8 +887,8 @@ export default function Home() {
                             </div>
                         </div>
                                         <div className="md:col-span-1 space-y-6">
-                                            <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden">
-                                                <div className="bg-[#4a3728] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
+                                            <div className="bg-white dark:bg-[#1e1814] rounded-xl border border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg overflow-hidden">
+                                                <div className="bg-[#4a3728] dark:bg-[#2c1e12] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
                                                     <div className="flex items-center gap-2">
                                                         <Eye className="w-5 h-5" />
                                                         <h3 className="font-bold">{t('home.featured')} ({gameType === 'chess' ? t('game.chess') : t('game.checkers')})</h3>
@@ -897,12 +897,12 @@ export default function Home() {
                                                         {t('home.see_all')} <ArrowRight className="w-3 h-3 ml-1" />
                                                     </Button>
                                                 </div>
-                                                <div className="p-4 space-y-3 bg-[#fdfbf7]">
+                                                <div className="p-4 space-y-3 bg-[#fdfbf7] dark:bg-[#1a120b]">
                                                     {featuredGames.filter(g => g.game_type === gameType).length > 0 ? featuredGames.filter(g => g.game_type === gameType).map(g => (
-                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white border border-[#e8dcc5] rounded-lg hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
+                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white dark:bg-[#2a201a] border border-[#e8dcc5] dark:border-[#3d2b1f] rounded-lg hover:border-[#b8860b] dark:hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
                                                             <div>
-                                                                <div className="text-sm font-bold text-[#4a3728] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>
-                                                                <div className="text-xs text-[#6b5138] capitalize flex items-center gap-2">
+                                                                <div className="text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>
+                                                                <div className="text-xs text-[#6b5138] dark:text-[#a8907a] capitalize flex items-center gap-2">
                                                                     <span>{g.game_type === 'chess' ? '♟️' : '⚪'} {g.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
                                                                     {g.prize_pool > 0 && <span className="text-yellow-600 font-bold flex items-center gap-0.5"><span className="text-[10px]">D$</span>{g.prize_pool}</span>}
                                                                 </div>

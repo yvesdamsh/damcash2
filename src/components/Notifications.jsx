@@ -145,8 +145,8 @@ export default function Notifications() {
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7]" align="end">
-                <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] bg-[#4a3728] text-[#e8dcc5]">
+            <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7] dark:bg-[#1e1814] dark:border-[#3d2b1f] z-[200]" align="end">
+                <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] dark:border-[#3d2b1f] bg-[#4a3728] dark:bg-[#1a120b] text-[#e8dcc5]">
                     <h4 className="font-bold">Notifications</h4>
                     <div className="flex gap-2">
                         {!pushEnabled && (
@@ -163,16 +163,16 @@ export default function Notifications() {
                 </div>
                 <ScrollArea className="h-[300px]">
                     {notifications.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">
+                        <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                             Aucune notification
                         </div>
                     ) : (
-                        <div className="divide-y divide-[#e8dcc5]">
+                        <div className="divide-y divide-[#e8dcc5] dark:divide-[#3d2b1f]">
                             {notifications.map((notification) => (
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`p-4 cursor-pointer hover:bg-[#f0e6d2] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6]' : ''}`}
+                                    className={`p-4 cursor-pointer hover:bg-[#f0e6d2] dark:hover:bg-[#2a201a] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6] dark:bg-[#2c241b]' : ''}`}
                                 >
                                     <div className="flex justify-between items-start gap-2">
                                         <div className="mt-1">
@@ -186,10 +186,10 @@ export default function Notifications() {
                                             {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
                                         </div>
                                         <div className="flex-1">
-                                            <h5 className={`text-sm mb-1 text-[#4a3728] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
+                                            <h5 className={`text-sm mb-1 text-[#4a3728] dark:text-[#e8dcc5] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
                                                 {notification.title}
                                             </h5>
-                                            <p className="text-xs text-gray-600 line-clamp-2">
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
                                                 {notification.message}
                                             </p>
                                             
