@@ -334,9 +334,7 @@ import {
                                 <div className="px-3 py-2 col-span-2 flex justify-center bg-[#5c4430]/30 rounded-md">
                                     <LanguageSwitcher variant="minimal" />
                                 </div>
-                                <div className="px-3 py-2">
-                                    <LanguageSwitcher variant="minimal" />
-                                </div>
+
                                 {user && (
                                     <button
                                         onClick={() => {
