@@ -24,17 +24,27 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
     const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef(null);
 
-    // Fetch history on mount
+    // Fetch history on mount & Poll for updates (Backup for socket)
     useEffect(() => {
         const fetchHistory = async () => {
             try {
                 const history = await base44.entities.ChatMessage.list({ game_id: gameId }, { created_date: 1 }, 50);
-                setMessages(history);
+                setMessages(prev => {
+                    // Dedup
+                    const newMsgs = history.filter(h => !prev.some(p => p.id === h.id));
+                    if (newMsgs.length === 0) return prev;
+                    return [...prev, ...newMsgs].sort((a,b) => new Date(a.created_date) - new Date(b.created_date));
+                });
             } catch (e) {
                 console.error("Failed to load chat history", e);
             }
         };
-        if (gameId) fetchHistory();
+        
+        if (gameId) {
+            fetchHistory();
+            const interval = setInterval(fetchHistory, 3000);
+            return () => clearInterval(interval);
+        }
     }, [gameId]);
 
     // Handle Socket Messages

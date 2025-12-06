@@ -285,10 +285,14 @@ export default function Game() {
         fetchGame();
         
         // Dynamic polling: faster when playing
-        const intervalMs = game?.status === 'playing' ? 2000 : 5000;
+        // Force 2s polling always if socket is disconnected to ensure gameplay works
+        const intervalMs = (socket && socket.readyState === WebSocket.OPEN) 
+            ? (game?.status === 'playing' ? 2000 : 5000) 
+            : 2000;
+            
         const interval = setInterval(fetchGame, intervalMs);
         return () => clearInterval(interval);
-    }, [id, game?.status]);
+    }, [id, game?.status, socket?.readyState]);
 
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
