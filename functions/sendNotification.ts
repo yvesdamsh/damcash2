@@ -9,7 +9,7 @@ export default async function handler(req) {
     if (!user) return new Response("Unauthorized", { status: 401 });
 
     try {
-        const { recipient_id, type, title, message, link } = await req.json();
+        const { recipient_id, type, title, message, link, metadata } = await req.json();
 
         if (!recipient_id || !title || !message) {
             return Response.json({ error: "Missing fields" }, { status: 400 });
@@ -23,7 +23,8 @@ export default async function handler(req) {
             message,
             link,
             sender_id: user.id,
-            read: false
+            read: false,
+            metadata: metadata ? JSON.stringify(metadata) : null
         });
 
         // Broadcast to WebSocket via Channel
@@ -34,7 +35,8 @@ export default async function handler(req) {
             title,
             message,
             link,
-            senderId: user.id
+            senderId: user.id,
+            metadata
         });
 
         return Response.json(notification);

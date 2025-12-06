@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp } from 'lucide-react';
+import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp, Swords, Trophy, UserPlus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -78,7 +78,7 @@ export default function Notifications() {
     };
 
     const deleteNotification = async (e, id) => {
-        e.stopPropagation();
+        if (e) e.stopPropagation();
         try {
             await base44.entities.Notification.delete(id);
             setNotifications(prev => prev.filter(n => n.id !== id));
@@ -90,11 +90,38 @@ export default function Notifications() {
         }
     };
 
+    const handleAction = async (e, n, action) => {
+        e.stopPropagation();
+        if (!n.metadata) return;
+        const meta = typeof n.metadata === 'string' ? JSON.parse(n.metadata) : n.metadata;
+
+        try {
+            if (n.type === 'game_invite' || n.type === 'team_challenge') {
+                if (action === 'accept') {
+                    navigate(n.link); // Link usually goes to game
+                } else {
+                    // Reject logic (could be a cloud function)
+                    // For now just delete notification
+                }
+            } else if (n.type === 'team_request') {
+                if (action === 'accept') {
+                    // Logic to accept team member would be in TeamDetail, but here we might need a quick action function
+                    // Since we don't have a 'quickAcceptTeam' function, we navigate to the link (TeamDetail)
+                    navigate(n.link);
+                }
+            }
+            
+            await deleteNotification(null, n.id);
+            setIsOpen(false);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleNotificationClick = async (n) => {
         if (!n.read) await markAsRead(n.id);
         
         if (n.type === 'message' && n.sender_id) {
-            // Dispatch event to open chat
             window.dispatchEvent(new CustomEvent('open-chat', { detail: { senderId: n.sender_id } }));
             setIsOpen(false);
         } else if (n.link) {
@@ -151,6 +178,10 @@ export default function Notifications() {
                                         <div className="mt-1">
                                             {notification.type === 'message' && <MessageSquare className="w-4 h-4 text-blue-500" />}
                                             {notification.type === 'game' && <Gamepad2 className="w-4 h-4 text-green-500" />}
+                                            {notification.type === 'game_invite' && <Gamepad2 className="w-4 h-4 text-purple-500" />}
+                                            {notification.type === 'team_challenge' && <Swords className="w-4 h-4 text-orange-500" />}
+                                            {notification.type === 'tournament_update' && <Trophy className="w-4 h-4 text-yellow-500" />}
+                                            {notification.type === 'team_request' && <UserPlus className="w-4 h-4 text-teal-500" />}
                                             {notification.type === 'forum' && <ThumbsUp className="w-4 h-4 text-pink-500" />}
                                             {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
                                         </div>
@@ -161,6 +192,18 @@ export default function Notifications() {
                                             <p className="text-xs text-gray-600 line-clamp-2">
                                                 {notification.message}
                                             </p>
+                                            
+                                            {(notification.type === 'game_invite' || notification.type === 'team_challenge') && (
+                                                <div className="flex gap-2 mt-2">
+                                                    <Button size="sm" className="h-6 text-xs bg-green-600 hover:bg-green-700" onClick={(e) => handleAction(e, notification, 'accept')}>
+                                                        {t('common.accept')}
+                                                    </Button>
+                                                    <Button size="sm" variant="outline" className="h-6 text-xs" onClick={(e) => handleAction(e, notification, 'reject')}>
+                                                        {t('common.decline')}
+                                                    </Button>
+                                                </div>
+                                            )}
+
                                             <span className="text-[10px] text-gray-400 mt-2 block">
                                                 {formatRelative(notification.created_date)}
                                             </span>
