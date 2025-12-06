@@ -61,32 +61,32 @@ export default function Home() {
     const legends = [
         {
             id: 'babasy',
-            name: 'Baba Sy',
-            subtitle: 'Le grand maître sénégalais',
+            name: t('legend.babasy.name'),
+            subtitle: t('legend.babasy.subtitle'),
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg',
-            description: "Découvrez l'histoire fascinante de Baba Sy (1935-1978), le génie intuitif qui a bouleversé le monde des dames. Premier champion du monde africain, célèbre pour ses combinaisons spectaculaires et sa vision tactique hors normes, il reste une source d'inspiration éternelle pour tous les joueurs de Damcash.",
+            description: t('legend.babasy.desc'),
             link: 'https://fr.wikipedia.org/wiki/Baba_Sy',
-            badge: 'Légende du Jeu',
+            badge: t('legend.babasy.badge'),
             position: 'object-top'
         },
         {
             id: 'sijbrands',
-            name: 'Ton Sijbrands',
-            subtitle: 'La Légende Néerlandaise',
+            name: t('legend.sijbrands.name'),
+            subtitle: t('legend.sijbrands.subtitle'),
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/62119ad07_1764873196043.jpg',
-            description: "Ton Sijbrands est une figure mythique du jeu de dames international. Champion du monde (1972, 1973), il est mondialement reconnu pour ses records époustouflants de parties simultanées à l'aveugle. Un stratège profond dont les parties continuent d'être analysées par les experts du monde entier.",
+            description: t('legend.sijbrands.desc'),
             link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
-            badge: 'Grand Maître',
+            badge: t('legend.sijbrands.badge'),
             position: 'object-[center_30%]'
         },
         {
             id: 'boomstra',
-            name: 'Roel Boomstra',
-            subtitle: 'Le Triple Champion du Monde',
+            name: t('legend.boomstra.name'),
+            subtitle: t('legend.boomstra.subtitle'),
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/38a69b1a1_Screenshot_20251206_032614_SamsungInternet.jpg',
-            description: "Roel Boomstra est l'un des plus grands joueurs de dames modernes. Grand Maître International néerlandais, il a décroché le titre de Champion du Monde à trois reprises (2016, 2018, 2022). Reconnu pour sa préparation théorique méticuleuse et son calme olympien, il incarne l'excellence du jeu de dames contemporain.",
+            description: t('legend.boomstra.desc'),
             link: 'https://fr.wikipedia.org/wiki/Roel_Boomstra',
-            badge: 'Champion du Monde',
+            badge: t('legend.boomstra.badge'),
             position: 'object-top'
         }
     ];
@@ -599,7 +599,7 @@ export default function Home() {
                     {gameType === 'checkers' ? `3D ${t('game.checkers')}` : t('game.chess')}
                 </h2>
                 <p className="text-xl text-[#6b5138] font-medium">
-                    {gameType === 'checkers' ? t('home.subtitle') : "Le jeu des rois, stratégie pure"}
+                    {gameType === 'checkers' ? t('home.subtitle') : t('home.chess_subtitle')}
                 </p>
             </div>
 

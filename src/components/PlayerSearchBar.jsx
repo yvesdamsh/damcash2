@@ -3,8 +3,10 @@ import { Input } from '@/components/ui/input';
 import { Search, User, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function PlayerSearchBar() {
+    const { t } = useLanguage();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export default function PlayerSearchBar() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => query && results.length > 0 && setIsOpen(true)}
-                    placeholder="Rechercher un joueur..."
+                    placeholder={t('common.search_player_placeholder')}
                     className="pl-10 h-10 bg-white/90 border-[#d4c5b0] focus:bg-white focus:ring-[#4a3728] shadow-sm transition-all"
                 />
                 {loading && <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#4a3728] w-4 h-4 animate-spin" />}

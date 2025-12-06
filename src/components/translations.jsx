@@ -98,6 +98,28 @@ export const translations = {
     "home.ai_hard": "Hard",
     "home.ai_expert": "Expert",
     "home.ai_grandmaster": "Grandmaster",
+    "home.chess_subtitle": "The game of kings, pure strategy",
+    
+    "common.community_forum": "Community Forum",
+    "common.participate_chat": "Join the discussion...",
+    "common.login_chat": "Log in to chat",
+    "common.be_first_post": "Be the first to post!",
+    "common.search_player_placeholder": "Search for a player...",
+    
+    "legend.babasy.name": "Baba Sy",
+    "legend.babasy.subtitle": "The Senegalese Grandmaster",
+    "legend.babasy.desc": "Discover the fascinating story of Baba Sy (1935-1978), the intuitive genius who revolutionized the world of checkers. The first African world champion, famous for his spectacular combinations and extraordinary tactical vision, he remains an eternal source of inspiration for all DamCash players.",
+    "legend.babasy.badge": "Legend of the Game",
+    
+    "legend.sijbrands.name": "Ton Sijbrands",
+    "legend.sijbrands.subtitle": "The Dutch Legend",
+    "legend.sijbrands.desc": "Ton Sijbrands is a mythical figure in international checkers. World Champion (1972, 1973), he is globally recognized for his breathtaking records in simultaneous blindfold games. A profound strategist whose games continue to be analyzed by experts worldwide.",
+    "legend.sijbrands.badge": "Grandmaster",
+    
+    "legend.boomstra.name": "Roel Boomstra",
+    "legend.boomstra.subtitle": "The Triple World Champion",
+    "legend.boomstra.desc": "Roel Boomstra is one of the greatest modern checkers players. Dutch International Grandmaster, he won the World Champion title three times (2016, 2018, 2022). Known for his meticulous theoretical preparation and Olympian calm, he embodies the excellence of contemporary checkers.",
+    "legend.boomstra.badge": "World Champion",
 
     // Lobby
     "lobby.title": "PLAYERS LOBBY",
@@ -321,6 +343,28 @@ export const translations = {
     "home.ai_hard": "Сложный",
     "home.ai_expert": "Эксперт",
     "home.ai_grandmaster": "Гроссмейстер",
+    "home.chess_subtitle": "Игра королей, чистая стратегия",
+
+    "common.community_forum": "Форум сообщества",
+    "common.participate_chat": "Присоединяйтесь к обсуждению...",
+    "common.login_chat": "Войдите, чтобы общаться",
+    "common.be_first_post": "Будьте первым, кто напишет!",
+    "common.search_player_placeholder": "Поиск игрока...",
+
+    "legend.babasy.name": "Баба Си",
+    "legend.babasy.subtitle": "Сенегальский гроссмейстер",
+    "legend.babasy.desc": "Откройте для себя увлекательную историю Баба Си (1935-1978), интуитивного гения, перевернувшего мир шашек. Первый африканский чемпион мира, известный своими захватывающими комбинациями и необычайным тактическим видением, он остается вечным источником вдохновения для всех игроков DamCash.",
+    "legend.babasy.badge": "Легенда игры",
+
+    "legend.sijbrands.name": "Тон Сейбрандс",
+    "legend.sijbrands.subtitle": "Голландская легенда",
+    "legend.sijbrands.desc": "Тон Сейбрандс - мифическая фигура в международных шашках. Чемпион мира (1972, 1973), всемирно признанный за свои захватывающие рекорды в сеансах одновременной игры вслепую. Глубокий стратег, чьи партии продолжают анализировать эксперты по всему миру.",
+    "legend.sijbrands.badge": "Гроссмейстер",
+
+    "legend.boomstra.name": "Рул Бумстра",
+    "legend.boomstra.subtitle": "Трехкратный чемпион мира",
+    "legend.boomstra.desc": "Рул Бумстра - один из величайших современных игроков в шашки. Голландский международный гроссмейстер, трижды выигрывавший титул чемпиона мира (2016, 2018, 2022). Известный своей тщательной теоретической подготовкой и олимпийским спокойствием, он олицетворяет совершенство современных шашек.",
+    "legend.boomstra.badge": "Чемпион мира",
 
     // Lobby
     "lobby.title": "ИГРОВОЕ ЛОББИ",
@@ -542,6 +586,28 @@ export const translations = {
     "home.ai_hard": "Schwer",
     "home.ai_expert": "Experte",
     "home.ai_grandmaster": "Großmeister",
+    "home.chess_subtitle": "Das Spiel der Könige, reine Strategie",
+
+    "common.community_forum": "Community-Forum",
+    "common.participate_chat": "Diskussion beitreten...",
+    "common.login_chat": "Zum Chatten einloggen",
+    "common.be_first_post": "Sei der Erste, der postet!",
+    "common.search_player_placeholder": "Spieler suchen...",
+
+    "legend.babasy.name": "Baba Sy",
+    "legend.babasy.subtitle": "Der senegalesische Großmeister",
+    "legend.babasy.desc": "Entdecken Sie die faszinierende Geschichte von Baba Sy (1935-1978), dem intuitiven Genie, das die Welt des Damespiels revolutionierte. Als erster afrikanischer Weltmeister, berühmt für seine spektakulären Kombinationen und seine außergewöhnliche taktische Vision, bleibt er eine ewige Inspirationsquelle für alle DamCash-Spieler.",
+    "legend.babasy.badge": "Legende des Spiels",
+
+    "legend.sijbrands.name": "Ton Sijbrands",
+    "legend.sijbrands.subtitle": "Die niederländische Legende",
+    "legend.sijbrands.desc": "Ton Sijbrands ist eine mythische Figur im internationalen Damespiel. Weltmeister (1972, 1973), weltweit anerkannt für seine atemberaubenden Rekorde im Blindsimultanspiel. Ein tiefgründiger Stratege, dessen Partien von Experten weltweit analysiert werden.",
+    "legend.sijbrands.badge": "Großmeister",
+
+    "legend.boomstra.name": "Roel Boomstra",
+    "legend.boomstra.subtitle": "Der dreifache Weltmeister",
+    "legend.boomstra.desc": "Roel Boomstra ist einer der größten modernen Damespieler. Niederländischer internationaler Großmeister, der dreimal den Weltmeistertitel gewann (2016, 2018, 2022). Bekannt für seine sorgfältige theoretische Vorbereitung und seine olympische Ruhe, verkörpert er die Exzellenz des zeitgenössischen Damespiels.",
+    "legend.boomstra.badge": "Weltmeister",
 
     // Lobby
     "lobby.title": "SPIELER-LOBBY",
@@ -763,6 +829,28 @@ export const translations = {
     "home.ai_hard": "困难",
     "home.ai_expert": "专家",
     "home.ai_grandmaster": "特级大师",
+    "home.chess_subtitle": "王者游戏，纯粹策略",
+
+    "common.community_forum": "社区论坛",
+    "common.participate_chat": "加入讨论...",
+    "common.login_chat": "登录以聊天",
+    "common.be_first_post": "成为第一个发帖的人！",
+    "common.search_player_placeholder": "搜索玩家...",
+
+    "legend.babasy.name": "巴巴·西",
+    "legend.babasy.subtitle": "塞内加尔特级大师",
+    "legend.babasy.desc": "探索巴巴·西 (1935-1978) 的迷人故事，这位直觉天才彻底改变了跳棋世界。作为第一位非洲世界冠军，他以壮观的组合和非凡的战术视野而闻名，仍然是所有 DamCash 玩家永恒的灵感源泉。",
+    "legend.babasy.badge": "游戏传奇",
+
+    "legend.sijbrands.name": "通·西布兰茨",
+    "legend.sijbrands.subtitle": "荷兰传奇",
+    "legend.sijbrands.desc": "通·西布兰茨是国际跳棋的神话人物。世界冠军 (1972, 1973)，因其惊人的盲棋同时对局记录而享誉全球。一位深邃的战略家，他的对局继续被全世界的专家分析。",
+    "legend.sijbrands.badge": "特级大师",
+
+    "legend.boomstra.name": "罗尔·博姆斯特拉",
+    "legend.boomstra.subtitle": "三届世界冠军",
+    "legend.boomstra.desc": "罗尔·博姆斯特拉是现代最伟大的跳棋选手之一。荷兰国际特级大师，三次获得世界冠军头衔 (2016, 2018, 2022)。以其细致的理论准备和奥林匹克般的冷静而闻名，他体现了当代跳棋的卓越。",
+    "legend.boomstra.badge": "世界冠军",
 
     // Lobby
     "lobby.title": "玩家大厅",
@@ -984,6 +1072,28 @@ export const translations = {
     "home.ai_hard": "Moeilijk",
     "home.ai_expert": "Expert",
     "home.ai_grandmaster": "Grootmeester",
+    "home.chess_subtitle": "Het spel der koningen, pure strategie",
+
+    "common.community_forum": "Community Forum",
+    "common.participate_chat": "Praat mee...",
+    "common.login_chat": "Log in om te chatten",
+    "common.be_first_post": "Wees de eerste die iets plaatst!",
+    "common.search_player_placeholder": "Zoek een speler...",
+
+    "legend.babasy.name": "Baba Sy",
+    "legend.babasy.subtitle": "De Senegalese Grootmeester",
+    "legend.babasy.desc": "Ontdek het fascinerende verhaal van Baba Sy (1935-1978), het intuïtieve genie dat de damwereld op zijn kop zette. De eerste Afrikaanse wereldkampioen, beroemd om zijn spectaculaire combinaties en buitengewone tactische inzicht, blijft hij een eeuwige inspiratiebron voor alle DamCash-spelers.",
+    "legend.babasy.badge": "Legende van het Spel",
+
+    "legend.sijbrands.name": "Ton Sijbrands",
+    "legend.sijbrands.subtitle": "De Nederlandse Legende",
+    "legend.sijbrands.desc": "Ton Sijbrands is een mythisch figuur in het internationale dammen. Wereldkampioen (1972, 1973), wereldwijd erkend om zijn adembenemende records in simultaan blinddammen. Een diepzinnig strateeg wiens partijen nog steeds door experts wereldwijd worden geanalyseerd.",
+    "legend.sijbrands.badge": "Grootmeester",
+
+    "legend.boomstra.name": "Roel Boomstra",
+    "legend.boomstra.subtitle": "De Drievoudig Wereldkampioen",
+    "legend.boomstra.desc": "Roel Boomstra is een van de grootste moderne dammers. Nederlandse Internationale Grootmeester, hij won de wereldtitel drie keer (2016, 2018, 2022). Bekend om zijn nauwgezette theoretische voorbereiding en olympische kalmte, belichaamt hij de excellentie van het hedendaagse dammen.",
+    "legend.boomstra.badge": "Wereldkampioen",
 
     // Lobby
     "lobby.title": "SPELERS LOBBY",

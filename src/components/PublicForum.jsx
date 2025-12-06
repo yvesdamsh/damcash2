@@ -4,9 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, MessageCircle, User, Heart } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS, ru, de, zhCN, nl } from 'date-fns/locale';
+import { useLanguage } from '@/components/LanguageContext';
+
+const dateFnsLocales = {
+    en: enUS,
+    ru: ru,
+    de: de,
+    zh: zhCN,
+    nl: nl,
+    fr: fr
+};
 
 export default function PublicForum() {
+    const { t, language } = useLanguage();
     const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState("");
     const [user, setUser] = useState(null);
@@ -93,7 +104,7 @@ export default function PublicForum() {
         <div className="bg-white rounded-xl border border-[#d4c5b0] shadow-lg overflow-hidden flex flex-col h-[500px]">
             <div className="bg-[#4a3728] p-3 flex items-center gap-2 text-[#e8dcc5]">
                 <MessageCircle className="w-5 h-5" />
-                <h3 className="font-bold">Forum Communautaire</h3>
+                <h3 className="font-bold">{t('common.community_forum')}</h3>
             </div>
             
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fdfbf7]">
@@ -108,7 +119,7 @@ export default function PublicForum() {
                                 <div className="flex items-baseline gap-2 mb-1">
                                     <span className="text-xs font-bold text-[#4a3728]">{post.author_name}</span>
                                     <span className="text-[10px] text-gray-400">
-                                        {formatDistanceToNow(new Date(post.created_date), { addSuffix: true, locale: fr })}
+                                        {formatDistanceToNow(new Date(post.created_date), { addSuffix: true, locale: dateFnsLocales[language] || enUS })}
                                     </span>
                                 </div>
                                 <div className={`px-3 py-2 rounded-lg text-sm shadow-sm group relative ${isMe ? 'bg-[#6b5138] text-white rounded-tr-none' : 'bg-white border border-[#d4c5b0] text-gray-800 rounded-tl-none'}`}>
@@ -133,7 +144,7 @@ export default function PublicForum() {
                     );
                 })}
                 {posts.length === 0 && (
-                    <div className="text-center text-gray-400 italic mt-10">Soyez le premier à poster !</div>
+                    <div className="text-center text-gray-400 italic mt-10">{t('common.be_first_post')}</div>
                 )}
             </div>
 
@@ -141,7 +152,7 @@ export default function PublicForum() {
                 <Input 
                     value={newPost}
                     onChange={(e) => setNewPost(e.target.value)}
-                    placeholder={user ? "Participez à la discussion..." : "Connectez-vous pour parler"}
+                    placeholder={user ? t('common.participate_chat') : t('common.login_chat')}
                     disabled={!user}
                     className="bg-white"
                 />
