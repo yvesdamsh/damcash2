@@ -5,8 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Eye, Trophy, Swords, User, Loader2, History } from 'lucide-react';
 import GameFilters from '@/components/GameFilters';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function Spectate() {
+    const { t } = useLanguage();
     const [activeGames, setActiveGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -87,9 +89,9 @@ export default function Spectate() {
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="text-center space-y-2 mb-8">
                 <h1 className="text-4xl font-black text-[#4a3728] drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
-                    Damcash TV
+                    {t('tv.title')}
                 </h1>
-                <p className="text-[#6b5138] text-lg">Regardez les meilleurs joueurs s'affronter en direct</p>
+                <p className="text-[#6b5138] text-lg">{t('tv.subtitle')}</p>
             </div>
 
             <GameFilters filters={filters} onChange={setFilters} showAi={false} />
@@ -98,9 +100,9 @@ export default function Spectate() {
                 {activeGames.length === 0 ? (
                     <div className="col-span-full text-center p-12 bg-white/60 rounded-xl border border-[#d4c5b0]">
                         <Swords className="w-12 h-12 mx-auto text-[#d4c5b0] mb-4" />
-                        <h3 className="text-xl font-bold text-[#4a3728]">Aucune partie trouvée</h3>
-                        <p className="text-[#6b5138]">Essayez de modifier vos filtres.</p>
-                        <Button className="mt-4 bg-[#4a3728]" onClick={() => navigate('/Home')}>Jouer</Button>
+                        <h3 className="text-xl font-bold text-[#4a3728]">{t('tv.no_games_title')}</h3>
+                        <p className="text-[#6b5138]">{t('tv.no_games_desc')}</p>
+                        <Button className="mt-4 bg-[#4a3728]" onClick={() => navigate('/Home')}>{t('tv.play_btn')}</Button>
                     </div>
                 ) : (
                     activeGames.map(game => (
@@ -108,15 +110,15 @@ export default function Spectate() {
                             <CardHeader className="pb-2 border-b border-[#f0e6d2] bg-[#fcf9f2]">
                                 <div className="flex justify-between items-center">
                                     <span className={`text-xs font-bold px-2 py-1 rounded ${game.game_type === 'chess' ? 'bg-[#6B8E4E] text-white' : 'bg-[#6b5138] text-white'}`}>
-                                        {game.game_type === 'chess' ? 'ÉCHECS' : 'DAMES'}
+                                        {game.game_type === 'chess' ? t('game.chess').toUpperCase() : t('game.checkers').toUpperCase()}
                                     </span>
                                     {game.tournament_id && (
                                         <span className="text-xs font-bold text-amber-600 flex items-center gap-1">
-                                            <Trophy className="w-3 h-3" /> TOURNOI
+                                            <Trophy className="w-3 h-3" /> {t('tv.tournament')}
                                         </span>
                                     )}
                                     <span className={`text-xs font-bold flex items-center gap-1 ${game.status === 'playing' ? 'text-red-500 animate-pulse' : 'text-gray-500'}`}>
-                                        {game.status === 'playing' ? <><div className="w-2 h-2 bg-red-500 rounded-full" /> EN DIRECT</> : <><History className="w-3 h-3" /> TERMINÉ</>}
+                                        {game.status === 'playing' ? <><div className="w-2 h-2 bg-red-500 rounded-full" /> {t('tv.live')}</> : <><History className="w-3 h-3" /> {t('tv.finished')}</>}
                                     </span>
                                 </div>
                             </CardHeader>
@@ -145,8 +147,8 @@ export default function Spectate() {
                                 </div>
 
                                 <Button className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] font-bold group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-colors">
-                                    {game.status === 'playing' ? <><Eye className="w-4 h-4 mr-2" /> Regarder</> : <><History className="w-4 h-4 mr-2" /> Revoir</>}
-                                </Button>
+                                    {game.status === 'playing' ? <><Eye className="w-4 h-4 mr-2" /> {t('tv.watch')}</> : <><History className="w-4 h-4 mr-2" /> {t('tv.review')}</>}
+                                </Button
                             </CardContent>
                         </Card>
                     ))
