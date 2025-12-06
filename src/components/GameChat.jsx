@@ -42,8 +42,16 @@ export default function GameChat({ gameId, currentUser, socket, players }) {
         
         if (gameId) {
             fetchHistory();
-            const interval = setInterval(fetchHistory, 3000);
-            return () => clearInterval(interval);
+            const interval = setInterval(fetchHistory, 2000);
+            
+            // Also update on focus
+            const onFocus = () => fetchHistory();
+            window.addEventListener('focus', onFocus);
+            
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('focus', onFocus);
+            };
         }
     }, [gameId]);
 

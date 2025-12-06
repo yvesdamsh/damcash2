@@ -267,32 +267,47 @@ export default function Game() {
     // Initial Fetch & Polling
     useEffect(() => {
         if (!id || id === 'local-ai') return;
+        
         const fetchGame = async () => {
             try {
-                const fetchedGame = await base44.entities.Game.get(id);
-                setGame(prev => {
-                    // Only update if changes detected to avoid jitter, or if forced
-                    // But for simple objects, simple replace is okay.
-                    // Check if moves changed to play sound? handled in other effect.
-                    return fetchedGame;
-                });
+                // Use list with filter to potentially bypass single-item cache quirks if any
+                const games = await base44.entities.Game.filter({ id: id });
+                if (games && games.length > 0) {
+                    const fetchedGame = games[0];
+                    setGame(prev => {
+                        // Deep compare moves length to avoid unnecessary re-renders if needed, 
+                        // but for now simple replacement ensures we have latest state.
+                        // If status changed or moves added, we definitely want it.
+                        return fetchedGame;
+                    });
+                }
                 setLoading(false);
             } catch (e) {
                 console.error("Error fetching game", e);
+                // Don't toast error on polling to avoid spam, just log
                 setLoading(false);
             }
         };
+
         fetchGame();
         
-        // Dynamic polling: faster when playing
-        // Force 2s polling always if socket is disconnected to ensure gameplay works
-        const intervalMs = (socket && socket.readyState === WebSocket.OPEN) 
-            ? (game?.status === 'playing' ? 2000 : 5000) 
-            : 2000;
-            
-        const interval = setInterval(fetchGame, intervalMs);
-        return () => clearInterval(interval);
-    }, [id, game?.status, socket?.readyState]);
+        // Fixed interval polling - decouple from socket state to prevent churn
+        // Always poll frequently to ensure sync (2s)
+        const interval = setInterval(fetchGame, 2000);
+
+        // Also fetch on window focus (for mobile tab switching)
+        const onFocus = () => fetchGame();
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') fetchGame();
+        });
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onFocus);
+        };
+    }, [id]);
 
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {

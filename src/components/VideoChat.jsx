@@ -184,22 +184,24 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, las
         
         const pollSignals = async () => {
             try {
+                // Get signals created in last 10 seconds to avoid fetching old stuff?
+                // Actually filter by game_id and recipient is good.
                 const signals = await base44.entities.SignalMessage.filter({ 
                     recipient_id: currentUser.id,
                     game_id: gameId 
-                }, '-created_date', 5); // Get recent signals
+                }, '-created_date', 10); 
                 
-                signals.forEach(sig => {
-                    // Check if signal is new (simplistic check: we could store last processed ID)
-                    // For now, we process all recent ones and client logic dedups state (e.g. ignore offer if connected)
-                    // Better: delete signal after processing
+                for (const sig of signals) {
+                    // Process locally
                     handleSignalMessage({ type: sig.type, data: sig.data });
-                    base44.entities.SignalMessage.delete(sig.id); // Consume signal
-                });
+                    // Delete immediately to prevent re-processing
+                    await base44.entities.SignalMessage.delete(sig.id).catch(() => {});
+                }
             } catch (e) {}
         };
 
-        const interval = setInterval(pollSignals, 3000);
+        // Poll more frequently for calls
+        const interval = setInterval(pollSignals, 2000);
         return () => clearInterval(interval);
     }, [currentUser, gameId]);
 
