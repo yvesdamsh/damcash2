@@ -81,8 +81,14 @@ export default function Lobby() {
             if (!data) return;
             if (data.type === 'game_created') {
                 setPublicGames(prev => [data.game, ...prev].slice(0, 20));
-            } else if (data.type === 'game_finished' || data.type === 'game_updated') {
-                fetchData(); // Refresh on significant changes to be safe, or update locally
+            } else if (data.type === 'game_finished') {
+                fetchData(); 
+            } else if (data.type === 'game_updated' && data.game && data.game.status !== 'playing') {
+                // Only refresh if status changed from playing to something else (or waiting to playing)
+                // But typically game_updated is for moves. We ignore moves to save rate limits.
+                // If status changed, usually game_finished or game_created covers it, or specific status update events.
+                // We'll trust game_finished for completion. For waiting->playing, we can check status.
+                if (data.game.status !== 'playing') fetchData();
             }
         }
     });

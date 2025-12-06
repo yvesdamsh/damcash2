@@ -33,7 +33,7 @@ export default function PublicForum() {
         };
         init();
 
-        const interval = setInterval(fetchPosts, 5000);
+        const interval = setInterval(fetchPosts, 30000);
         return () => clearInterval(interval);
     }, []);
 
