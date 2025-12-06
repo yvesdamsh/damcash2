@@ -25,6 +25,12 @@ import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLog
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager } from '@/components/SoundManager';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
+import GameResultOverlay from '@/components/game/GameResultOverlay';
+import PromotionDialog from '@/components/game/PromotionDialog';
+import PlayerInfoCard from '@/components/game/PlayerInfoCard';
+import GameControls from '@/components/game/GameControls';
+import ReplayControls from '@/components/game/ReplayControls';
+import GameReactions from '@/components/game/GameReactions';
 
 export default function Game() {
     const [game, setGame] = useState(null);
@@ -1290,39 +1296,20 @@ export default function Game() {
                                 <Button 
                                     onClick={async () => {
                                         setShowResignConfirm(false);
-
-                                        // Handle AI Resignation Locally if needed, but update logic handles it.
-                                        // Determine winner ID: if I am white, winner is black.
                                         const isMeWhite = currentUser?.id === game.white_player_id;
-
-                                        // For local AI game, winner_id is 'ai' if human (white) resigns.
-                                        // If user is guest, currentUser.id might be guest_...
-                                        // If it's an AI game, black_player_id is 'ai' or similar? No, in local-ai setup:
-                                        // white_player_id: currentUser.id, black_player_id: 'ai' (not set in Game object explicitly as ID, but name is set).
-                                        // Let's check how local-ai game is initialized.
-                                        // id='local-ai'. It doesn't have DB record. It's purely local state?
-                                        // Yes, setGame({... id: 'local-ai' ...}).
-
                                         let winnerId;
                                         if (isAiGame) {
-                                            // In local AI, user is always White (currently).
                                             winnerId = 'ai'; 
                                         } else {
                                             winnerId = isMeWhite ? game.black_player_id : game.white_player_id;
                                         }
-
                                         const newStatus = 'finished';
-
-                                        // Update Local State
                                         setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
                                         setShowResult(true);
-
                                         if (!isAiGame) {
-                                            // Update Server
                                             await base44.entities.Game.update(game.id, { status: newStatus, winner_id: winnerId });
                                             base44.functions.invoke('processGameResult', { gameId: game.id });
                                         }
-
                                         soundManager.play('loss');
                                     }}
                                     className="bg-red-600 hover:bg-red-700 text-white"
@@ -1338,62 +1325,15 @@ export default function Game() {
             {/* Promotion Overlay */}
             <AnimatePresence>
                {promotionPending && (
-                    <motion.div 
-                       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                       className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-                    >
-                        <motion.div 
-                           initial={{ scale: 0.8, y: 20 }}
-                           animate={{ scale: 1, y: 0 }}
-                           className="bg-white/95 p-6 rounded-2xl shadow-2xl border-2 border-[#4a3728] flex flex-col items-center"
-                        >
-                            <h3 className="text-xl font-bold text-[#4a3728] mb-4 uppercase tracking-widest">Promotion</h3>
-                            <div className="flex gap-4">
-                                {['q', 'r', 'b', 'n'].map(p => (
-                                    <div 
-                                        key={p} 
-                                        onClick={() => handlePromotionSelect(p)}
-                                        className="w-20 h-20 p-2 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 hover:from-yellow-100 hover:to-yellow-200 cursor-pointer border-2 border-transparent hover:border-yellow-400 shadow-sm hover:shadow-md transition-all group"
-                                    >
-                                        <div className="w-full h-full transform group-hover:scale-110 transition-transform">
-                                           {/* Using simple img directly as we can't easily import ChessPiece here without refactoring imports above or moving this out */}
-                                           <img 
-                                               src={`https://upload.wikimedia.org/wikipedia/commons/${
-                                                   game.current_turn === 'white' 
-                                                   ? (p==='q'?'1/15/Chess_qlt45.svg':p==='r'?'7/72/Chess_rlt45.svg':p==='b'?'b/b1/Chess_blt45.svg':'7/70/Chess_nlt45.svg')
-                                                   : (p==='q'?'4/47/Chess_qdt45.svg':p==='r'?'f/ff/Chess_rdt45.svg':p==='b'?'9/98/Chess_bdt45.svg':'e/ef/Chess_ndt45.svg')
-                                               }`}
-                                               alt={p}
-                                               className="w-full h-full"
-                                           />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                   <PromotionDialog 
+                       turn={game.current_turn} 
+                       onSelect={handlePromotionSelect} 
+                   />
                )}
             </AnimatePresence>
 
             {/* Floating Reactions Overlay */}
-            <div className="fixed inset-0 pointer-events-none z-[130] overflow-hidden">
-                <AnimatePresence>
-                    {reactions.map(r => (
-                        <motion.div
-                            key={r.id}
-                            initial={{ opacity: 0, y: 100, scale: 0.5 }}
-                            animate={{ opacity: 1, y: -200, scale: 1.5 }}
-                            exit={{ opacity: 0, scale: 0.5 }}
-                            transition={{ duration: 2, ease: "easeOut" }}
-                            className="absolute left-1/2 bottom-1/4 flex flex-col items-center"
-                            style={{ marginLeft: (Math.random() * 200 - 100) + 'px' }} // Random horizontal drift
-                        >
-                            <span className="text-6xl drop-shadow-lg">{r.emoji}</span>
-                            <span className="text-sm font-bold text-white bg-black/50 px-2 rounded-full mt-1 whitespace-nowrap">{r.sender_name}</span>
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-            </div>
+            <GameReactions reactions={reactions} />
 
             {/* Invite Dialog */}
             <UserSearchDialog 
@@ -1406,83 +1346,13 @@ export default function Game() {
             {/* Result Overlay */}
             <AnimatePresence>
                 {showResult && game && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.8, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            className="bg-[#fdfbf7] border-4 border-[#4a3728] rounded-2xl p-8 max-w-md w-full text-center shadow-2xl relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#4a3728] via-[#b8860b] to-[#4a3728]" />
-                            
-                            <div className="mb-6">
-                                {game.winner_id === currentUser?.id ? (
-                                    <>
-                                        <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
-                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">VICTOIRE !</h2>
-                                        <p className="text-[#6b5138] font-medium">Magnifique performance !</p>
-                                    </>
-                                ) : game.winner_id ? (
-                                    <>
-                                        <X className="w-20 h-20 mx-auto text-red-400 mb-4" />
-                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">DÉFAITE</h2>
-                                        <p className="text-[#6b5138] font-medium">Bien essayé, la prochaine sera la bonne.</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Handshake className="w-20 h-20 mx-auto text-blue-400 mb-4" />
-                                        <h2 className="text-4xl font-black text-[#4a3728] mb-2">MATCH NUL</h2>
-                                        <p className="text-[#6b5138] font-medium">Une bataille très serrée.</p>
-                                    </>
-                                )}
-                            </div>
-
-                            {(game.series_length || 1) > 1 && (
-                                <div className="bg-[#f5f0e6] rounded-lg p-4 mb-6 border border-[#d4c5b0]">
-                                    <h3 className="font-bold text-[#4a3728] mb-2 text-sm uppercase tracking-widest">Score de la série</h3>
-                                    <div className="flex justify-center items-center gap-6 text-2xl font-black">
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-normal text-gray-500 mb-1">{game.white_player_name}</span>
-                                            <span className={game.winner_id === game.white_player_id ? "text-green-600" : "text-[#4a3728]"}>
-                                                {(game.series_score_white || 0) + (game.winner_id === game.white_player_id ? 1 : game.winner_id ? 0 : 0.5)}
-                                            </span>
-                                        </div>
-                                        <span className="text-gray-300">-</span>
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-sm font-normal text-gray-500 mb-1">{game.black_player_name}</span>
-                                            <span className={game.winner_id === game.black_player_id ? "text-green-600" : "text-[#4a3728]"}>
-                                                {(game.series_score_black || 0) + (game.winner_id === game.black_player_id ? 1 : game.winner_id ? 0 : 0.5)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <p className="text-xs text-gray-500 mt-2">Best of {game.series_length}</p>
-                                </div>
-                            )}
-
-                            {/* Close button for Analysis */}
-                            <button 
-                                onClick={() => setShowResult(false)}
-                                className="absolute top-4 right-4 p-2 text-[#4a3728] hover:bg-black/5 rounded-full transition-colors"
-                                title="Fermer et analyser"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-
-                            <div className="space-y-3">
-                                <Button onClick={handleRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
-                                    <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1) ? "Manche Suivante" : "Rejouer"}
-                                </Button>
-                                
-                                <Button variant="outline" onClick={() => navigate('/Home')} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
-                                    Retour à l'accueil
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                    <GameResultOverlay 
+                        game={game} 
+                        currentUser={currentUser} 
+                        onClose={() => setShowResult(false)} 
+                        onRematch={handleRematch} 
+                        onHome={() => navigate('/Home')} 
+                    />
                 )}
             </AnimatePresence>
 
@@ -1508,26 +1378,13 @@ export default function Game() {
                 )}
 
                 {/* Top Player Info */}
-                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
-                            {topPlayer.info?.avatar_url ? <img src={topPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
-                        </div>
-                        <div>
-                            <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-                                {topPlayer.name || 'En attente...'}
-                                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(topPlayer.info, game.game_type)}</span>
-                            </div>
-                            {game.winner_id === topPlayer.id && !isSoloMode && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
-                        </div>
-                    </div>
-                    <GameTimer 
-                        key={`timer-top-${game.id}-${topPlayer.color}`}
-                        initialSeconds={topPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === topPlayer.color && !!game.last_move_at}
-                        onTimeout={() => handleTimeout(topPlayer.color)}
-                    />
-                </div>
+                <PlayerInfoCard 
+                    player={topPlayer} 
+                    game={game} 
+                    isSoloMode={isSoloMode} 
+                    onTimeout={handleTimeout} 
+                    getElo={getElo} 
+                />
 
                 {/* Board Area - Centered and Natural Size */}
                 <div className="flex justify-center w-full">
@@ -1567,84 +1424,28 @@ export default function Game() {
                 </div>
 
                 {/* Quick Actions Bar */}
-                <div className="flex justify-center items-center gap-2 md:gap-4 py-2 mx-2 md:mx-0">
-                    {game.status === 'playing' && (
-                        <>
-                            {/* UNDO ACTIONS */}
-                            {game.takeback_requested_by === currentUser?.id ? (
-                                <Button variant="outline" size="sm" disabled className="opacity-70 h-10 px-3">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                </Button>
-                            ) : game.takeback_requested_by ? (
-                                <div className="flex gap-1 animate-pulse">
-                                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-3" onClick={handleAcceptTakeback} disabled={takebackLoading}>
-                                        <ThumbsUp className="w-4 h-4" />
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="border-red-200 text-red-600 h-10 px-3" onClick={handleDeclineTakeback}>
-                                        <ThumbsDown className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 bg-white/80 hover:bg-white border-[#d4c5b0] text-[#6b5138]" onClick={handleRequestTakeback} title="Annuler le coup">
-                                    <Undo2 className="w-5 h-5 md:mr-2" /> <span className="hidden md:inline">Annuler</span>
-                                </Button>
-                            )}
-
-                            {/* DRAW ACTIONS */}
-                            {game.draw_offer_by === currentUser?.id ? (
-                                <Button variant="outline" size="sm" disabled className="opacity-70 h-10 px-3">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                </Button>
-                            ) : game.draw_offer_by ? (
-                                <div className="flex gap-1 animate-pulse">
-                                    <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-10 px-3" onClick={handleAcceptDraw}>
-                                        <Handshake className="w-4 h-4" />
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="border-red-200 text-red-600 h-10 px-3" onClick={handleDeclineDraw}>
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 bg-white/80 hover:bg-white border-[#d4c5b0] text-[#6b5138]" onClick={handleOfferDraw} title="Proposer nulle">
-                                    <Handshake className="w-5 h-5 md:mr-2" /> <span className="hidden md:inline">Nulle</span>
-                                </Button>
-                            )}
-
-                            {/* RESIGN */}
-                            <Button variant="outline" size="sm" className="h-10 px-3 md:px-4 bg-white/80 hover:bg-red-50 border-red-200 text-red-600" onClick={() => setShowResignConfirm(true)} title="Abandonner">
-                                <Flag className="w-5 h-5 md:mr-2" /> <span className="hidden md:inline">Abandon</span>
-                            </Button>
-                        </>
-                    )}
-                    
-                    {game.status === 'finished' && (
-                         <Button onClick={handleRematch} className="h-10 bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] font-bold shadow-sm">
-                            <RotateCcw className="w-4 h-4 mr-2" /> Rejouer
-                        </Button>
-                    )}
-                </div>
+                <GameControls 
+                    game={game} 
+                    currentUser={currentUser} 
+                    takebackLoading={takebackLoading} 
+                    onAcceptTakeback={handleAcceptTakeback} 
+                    onDeclineTakeback={handleDeclineTakeback} 
+                    onRequestTakeback={handleRequestTakeback} 
+                    onAcceptDraw={handleAcceptDraw} 
+                    onDeclineDraw={handleDeclineDraw} 
+                    onOfferDraw={handleOfferDraw} 
+                    onResign={() => setShowResignConfirm(true)} 
+                    onRematch={handleRematch} 
+                />
 
                 {/* Bottom Player Info */}
-                <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
-                        <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
-                            {bottomPlayer.info?.avatar_url ? <img src={bottomPlayer.info.avatar_url} className="w-full h-full object-cover" /> : <User className="w-6 h-6" />}
-                        </div>
-                        <div>
-                            <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-                                {bottomPlayer.name || 'Moi'}
-                                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">{getElo(bottomPlayer.info, game.game_type)}</span>
-                            </div>
-                            {game.winner_id === bottomPlayer.id && !isSoloMode && <span className="text-green-600 text-xs font-bold flex items-center"><Trophy className="w-3 h-3 mr-1"/> Vainqueur</span>}
-                        </div>
-                    </div>
-                    <GameTimer 
-                        key={`timer-bottom-${game.id}-${bottomPlayer.color}`}
-                        initialSeconds={bottomPlayer.timeLeft} 
-                        isActive={game.status === 'playing' && game.current_turn === bottomPlayer.color && !!game.last_move_at}
-                        onTimeout={() => handleTimeout(bottomPlayer.color)}
-                    />
-                </div>
+                <PlayerInfoCard 
+                    player={bottomPlayer} 
+                    game={game} 
+                    isSoloMode={isSoloMode} 
+                    onTimeout={handleTimeout} 
+                    getElo={getElo} 
+                />
 
                 {/* Wager Info (if active) */}
                 {game.prize_pool > 0 && (
@@ -1666,35 +1467,11 @@ export default function Game() {
                     </Button>
                 </div>
                         {game.moves && JSON.parse(game.moves).length > 0 && (
-                            <div className="w-full max-w-md mx-auto bg-[#4a3728] p-1 rounded-lg shadow-inner flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(0)} disabled={replayIndex === 0 || (replayIndex === -1 && movesList.length === 0)}>
-                                    <SkipBack className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(prev => prev === -1 ? movesList.length - 2 : Math.max(0, prev - 1))} disabled={replayIndex === 0}>
-                                    <ChevronLeft className="w-4 h-4" />
-                                </Button>
-                                
-                                <div className="flex-1 mx-2 relative h-8 flex items-center justify-center">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-yellow-500 transition-all duration-200"
-                                                style={{ width: `${((replayIndex === -1 ? movesList.length : replayIndex + 1) / movesList.length) * 100}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <span className="relative z-10 text-xs font-mono font-bold text-[#e8dcc5] bg-[#4a3728] px-2 rounded">
-                                        {replayIndex === -1 ? movesList.length : replayIndex + 1} / {movesList.length}
-                                    </span>
-                                </div>
-
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(prev => (prev === -1 || prev >= movesList.length - 1) ? -1 : prev + 1)} disabled={replayIndex === -1}>
-                                    <ChevronRight className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#e8dcc5] hover:bg-white/10 hover:text-white" onClick={() => setReplayIndex(-1)} disabled={replayIndex === -1}>
-                                    <SkipForward className="w-4 h-4" />
-                                </Button>
-                            </div>
+                            <ReplayControls 
+                                moves={movesList} 
+                                currentIndex={replayIndex} 
+                                onIndexChange={setReplayIndex} 
+                            />
                         )}
                     </div>
 
