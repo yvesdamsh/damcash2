@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
@@ -43,6 +43,7 @@ export default function Game() {
     const [currentUser, setCurrentUser] = useState(null);
     const [mustContinueWith, setMustContinueWith] = useState(null); 
     const [inviteCopied, setInviteCopied] = useState(false);
+    const [manualOrientation, setManualOrientation] = useState(null);
     const [chessState, setChessState] = useState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
     const [replayIndex, setReplayIndex] = useState(-1);
     const [takebackLoading, setTakebackLoading] = useState(false);
@@ -1278,15 +1279,13 @@ export default function Game() {
     }
     if (!Array.isArray(displayBoard)) displayBoard = [];
 
-    // Orientation: if I am Black, I want to be at bottom.
-    // However, standard usually puts "Opponent" at top, "Self" at bottom.
-    // If I am spectator, maybe White bottom.
-    // Fix: If I am playing SOLO (Both IDs match), default to White at bottom (isAmBlack = false)
+    // Orientation Logic
     const isAmBlack = currentUser?.id === game.black_player_id && currentUser?.id !== game.white_player_id;
-    // If spectator, keep default orientation (White bottom, Black top) or flip based on preference? 
-    // For now standard: White Bottom.
+    const autoOrientation = isAmBlack ? 'black' : 'white';
+    const orientation = manualOrientation || autoOrientation;
+    const isFlipped = orientation === 'black';
     
-    const topPlayer = (isAmBlack) ? { 
+    const topPlayer = (isFlipped) ? { 
         id: game.white_player_id, 
         name: game.white_player_name, 
         color: 'white',
@@ -1300,7 +1299,7 @@ export default function Game() {
         timeLeft: getTimeLeft('black')
     };
 
-    const bottomPlayer = (isAmBlack) ? { 
+    const bottomPlayer = (isFlipped) ? { 
         id: game.black_player_id, 
         name: game.black_player_name, 
         color: 'black',
@@ -1485,6 +1484,18 @@ export default function Game() {
                             >
                                 <RefreshCw className="w-3 h-3" />
                             </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
+                                onClick={() => setManualOrientation(prev => {
+                                    const current = prev || autoOrientation;
+                                    return current === 'white' ? 'black' : 'white';
+                                })}
+                                title="Inverser le plateau"
+                            >
+                                <ArrowUpDown className="w-3 h-3" />
+                            </Button>
                         </div>
                     )}
                     <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0">
@@ -1502,7 +1513,7 @@ export default function Game() {
                                 pieceDesign={currentUser?.preferences?.checkers_pieces}
                                 premove={premove}
                                 isSoloMode={isSoloMode}
-                                orientation={isAmBlack ? 'black' : 'white'}
+                                orientation={orientation}
                                 />
                             : <ChessBoard 
                                 board={displayBoard} 
@@ -1517,7 +1528,7 @@ export default function Game() {
                                 pieceSet={currentUser?.preferences?.chess_pieces}
                                 premove={premove}
                                 isSoloMode={isSoloMode}
-                                orientation={isAmBlack ? 'black' : 'white'}
+                                orientation={orientation}
                                 />
                         }
                     </div>
