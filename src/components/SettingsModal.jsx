@@ -135,10 +135,10 @@ export default function SettingsModal({ open, onOpenChange, user, currentTheme, 
                         <div className="bg-white dark:bg-[#2a201a] p-4 rounded-xl border border-[#d4c5b0] dark:border-[#3d2b1f] space-y-4">
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-[#e8dcc5] flex items-center justify-center text-2xl font-bold text-[#4a3728]">
-                                    {user?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
+                                    {user?.username?.charAt(0) || user?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-[#4a3728] dark:text-[#e8dcc5]">{user?.full_name || 'Utilisateur'}</h3>
+                                    <h3 className="font-bold text-[#4a3728] dark:text-[#e8dcc5]">{user?.username || user?.full_name || 'Utilisateur'}</h3>
                                     <p className="text-sm text-gray-500">{user?.email}</p>
                                     <div className="mt-1">
                                         <span className="text-xs bg-[#4a3728] text-[#e8dcc5] px-2 py-0.5 rounded-full">
@@ -146,6 +146,37 @@ export default function SettingsModal({ open, onOpenChange, user, currentTheme, 
                                         </span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-[#3d2b1f]">
+                                <Label className="text-[#6b5138] dark:text-[#b09a85]">Pseudo (Nom de jeu public)</Label>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        defaultValue={user?.username || ''} 
+                                        placeholder="Choisissez un pseudo..." 
+                                        className="border-[#d4c5b0] dark:border-[#5c4430] dark:bg-[#2c1e12] dark:text-[#e8dcc5]"
+                                        onChange={(e) => window.tempUsername = e.target.value}
+                                    />
+                                    <Button 
+                                        onClick={async () => {
+                                            const newVal = window.tempUsername;
+                                            if (newVal && newVal !== user.username) {
+                                                try {
+                                                    await base44.auth.updateMe({ username: newVal });
+                                                    toast.success("Pseudo mis à jour !");
+                                                    // Force reload or update context if needed, but standard flow might handle it
+                                                    setTimeout(() => window.location.reload(), 1000); 
+                                                } catch(e) {
+                                                    toast.error("Erreur lors de la mise à jour");
+                                                }
+                                            }
+                                        }}
+                                        className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"
+                                    >
+                                        Enregistrer
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-gray-500">Ce pseudo remplacera votre nom réel pour les autres joueurs.</p>
                             </div>
                         </div>
 

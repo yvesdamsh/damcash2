@@ -150,7 +150,7 @@ export default function FriendsManager() {
                 recipient_id: requesterId,
                 type: "success",
                 title: "Demande acceptée",
-                message: `${currentUser.username || currentUser.full_name} a accepté votre demande.`
+                message: `${currentUser.username || 'Votre ami'} a accepté votre demande.`
             });
 
             loadData();
@@ -191,7 +191,7 @@ export default function FriendsManager() {
                 status: 'waiting',
                 game_type: challengeConfig.gameType,
                 white_player_id: currentUser.id,
-                white_player_name: currentUser.username || currentUser.full_name || 'Hôte',
+                white_player_name: currentUser.username || 'Hôte',
                 current_turn: 'white',
                 board_state: initialBoard,
                 is_private: true,
@@ -205,7 +205,7 @@ export default function FriendsManager() {
 
             await base44.entities.Invitation.create({
                 from_user_id: currentUser.id,
-                from_user_name: currentUser.username || currentUser.full_name || 'Ami',
+                from_user_name: currentUser.username || 'Ami',
                 to_user_email: challengeTarget.email,
                 game_type: challengeConfig.gameType,
                 game_id: game.id,
@@ -295,7 +295,7 @@ export default function FriendsManager() {
                                                     <AvatarImage src={req.avatar_url} />
                                                     <AvatarFallback>{req.username?.[0] || '?'}</AvatarFallback>
                                                 </Avatar>
-                                                <span className="text-sm font-medium truncate max-w-[100px]">{req.username || req.full_name}</span>
+                                                <span className="text-sm font-medium truncate max-w-[100px]">{req.username || `Joueur ${req.id.substring(0,4)}`}</span>
                                             </div>
                                             <div className="flex gap-1">
                                                 <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" onClick={() => acceptRequest(req.friendshipId, req.id)}>
@@ -328,7 +328,7 @@ export default function FriendsManager() {
                                                     }`} title={(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}></span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-[#4a3728]">{friend.username || friend.full_name}</p>
+                                                    <p className="text-sm font-medium text-[#4a3728]">{friend.username || `Joueur ${friend.id.substring(0,4)}`}</p>
                                                     <p className="text-[10px] text-gray-500">
                                                         {(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}
                                                     </p>
@@ -384,7 +384,7 @@ export default function FriendsManager() {
                                             <AvatarFallback>{user.username?.[0]}</AvatarFallback>
                                         </Avatar>
                                         <div className="overflow-hidden">
-                                            <p className="text-sm font-medium truncate w-32">{user.username || user.full_name}</p>
+                                            <p className="text-sm font-medium truncate w-32">{user.username || `Joueur ${user.id.substring(0,4)}`}</p>
                                         </div>
                                     </div>
                                     <Button size="sm" variant="ghost" onClick={() => sendRequest(user.id)}>

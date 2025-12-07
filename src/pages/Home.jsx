@@ -211,11 +211,11 @@ export default function Home() {
             await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
             const game = await base44.entities.Game.get(invite.game_id);
             if (game && !game.black_player_id) {
-                 await base44.entities.Game.update(game.id, {
-                    black_player_id: user.id,
-                    black_player_name: user.full_name || 'Invité',
-                    status: 'playing'
-                });
+            await base44.entities.Game.update(game.id, {
+               black_player_id: user.id,
+               black_player_name: user.username || 'Invité',
+               status: 'playing'
+            });
             }
             navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
@@ -301,7 +301,7 @@ export default function Home() {
                 status: 'waiting',
                 game_type: gameType,
                 white_player_id: user.id,
-                white_player_name: user.full_name || t('common.player_1'),
+                white_player_name: user.username || `Joueur ${user.id.substring(0,4)}`,
                 white_player_elo: myElo,
                 current_turn: 'white',
                 board_state: initialBoard,
@@ -322,7 +322,7 @@ export default function Home() {
                     ...commonGameData,
                     is_private: true,
                     access_code: code,
-                    white_player_name: user.full_name || t('common.host')
+                    white_player_name: user.username || t('common.host')
                 });
 
                 // Pay Fee After Creation (Now we have ID)
@@ -388,7 +388,7 @@ export default function Home() {
                 if (matchFound) {
                     await base44.entities.Game.update(matchFound.id, {
                         black_player_id: user.id,
-                        black_player_name: user.full_name || t('common.player_2'),
+                        black_player_name: user.username || `Joueur ${user.id.substring(0,4)}`,
                         black_player_elo: myElo,
                         status: 'playing'
                     });
@@ -420,8 +420,8 @@ export default function Home() {
 
             const newGame = await base44.entities.Game.create({
                 status: 'playing', game_type: gameType,
-                white_player_id: user.id, white_player_name: user.full_name || t('game.me'),
-                black_player_id: user.id, black_player_name: (user.full_name || t('game.me')) + t('common.clone'),
+                white_player_id: user.id, white_player_name: user.username || t('game.me'),
+                black_player_id: user.id, black_player_name: (user.username || t('game.me')) + t('common.clone'),
                 current_turn: 'white', board_state: initialBoard, is_private: true
             });
             navigate(`/Game?id=${newGame.id}`);
@@ -443,7 +443,7 @@ export default function Home() {
             if (games.length > 0) {
                 const game = games[0];
                  await base44.entities.Game.update(game.id, {
-                    black_player_id: user.id, black_player_name: user.full_name || t('common.guest'), status: 'playing'
+                    black_player_id: user.id, black_player_name: user.username || t('common.guest'), status: 'playing'
                 });
                 navigate(`/Game?id=${game.id}`);
             } else {
@@ -776,11 +776,11 @@ export default function Home() {
                                             if(!user) return;
                                             setInviteDialogOpen(false);
                                             const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
-                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.full_name || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
+                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.username || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
                                             
                                             await base44.entities.Invitation.create({ 
                                                 from_user_id: user.id, 
-                                                from_user_name: user.full_name || user.email, 
+                                                from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
                                                 to_user_email: invitedUser.email, 
                                                 game_type: gameType, 
                                                 game_id: newGame.id, 
@@ -791,12 +791,12 @@ export default function Home() {
                                                 recipient_id: invitedUser.id,
                                                 type: "game_invite",
                                                 title: t('home.invite_friend'),
-                                                message: t('home.invite_from') + ` ${user.full_name || t('common.anonymous')}`,
+                                                message: t('home.invite_from') + ` ${user.username || t('common.anonymous')}`,
                                                 link: `/Game?id=${newGame.id}`,
                                                 metadata: { gameId: newGame.id }
                                             });
 
-                                            toast.success(`Invitation envoyée à ${invitedUser.username || invitedUser.full_name}`);
+                                            toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
                                             navigate(`/Game?id=${newGame.id}`);
                                         }}
                                     />

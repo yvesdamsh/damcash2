@@ -319,6 +319,9 @@ function LayoutContent({ children }) {
                         {/* Mobile/Global Actions (Notifications, Settings, Menu) */}
                         <div className="flex items-center gap-1 pl-2">
                             {user && <Notifications />}
+                            {user && <div className="hidden md:flex items-center text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mr-2">
+                                {user.username || `Joueur ${user.id.substring(0,4)}`}
+                            </div>}
                             <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
                             <button

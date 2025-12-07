@@ -92,7 +92,7 @@ export default function PlayerSearchBar() {
                 status: 'waiting',
                 game_type: 'checkers',
                 white_player_id: currentUser.id,
-                white_player_name: currentUser.full_name || 'Hôte',
+                white_player_name: currentUser.username || `Joueur ${currentUser.id.substring(0,4)}`,
                 current_turn: 'white',
                 board_state: initialBoard,
                 is_private: true,
@@ -103,7 +103,7 @@ export default function PlayerSearchBar() {
 
             await base44.entities.Invitation.create({
                 from_user_id: currentUser.id,
-                from_user_name: currentUser.full_name || currentUser.email,
+                from_user_name: currentUser.username || `Joueur ${currentUser.id.substring(0,4)}`,
                 to_user_email: user.email,
                 game_type: 'checkers',
                 game_id: newGame.id,
@@ -114,7 +114,7 @@ export default function PlayerSearchBar() {
                 recipient_id: user.id,
                 type: "game_invite",
                 title: "Invitation",
-                message: `${currentUser.full_name} vous invite à jouer`,
+                message: `${currentUser.username || 'Un joueur'} vous invite à jouer`,
                 link: `/Game?id=${newGame.id}`,
                 metadata: { gameId: newGame.id }
             });
@@ -179,9 +179,9 @@ export default function PlayerSearchBar() {
                                         <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-white rounded-full ${online ? 'bg-green-500' : 'bg-gray-300'}`} title={online ? "En ligne" : "Hors ligne"} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-[#4a3728] flex items-center gap-2">
-                                            {user.username || user.full_name}
-                                            {playingGameId && (
+                                                            <span className="text-sm font-bold text-[#4a3728] flex items-center gap-2">
+                                                                {user.username || `Joueur ${user.id.substring(0,4)}`}
+                                                                {playingGameId && (
                                                 <span className="flex items-center text-[10px] text-amber-600 font-normal bg-amber-100 px-1.5 rounded-full animate-pulse">
                                                     <Gamepad2 className="w-3 h-3 mr-0.5" /> Joue
                                                 </span>
