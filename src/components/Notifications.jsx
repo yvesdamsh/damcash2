@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp, Swords, Trophy, UserPlus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// import { ScrollArea } from '@/components/ui/scroll-area'; // Replaced with native scroll for better reliability
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
@@ -29,10 +29,10 @@ export default function Notifications() {
             const user = await base44.auth.me();
             if (!user) return;
 
-            // Fetch all notifications for the user
-            // Ideally sorted by created_date desc
-            const notifs = await base44.entities.Notification.filter({ recipient_id: user.id });
-            // Sort manually if needed (assuming API returns creation order or we sort here)
+            // Fetch notifications with explicit limit and sort
+            const notifs = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 50);
+            
+            // Client-side sort fallback just in case
             notifs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
             
             setNotifications(notifs);
@@ -161,7 +161,7 @@ export default function Notifications() {
                         )}
                     </div>
                 </div>
-                <ScrollArea className="h-[300px]">
+                <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#d4c5b0] dark:scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
                     {notifications.length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                             Aucune notification
@@ -175,7 +175,7 @@ export default function Notifications() {
                                     className={`p-4 cursor-pointer hover:bg-[#f0e6d2] dark:hover:bg-[#2a201a] transition-colors relative group ${!notification.read ? 'bg-[#fff9e6] dark:bg-[#2c241b]' : ''}`}
                                 >
                                     <div className="flex justify-between items-start gap-2">
-                                        <div className="mt-1">
+                                        <div className="mt-1 flex-shrink-0">
                                             {notification.type === 'message' && <MessageSquare className="w-4 h-4 text-blue-500" />}
                                             {notification.type === 'game' && <Gamepad2 className="w-4 h-4 text-green-500" />}
                                             {notification.type === 'game_invite' && <Gamepad2 className="w-4 h-4 text-purple-500" />}
@@ -185,11 +185,11 @@ export default function Notifications() {
                                             {notification.type === 'forum' && <ThumbsUp className="w-4 h-4 text-pink-500" />}
                                             {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
                                         </div>
-                                        <div className="flex-1">
-                                            <h5 className={`text-sm mb-1 text-[#4a3728] dark:text-[#e8dcc5] ${!notification.read ? 'font-bold' : 'font-medium'}`}>
+                                        <div className="flex-1 min-w-0">
+                                            <h5 className={`text-sm mb-1 text-[#4a3728] dark:text-[#e8dcc5] ${!notification.read ? 'font-bold' : 'font-medium'} truncate`}>
                                                 {notification.title}
                                             </h5>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 break-words">
                                                 {notification.message}
                                             </p>
                                             
@@ -198,7 +198,7 @@ export default function Notifications() {
                                                     <Button size="sm" className="h-6 text-xs bg-green-600 hover:bg-green-700" onClick={(e) => handleAction(e, notification, 'accept')}>
                                                         {t('common.accept')}
                                                     </Button>
-                                                    <Button size="sm" variant="outline" className="h-6 text-xs" onClick={(e) => handleAction(e, notification, 'reject')}>
+                                                    <Button size="sm" variant="outline" className="h-6 text-xs dark:border-[#e8dcc5] dark:text-[#e8dcc5] dark:hover:bg-[#e8dcc5] dark:hover:text-[#1e1814]" onClick={(e) => handleAction(e, notification, 'reject')}>
                                                         {t('common.decline')}
                                                     </Button>
                                                 </div>
@@ -224,7 +224,7 @@ export default function Notifications() {
                             ))}
                         </div>
                     )}
-                </ScrollArea>
+                </div>
             </PopoverContent>
         </Popover>
     );
