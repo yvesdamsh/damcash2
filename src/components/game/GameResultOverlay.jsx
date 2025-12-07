@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Trophy, Handshake } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/components/LanguageContext';
 
 export default function GameResultOverlay({ 
     game, 
@@ -10,6 +11,7 @@ export default function GameResultOverlay({
     onRematch, 
     onHome 
 }) {
+    const { t } = useLanguage();
     if (!game) return null;
 
     const isWinner = game.winner_id === currentUser?.id;
@@ -51,27 +53,27 @@ export default function GameResultOverlay({
                     {isWinner ? (
                         <>
                             <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
-                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">VICTOIRE !</h2>
-                            <p className="text-[#6b5138] font-medium">Magnifique performance !</p>
+                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">{t('game.result.victory')}</h2>
+                            <p className="text-[#6b5138] font-medium">{t('game.result.victory_desc')}</p>
                         </>
                     ) : isLoser ? (
                         <>
                             <X className="w-20 h-20 mx-auto text-red-400 mb-4" />
-                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">DÉFAITE</h2>
-                            <p className="text-[#6b5138] font-medium">Bien essayé, la prochaine sera la bonne.</p>
+                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">{t('game.result.defeat')}</h2>
+                            <p className="text-[#6b5138] font-medium">{t('game.result.defeat_desc')}</p>
                         </>
                     ) : (
                         <>
                             <Handshake className="w-20 h-20 mx-auto text-blue-400 mb-4" />
-                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">MATCH NUL</h2>
-                            <p className="text-[#6b5138] font-medium">Une bataille très serrée.</p>
+                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">{t('game.result.draw')}</h2>
+                            <p className="text-[#6b5138] font-medium">{t('game.result.draw_desc')}</p>
                         </>
                     )}
                 </div>
 
                 {(game.series_length || 1) > 1 && (
                     <div className="bg-[#f5f0e6] rounded-lg p-4 mb-6 border border-[#d4c5b0]">
-                        <h3 className="font-bold text-[#4a3728] mb-2 text-sm uppercase tracking-widest">Score de la série</h3>
+                        <h3 className="font-bold text-[#4a3728] mb-2 text-sm uppercase tracking-widest">{t('game.result.series_score')}</h3>
                         <div className="flex justify-center items-center gap-6 text-2xl font-black">
                             <div className="flex flex-col items-center">
                                 <span className="text-sm font-normal text-gray-500 mb-1">{game.white_player_name}</span>
@@ -87,7 +89,7 @@ export default function GameResultOverlay({
                                 </span>
                             </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Best of {game.series_length}</p>
+                        <p className="text-xs text-gray-500 mt-2">{t('game.result.best_of')} {game.series_length}</p>
                     </div>
                 )}
 
@@ -103,18 +105,18 @@ export default function GameResultOverlay({
 
                 <div className="space-y-3">
                     <Button onClick={onRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
-                        <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? "Manche Suivante (Obligatoire)" : "Rejouer"}
+                        <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? t('game.result.next_round_mandatory') : t('game.result.rematch')}
                     </Button>
                     
                     {canLeave && (
                         <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
-                            {!isSeriesDecided ? "Abandonner la série" : "Retour à l'accueil"}
+                            {!isSeriesDecided ? t('game.result.forfeit_series') : t('game.result.back_home')}
                         </Button>
                     )}
                     
                     {!canLeave && (
                         <p className="text-xs text-gray-500 italic mt-2">
-                            Vous ne pouvez pas quitter la série tant que vous n'êtes pas mené au score.
+                            {t('game.result.cannot_leave_msg')}
                         </p>
                     )}
                 </div>
