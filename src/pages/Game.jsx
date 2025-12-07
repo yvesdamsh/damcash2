@@ -278,7 +278,13 @@ export default function Game() {
                     const { game: fetchedGame, messages, signals } = res.data;
                     
                     if (fetchedGame) {
-                        setGame(fetchedGame);
+                        // Prevent "glitch" where server state lags behind local optimistic state
+                        const localMoves = game?.moves ? JSON.parse(game.moves) : [];
+                        const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
+                        
+                        if (fetchedMoves.length >= localMoves.length) {
+                            setGame(fetchedGame);
+                        }
                     }
                     
                     if (messages) {
@@ -322,7 +328,17 @@ export default function Game() {
             
             if (data.type === 'GAME_UPDATE') {
                 if (data.payload) {
-                    setGame(prev => ({ ...prev, ...data.payload }));
+                    setGame(prev => {
+                        // Prevent stale updates via socket too
+                        const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
+                        const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
+                        
+                        // Only update if incoming has same or more moves
+                        if (data.payload.moves && incomingMoves.length < localMoves.length) {
+                            return prev;
+                        }
+                        return { ...prev, ...data.payload };
+                    });
                 }
             } else if (data.type === 'GAME_REFETCH') {
                 base44.entities.Game.get(id).then(setGame);

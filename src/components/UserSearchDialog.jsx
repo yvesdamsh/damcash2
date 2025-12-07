@@ -16,14 +16,16 @@ export default function UserSearchDialog({ isOpen, onClose, onInvite, title = "I
         if (!search.trim()) return;
         setLoading(true);
         try {
-            // Ideally we have a backend search function, but client-side filtering for now
-            const users = await base44.entities.User.list();
-            const filtered = users.filter(u => 
-                (u.username && u.username.toLowerCase().includes(search.toLowerCase())) || 
-                (u.email && u.email.toLowerCase().includes(search.toLowerCase())) ||
-                (u.full_name && u.full_name.toLowerCase().includes(search.toLowerCase()))
-            );
-            setResults(filtered.slice(0, 10));
+            // Use backend search with regex for better scalability
+            const searchQ = { 
+                $or: [
+                    { username: { $regex: search, $options: 'i' } },
+                    { full_name: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } }
+                ]
+            };
+            const users = await base44.entities.User.filter(searchQ, null, 10);
+            setResults(users);
         } catch (e) {
             console.error(e);
             toast.error("Erreur de recherche");
