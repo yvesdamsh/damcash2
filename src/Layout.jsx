@@ -30,14 +30,17 @@ import SettingsMenu from '@/components/SettingsMenu';
 import FriendsManager from '@/components/FriendsManager';
 import WalletBalance from '@/components/WalletBalance';
 import { RealTimeProvider } from '@/components/RealTimeContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function Layout({ children }) {
     return (
-      <LanguageProvider>
-        <RealTimeProvider>
-          <LayoutContent>{children}</LayoutContent>
-        </RealTimeProvider>
-      </LanguageProvider>
+      <ErrorBoundary>
+        <LanguageProvider>
+          <RealTimeProvider>
+            <LayoutContent>{children}</LayoutContent>
+          </RealTimeProvider>
+        </LanguageProvider>
+      </ErrorBoundary>
     );
 }
 
