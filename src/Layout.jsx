@@ -31,6 +31,7 @@ import FriendsManager from '@/components/FriendsManager';
 import WalletBalance from '@/components/WalletBalance';
 import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 
 export default function Layout({ children }) {
     return (
@@ -321,6 +322,7 @@ function LayoutContent({ children }) {
 
                         {/* Mobile/Global Actions (Notifications, Settings, Menu) */}
                         <div className="flex items-center gap-1 pl-2">
+                            <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
                             {user && <Notifications />}
                             {user && <div className="hidden md:flex items-center text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mr-2">
                                 {user.username || `Joueur ${user.id.substring(0,4)}`}

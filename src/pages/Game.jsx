@@ -1485,6 +1485,7 @@ export default function Game() {
                                 pieceDesign={currentUser?.preferences?.checkers_pieces}
                                 premove={premove}
                                 isSoloMode={isSoloMode}
+                                orientation={isAmBlack ? 'black' : 'white'}
                                 />
                             : <ChessBoard 
                                 board={displayBoard} 

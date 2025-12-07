@@ -3,7 +3,7 @@ import CheckerPiece from './CheckerPiece';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getValidMoves as getCheckersMoves } from '@/components/checkersLogic';
 
-export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false }) {
+export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false, orientation = 'white' }) {
     
     const isMoveTarget = (r, c) => {
         return validMoves.some(m => m.to.r === r && m.to.c === c);
@@ -11,6 +11,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
 
     const canInteract = isSoloMode || (currentTurn === playerColor);
     const boardRef = React.useRef(null);
+    const isFlipped = orientation === 'black';
 
     // Framer Motion Drag Handler
     const handleDragEnd = (e, info, r, c) => {
@@ -79,8 +80,9 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                         aspectRatio: '1/1'
                     }}
                 >
-                    {board.map((row, r) => (
-                        row.map((piece, c) => {
+                    {(isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9]).map((r) => (
+                        (isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9]).map((c) => {
+                            const piece = board[r]?.[c];
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
                             const isTarget = isMoveTarget(r, c);
@@ -96,13 +98,22 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
+                            // Animation Delta
+                            let animDelta = null;
+                            if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
+                                const dx = (lastMove.from.c - c);
+                                const dy = (lastMove.from.r - r);
+                                animDelta = {
+                                    x: (isFlipped ? -dx : dx) * 100 + '%',
+                                    y: (isFlipped ? -dy : dy) * 100 + '%'
+                                };
+                            }
+
                             return (
                                 <div
                                     key={`${r}-${c}`}
                                     data-r={r}
                                     data-c={c}
-                                    // Only handle click on square if it's empty (move destination)
-                                    // If occupied, the piece handles the tap (selection)
                                     onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
                                     style={{ aspectRatio: '1/1' }}
                                     className={`
@@ -144,11 +155,7 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                                                 onPieceClick={() => onSquareClick(r, c)}
                                                 onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
                                                 canDrag={canInteract && isTurnPiece}
-                                                animateFrom={
-                                                    lastMove && lastMove.to.r === r && lastMove.to.c === c
-                                                    ? { x: (lastMove.from.c - c) * 100 + '%', y: (lastMove.from.r - r) * 100 + '%' }
-                                                    : null
-                                                }
+                                                animateFrom={animDelta}
                                             />
                                         )}
                                     </AnimatePresence>
