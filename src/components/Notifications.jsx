@@ -138,17 +138,15 @@ export default function Notifications() {
             setIsOpen(open);
             if (open) fetchNotifications();
         }}>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                        <Badge className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white rounded-full text-xs border border-[#4a3728] dark:border-[#e8dcc5]">
-                            {unreadCount}
-                        </Badge>
-                    )}
-                </Button>
+            <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 flex items-center justify-center bg-red-500 text-white rounded-full text-xs border border-[#4a3728] dark:border-[#e8dcc5]">
+                        {unreadCount}
+                    </Badge>
+                )}
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7] dark:bg-[#1e1814] dark:border-[#3d2b1f] z-[200]" align="end">
+            <PopoverContent className="w-80 p-0 border-[#4a3728] bg-[#fdfbf7] dark:bg-[#1e1814] dark:border-[#3d2b1f] z-[300]" align="end">
                 <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] dark:border-[#3d2b1f] bg-[#4a3728] dark:bg-[#1a120b] text-[#e8dcc5]">
                     <h4 className="font-bold">Notifications</h4>
                     <div className="flex gap-2">
