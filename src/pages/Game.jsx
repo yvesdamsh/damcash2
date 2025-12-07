@@ -1281,7 +1281,8 @@ export default function Game() {
     // Orientation: if I am Black, I want to be at bottom.
     // However, standard usually puts "Opponent" at top, "Self" at bottom.
     // If I am spectator, maybe White bottom.
-    const isAmBlack = currentUser?.id === game.black_player_id;
+    // Fix: If I am playing SOLO (Both IDs match), default to White at bottom (isAmBlack = false)
+    const isAmBlack = currentUser?.id === game.black_player_id && currentUser?.id !== game.white_player_id;
     // If spectator, keep default orientation (White bottom, Black top) or flip based on preference? 
     // For now standard: White Bottom.
     
