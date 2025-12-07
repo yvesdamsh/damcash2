@@ -36,7 +36,11 @@ export function RealTimeProvider({ children }) {
                     } : undefined,
                 });
 
-                if (Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
+                if (
+                    typeof Notification !== 'undefined' && 
+                    Notification.permission === 'granted' && 
+                    (document.hidden || !document.hasFocus())
+                ) {
                     const n = new Notification(data.title, {
                         body: data.message,
                         icon: '/favicon.ico',

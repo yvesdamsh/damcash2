@@ -13,10 +13,13 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const [pushEnabled, setPushEnabled] = useState(Notification.permission === 'granted');
+    const [pushEnabled, setPushEnabled] = useState(
+        typeof Notification !== 'undefined' && Notification.permission === 'granted'
+    );
     const navigate = useNavigate();
 
     const requestPushPermission = async () => {
+        if (typeof Notification === 'undefined') return;
         const permission = await Notification.requestPermission();
         setPushEnabled(permission === 'granted');
         if (permission === 'granted') {
