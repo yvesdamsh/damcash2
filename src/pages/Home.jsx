@@ -124,26 +124,8 @@ export default function Home() {
             const allGames = [...myGamesWhite, ...myGamesBlack];
             const uniqueGames = Array.from(new Map(allGames.map(g => [g.id, g])).values());
             // Client-side safety check to ensure we only show games where we are actually a player
-            // AND filter out stale/timed-out games to prevent annoying popups
             const active = uniqueGames
-                .filter(g => {
-                    if (g.white_player_id !== currentUser.id && g.black_player_id !== currentUser.id) return false;
-                    
-                    // Check for timeout / staleness
-                    if (g.last_move_at) {
-                        const lastMoveTime = new Date(g.last_move_at).getTime();
-                        const now = Date.now();
-                        const elapsedSecs = (now - lastMoveTime) / 1000;
-                        const timeLeft = g.current_turn === 'white' ? g.white_seconds_left : g.black_seconds_left;
-                        
-                        // If time ran out more than 5 minutes ago, consider it abandoned/finished for the popup
-                        if (elapsedSecs > (timeLeft + 300)) return false;
-                        
-                        // Also filter out games inactive for > 24h regardless of timer
-                        if (elapsedSecs > 86400) return false;
-                    }
-                    return true;
-                })
+                .filter(g => g.white_player_id === currentUser.id || g.black_player_id === currentUser.id)
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
             setInvitations(myInvites);
