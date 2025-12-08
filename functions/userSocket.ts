@@ -33,7 +33,16 @@ export default async function handler(req) {
             connections.set(userId, new Set());
         }
         connections.get(userId).add(socket);
-        console.log(`User connected to notifications: ${userId}`);
+        // console.log(`User connected to notifications: ${userId}`);
+    };
+
+    socket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'PING') {
+                socket.send(JSON.stringify({ type: 'PONG' }));
+            }
+        } catch (e) {}
     };
 
     socket.onclose = () => {
