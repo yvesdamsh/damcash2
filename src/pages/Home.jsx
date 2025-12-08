@@ -124,8 +124,33 @@ export default function Home() {
             const allGames = [...myGamesWhite, ...myGamesBlack];
             const uniqueGames = Array.from(new Map(allGames.map(g => [g.id, g])).values());
             // Client-side safety check to ensure we only show games where we are actually a player
+            // AND filter out stale/timed-out games to prevent annoying popups
             const active = uniqueGames
-                .filter(g => g.white_player_id === currentUser.id || g.black_player_id === currentUser.id)
+                .filter(g => {
+                    if (g.white_player_id !== currentUser.id && g.black_player_id !== currentUser.id) return false;
+                    
+                    const now = Date.now();
+                    
+                    // Check for timeout / staleness based on last move
+                    if (g.last_move_at) {
+                        const lastMoveTime = new Date(g.last_move_at).getTime();
+                        const elapsedSecs = (now - lastMoveTime) / 1000;
+                        const timeLeft = g.current_turn === 'white' ? g.white_seconds_left : g.black_seconds_left;
+                        
+                        // If time ran out more than 1 minute ago, consider it abandoned/finished
+                        if (elapsedSecs > (timeLeft + 60)) return false;
+                        
+                        // Also filter out games inactive for > 1 hour regardless of timer (prevent zombies)
+                        if (elapsedSecs > 3600) return false;
+                    } else if (g.created_date) {
+                        // For games that just started but no move made yet
+                        const createdTime = new Date(g.created_date).getTime();
+                        const elapsedSecs = (now - createdTime) / 1000;
+                        // If created > 30 mins ago and no moves, it's abandoned
+                        if (elapsedSecs > 1800) return false;
+                    }
+                    return true;
+                })
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
             setInvitations(myInvites);

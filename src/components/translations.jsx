@@ -81,6 +81,8 @@ export const translations = {
     "nav.mode.checkers": "Mode: Checkers",
     "game.chess": "Chess",
     "game.checkers": "Checkers",
+    "game.your_turn": "Your Turn!",
+    "common.play": "Play",
 
     // Common
     "common.loading": "Loading...",
@@ -685,6 +687,8 @@ export const translations = {
     "nav.mode.checkers": "Режим: Шашки",
     "game.chess": "Шахматы",
     "game.checkers": "Шашки",
+    "game.your_turn": "Ваш ход!",
+    "common.play": "Играть",
 
     // Common
     "common.loading": "Загрузка...",
@@ -1271,6 +1275,8 @@ export const translations = {
     "nav.mode.checkers": "Modus: Dame",
     "game.chess": "Schach",
     "game.checkers": "Dame",
+    "game.your_turn": "Du bist dran!",
+    "common.play": "Spielen",
 
     // Common
     "common.loading": "Laden...",
@@ -1860,6 +1866,8 @@ export const translations = {
     "nav.mode.checkers": "模式: 跳棋",
     "game.chess": "象棋",
     "game.checkers": "跳棋",
+    "game.your_turn": "轮到你了！",
+    "common.play": "玩",
 
     // Common
     "common.loading": "加载中...",
@@ -2449,6 +2457,8 @@ export const translations = {
     "nav.mode.checkers": "Modus: Dammen",
     "game.chess": "Schaak",
     "game.checkers": "Dammen",
+    "game.your_turn": "Jouw beurt!",
+    "common.play": "Spelen",
 
     // Common
     "common.loading": "Laden...",
@@ -3038,6 +3048,8 @@ export const translations = {
     "nav.mode.checkers": "Mode: Dames",
     "game.chess": "Échecs",
     "game.checkers": "Dames",
+    "game.your_turn": "À toi !",
+    "common.play": "Jouer",
 
     // Common
     "common.loading": "Chargement...",
