@@ -201,6 +201,7 @@ function LayoutContent({ children }) {
     };
 
     const handleLogin = () => {
+        // Redirect to platform login
         base44.auth.redirectToLogin(window.location.origin + '/Home');
     };
 
