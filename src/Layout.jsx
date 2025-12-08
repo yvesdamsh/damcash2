@@ -57,24 +57,28 @@ function LayoutContent({ children }) {
     const [showIntro, setShowIntro] = React.useState(!window.hasShownIntro);
 
     React.useEffect(() => {
+        // Initial app load logic
         if (!window.hasShownIntro) {
             window.hasShownIntro = true;
             
-            // Force redirect to Home if landing on Profile initially or Login (which doesn't exist)
             const path = location.pathname.toLowerCase();
+            // If landing on Profile or Login initially, FORCE redirect to Home
             if (path.includes('profile') || path.includes('login')) {
+                // Use window.location for hard redirect if needed, but navigate should work
                 navigate('/Home', { replace: true });
+                // We keep showIntro true so it shows on Home
             }
 
             const timer = setTimeout(() => setShowIntro(false), 5000);
             return () => clearTimeout(timer);
         } else {
-             // Even if intro was shown, if we hit /login (404), go home
-             if (location.pathname.toLowerCase().includes('login')) {
+             // Subsequent navigations
+             const path = location.pathname.toLowerCase();
+             if (path.includes('login')) {
                  navigate('/Home', { replace: true });
              }
         }
-    }, [location.pathname]);
+    }, []); // Run once on mount to handle initial load state correctly
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {
