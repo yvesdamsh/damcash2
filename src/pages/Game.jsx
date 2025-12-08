@@ -1391,7 +1391,14 @@ export default function Game() {
                                         setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
                                         setShowResult(true);
                                         if (!isAiGame) {
-                                            // Secure Server-Side End
+                                            // Explicitly update status first to ensure immediate consistency and prevent "zombie" games
+                                            await base44.entities.Game.update(game.id, { 
+                                                status: 'finished', 
+                                                winner_id: winnerId,
+                                                updated_date: new Date().toISOString()
+                                            });
+
+                                            // Then trigger server-side processing (ELO, etc.)
                                             await base44.functions.invoke('processGameResult', { 
                                                 gameId: game.id, 
                                                 outcome: { winnerId, result: 'resignation' } 
