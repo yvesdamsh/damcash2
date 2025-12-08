@@ -279,20 +279,23 @@ export default function Game() {
                     const { game: fetchedGame, messages, signals } = res.data;
                     
                     if (fetchedGame) {
-                        // Prevent "glitch" where server state lags behind local optimistic state
-                        const localMoves = game?.moves ? JSON.parse(game.moves) : [];
-                        const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
-                        
-                        // Check for Rematch/Reset
-                        const isRematch = (game.status === 'finished' && fetchedGame.status === 'playing') ||
-                                          (fetchedGame.white_player_id && game.white_player_id && fetchedGame.white_player_id !== game.white_player_id) ||
-                                          (fetchedMoves.length === 0 && localMoves.length > 0 && fetchedGame.status === 'playing');
+                        setGame(prev => {
+                            if (!prev) return fetchedGame;
+                            
+                            const localMoves = prev.moves ? JSON.parse(prev.moves) : [];
+                            const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
+                            
+                            const isRematch = (prev.status === 'finished' && fetchedGame.status === 'playing') ||
+                                              (fetchedGame.white_player_id && prev.white_player_id && fetchedGame.white_player_id !== prev.white_player_id) ||
+                                              (fetchedMoves.length === 0 && localMoves.length > 0 && fetchedGame.status === 'playing');
 
-                        const isNewer = fetchedGame.last_move_at && game.last_move_at && new Date(fetchedGame.last_move_at) > new Date(game.last_move_at);
-                        
-                        if (isRematch || fetchedMoves.length >= localMoves.length || isNewer) {
-                            setGame(fetchedGame);
-                        }
+                            const isNewer = fetchedGame.last_move_at && prev.last_move_at && new Date(fetchedGame.last_move_at) > new Date(prev.last_move_at);
+                            
+                            if (isRematch || fetchedMoves.length >= localMoves.length || isNewer) {
+                                return fetchedGame;
+                            }
+                            return prev;
+                        });
                     }
                     
                     if (messages) {
