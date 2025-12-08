@@ -12,9 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
-import ActivityFeed from '@/components/ActivityFeed';
 import UserSearchDialog from '@/components/UserSearchDialog';
-import PublicForum from '@/components/PublicForum';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
 import RejoinGameDialog from '@/components/RejoinGameDialog';
@@ -944,26 +942,28 @@ export default function Home() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <ActivityFeed />
-                                            <PublicForum />
+                                            {invitations.length > 0 && (
+                                                <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#6B8E4E] dark:border-[#3d2b1f] shadow-lg">
+                                                    <CardHeader className="pb-2">
+                                                        <CardTitle className="text-lg text-[#3d2b1f] dark:text-[#e8dcc5] flex items-center gap-2">
+                                                            <Users className="w-5 h-5" /> {t('home.invitations')}
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                                                        {invitations.map(inv => (
+                                                            <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] dark:bg-[#2a201a] rounded-lg border border-[#dde6d5] dark:border-[#3d2b1f]">
+                                                                <div>
+                                                                    <div className="font-bold text-[#3d2b1f] dark:text-[#e8dcc5]">{inv.from_user_name}</div>
+                                                                    <div className="text-xs text-[#5c6e46] dark:text-[#a8907a]">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div>
+                                                                </div>
+                                                                <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept')}</Button>
+                                                            </div>
+                                                        ))}
+                                                    </CardContent>
+                                                </Card>
+                                            )}
                                         </div>
                                         </div>
-
-                                        {invitations.length > 0 && (
-                    <div className="mb-8">
-                        <Card className="bg-white/90 border-[#6B8E4E] shadow-lg">
-                            <CardHeader className="pb-2"><CardTitle className="text-lg text-[#3d2b1f] flex items-center gap-2"><Users className="w-5 h-5" /> {t('home.invitations')}</CardTitle></CardHeader>
-                            <CardContent className="space-y-2 max-h-60 overflow-y-auto">
-                                {invitations.map(inv => (
-                                    <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] rounded-lg border border-[#dde6d5]">
-                                        <div><div className="font-bold text-[#3d2b1f]">{inv.from_user_name}</div><div className="text-xs text-[#5c6e46]">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div></div>
-                                        <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept')}</Button>
-                                    </div>
-                                ))}
-                            </CardContent>
-                        </Card>
-                    </div>
-                    )}
 
 
             </div>
