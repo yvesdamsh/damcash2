@@ -338,6 +338,10 @@ export default function Game() {
                         if (data.payload.moves && incomingMoves.length < localMoves.length) {
                             return prev;
                         }
+                        // Additional timestamp check to prevent old state overwrites
+                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
+                            return prev;
+                        }
                         return { ...prev, ...data.payload };
                     });
                 }

@@ -45,6 +45,11 @@ Deno.serve(async (req) => {
 
     socket.onmessage = async (event) => {
         try {
+            // Auto-update last_seen
+            if (socket.user) {
+                base44.asServiceRole.entities.User.update(socket.user.id, { last_seen: new Date().toISOString() }).catch(console.error);
+            }
+
             const data = JSON.parse(event.data);
             
             if (data.type === 'MOVE') {

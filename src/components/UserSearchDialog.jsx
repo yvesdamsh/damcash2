@@ -16,15 +16,28 @@ export default function UserSearchDialog({ isOpen, onClose, onInvite, title = "I
         if (!search.trim()) return;
         setLoading(true);
         try {
+            const me = await base44.auth.me().catch(() => null);
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+            
             // Use backend search with regex for better scalability
             const searchQ = { 
-                $or: [
-                    { username: { $regex: search, $options: 'i' } },
-                    { full_name: { $regex: search, $options: 'i' } },
-                    { email: { $regex: search, $options: 'i' } }
+                $and: [
+                    {
+                        $or: [
+                            { username: { $regex: search, $options: 'i' } },
+                            { full_name: { $regex: search, $options: 'i' } },
+                            { email: { $regex: search, $options: 'i' } }
+                        ]
+                    },
+                    { last_seen: { $gte: thirtyMinutesAgo } }
                 ]
             };
-            const users = await base44.entities.User.filter(searchQ, null, 10);
+
+            if (me) {
+                searchQ.$and.push({ id: { $ne: me.id } });
+            }
+
+            const users = await base44.entities.User.filter(searchQ, '-last_seen', 50);
             setResults(users);
         } catch (e) {
             console.error(e);

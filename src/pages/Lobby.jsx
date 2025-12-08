@@ -29,10 +29,10 @@ export default function Lobby() {
     const fetchData = async () => {
         try {
             // 1. Fetch Users (Online logic) - Filtered on Backend
-            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
             const onlineUsers = await base44.entities.User.filter({ 
-                last_seen: { $gte: tenMinutesAgo } 
-            }, '-last_seen', 100);
+                last_seen: { $gte: thirtyMinutesAgo } 
+            }, '-last_seen', 500);
             setUsers(onlineUsers);
 
             // 2. Fetch Public Waiting Games
