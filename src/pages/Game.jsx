@@ -334,12 +334,17 @@ export default function Game() {
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
                         
-                        // Only update if incoming has same or more moves
-                        if (data.payload.moves && incomingMoves.length < localMoves.length) {
+                        // Detect Rematch/Reset (Status change Finished -> Playing OR Players Swapped)
+                        const isRematch = (prev.status === 'finished' && data.payload.status === 'playing') ||
+                                          (data.payload.white_player_id && prev.white_player_id && data.payload.white_player_id !== prev.white_player_id);
+
+                        // Only update if incoming has same or more moves, unless it's a rematch
+                        if (!isRematch && data.payload.moves && incomingMoves.length < localMoves.length) {
                             return prev;
                         }
-                        // Additional timestamp check to prevent old state overwrites
-                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
+                        
+                        // Additional timestamp check (skip for rematch as it resets time)
+                        if (!isRematch && data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
                             return prev;
                         }
                         return { ...prev, ...data.payload };
