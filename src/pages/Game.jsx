@@ -1117,11 +1117,15 @@ export default function Game() {
 
     const handleAcceptDraw = async () => {
         if (!game) return;
-        // Secure Server-Side End
-        await base44.functions.invoke('processGameResult', { 
-            gameId: game.id, 
-            outcome: { winnerId: null, result: 'draw_agreement' } 
-        });
+        
+        if (!isAiGame) {
+            // Secure Server-Side End
+            await base44.functions.invoke('processGameResult', { 
+                gameId: game.id, 
+                outcome: { winnerId: null, result: 'draw_agreement' } 
+            });
+        }
+
         // Optimistic update
         setGame(prev => ({ ...prev, status: 'finished', winner_id: null, draw_offer_by: null }));
         
@@ -1138,22 +1142,16 @@ export default function Game() {
     const handleTimeout = async (color) => {
         if (!game || game.status !== 'playing') return;
         
-        // Only one player (the one not timing out? or anyone) should trigger this to avoid race conditions?
-        // Ideally the one whose time ran out triggers it? No, clients can lie.
-        // Ideally backend triggers it. But frontend must show it.
-        // If I am the opponent of the one who timed out, I should claim win.
-        // If I am the one who timed out, I should claim loss?
-        // Let's handle it: whoever detects it sends the update. The first one wins.
-        
         const winnerId = color === 'white' ? game.black_player_id : game.white_player_id;
-        const winnerName = color === 'white' ? game.black_player_name : game.white_player_name;
         
         try {
-            // Secure Server-Side End
-            await base44.functions.invoke('processGameResult', { 
-                gameId: game.id, 
-                outcome: { winnerId, result: 'timeout' } 
-            });
+            if (!isAiGame) {
+                // Secure Server-Side End
+                await base44.functions.invoke('processGameResult', { 
+                    gameId: game.id, 
+                    outcome: { winnerId, result: 'timeout' } 
+                });
+            }
             
             // Notify
             if (currentUser?.id === winnerId) {
@@ -1164,8 +1162,6 @@ export default function Game() {
                 toast.error(t('game.time_out_loss'));
             }
 
-            base44.functions.invoke('processGameResult', { gameId: game.id });
-            
             // Force local update
             setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
             setShowResult(true);
@@ -1341,13 +1337,15 @@ export default function Game() {
         <div className="min-h-screen bg-[#f0e6d2] pb-10">
             {/* 1. Video Chat Top (Mobile: Sticky, Desktop: Fixed Corner) */}
             <div className="z-50 backdrop-blur-sm w-full sticky top-0 bg-black/5 border-b border-[#d4c5b0] md:fixed md:bottom-4 md:right-4 md:w-80 md:top-auto md:bg-transparent md:border-none md:shadow-none">
-                 <VideoChat 
-                    gameId={game.id} 
-                    currentUser={currentUser} 
-                    opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
-                    socket={socket}
-                    externalSignals={syncedSignals}
-                />
+                 {!isAiGame && (
+                     <VideoChat 
+                        gameId={game.id} 
+                        currentUser={currentUser} 
+                        opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
+                        socket={socket}
+                        externalSignals={syncedSignals}
+                    />
+                 )}
                 {isSpectator && (
                     <div className="bg-black/80 text-[#e8dcc5] text-center py-1 text-xs font-bold flex items-center justify-center gap-2 animate-pulse md:rounded-b-xl">
                         <EyeIcon className="w-3 h-3" /> {t('game.spectator_mode')}
