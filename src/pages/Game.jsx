@@ -283,7 +283,8 @@ export default function Game() {
                         const localMoves = game?.moves ? JSON.parse(game.moves) : [];
                         const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
                         
-                        if (fetchedMoves.length >= localMoves.length) {
+                        const isNewer = fetchedGame.last_move_at && game.last_move_at && new Date(fetchedGame.last_move_at) > new Date(game.last_move_at);
+                        if (fetchedMoves.length >= localMoves.length || isNewer) {
                             setGame(fetchedGame);
                         }
                     }
@@ -334,17 +335,14 @@ export default function Game() {
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
                         
-                        // Detect Rematch/Reset (Status change Finished -> Playing OR Players Swapped)
-                        const isRematch = (prev.status === 'finished' && data.payload.status === 'playing') ||
-                                          (data.payload.white_player_id && prev.white_player_id && data.payload.white_player_id !== prev.white_player_id);
-
-                        // Only update if incoming has same or more moves, unless it's a rematch
-                        if (!isRematch && data.payload.moves && incomingMoves.length < localMoves.length) {
+                        // Stale check: reject if older timestamp
+                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
                             return prev;
                         }
-                        
-                        // Additional timestamp check (skip for rematch as it resets time)
-                        if (!isRematch && data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
+
+                        // Move count check: reject if fewer moves AND not newer (preserves takebacks)
+                        const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
+                        if (data.payload.moves && incomingMoves.length < localMoves.length && !isNewer) {
                             return prev;
                         }
                         return { ...prev, ...data.payload };
@@ -1212,6 +1210,7 @@ export default function Game() {
                 moves: JSON.stringify(newMoves),
                 current_turn: prevTurn,
                 takeback_requested_by: null,
+                last_move_at: new Date().toISOString(),
                 // We should probably adjust time too, but that's complex. Let's keep time flowing or running.
                 // Actually time usually reverts too but we don't track time per move history easily here.
                 // We'll leave time as is for simplicity (penalty for mistake).
