@@ -7,6 +7,8 @@ import { base44 } from '@/api/base44Client';
 export default function SplashScreen({ onPlayAsGuest }) {
     const handleLogin = () => {
         // Explicitly set the redirect URL to the home page
+        // Use window.location.origin to ensure absolute URL
+        // If we are already on a "login" path (which shouldn't exist as a page), ensure we go to Home first
         base44.auth.redirectToLogin(window.location.origin + '/Home');
     };
 
