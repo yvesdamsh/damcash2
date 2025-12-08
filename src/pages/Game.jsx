@@ -291,7 +291,8 @@ export default function Game() {
 
                             const isNewer = fetchedGame.last_move_at && prev.last_move_at && new Date(fetchedGame.last_move_at) > new Date(prev.last_move_at);
                             
-                            if (isRematch || fetchedMoves.length >= localMoves.length || isNewer) {
+                            // Only update if server has MORE moves, or SAME moves but strictly newer timestamp (to avoid overwriting optimistic updates with stale/echoed data)
+                            if (isRematch || fetchedMoves.length > localMoves.length || (fetchedMoves.length === localMoves.length && isNewer)) {
                                 return fetchedGame;
                             }
                             return prev;
@@ -349,9 +350,10 @@ export default function Game() {
                             return prev;
                         }
 
-                        // Move count check: reject if fewer moves AND not newer (preserves takebacks)
+                        // Move count check: reject if fewer OR EQUAL moves AND not newer (preserves local optimistic state against stale echoes)
                         const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
-                        if (data.payload.moves && incomingMoves.length < localMoves.length && !isNewer) {
+                        
+                        if (data.payload.moves && incomingMoves.length <= localMoves.length && !isNewer) {
                             return prev;
                         }
                         return { ...prev, ...data.payload };
