@@ -283,8 +283,14 @@ export default function Game() {
                         const localMoves = game?.moves ? JSON.parse(game.moves) : [];
                         const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
                         
+                        // Check for Rematch/Reset
+                        const isRematch = (game.status === 'finished' && fetchedGame.status === 'playing') ||
+                                          (fetchedGame.white_player_id && game.white_player_id && fetchedGame.white_player_id !== game.white_player_id) ||
+                                          (fetchedMoves.length === 0 && localMoves.length > 0 && fetchedGame.status === 'playing');
+
                         const isNewer = fetchedGame.last_move_at && game.last_move_at && new Date(fetchedGame.last_move_at) > new Date(game.last_move_at);
-                        if (fetchedMoves.length >= localMoves.length || isNewer) {
+                        
+                        if (isRematch || fetchedMoves.length >= localMoves.length || isNewer) {
                             setGame(fetchedGame);
                         }
                     }
