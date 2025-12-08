@@ -30,13 +30,13 @@ export default function RejoinGameDialog({ games, open, onOpenChange, currentUse
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md bg-[#fdfbf7] border-[#d4c5b0]">
+            <DialogContent className="sm:max-w-md bg-[#fdfbf7] dark:bg-[#1e1814] border-[#d4c5b0] dark:border-[#3d2b1f]">
                 <DialogHeader>
-                    <DialogTitle className="text-[#4a3728] flex items-center gap-2">
+                    <DialogTitle className="text-[#4a3728] dark:text-[#e8dcc5] flex items-center gap-2">
                         <Clock className="w-5 h-5" />
                         {t('home.active_games_title') || "Parties en cours"}
                     </DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="text-gray-600 dark:text-gray-400">
                         {t('home.active_games_desc') || "Vous avez des parties en cours. Voulez-vous les rejoindre ?"}
                     </DialogDescription>
                 </DialogHeader>
@@ -49,22 +49,22 @@ export default function RejoinGameDialog({ games, open, onOpenChange, currentUse
                                 key={game.id} 
                                 className={`flex items-center justify-between p-3 border rounded-lg shadow-sm transition-all cursor-pointer group ${
                                     myTurn 
-                                        ? 'bg-amber-50 border-amber-500/50 shadow-md ring-1 ring-amber-500/20' 
-                                        : 'bg-white border-[#d4c5b0] hover:border-[#4a3728]'
+                                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500/50 dark:border-amber-700 shadow-md ring-1 ring-amber-500/20 dark:ring-amber-700/50' 
+                                        : 'bg-white dark:bg-[#2a201a] border-[#d4c5b0] dark:border-[#3d2b1f] hover:border-[#4a3728] dark:hover:border-[#b8860b]'
                                 }`}
                                 onClick={() => navigate(`/Game?id=${game.id}`)}
                             >
                                 <div className="flex flex-col">
-                                    <span className="font-bold text-[#4a3728] text-sm flex items-center gap-2">
+                                    <span className="font-bold text-[#4a3728] dark:text-[#e8dcc5] text-sm flex items-center gap-2">
                                         {game.game_type === 'chess' ? '♟️ Chess' : '⚪ Checkers'}
                                         {myTurn && (
-                                            <Badge className="bg-amber-600 hover:bg-amber-700 text-[10px] px-1.5 py-0 h-5">
+                                            <Badge className="bg-amber-600 hover:bg-amber-700 text-[10px] px-1.5 py-0 h-5 text-white">
                                                 <AlertCircle className="w-3 h-3 mr-1" />
                                                 {t('game.your_turn') || "À toi !"}
                                             </Badge>
                                         )}
                                     </span>
-                                    <span className="text-xs text-[#6b5138] flex items-center gap-1 mt-1">
+                                    <span className="text-xs text-[#6b5138] dark:text-[#a8907a] flex items-center gap-1 mt-1">
                                         <User className="w-3 h-3" />
                                         {currentUser && game.white_player_id === currentUser.id 
                                             ? `vs ${game.black_player_name}` 
@@ -75,7 +75,7 @@ export default function RejoinGameDialog({ games, open, onOpenChange, currentUse
                                         <span className="text-gray-400 font-normal text-xs ml-2">#{game.access_code || game.id.substring(0, 4)}</span>
                                     </span>
                                 </div>
-                                <Button size="sm" className={myTurn ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]"}>
+                                <Button size="sm" className={myTurn ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] dark:bg-[#4a3728] dark:text-[#e8dcc5]"}>
                                     {myTurn ? (t('common.play') || "Jouer") : (t('common.watch') || "Voir")} <ArrowRight className="w-4 h-4 ml-1" />
                                 </Button>
                             </div>
@@ -84,7 +84,7 @@ export default function RejoinGameDialog({ games, open, onOpenChange, currentUse
                 </div>
                 
                 <div className="flex justify-end mt-2">
-                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-500 hover:text-[#4a3728]">
+                    <Button variant="ghost" onClick={() => onOpenChange(false)} className="text-gray-500 hover:text-[#4a3728] dark:text-gray-400 dark:hover:text-[#e8dcc5]">
                         {t('common.dismiss') || "Plus tard"}
                     </Button>
                 </div>
