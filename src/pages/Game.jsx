@@ -1493,19 +1493,21 @@ export default function Game() {
                                     <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
                                 )}
                             </div>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
-                                onClick={async () => {
-                                    toast.info(t('game.syncing'));
-                                    const g = await base44.entities.Game.get(game.id);
-                                    setGame(g);
-                                }}
-                                title="Forcer la synchronisation"
-                            >
-                                <RefreshCw className="w-3 h-3" />
-                            </Button>
+                            {!isAiGame && (
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
+                                    onClick={async () => {
+                                        toast.info(t('game.syncing'));
+                                        const g = await base44.entities.Game.get(game.id);
+                                        setGame(g);
+                                    }}
+                                    title="Forcer la synchronisation"
+                                >
+                                    <RefreshCw className="w-3 h-3" />
+                                </Button>
+                            )}
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
