@@ -60,15 +60,21 @@ function LayoutContent({ children }) {
         if (!window.hasShownIntro) {
             window.hasShownIntro = true;
             
-            // Force redirect to Home if landing on Profile initially
-            if (location.pathname.toLowerCase().includes('profile')) {
+            // Force redirect to Home if landing on Profile initially or Login (which doesn't exist)
+            const path = location.pathname.toLowerCase();
+            if (path.includes('profile') || path.includes('login')) {
                 navigate('/Home', { replace: true });
             }
 
             const timer = setTimeout(() => setShowIntro(false), 5000);
             return () => clearTimeout(timer);
+        } else {
+             // Even if intro was shown, if we hit /login (404), go home
+             if (location.pathname.toLowerCase().includes('login')) {
+                 navigate('/Home', { replace: true });
+             }
         }
-    }, []);
+    }, [location.pathname]);
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {
