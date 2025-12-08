@@ -33,7 +33,11 @@ export default function Notifications() {
             if (!user) return;
 
             // Fetch notifications with explicit limit and sort
-            const notifs = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 50);
+            // Filter only invitations and messages as requested
+            const notifs = await base44.entities.Notification.filter({ 
+                recipient_id: user.id,
+                type: { $in: ['game_invite', 'message', 'team_challenge', 'team_request'] }
+            }, '-created_date', 50);
             
             // Client-side sort fallback just in case
             notifs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
