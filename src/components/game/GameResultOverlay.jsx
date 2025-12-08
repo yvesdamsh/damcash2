@@ -14,8 +14,9 @@ export default function GameResultOverlay({
     const { t } = useLanguage();
     if (!game) return null;
 
-    const isWinner = game.winner_id === currentUser?.id;
-    const isLoser = game.winner_id && game.winner_id !== currentUser?.id;
+    const isSpectator = currentUser?.id !== game.white_player_id && currentUser?.id !== game.black_player_id;
+    const isWinner = !isSpectator && game.winner_id === currentUser?.id;
+    const isLoser = !isSpectator && game.winner_id && game.winner_id !== currentUser?.id;
     const isDraw = !game.winner_id;
 
     // Calculate Series Status
@@ -29,11 +30,11 @@ export default function GameResultOverlay({
     const myScore = isWhite ? currentWhiteScore : currentBlackScore;
     const opponentScore = isWhite ? currentBlackScore : currentWhiteScore;
     
-    // Rule: "Seul celui qui est mené au score peut arrêter de jouer"
-    // If series is NOT decided:
-    // - If Trailing (myScore < opponentScore): Can leave (Forfeit rest)
-    // - If Leading or Tied: Cannot leave
-    const canLeave = isSeriesDecided || (myScore < opponentScore);
+    // Leave/Close Logic
+    // Spectators can always leave.
+    // Players: "Only the trailing player can forfeit the series" (if not decided)
+    const canForfeit = isSeriesDecided || (myScore < opponentScore);
+    const showCloseButton = isSpectator || canForfeit || isWinner; // Winner can close to view board, but maybe not forfeit button
 
     return (
         <motion.div 
@@ -61,6 +62,12 @@ export default function GameResultOverlay({
                             <X className="w-20 h-20 mx-auto text-red-400 mb-4" />
                             <h2 className="text-4xl font-black text-[#4a3728] mb-2">{t('game.result.defeat')}</h2>
                             <p className="text-[#6b5138] font-medium">{t('game.result.defeat_desc')}</p>
+                        </>
+                    ) : isSpectator ? (
+                        <>
+                            {game.winner_id ? <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4" /> : <Handshake className="w-20 h-20 mx-auto text-blue-400 mb-4" />}
+                            <h2 className="text-4xl font-black text-[#4a3728] mb-2">{game.winner_id ? (game.winner_id === game.white_player_id ? "VICTOIRE BLANCS" : "VICTOIRE NOIRS") : t('game.result.draw')}</h2>
+                            <p className="text-[#6b5138] font-medium">Partie terminée</p>
                         </>
                     ) : (
                         <>
@@ -93,7 +100,7 @@ export default function GameResultOverlay({
                     </div>
                 )}
 
-                {canLeave && (
+                {showCloseButton && (
                     <button 
                         onClick={onClose}
                         className="absolute top-4 right-4 p-2 text-[#4a3728] hover:bg-black/5 rounded-full transition-colors"
@@ -104,17 +111,19 @@ export default function GameResultOverlay({
                 )}
 
                 <div className="space-y-3">
-                    <Button onClick={onRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
-                        <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? t('game.result.next_round_mandatory') : t('game.result.rematch')}
-                    </Button>
-                    
-                    {canLeave && (
-                        <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
-                            {!isSeriesDecided ? t('game.result.forfeit_series') : t('game.result.back_home')}
+                    {!isSpectator && (
+                        <Button onClick={onRematch} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] h-12 text-lg font-bold shadow-lg">
+                            <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? t('game.result.next_round_mandatory') : t('game.result.rematch')}
                         </Button>
                     )}
                     
-                    {!canLeave && (
+                    {(canForfeit || isSpectator) && (
+                        <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">
+                            {!isSeriesDecided && !isSpectator ? t('game.result.forfeit_series') : t('game.result.back_home')}
+                        </Button>
+                    )}
+                    
+                    {!canForfeit && !isSpectator && (
                         <p className="text-xs text-gray-500 italic mt-2">
                             {t('game.result.cannot_leave_msg')}
                         </p>
