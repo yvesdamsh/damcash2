@@ -14,6 +14,8 @@ import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
+import TournamentVictoryDialog from '@/components/tournaments/TournamentVictoryDialog';
+import TournamentDefeatDialog from '@/components/tournaments/TournamentDefeatDialog';
 
 export default function TournamentDetail() {
     const location = useLocation();
@@ -38,6 +40,11 @@ export default function TournamentDetail() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [spectatingGame, setSpectatingGame] = useState(null);
     const [spectateBoard, setSpectateBoard] = useState([]);
+    
+    // Result Dialogs
+    const [showVictory, setShowVictory] = useState(false);
+    const [showDefeat, setShowDefeat] = useState(false);
+    const [resultStats, setResultStats] = useState(null);
 
     // Ranking & Sorting State
     const [sortConfig, setSortConfig] = useState({ key: 'score', direction: 'desc' });
@@ -108,6 +115,37 @@ export default function TournamentDetail() {
             direction: current.key === key && current.direction === 'desc' ? 'asc' : 'desc'
         }));
     };
+
+    // Check for Tournament End Result
+    useEffect(() => {
+        if (!tournament || !user || tournament.status !== 'finished' || standings.length === 0) return;
+        
+        const key = `damcash_tournament_seen_${tournament.id}`;
+        if (localStorage.getItem(key)) return;
+
+        const myEntry = standings.find(p => p.user_id === user.id);
+        if (!myEntry) return; // Not a participant
+
+        const rank = standings.findIndex(p => p.user_id === user.id) + 1;
+        
+        setResultStats({
+            wins: myEntry.wins || 0,
+            score: myEntry.score || 0,
+            games_played: myEntry.games_played || 0,
+            elo: tournament.game_type === 'chess' ? (usersMap[user.id]?.elo_chess) : (usersMap[user.id]?.elo_checkers),
+            rank
+        });
+
+        // Determine if winner (Individual) or Team Winner (if I am in winning team)
+        const isWinner = tournament.winner_id === user.id || (tournament.team_mode && tournament.winner_team_id && myEntry.team_id === tournament.winner_team_id);
+
+        if (isWinner) {
+            setShowVictory(true);
+        } else {
+            setShowDefeat(true);
+        }
+        localStorage.setItem(key, 'true');
+    }, [tournament?.status, user, standings]);
 
     useEffect(() => {
         if (!id) return;
@@ -443,6 +481,20 @@ export default function TournamentDetail() {
 
     return (
         <div className="max-w-6xl mx-auto p-4">
+            <TournamentVictoryDialog 
+                open={showVictory} 
+                onOpenChange={setShowVictory} 
+                tournament={tournament}
+                stats={resultStats}
+                prize={0}
+            />
+            <TournamentDefeatDialog 
+                open={showDefeat} 
+                onOpenChange={setShowDefeat}
+                tournament={tournament}
+                stats={resultStats}
+                rank={resultStats?.rank}
+            />
             <div className="mb-6">
                 <Link to="/Tournaments">
                     <Button variant="ghost" className="hover:bg-[#d4c5b0] text-[#4a3728]">
