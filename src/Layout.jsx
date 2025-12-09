@@ -293,8 +293,9 @@ function LayoutContent({ children }) {
 
                                 {user && (
                                   <>
-                                      <div className="flex flex-col items-end mr-2 hidden lg:flex">
-                                          <div className="text-xs font-bold text-[#d4c5b0] bg-[#2c1e12]/50 px-2 rounded-full border border-yellow-500/30">
+                                      <div className="flex items-center mr-2 hidden lg:flex gap-2">
+                                          <WalletBalance />
+                                          <div className="text-xs font-bold text-[#d4c5b0] bg-[#2c1e12]/50 px-2 py-1 rounded-full border border-yellow-500/30">
                                               Lvl {user.level || 1}
                                           </div>
                                       </div>

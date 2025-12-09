@@ -13,7 +13,7 @@ const checkRateLimit = (userId) => {
 };
 
 const walletSchema = z.object({
-    action: z.enum(['get_balance', 'deposit', 'pay_entry_fee']),
+    action: z.enum(['get_balance', 'deposit', 'pay_entry_fee', 'withdraw']),
     userId: z.string().optional(),
     amount: z.number().optional(),
     gameId: z.string().optional()
@@ -159,6 +159,33 @@ export default async function handler(req) {
         }
 
         return Response.json({ success: true });
+    }
+
+    // 4. Withdraw
+    if (action === 'withdraw') {
+        if (!amount || amount <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
+        const wallet = await getWallet(userId || user.id);
+        
+        if ((wallet.balance || 0) < amount) {
+            return Response.json({ error: 'Insufficient funds' }, { status: 400 });
+        }
+
+        // Deduct balance
+        await base44.asServiceRole.entities.Wallet.update(wallet.id, { 
+            balance: wallet.balance - amount 
+        });
+        
+        // Log transaction
+        await base44.asServiceRole.entities.Transaction.create({
+            user_id: wallet.user_id,
+            type: 'withdrawal',
+            amount: -amount,
+            status: 'pending', // Mark as pending for manual processing or API callback
+            created_at: new Date().toISOString(),
+            description: 'Retrait de fonds'
+        });
+        
+        return Response.json({ success: true, new_balance: wallet.balance - amount });
     }
 
     return Response.json({ error: 'Invalid action' }, { status: 400 });

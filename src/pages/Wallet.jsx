@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, History, Coins } from 'lucide-react';
+import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownLeft, History, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
@@ -61,12 +61,34 @@ export default function WalletPage() {
                                 {balance} <span className="text-xl opacity-60">D$</span>
                             </div>
                         </div>
-                        <Button 
-                            onClick={handleDeposit}
-                            className="mt-8 bg-yellow-600 hover:bg-yellow-700 text-white border-none w-full md:w-auto"
-                        >
-                            <Plus className="w-4 h-4 mr-2" /> Ajouter des fonds (Démo)
-                        </Button>
+                        <div className="flex gap-3 mt-8">
+                            <Button 
+                                onClick={handleDeposit}
+                                className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white border-none"
+                            >
+                                <Plus className="w-4 h-4 mr-2" /> Acheter des Coins
+                            </Button>
+                            <Button 
+                                onClick={async () => {
+                                    const amount = prompt("Montant à retirer :");
+                                    if (amount && !isNaN(amount) && amount > 0) {
+                                        try {
+                                            const res = await base44.functions.invoke('walletManager', { action: 'withdraw', amount: parseFloat(amount) });
+                                            if (res.data.error) {
+                                                toast.error(res.data.error);
+                                            } else {
+                                                toast.success("Retrait demandé !");
+                                                fetchWallet();
+                                            }
+                                        } catch(e) { toast.error("Erreur retrait"); }
+                                    }
+                                }}
+                                variant="outline"
+                                className="flex-1 border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728]"
+                            >
+                                <Minus className="w-4 h-4 mr-2" /> Retirer (Cash)
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
 
