@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Crown } from 'lucide-react';
 
-export default function CheckerPiece({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, onPieceClick, onDragEnd, ...props }) {
+const CheckerPiece = memo(({ type, isSelected, animateFrom, design = 'standard', onDragStart, canDrag, onPieceClick, onDragEnd }) => {
     if (type === 0) return null;
 
     const isWhite = type === 1 || type === 3;
@@ -27,6 +27,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
 
     return (
         <motion.div
+            layout
             drag={canDrag}
             dragMomentum={false}
             dragElastic={0.1}
@@ -37,7 +38,7 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
             dragSnapToOrigin
             initial={initial}
             animate={animate}
-            exit={{ opacity: 0, transition: { duration: 0 } }}
+            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className={`checker-piece relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
             style={{ 
@@ -76,4 +77,6 @@ export default function CheckerPiece({ type, isSelected, animateFrom, design = '
             </div>
         </motion.div>
     );
-}
+});
+
+export default CheckerPiece;

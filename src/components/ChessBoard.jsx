@@ -1,40 +1,15 @@
-import React from 'react';
+import React, { memo, useRef, useMemo } from 'react';
 import ChessPiece from './ChessPiece';
-import { motion, AnimatePresence } from 'framer-motion';
-import { getValidChessMoves, isInCheck } from '@/components/chessLogic';
+import { AnimatePresence } from 'framer-motion';
+import { isInCheck } from '@/components/chessLogic';
 
-export default function ChessBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) {
-    
-    const canInteract = isSoloMode || (currentTurn === playerColor);
-    const isMyTurn = canInteract; // Backward compatibility or just alias
-    const boardRef = React.useRef(null);
-    
-    // If player is black in solo/online, default orientation usually matches unless overridden
-    const boardOrientation = orientation || (playerColor === 'black' ? 'black' : 'white');
-    const isFlipped = boardOrientation === 'black';
+const ChessSquare = memo(({ 
+    r, c, piece, isDark, isSelected, isTarget, isLastMove, isLastMoveTarget, isPremoveSource, isPremoveTarget, isCheck,
+    theme, canInteract, onSquareClick, onPieceDrop, pieceSet, currentTurn, animDelta, isFlipped, boardRef
+}) => {
 
-    // Theme Configuration
-    const themes = {
-        standard: { dark: 'bg-[#6B8E4E]', light: 'bg-[#F0E7D5]', border: 'border-[#3d2b1f]', bg: 'bg-[#3d2b1f]', textDark: 'text-[#F0E7D5]', textLight: 'text-[#6B8E4E]' },
-        wood: { dark: 'bg-[#B58863]', light: 'bg-[#F0D9B5]', border: 'border-[#5c4430]', bg: 'bg-[#5c4430]', textDark: 'text-[#F0D9B5]', textLight: 'text-[#B58863]' },
-        blue: { dark: 'bg-[#5D8AA8]', light: 'bg-[#DEE3E6]', border: 'border-[#2F4F4F]', bg: 'bg-[#2F4F4F]', textDark: 'text-[#DEE3E6]', textLight: 'text-[#5D8AA8]' },
-    };
-
-    const currentTheme = themes[theme] || themes.standard;
-
-    // Calculate Check State safely
-    const { isWhiteCheck, isBlackCheck } = React.useMemo(() => {
-        if (!board || board.length !== 8) return { isWhiteCheck: false, isBlackCheck: false };
-        return {
-            isWhiteCheck: isInCheck(board, 'white'),
-            isBlackCheck: isInCheck(board, 'black')
-        };
-    }, [board]);
-
-    const handleDragEnd = (e, info, r, c) => {
-        // Robust coordinate extraction for Mobile/Desktop
+    const handleDragEnd = (e, info) => {
         let clientX, clientY;
-        
         if (e.changedTouches && e.changedTouches.length > 0) {
             clientX = e.changedTouches[0].clientX;
             clientY = e.changedTouches[0].clientY;
@@ -46,7 +21,6 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
             clientY = info.point.y;
         }
 
-        // Use elementsFromPoint to find the square under the finger directly
         const elements = document.elementsFromPoint(clientX, clientY);
         const targetSquare = elements.find(el => el.classList.contains('board-square'));
 
@@ -54,32 +28,120 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
             const targetR = parseInt(targetSquare.dataset.r);
             const targetC = parseInt(targetSquare.dataset.c);
 
-            if (!isNaN(targetR) && !isNaN(targetC)) {
-                if (targetR !== r || targetC !== c) {
-                    // Calculate valid moves locally
-                    // Note: Chess logic requires castling rights and last move. 
-                    // We might not have them perfectly in sync here without prop drilling more state,
-                    // but we can fallback to basic validation or trust the drop.
-                    // Actually, let's trust the drop event filtering done by Game.js, 
-                    // BUT to prevent the snap-back glitch we need to know if it's valid here?
-                    // In CheckerBoard we checked validity to hide the piece.
-                    
-                    // For Chess, fetching exact valid moves locally is harder because we need castlingRights etc.
-                    // Let's assume validMoves prop is up to date enough or just hide the piece optimistically if it's a different square.
-                    // Or better: check against validMoves prop.
-                    
-                    const isValidMove = validMoves.some(m => 
-                        m.from.r === r && m.from.c === c && 
-                        m.to.r === targetR && m.to.c === targetC
-                    );
-
-                    // Snap-back prevention removed to avoid visibility issues
-
-                    onPieceDrop(r, c, targetR, targetC);
-                }
+            if (!isNaN(targetR) && !isNaN(targetC) && (targetR !== r || targetC !== c)) {
+                if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
             }
         }
     };
+
+    const squareColor = isCheck 
+        ? 'bg-red-500/90' 
+        : (isDark ? theme.dark : theme.light);
+
+    return (
+        <div
+            data-r={r}
+            data-c={c}
+            onClick={() => onSquareClick(r, c)}
+            style={{ aspectRatio: '1/1' }}
+            className={`
+                board-square
+                relative w-full h-full flex items-center justify-center
+                ${squareColor}
+                ${isLastMove ? 'after:absolute after:inset-0 after:bg-yellow-400/30' : ''}
+                ${isSelected ? 'bg-yellow-200/50 ring-inset ring-4 ring-yellow-400' : ''}
+                ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
+                ${isPremoveTarget ? 'bg-red-400/40' : ''}
+                ${isCheck ? 'ring-inset ring-4 ring-red-600 shadow-[0_0_20px_rgba(220,38,38,0.6)] z-30 animate-pulse' : ''}
+                ${isTarget && canInteract ? 'cursor-pointer' : ''}
+                ${isLastMoveTarget ? 'z-30' : (piece ? 'z-20' : 'z-auto')}
+            `}
+        >
+            {(!isFlipped ? c === 0 : c === 7) && (
+                <span className={`absolute left-0.5 top-0 text-[8px] md:text-[10px] font-bold ${isDark ? theme.textDark : theme.textLight}`}>
+                    {8 - r}
+                </span>
+            )}
+            {(!isFlipped ? r === 7 : r === 0) && (
+                <span className={`absolute right-0.5 bottom-0 text-[8px] md:text-[10px] font-bold ${isDark ? theme.textDark : theme.textLight}`}>
+                    {String.fromCharCode(97 + c)}
+                </span>
+            )}
+
+            {isTarget && canInteract && (
+                <div className={`
+                    absolute z-10 rounded-full pointer-events-none
+                    ${piece ? 'inset-0 border-[4px] md:border-[6px] border-black/20' : 'w-4 h-4 md:w-6 md:h-6 bg-black/20'}
+                `} />
+            )}
+
+            <AnimatePresence mode='popLayout'>
+                {piece && (
+                    <ChessPiece 
+                        key={`piece-${r}-${c}`}
+                        type={piece} 
+                        isSelected={isSelected}
+                        set={pieceSet}
+                        onDragEnd={handleDragEnd}
+                        dragConstraints={boardRef}
+                        canDrag={canInteract && (
+                            (currentTurn === 'white' && piece === piece.toUpperCase()) ||
+                            (currentTurn === 'black' && piece === piece.toLowerCase())
+                        )}
+                        animateFrom={animDelta}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}, (prev, next) => {
+    return prev.piece === next.piece &&
+           prev.isSelected === next.isSelected &&
+           prev.isTarget === next.isTarget &&
+           prev.isLastMove === next.isLastMove &&
+           prev.isLastMoveTarget === next.isLastMoveTarget &&
+           prev.isPremoveSource === next.isPremoveSource &&
+           prev.isPremoveTarget === next.isPremoveTarget &&
+           prev.isCheck === next.isCheck &&
+           prev.canInteract === next.canInteract &&
+           prev.currentTurn === next.currentTurn &&
+           prev.theme === next.theme &&
+           prev.animDelta === next.animDelta &&
+           prev.isFlipped === next.isFlipped;
+});
+
+const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
+    
+    const canInteract = isSoloMode || (currentTurn === playerColor);
+    const boardRef = useRef(null);
+    const boardOrientation = orientation || (playerColor === 'black' ? 'black' : 'white');
+    const isFlipped = boardOrientation === 'black';
+
+    // Target Map for O(1) lookup
+    const targetMap = useMemo(() => {
+        const map = new Set();
+        validMoves.forEach(m => map.add(`${m.to.r},${m.to.c}`));
+        return map;
+    }, [validMoves]);
+
+    const themes = {
+        standard: { dark: 'bg-[#6B8E4E]', light: 'bg-[#F0E7D5]', border: 'border-[#3d2b1f]', bg: 'bg-[#3d2b1f]', textDark: 'text-[#F0E7D5]', textLight: 'text-[#6B8E4E]' },
+        wood: { dark: 'bg-[#B58863]', light: 'bg-[#F0D9B5]', border: 'border-[#5c4430]', bg: 'bg-[#5c4430]', textDark: 'text-[#F0D9B5]', textLight: 'text-[#B58863]' },
+        blue: { dark: 'bg-[#5D8AA8]', light: 'bg-[#DEE3E6]', border: 'border-[#2F4F4F]', bg: 'bg-[#2F4F4F]', textDark: 'text-[#DEE3E6]', textLight: 'text-[#5D8AA8]' },
+    };
+
+    const currentTheme = themes[theme] || themes.standard;
+
+    const { isWhiteCheck, isBlackCheck } = useMemo(() => {
+        if (!board || board.length !== 8) return { isWhiteCheck: false, isBlackCheck: false };
+        return {
+            isWhiteCheck: isInCheck(board, 'white'),
+            isBlackCheck: isInCheck(board, 'black')
+        };
+    }, [board]);
+
+    const rows = isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
+    const cols = isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
 
     return (
         <div 
@@ -97,32 +159,25 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                         aspectRatio: '1/1'
                     }}
                 >
-                    {(isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((r) => (
-                        (isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7]).map((c) => {
+                    {rows.map((r) => (
+                        cols.map((c) => {
                             const piece = board[r]?.[c];
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
-                            const isTarget = validMoves.some(m => m.to.r === r && m.to.c === c);
+                            const isTarget = targetMap.has(`${r},${c}`);
+                            
                             const isLastMove = lastMove && (
                                 (lastMove.from.r === r && lastMove.from.c === c) || 
                                 (lastMove.to.r === r && lastMove.to.c === c)
                             );
-                            
                             const isLastMoveTarget = lastMove && lastMove.to.r === r && lastMove.to.c === c;
                             
-                            // Premove Highlight
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
-                            // Check Highlight
                             const isKing = piece && piece.toLowerCase() === 'k';
                             const isCheck = isKing && ((piece === 'K' && isWhiteCheck) || (piece === 'k' && isBlackCheck));
 
-                            const squareColor = isCheck 
-                              ? 'bg-red-500/90' // High visibility for check
-                              : (isDark ? currentTheme.dark : currentTheme.light);
-                            
-                            // Calculate Animation Delta (Adjust for Orientation)
                             let animDelta = null;
                             if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
                                 const dx = (lastMove.from.c - c);
@@ -134,64 +189,29 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
                             }
 
                             return (
-                                <div
+                                <ChessSquare
                                     key={`${r}-${c}`}
-                                    data-r={r}
-                                    data-c={c}
-                                    onClick={() => onSquareClick(r, c)}
-                                    style={{ aspectRatio: '1/1' }}
-                                    className={`
-                                        board-square
-                                        relative w-full h-full flex items-center justify-center
-                                        ${squareColor}
-                                        ${isLastMove ? 'after:absolute after:inset-0 after:bg-yellow-400/30' : ''}
-                                        ${isSelected ? 'bg-yellow-200/50 ring-inset ring-4 ring-yellow-400' : ''}
-                                        ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
-                                        ${isPremoveTarget ? 'bg-red-400/40' : ''}
-                                        ${isCheck ? 'ring-inset ring-4 ring-red-600 shadow-[0_0_20px_rgba(220,38,38,0.6)] z-30 animate-pulse' : ''}
-                                        ${isTarget && isMyTurn ? 'cursor-pointer' : ''}
-                                        ${isLastMoveTarget ? 'z-30' : (piece ? 'z-20' : 'z-auto')}
-                                        `}
-                                >
-                                    {/* Coordinates - Correctly positioned relative to visuals */}
-                                    {(!isFlipped ? c === 0 : c === 7) && (
-                                        <span className={`absolute left-0.5 top-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
-                                            {8 - r}
-                                        </span>
-                                    )}
-                                    {(!isFlipped ? r === 7 : r === 0) && (
-                                        <span className={`absolute right-0.5 bottom-0 text-[8px] md:text-[10px] font-bold ${isDark ? currentTheme.textDark : currentTheme.textLight}`}>
-                                            {String.fromCharCode(97 + c)}
-                                        </span>
-                                    )}
-
-                                    {/* Valid Move Indicator */}
-                                    {isTarget && isMyTurn && (
-                                        <div className={`
-                                            absolute z-10 rounded-full pointer-events-none
-                                            ${piece ? 'inset-0 border-[4px] md:border-[6px] border-black/20' : 'w-4 h-4 md:w-6 md:h-6 bg-black/20'}
-                                        `} />
-                                    )}
-
-                                    {/* The Piece */}
-                                    <AnimatePresence mode='popLayout'>
-                                    {piece && (
-                                        <ChessPiece 
-                                            key={`piece-${r}-${c}`}
-                                            type={piece} 
-                                            isSelected={isSelected}
-                                            set={pieceSet}
-                                            onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
-                                            dragConstraints={boardRef}
-                                            canDrag={canInteract && (
-                                                (currentTurn === 'white' && piece === piece.toUpperCase()) ||
-                                                (currentTurn === 'black' && piece === piece.toLowerCase())
-                                            )}
-                                            animateFrom={animDelta}
-                                        />
-                                    )}
-                                    </AnimatePresence>
-                                </div>
+                                    r={r}
+                                    c={c}
+                                    piece={piece}
+                                    isDark={isDark}
+                                    isSelected={isSelected}
+                                    isTarget={isTarget}
+                                    isLastMove={isLastMove}
+                                    isLastMoveTarget={isLastMoveTarget}
+                                    isPremoveSource={isPremoveSource}
+                                    isPremoveTarget={isPremoveTarget}
+                                    isCheck={isCheck}
+                                    theme={currentTheme}
+                                    canInteract={canInteract}
+                                    onSquareClick={onSquareClick}
+                                    onPieceDrop={onPieceDrop}
+                                    pieceSet={pieceSet}
+                                    currentTurn={currentTurn}
+                                    animDelta={animDelta}
+                                    isFlipped={isFlipped}
+                                    boardRef={boardRef}
+                                />
                             );
                         })
                     ))}
@@ -199,4 +219,6 @@ export default function ChessBoard({ board, onSquareClick, onPieceDrop, selected
             </div>
         </div>
     );
-}
+};
+
+export default memo(ChessBoard);

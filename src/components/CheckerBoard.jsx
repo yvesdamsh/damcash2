@@ -1,24 +1,17 @@
-import React from 'react';
+import React, { memo, useRef, useMemo } from 'react';
 import CheckerPiece from './CheckerPiece';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getValidMoves as getCheckersMoves } from '@/components/checkersLogic';
 
-export default function CheckerBoard({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false, orientation = 'white' }) {
+// Sub-component memoized for performance
+const CheckerSquare = memo(({ 
+    r, c, piece, isDark, isSelected, isTarget, isPremoveSource, isPremoveTarget, 
+    theme, canInteract, onSquareClick, isTurnPiece, pieceDesign, animDelta, onPieceDrop 
+}) => {
     
-    const isMoveTarget = (r, c) => {
-        return validMoves.some(m => m.to.r === r && m.to.c === c);
-    }
-
-    const canInteract = isSoloMode || (currentTurn === playerColor);
-    const boardRef = React.useRef(null);
-    const isFlipped = orientation === 'black';
-
     // Framer Motion Drag Handler
-    const handleDragEnd = (e, info, r, c) => {
-        // Robust coordinate extraction for Mobile/Desktop
-        // Prefer event coordinates directly from the pointer event if available
+    const handleDragEnd = (e, info) => {
         let clientX, clientY;
-        
         if (e.changedTouches && e.changedTouches.length > 0) {
             clientX = e.changedTouches[0].clientX;
             clientY = e.changedTouches[0].clientY;
@@ -26,12 +19,10 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
             clientX = e.clientX;
             clientY = e.clientY;
         } else {
-            // Fallback to framer point
             clientX = info.point.x;
             clientY = info.point.y;
         }
 
-        // Use elementsFromPoint to find the square under the finger directly
         const elements = document.elementsFromPoint(clientX, clientY);
         const targetSquare = elements.find(el => el.classList.contains('board-square'));
 
@@ -39,22 +30,91 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
             const targetR = parseInt(targetSquare.dataset.r);
             const targetC = parseInt(targetSquare.dataset.c);
 
-            if (!isNaN(targetR) && !isNaN(targetC)) {
-                if (targetR !== r || targetC !== c) {
-                    // Calculate valid moves locally
-                    const possibleMoves = getCheckersMoves(board, currentTurn);
-                    const isValidMove = possibleMoves.some(m => 
-                        m.from.r === r && m.from.c === c && 
-                        m.to.r === targetR && m.to.c === targetC
-                    );
-
-                    // Snap-back prevention removed to avoid visibility issues
-
-                    if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
-                }
+            if (!isNaN(targetR) && !isNaN(targetC) && (targetR !== r || targetC !== c)) {
+                if (onPieceDrop) onPieceDrop(r, c, targetR, targetC);
             }
         }
     };
+
+    const squareColor = isDark ? theme.dark : theme.light;
+
+    return (
+        <div
+            data-r={r}
+            data-c={c}
+            onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
+            style={{ aspectRatio: '1/1' }}
+            className={`
+                board-square
+                relative w-full h-full flex items-center justify-center
+                ${squareColor}
+                ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
+                ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
+                ${isPremoveTarget ? 'bg-red-400/40' : ''}
+                ${(isTarget && canInteract) || (isTurnPiece && canInteract) ? 'cursor-pointer' : ''}
+                transition-colors duration-150
+            `}
+        >
+            {isDark && (
+                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
+            )}
+
+            {isDark && (
+                <span className="absolute left-0.5 top-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-60 font-mono">
+                    {r * 5 + Math.floor(c / 2) + 1}
+                </span>
+            )}
+
+            {isTarget && canInteract && (
+                <motion.div 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 opacity-60 z-20 pointer-events-none shadow-[0_0_5px_#00ff00]" 
+                />
+            )}
+
+            <AnimatePresence mode='popLayout'>
+                {piece !== 0 && (
+                    <CheckerPiece 
+                        key={`piece-${r}-${c}`} 
+                        type={piece} 
+                        isSelected={isSelected} 
+                        design={pieceDesign}
+                        onPieceClick={() => onSquareClick(r, c)}
+                        onDragEnd={handleDragEnd}
+                        canDrag={canInteract && isTurnPiece}
+                        animateFrom={animDelta}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}, (prev, next) => {
+    // Custom comparison for performance
+    return prev.piece === next.piece &&
+           prev.isSelected === next.isSelected &&
+           prev.isTarget === next.isTarget &&
+           prev.isPremoveSource === next.isPremoveSource &&
+           prev.isPremoveTarget === next.isPremoveTarget &&
+           prev.canInteract === next.canInteract &&
+           prev.isTurnPiece === next.isTurnPiece &&
+           prev.theme === next.theme &&
+           prev.pieceDesign === next.pieceDesign &&
+           prev.animDelta === next.animDelta;
+});
+
+const CheckerBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
+    
+    const boardRef = useRef(null);
+    const isFlipped = orientation === 'black';
+    const canInteract = isSoloMode || (currentTurn === playerColor);
+
+    // Memoize move targets for fast lookup
+    const targetMap = useMemo(() => {
+        const map = new Set();
+        validMoves.forEach(m => map.add(`${m.to.r},${m.to.c}`));
+        return map;
+    }, [validMoves]);
 
     const themes = {
         standard: { dark: 'bg-[#5c4430]', light: 'bg-[#e8dcc5]', border: 'border-[#5c4430]', frame: 'bg-[#4a3728]' },
@@ -63,6 +123,8 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
     };
 
     const currentTheme = themes[theme] || themes.standard;
+    const rows = isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9];
+    const cols = isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9];
 
     return (
         <div 
@@ -80,25 +142,21 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                         aspectRatio: '1/1'
                     }}
                 >
-                    {(isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9]).map((r) => (
-                        (isFlipped ? [9,8,7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7,8,9]).map((c) => {
+                    {rows.map((r) => (
+                        cols.map((c) => {
                             const piece = board[r]?.[c];
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
-                            const isTarget = isMoveTarget(r, c);
-
-                            const squareColor = isDark ? currentTheme.dark : currentTheme.light;
+                            const isTarget = targetMap.has(`${r},${c}`);
 
                             const isTurnPiece = piece !== 0 && (
                                 (currentTurn === 'white' && (piece === 1 || piece === 3)) ||
                                 (currentTurn === 'black' && (piece === 2 || piece === 4))
                             );
 
-                            // Premove Highlight
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
-                            // Animation Delta
                             let animDelta = null;
                             if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
                                 const dx = (lastMove.from.c - c);
@@ -110,56 +168,24 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
                             }
 
                             return (
-                                <div
+                                <CheckerSquare
                                     key={`${r}-${c}`}
-                                    data-r={r}
-                                    data-c={c}
-                                    onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
-                                    style={{ aspectRatio: '1/1' }}
-                                    className={`
-                                        board-square
-                                        relative w-full h-full flex items-center justify-center
-                                        ${squareColor}
-                                        ${isSelected ? 'ring-4 ring-yellow-400 z-10' : ''}
-                                        ${isPremoveSource ? 'bg-red-200/60 ring-inset ring-4 ring-red-400' : ''}
-                                        ${isPremoveTarget ? 'bg-red-400/40' : ''}
-                                        ${(isTarget && canInteract) || (isTurnPiece && canInteract) ? 'cursor-pointer' : ''}
-                                        transition-colors duration-150
-                                    `}
-                                >
-                                    {isDark && (
-                                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
-                                    )}
-
-                                    {isDark && (
-                                        <span className="absolute left-0.5 top-0.5 text-[8px] md:text-[10px] text-[#d4c5b0] opacity-60 font-mono">
-                                            {r * 5 + Math.floor(c / 2) + 1}
-                                        </span>
-                                    )}
-
-                                    {isTarget && canInteract && (
-                                        <motion.div 
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className="absolute w-4 h-4 md:w-6 md:h-6 rounded-full bg-green-500 opacity-60 z-20 pointer-events-none shadow-[0_0_5px_#00ff00]" 
-                                        />
-                                    )}
-
-                                    <AnimatePresence mode='popLayout'>
-                                        {piece !== 0 && (
-                                            <CheckerPiece 
-                                                key={`piece-${r}-${c}`} 
-                                                type={piece} 
-                                                isSelected={isSelected} 
-                                                design={pieceDesign}
-                                                onPieceClick={() => onSquareClick(r, c)}
-                                                onDragEnd={(e, info) => handleDragEnd(e, info, r, c)}
-                                                canDrag={canInteract && isTurnPiece}
-                                                animateFrom={animDelta}
-                                            />
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                    r={r}
+                                    c={c}
+                                    piece={piece}
+                                    isDark={isDark}
+                                    isSelected={isSelected}
+                                    isTarget={isTarget}
+                                    isPremoveSource={isPremoveSource}
+                                    isPremoveTarget={isPremoveTarget}
+                                    theme={currentTheme}
+                                    canInteract={canInteract}
+                                    onSquareClick={onSquareClick}
+                                    isTurnPiece={isTurnPiece}
+                                    pieceDesign={pieceDesign}
+                                    animDelta={animDelta}
+                                    onPieceDrop={onPieceDrop}
+                                />
                             );
                         })
                     ))}
@@ -167,4 +193,6 @@ export default function CheckerBoard({ board, onSquareClick, onPieceDrop, select
             </div>
         </div>
     );
-}
+};
+
+export default memo(CheckerBoard);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 
 const PIECE_IMAGES = {
@@ -16,7 +16,7 @@ const PIECE_IMAGES = {
     'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg'
 };
 
-export default function ChessPiece({ type, isSelected, animateFrom, set = 'standard', onDragEnd, dragConstraints, canDrag = true }) {
+const ChessPiece = memo(({ type, isSelected, animateFrom, set = 'standard', onDragEnd, dragConstraints, canDrag = true }) => {
     if (!type) return null;
 
     // Map for unicode pieces
@@ -39,7 +39,8 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
         className: `chess-piece w-full h-full flex items-center justify-center ${isSelected ? 'drop-shadow-xl' : (canDrag ? 'cursor-grab' : 'cursor-default')}`,
         style: { touchAction: 'none', WebkitUserSelect: 'none', userSelect: 'none' },
         initial,
-        animate
+        animate,
+        layout: true
     };
 
     if (set === 'unicode') {
@@ -70,4 +71,6 @@ export default function ChessPiece({ type, isSelected, animateFrom, set = 'stand
             />
         </motion.div>
     );
-}
+});
+
+export default ChessPiece;

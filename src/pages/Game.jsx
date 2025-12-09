@@ -72,6 +72,22 @@ export default function Game() {
     const searchParams = new URLSearchParams(location.search);
     const [id, setId] = useState(searchParams.get('id'));
 
+    // Preload heavy logic modules
+    useEffect(() => {
+        const preload = async () => {
+            await Promise.all([
+                import('@/components/checkersLogic'),
+                import('@/components/chessLogic')
+            ]);
+        };
+        // Idle callback for preloading
+        if (window.requestIdleCallback) {
+            window.requestIdleCallback(preload);
+        } else {
+            setTimeout(preload, 1000);
+        }
+    }, []);
+
     useEffect(() => {
         const gameId = searchParams.get('id');
         // Reset game state immediately when ID changes to avoid showing old data (timer, board)
