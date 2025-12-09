@@ -267,15 +267,35 @@ export default async function handler(req) {
             const levelUpdatesA = await processLevelUpdate(whiteId, whiteUser.xp, xpA);
             const levelUpdatesB = await processLevelUpdate(blackId, blackUser.xp, xpB);
             
+                    // Notify Followers Helper
+            const notifyFollowers = async (userId, milestone) => {
+                try {
+                    const follows = await base44.asServiceRole.entities.Follow.filter({ target_id: userId });
+                    const actor = await base44.asServiceRole.entities.User.get(userId);
+                    const name = actor.username || actor.full_name || 'Un joueur';
+                    
+                    for (const f of follows) {
+                        await base44.asServiceRole.entities.Notification.create({
+                            recipient_id: f.follower_id,
+                            type: "info",
+                            title: "Activité Ami",
+                            message: `${name} a obtenu ${milestone} !`,
+                            link: `/Profile?id=${userId}`
+                        });
+                    }
+                } catch (e) { console.error("Follower notify error", e); }
+            };
+
             // Helper to update tier and notify
             const processTierUpdate = async (userId, oldTier, newElo, gameType) => {
                 const newTier = getTier(newElo);
                 if (oldTier !== newTier) {
                     // Badge/Notify logic
                     if (newTier === 'Maître' || newTier === 'Pro') {
+                        const badgeName = `Promotion ${newTier}`;
                         await base44.asServiceRole.entities.UserBadge.create({
                             user_id: userId,
-                            name: `Promotion ${newTier}`,
+                            name: badgeName,
                             icon: "Award",
                             awarded_at: new Date().toISOString()
                         });
@@ -286,6 +306,8 @@ export default async function handler(req) {
                             message: `Félicitations ! Vous êtes passé au rang ${newTier} en ${gameType === 'chess' ? 'Échecs' : 'Dames'}.`,
                             link: `/Profile`
                         });
+                        // Notify Followers
+                        await notifyFollowers(userId, badgeName);
                     }
                 }
                 return newTier;

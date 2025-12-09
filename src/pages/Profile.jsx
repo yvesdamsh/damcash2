@@ -26,6 +26,8 @@ export default function Profile() {
     const [favoriteGames, setFavoriteGames] = useState([]);
     const [gameHistory, setGameHistory] = useState([]);
     const [badges, setBadges] = useState([]);
+    const [followingList, setFollowingList] = useState([]);
+    const [isFollowing, setIsFollowing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editForm, setEditForm] = useState({ 
@@ -177,6 +179,19 @@ export default function Profile() {
                 }
                 setBadges(userBadges);
 
+                // Fetch Following List
+                const following = await base44.entities.Follow.filter({ follower_id: u.id });
+                if (following.length > 0) {
+                    const followingUsers = await Promise.all(following.map(f => base44.entities.User.get(f.target_id).catch(()=>null)));
+                    setFollowingList(followingUsers.filter(u => u));
+                }
+
+                // Check if current user is following this profile
+                if (!isOwnProfileLocal && currentUser) {
+                    const amIFollowing = await base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: u.id });
+                    setIsFollowing(amIFollowing.length > 0);
+                }
+
             } catch (e) {
                 console.error(e);
                 if (!profileId) navigate('/Home');
@@ -217,6 +232,28 @@ export default function Profile() {
             setIsEditing(false);
         } catch (error) {
             console.error("Update failed", error);
+        }
+    };
+
+    const handleFollowToggle = async () => {
+        const currentUser = await base44.auth.me().catch(()=>null);
+        if (!currentUser) return;
+
+        try {
+            if (isFollowing) {
+                const record = await base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: user.id });
+                if (record.length) await base44.entities.Follow.delete(record[0].id);
+                setIsFollowing(false);
+            } else {
+                await base44.entities.Follow.create({
+                    follower_id: currentUser.id,
+                    target_id: user.id,
+                    created_at: new Date().toISOString()
+                });
+                setIsFollowing(true);
+            }
+        } catch (e) {
+            console.error("Follow action failed", e);
         }
     };
 
@@ -484,7 +521,7 @@ export default function Profile() {
                             >
                                 <Share2 className="w-4 h-4 mr-2" /> {t('profile.share')}
                             </Button>
-                            {isOwnProfile && (
+                            {isOwnProfile ? (
                                 <Button 
                                     variant="destructive"
                                     onClick={async () => {
@@ -498,6 +535,14 @@ export default function Profile() {
                                     className="bg-red-600 hover:bg-red-700 text-white shadow-md"
                                 >
                                     <LogOut className="w-4 h-4 mr-2" /> {t('nav.logout')}
+                                </Button>
+                            ) : (
+                                <Button 
+                                    variant={isFollowing ? "outline" : "default"}
+                                    onClick={handleFollowToggle}
+                                    className={isFollowing ? "border-[#4a3728] text-[#4a3728]" : "bg-[#4a3728] text-white hover:bg-[#2c1e12]"}
+                                >
+                                    {isFollowing ? t('profile.unfollow') : t('profile.follow')}
                                 </Button>
                             )}
                             {badges.length > 0 && (
@@ -518,6 +563,7 @@ export default function Profile() {
                             <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_stats')}</TabsTrigger>
                             <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_history')}</TabsTrigger>
                             <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_badges')}</TabsTrigger>
+                            <TabsTrigger value="following" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_following')}</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="overview">
@@ -798,6 +844,27 @@ export default function Profile() {
                                  </div>
                              )}
                          </div>
+                    </TabsContent>
+
+                    <TabsContent value="following">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {followingList.length > 0 ? followingList.map(u => (
+                                <div key={u.id} onClick={() => navigate(`/Profile?id=${u.id}`)} className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm border border-[#d4c5b0] cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden">
+                                        {u.avatar_url ? <img src={u.avatar_url} className="w-full h-full object-cover" /> : <User className="w-full h-full p-2 text-gray-400" />}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-[#4a3728]">{u.username || u.full_name || 'Joueur'}</div>
+                                        <div className="text-xs text-gray-500">Lvl {u.level || 1}</div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="col-span-full text-center py-12 text-gray-500">
+                                    <User className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                                    <p>{t('profile.following_empty')}</p>
+                                </div>
+                            )}
+                        </div>
                     </TabsContent>
                     </Tabs>
                 </div>
