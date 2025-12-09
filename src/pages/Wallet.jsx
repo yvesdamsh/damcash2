@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useLanguage } from '@/components/LanguageContext';
 import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownLeft, History, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,8 @@ export default function WalletPage() {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const { t } = useLanguage();
 
     const fetchWallet = async () => {
         try {
@@ -38,14 +41,14 @@ export default function WalletPage() {
     const handleDeposit = async () => {
         try {
             await base44.functions.invoke('walletManager', { action: 'deposit', amount: 100 });
-            toast.success("100 crédits ajoutés ! (Démo)");
+            toast.success(t('wallet.deposit_success', { amount: 100 }) || "100 crédits ajoutés !");
             fetchWallet();
         } catch (e) {
-            toast.error("Erreur dépôt");
+            toast.error(t('wallet.deposit_error') || "Erreur dépôt");
         }
     };
 
-    if (loading) return <div className="p-8 text-center">Chargement du portefeuille...</div>;
+    if (loading) return <div className="p-8 text-center">{t('wallet.loading') || "Chargement..."}</div>;
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-8">
@@ -55,7 +58,7 @@ export default function WalletPage() {
                     <CardContent className="p-8 flex flex-col justify-between h-full">
                         <div>
                             <h2 className="text-lg opacity-80 mb-1 flex items-center gap-2">
-                                <Wallet className="w-5 h-5" /> Solde Disponible
+                                <Wallet className="w-5 h-5" /> {t('wallet.balance_available') || "Solde Disponible"}
                             </h2>
                             <div className="text-5xl font-black tracking-tight flex items-baseline gap-2">
                                 {balance} <span className="text-xl opacity-60">D$</span>
@@ -66,27 +69,27 @@ export default function WalletPage() {
                                 onClick={handleDeposit}
                                 className="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white border-none"
                             >
-                                <Plus className="w-4 h-4 mr-2" /> Acheter des Coins
+                                <Plus className="w-4 h-4 mr-2" /> {t('wallet.buy_coins') || "Acheter des Coins"}
                             </Button>
                             <Button 
                                 onClick={async () => {
-                                    const amount = prompt("Montant à retirer :");
+                                    const amount = prompt(t('wallet.withdraw_amount') || "Montant à retirer :");
                                     if (amount && !isNaN(amount) && amount > 0) {
                                         try {
                                             const res = await base44.functions.invoke('walletManager', { action: 'withdraw', amount: parseFloat(amount) });
                                             if (res.data.error) {
                                                 toast.error(res.data.error);
                                             } else {
-                                                toast.success("Retrait demandé !");
+                                                toast.success(t('wallet.withdraw_success') || "Retrait demandé !");
                                                 fetchWallet();
                                             }
-                                        } catch(e) { toast.error("Erreur retrait"); }
+                                        } catch(e) { toast.error(t('wallet.withdraw_error') || "Erreur retrait"); }
                                     }
                                 }}
                                 variant="outline"
                                 className="flex-1 border-[#e8dcc5] text-[#e8dcc5] hover:bg-[#e8dcc5] hover:text-[#4a3728]"
                             >
-                                <Minus className="w-4 h-4 mr-2" /> Retirer (Cash)
+                                <Minus className="w-4 h-4 mr-2" /> {t('wallet.withdraw') || "Retirer (Cash)"}
                             </Button>
                         </div>
                     </CardContent>
@@ -96,7 +99,7 @@ export default function WalletPage() {
                 <div className="flex-1 grid grid-cols-1 gap-4">
                     <Card className="bg-white border-[#d4c5b0]">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-500">Gains Totaux</CardTitle>
+                            <CardTitle className="text-sm text-gray-500">{t('wallet.total_earnings') || "Gains Totaux"}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-green-600 flex items-center gap-2">
@@ -107,7 +110,7 @@ export default function WalletPage() {
                     </Card>
                     <Card className="bg-white border-[#d4c5b0]">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-sm text-gray-500">Mises Jouées</CardTitle>
+                            <CardTitle className="text-sm text-gray-500">{t('wallet.total_wagers') || "Mises Jouées"}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold text-red-500 flex items-center gap-2">
@@ -122,11 +125,11 @@ export default function WalletPage() {
             {/* Transaction History */}
             <div className="space-y-4">
                 <h3 className="text-xl font-bold text-[#4a3728] flex items-center gap-2">
-                    <History className="w-5 h-5" /> Historique des transactions
+                    <History className="w-5 h-5" /> {t('wallet.history') || "Historique des transactions"}
                 </h3>
                 <div className="bg-white rounded-xl border border-[#d4c5b0] overflow-hidden">
                     {transactions.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500">Aucune transaction récente.</div>
+                        <div className="p-8 text-center text-gray-500">{t('wallet.no_transactions') || "Aucune transaction récente."}</div>
                     ) : (
                         <div className="divide-y divide-gray-100">
                             {transactions.map(tx => (
