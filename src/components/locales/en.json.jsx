@@ -93,7 +93,7 @@
   "shop.product.board_marble.name": "Marble",
   "shop.product.board_marble.desc": "Luxurious marble surface",
   "shop.product.board_glass.name": "Glass",
-  "shop.product.board_glass.desc": "Modern glass transparency"
+  "shop.product.board_glass.desc": "Modern glass transparency",
   "nav.sound.on": "Sound: On",
   "nav.sound.off": "Sound: Off",
   "nav.mode.chess": "Mode: Chess",
