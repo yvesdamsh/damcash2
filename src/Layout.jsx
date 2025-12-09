@@ -197,6 +197,7 @@ function LayoutContent({ children }) {
         { label: t('nav.teams'), path: '/Teams', icon: Users, public: false },
         { label: t('nav.training'), path: '/Training', icon: Brain, public: false },
         { label: t('nav.profile'), path: '/Profile', icon: User, public: false },
+        { label: t('nav.preferences'), path: '/Preferences', icon: SettingsMenu, public: false },
         ...(user?.role === 'admin' ? [{ label: t('nav.admin'), path: '/AdminDashboard', icon: Shield, public: false }] : []),
         ].filter(item => user || item.public);
 

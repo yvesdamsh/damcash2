@@ -36,6 +36,23 @@ class SoundManager {
 
     play(name) {
         if (!this.enabled || !SOUNDS[name]) return;
+
+        // Granular control check
+        if (typeof window !== 'undefined') {
+            // Check Base44 user preferences if cached/available
+            // We can't access Base44 auth synchronously easily here if it's a plain class
+            // But we can check a local storage cache of preferences or rely on the caller to check
+            
+            // However, to keep it simple and robust:
+            // The SoundManager.enabled toggles ALL sound.
+            // But granular preferences might exist. 
+            // We can rely on the calling code to check granular prefs?
+            // Or we can try to read from localStorage if we sync granular prefs there too.
+            // Let's assume we might store 'sound_move', 'sound_capture' in localStorage too for quick access?
+            // Or just check if we have a user object attached to window or something? No.
+            
+            // For now, respect the global enabled.
+        }
         
         try {
             if (typeof Audio === 'undefined') return;

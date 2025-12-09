@@ -21,6 +21,7 @@ import Shop from './pages/Shop';
 import Academy from './pages/Academy';
 import AdminDashboard from './pages/AdminDashboard';
 import Lesson from './pages/Lesson';
+import Preferences from './pages/Preferences';
 import __Layout from './Layout.jsx';
 
 
@@ -48,6 +49,7 @@ export const PAGES = {
     "Academy": Academy,
     "AdminDashboard": AdminDashboard,
     "Lesson": Lesson,
+    "Preferences": Preferences,
 }
 
 export const pagesConfig = {
