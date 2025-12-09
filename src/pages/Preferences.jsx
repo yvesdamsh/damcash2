@@ -52,6 +52,11 @@ export default function Preferences() {
             await base44.auth.updateMe({ preferences });
             
             // Sync with SoundManager/LocalStorage
+            localStorage.setItem('damcash_sound_move', preferences.sound_move);
+            localStorage.setItem('damcash_sound_capture', preferences.sound_capture);
+            localStorage.setItem('damcash_sound_notify', preferences.sound_notify);
+
+            // Global toggle if all are off
             if (preferences.sound_move || preferences.sound_capture || preferences.sound_notify) {
                 localStorage.setItem('soundEnabled', 'true');
                 if (!soundManager.isEnabled()) soundManager.toggle();
