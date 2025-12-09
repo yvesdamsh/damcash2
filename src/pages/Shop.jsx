@@ -89,7 +89,9 @@ export default function Shop() {
                             <h3 className="font-bold text-[#4a3728] line-clamp-1">{t(product.name)}</h3>
                             <p className="text-xs text-gray-500">
                                 {product.type === 'avatar' ? t('shop.type_avatar') : 
-                                 product.type === 'theme' ? t('shop.type_theme') : 
+                                 product.type === 'avatar_frame' ? t('shop.type_avatar_frame') || 'Frame' :
+                                 product.type === 'profile_theme' ? t('shop.type_profile_theme') || 'Profile Theme' :
+                                 product.type === 'board_theme' || product.type === 'theme' ? t('shop.type_board_theme') || 'Board Theme' :
                                  t('shop.type_pieces')}
                             </p>
                         </div>
@@ -122,7 +124,9 @@ export default function Shop() {
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin w-10 h-10 text-[#4a3728]" /></div>;
 
     const avatars = products.filter(p => p.type === 'avatar');
-    const themes = products.filter(p => p.type === 'theme');
+    const frames = products.filter(p => p.type === 'avatar_frame');
+    const profileThemes = products.filter(p => p.type === 'profile_theme');
+    const boardThemes = products.filter(p => p.type === 'board_theme' || p.type === 'theme');
     const pieces = products.filter(p => p.type === 'piece_set');
 
     return (
@@ -144,7 +148,9 @@ export default function Shop() {
                 <TabsList className="bg-[#e8dcc5] w-full justify-start overflow-x-auto">
                     <TabsTrigger value="all" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">{t('shop.tab_all')}</TabsTrigger>
                     <TabsTrigger value="avatars" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><User className="w-4 h-4 mr-2"/> {t('shop.tab_avatars')}</TabsTrigger>
-                    <TabsTrigger value="themes" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Palette className="w-4 h-4 mr-2"/> {t('shop.tab_themes')}</TabsTrigger>
+                    <TabsTrigger value="frames" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><User className="w-4 h-4 mr-2"/> {t('shop.tab_frames') || 'Frames'}</TabsTrigger>
+                    <TabsTrigger value="profile" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Palette className="w-4 h-4 mr-2"/> {t('shop.tab_profile') || 'Profile'}</TabsTrigger>
+                    <TabsTrigger value="board" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Palette className="w-4 h-4 mr-2"/> {t('shop.tab_board') || 'Board'}</TabsTrigger>
                     <TabsTrigger value="pieces" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]"><Shield className="w-4 h-4 mr-2"/> {t('shop.tab_pieces')}</TabsTrigger>
                 </TabsList>
 
@@ -155,8 +161,14 @@ export default function Shop() {
                     <TabsContent value="avatars" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {avatars.map(p => <ProductCard key={p.id} product={p} />)}
                     </TabsContent>
-                    <TabsContent value="themes" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {themes.map(p => <ProductCard key={p.id} product={p} />)}
+                    <TabsContent value="frames" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {frames.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                    <TabsContent value="profile" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {profileThemes.map(p => <ProductCard key={p.id} product={p} />)}
+                    </TabsContent>
+                    <TabsContent value="board" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {boardThemes.map(p => <ProductCard key={p.id} product={p} />)}
                     </TabsContent>
                     <TabsContent value="pieces" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {pieces.map(p => <ProductCard key={p.id} product={p} />)}
