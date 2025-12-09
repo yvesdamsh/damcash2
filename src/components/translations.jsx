@@ -1230,6 +1230,11 @@ export const translations = {
     "nav.teams": "Teams",
     "nav.training": "Training",
     "nav.profile": "Profil",
+    "nav.preferences": "Einstellungen",
+    "preferences.subtitle": "Passen Sie Ihr Spielerlebnis an",
+    "preferences.visual": "Visuell",
+    "preferences.sound": "Ton",
+    "preferences.notifications": "Benachrichtigungen",
     "nav.admin": "Admin",
     "nav.logout": "Abmelden",
 
@@ -3031,6 +3036,11 @@ export const translations = {
     "nav.teams": "Équipes",
     "nav.training": "Entraînement",
     "nav.profile": "Profil",
+    "nav.preferences": "Préférences",
+    "preferences.subtitle": "Personnalisez votre expérience de jeu",
+    "preferences.visual": "Visuel",
+    "preferences.sound": "Son",
+    "preferences.notifications": "Notifications",
     "nav.admin": "Admin",
     "nav.logout": "Déconnexion",
 
