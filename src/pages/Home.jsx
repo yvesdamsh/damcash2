@@ -16,6 +16,7 @@ import UserSearchDialog from '@/components/UserSearchDialog';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
 import RejoinGameDialog from '@/components/RejoinGameDialog';
+import NextTournamentBanner from '@/components/NextTournamentBanner';
 
 export default function Home() {
     const { t } = useLanguage();
@@ -672,6 +673,8 @@ export default function Home() {
 
             <PlayerSearchBar />
 
+            <NextTournamentBanner />
+
             <div className="flex justify-center gap-4 mb-8">
                 <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ {t('game.checkers')}</button>
                 <button onClick={() => saveGameTypePref('chess')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'chess' ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'}`}>♟️ {t('game.chess')}</button>
@@ -740,19 +743,21 @@ export default function Home() {
                     {/* Game Actions - Moved to Top */}
                     <div className="grid md:grid-cols-2 gap-8">
                         <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
-                            <div className="absolute top-4 right-4 flex gap-2">
-                                <Link to="/Tournaments">
-                                    <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
-                                        <Trophy className="w-4 h-4 mr-2" /> {t('tournaments.title')}
-                                    </Button>
-                                </Link>
-                                <Link to="/GameHistory">
-                                    <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
-                                        <History className="w-4 h-4 mr-2" /> {t('nav.history')}
-                                    </Button>
-                                </Link>
-                            </div>
-                            <CardHeader><CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> {t('home.quick_match')}</CardTitle></CardHeader>
+                            <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2">
+                                <CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> {t('home.quick_match')}</CardTitle>
+                                <div className="flex gap-2 w-full md:w-auto">
+                                    <Link to="/Tournaments" className="flex-1 md:flex-none">
+                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
+                                            <Trophy className="w-4 h-4 mr-2" /> {t('tournaments.title')}
+                                        </Button>
+                                    </Link>
+                                    <Link to="/GameHistory" className="flex-1 md:flex-none">
+                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
+                                            <History className="w-4 h-4 mr-2" /> {t('nav.history')}
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </CardHeader>
                             <CardContent className="space-y-6">
                                 <p className="opacity-90">{t('home.quick_match_desc')}</p>
                                 <div className="flex flex-col gap-3">
