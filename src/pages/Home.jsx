@@ -740,7 +740,12 @@ export default function Home() {
                     {/* Game Actions - Moved to Top */}
                     <div className="grid md:grid-cols-2 gap-8">
                         <Card className="bg-gradient-to-br from-[#6b5138] to-[#4a3728] text-[#e8dcc5] border-none shadow-xl transform transition-all hover:scale-[1.02] relative">
-                            <div className="absolute top-4 right-4">
+                            <div className="absolute top-4 right-4 flex gap-2">
+                                <Link to="/Tournaments">
+                                    <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
+                                        <Trophy className="w-4 h-4 mr-2" /> {t('tournaments.title')}
+                                    </Button>
+                                </Link>
                                 <Link to="/GameHistory">
                                     <Button size="sm" variant="ghost" className="text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
                                         <History className="w-4 h-4 mr-2" /> {t('nav.history')}

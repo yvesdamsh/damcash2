@@ -312,12 +312,30 @@ async function finishTournament(tournament, base44) {
             });
         }
 
-        // Standard: 1st = 50%, 2nd = 30%, 3rd = 20% of NET pool
-        const distribution = [0.5, 0.3, 0.2];
-        for (let i = 0; i < Math.min(sorted.length, 3); i++) {
-            const p = sorted[i];
-            const amount = Math.floor(netPool * distribution[i]);
-            if (amount > 0) {
+        // Distribution Logic
+        let distribution = { 1: 0.5, 2: 0.3, 3: 0.2 }; // Default
+        
+        if (tournament.prize_distribution) {
+            try {
+                const parsed = JSON.parse(tournament.prize_distribution);
+                // Validate sums to approx 1? Or just use as weights?
+                // Assuming percentages like { "1": 0.5, "2": 0.3 }
+                distribution = parsed;
+            } catch (e) {
+                console.error("Invalid prize distribution JSON", e);
+            }
+        }
+
+        // Apply distribution
+        for (let i = 0; i < sorted.length; i++) {
+            const rank = i + 1;
+            const percentage = distribution[rank] || 0;
+            
+            if (percentage > 0) {
+                const p = sorted[i];
+                const amount = Math.floor(netPool * percentage);
+                
+                if (amount > 0) {
                 // Check wallet
                 const wallets = await base44.asServiceRole.entities.Wallet.filter({ user_id: p.user_id });
                 let wallet = wallets[0];
