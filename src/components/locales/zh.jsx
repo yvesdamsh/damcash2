@@ -1,4 +1,4 @@
-{
+export default {
   "nav.home": "首页",
   "nav.tv": "电视",
   "nav.lobby": "大厅",
@@ -500,7 +500,7 @@
   "leagues.error_login": "登录以加入联赛",
   "leagues.success_join": "欢迎加入联赛！",
   "leagues.error_join": "加入联赛出错",
-  "tv.title": "Damcash 电视",
+  "tv.title": "Damcash TV",
   "tv.subtitle": "观看顶级玩家的现场竞技",
   "tv.no_games_title": "未找到对局",
   "tv.no_games_desc": "尝试更改筛选条件。",
@@ -620,4 +620,4 @@
   "wallet.transaction.entry_fee": "报名费",
   "wallet.transaction.withdrawal": "提现",
   "wallet.transaction.prize": "奖金"
-}
+};

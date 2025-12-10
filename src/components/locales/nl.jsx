@@ -1,4 +1,4 @@
-{
+export default {
   "nav.home": "Home",
   "nav.tv": "TV",
   "nav.lobby": "Lobby",
@@ -178,7 +178,7 @@
   "home.harder": "Moeilijker",
   "home.easier": "Makkelijker",
   "home.create_private_btn": "Privé maken",
-  "home.play": "Spelen",
+  "home.play": "Spielen",
   "home.ai_easy": "Makkelijk",
   "home.ai_medium": "Gemiddeld",
   "home.ai_hard": "Moeilijk",
@@ -620,4 +620,4 @@
   "wallet.transaction.entry_fee": "Inschrijfgeld",
   "wallet.transaction.withdrawal": "Geldopname",
   "wallet.transaction.prize": "Prijs"
-}
+};
