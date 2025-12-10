@@ -197,54 +197,58 @@ const getAllPlayableMoves = (board, turn, activePiece = null) => {
 
 const WEIGHTS = {
     PIECE: 100,
-    KING: 300,
-    BACK_ROW: 30,      // Stronger back row preference
-    CENTER: 15,        // Stronger center control
-    EDGE: 5,           // Edges are safer
-    ADVANCED: 5,       // Push forward
-    MOBILITY: 2,       // Number of moves available
-    DOG_HOLE: -20,     // Penalty for being trapped in corners
-    BRIDGE: 25,        // Bonus for holding bridge
-    OREO: 25,          // Bonus for Oreo pattern
-    PROTECTED: 15,     // Increased bonus for protected pieces
-    HANGING: -60,      // Stronger penalty for hanging pieces
-    CLASSIC_CENTER: 15,// Stronger center control
-    MODERN_FLANK: 8,   // Modern flank structures
-    SACRIFICE_RECOVERY: 30 // Bonus for positions that look losing materially but have high mobility/attack potential (heuristic)
-    };
+    KING: 450,         // Critically increased: Kings are now worth 4.5 pieces to prioritize crowning
+    BACK_ROW: 30,      
+    CENTER: 25,        // Stronger center control
+    EDGE: 10,          
+    ADVANCED: 15,      // Increased advancement incentive
+    PROMOTION_ZONE: 80,// Huge bonus for being 1 step away from king
+    MOBILITY: 8,       // Increased mobility weight
+    DOG_HOLE: -40,     
+    BRIDGE: 35,        
+    OREO: 35,          
+    PROTECTED: 25,     
+    HANGING: -150,     // Massive penalty for hanging pieces to prevent simple blunders
+    CLASSIC_CENTER: 25,
+    MODERN_FLANK: 15,
+    RUNAWAY_PAWN: 100  // Bonus for pawn with clear path to crown
+};
 
-    // Helper to check if a square is threatened (basic 1-ply check)
-    const isUnderAttack = (board, r, c, turn) => {
-    const opponent = turn === 'white' ? 'black' : 'white';
+// Helper to check if a square is threatened (basic 1-ply check)
+const isUnderAttack = (board, r, c, turn) => {
     const isWhite = turn === 'white';
-    // Simple check: can an opponent pawn jump this?
     // Opponent pawns move opposite direction.
-    const opDir = isWhite ? 1 : -1; // Black moves down (+1), White moves up (-1)
+    const opDir = isWhite ? 1 : -1; 
 
     // Check incoming diagonals for opponent pieces
-    const fromDirs = [[-opDir, -1], [-opDir, 1]]; 
+    const fromDirs = [[-opDir, -1], [-opDir, 1], [opDir, -1], [opDir, 1]]; // Check all 4 dirs for Kings
+
     for (const [dr, dc] of fromDirs) {
         const nr = r + dr, nc = c + dc;
         if (isValidPos(nr, nc)) {
             const p = board[nr][nc];
             if (isOpponent(p, turn)) {
-                // Check if space behind is empty (jumpable)
-                const jr = r - dr, jc = c - dc; // The landing spot relative to piece
-                // Actually the jump is FROM opponent TO landing.
-                // Opponent at nr,nc. Jumps over r,c. Lands at r + (r-nr), c + (c-nc).
-                const lr = r + (r - nr), lc = c + (c - nc);
-                if (isValidPos(lr, lc) && board[lr][lc] === 0) return true;
+                // If it's a pawn, it can only attack forward (relative to itself)
+                // Opponent pawn at nr,nc attacks r,c if direction matches
+                const isKing = p === 3 || p === 4;
+                const isOpponentPawnMove = (isWhite && dr === -1) || (!isWhite && dr === 1); // Normal pawn attack dir
+
+                if (isKing || isOpponentPawnMove) {
+                    // Check if landing spot behind us is empty
+                    const lr = r - dr, lc = c - dc;
+                    if (isValidPos(lr, lc) && board[lr][lc] === 0) return true;
+                }
             }
         }
     }
     return false;
-    };
+};
 
-    const evaluate = (board, aiColor, turn) => {
+const evaluate = (board, aiColor, turn) => {
     let score = 0;
     let whitePieces = 0;
     let blackPieces = 0;
-    
+
     // Basic Material & Position
     for (let r = 0; r < 10; r++) {
         for (let c = 0; c < 10; c++) {
@@ -253,51 +257,57 @@ const WEIGHTS = {
 
             const isWhite = piece === 1 || piece === 3;
             const isKing = piece === 3 || piece === 4;
-            
+
             let value = isKing ? WEIGHTS.KING : WEIGHTS.PIECE;
 
             // Position Bonuses
-            // Edges (Safe from double jumps often)
             if (c === 0 || c === 9) value += WEIGHTS.EDGE;
-            
-            // --- STRATEGY: CLASSIC VS MODERN ---
-            // Classic: Control the "Trictrac" / Center zone (rows 4-5, cols 3-6)
             if (c >= 3 && c <= 6 && r >= 4 && r <= 5) value += WEIGHTS.CLASSIC_CENTER;
-
-            // Modern: Control flanks but keep connection (Outpost squares)
-            // e.g., Squares 24, 27, 28, 29 etc mapped to (r,c)
             if ((c === 2 || c === 7) && (r >= 3 && r <= 6)) value += WEIGHTS.MODERN_FLANK;
 
-            // Advancement (for non-kings)
+            // Advancement & Crowning Strategy (for non-kings)
             if (!isKing) {
                 const rank = isWhite ? (9 - r) : r;
-                value += rank * rank * 0.5; 
-                
-                // Back row safety (Keep pieces on home row as long as possible)
+                // Exponential advancement value
+                value += rank * rank * 1.5; 
+
+                // Almost King Bonus
+                if (rank >= 7) value += WEIGHTS.PROMOTION_ZONE;
+
+                // Runaway Pawn Detection (No enemies in front in adjacent columns)
+                let isRunaway = true;
+                const forward = isWhite ? -1 : 1;
+                for (let i = 1; i <= (isWhite ? r : 9 - r); i++) {
+                    const checkR = r + (forward * i);
+                    // Check simple cone of vision for blockers
+                    if (isValidPos(checkR, c) && board[checkR][c] !== 0) isRunaway = false;
+                    if (isValidPos(checkR, c-1) && isOpponent(board[checkR][c-1], isWhite ? 'white' : 'black')) isRunaway = false;
+                    if (isValidPos(checkR, c+1) && isOpponent(board[checkR][c+1], isWhite ? 'white' : 'black')) isRunaway = false;
+                }
+                if (isRunaway) value += WEIGHTS.RUNAWAY_PAWN;
+
+                // Back row safety
                 if ((isWhite && r === 9) || (!isWhite && r === 0)) value += WEIGHTS.BACK_ROW;
-
-                // Dog Hole Penalty
                 if (isWhite && r===9 && c===0) value += WEIGHTS.DOG_HOLE;
-                
-                // --- SAFETY & PROTECTION ---
-                // Protected: Has a friend behind it supporting
-                const backRow = isWhite ? r + 1 : r - 1;
-                const backLeft = c - 1, backRight = c + 1;
-                let protectedPiece = false;
-                if (isValidPos(backRow, backLeft) && isOwnPiece(board[backRow][backLeft], isWhite ? 'white' : 'black')) protectedPiece = true;
-                if (isValidPos(backRow, backRight) && isOwnPiece(board[backRow][backRight], isWhite ? 'white' : 'black')) protectedPiece = true;
-                
-                if (protectedPiece) value += WEIGHTS.PROTECTED;
 
-                // Hanging: Is under attack?
-                // We check if it can be jumped next turn.
+                // Safety
+                const backRow = isWhite ? r + 1 : r - 1;
+                let protectedPiece = false;
+                if ((isValidPos(backRow, c-1) && isOwnPiece(board[backRow][c-1], isWhite ? 'white' : 'black')) ||
+                    (isValidPos(backRow, c+1) && isOwnPiece(board[backRow][c+1], isWhite ? 'white' : 'black'))) {
+                    protectedPiece = true;
+                    value += WEIGHTS.PROTECTED;
+                }
+
                 if (isUnderAttack(board, r, c, isWhite ? 'white' : 'black')) {
-                    // If protected, penalty is smaller (trade), else huge penalty
-                    value += protectedPiece ? (WEIGHTS.HANGING / 2) : WEIGHTS.HANGING;
+                    value += protectedPiece ? (WEIGHTS.HANGING / 3) : WEIGHTS.HANGING;
                 }
             } else {
-                // King centralization
-                 if (c >= 2 && c <= 7 && r >= 2 && r <= 7) value += 10;
+                // Active King Strategy
+                // Reward center control for kings
+                if (c >= 2 && c <= 7 && r >= 2 && r <= 7) value += 20;
+                // Penalty for edge kings (unless trapping)
+                if (c === 0 || c === 9) value -= 10;
             }
 
             if (isWhite) {

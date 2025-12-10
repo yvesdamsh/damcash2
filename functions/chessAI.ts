@@ -485,6 +485,35 @@ const evaluateBoard = (board, aiColor) => {
     
     let score = (mgScore * mgPhase + egScore * egPhase) / 24;
 
+    // --- Mobility Bonus ---
+    // Simple count of legal moves (expensive but effective for "activity")
+    // We only estimate it by looking at safe squares for sliders/knights roughly?
+    // For performance, we stick to PeSTO, but let's add a small material aggression factor.
+    // If we have advantage, trade pieces (simplified). 
+    
+    // Hanging Piece Detection (Simplified)
+    // Penalize if high value piece is attacked by lower value piece (e.g. Queen attacked by Pawn)
+    if (aiKing) { // Ensure we have a king to reference
+        // Quick scan of major pieces
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const p = board[r][c];
+                if (p && getColor(p) === aiColor) {
+                    const type = p.toLowerCase();
+                    if (type === 'q' || type === 'r') {
+                        // Is attacked?
+                        if (isSquareAttacked(board, r, c, aiColor)) {
+                            // Penalty. If checking defenders is too expensive, just a flat penalty for risk.
+                            // But hanging detection needs to know if it's defended.
+                            // We'll skip complex defender check and just be cautious.
+                            score -= 20; 
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Endgame Mop-up Evaluation
     // Encourage pushing enemy king to edge if we have material advantage
     if (egPhase > 15 && aiMat > opMat + 100 && opKing && aiKing) {
