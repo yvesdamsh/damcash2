@@ -1,10 +1,9 @@
-
-import en from './locales/en.jsx';
-import fr from './locales/fr.jsx';
-import ru from './locales/ru.jsx';
-import de from './locales/de.jsx';
-import zh from './locales/zh.jsx';
-import nl from './locales/nl.jsx';
+import en from './locales/en.js';
+import fr from './locales/fr.js';
+import ru from './locales/ru.js';
+import de from './locales/de.js';
+import zh from './locales/zh.js';
+import nl from './locales/nl.js';
 
 export const translations = {
   en,
