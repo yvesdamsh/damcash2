@@ -514,6 +514,74 @@ const evaluateBoard = (board, aiColor) => {
         }
     }
 
+    // --- TACTICAL EVALUATION (Forks & Threats) ---
+    // Scan for forks: One piece attacking multiple valuable targets
+    // This is computationally heavy, so we limit to checking our pieces attacking > 1 opponent pieces
+    
+    // Helper to get attacked targets by a square
+    const getAttackedTargets = (r, c, attackerColor) => {
+        const targets = [];
+        const opponent = attackerColor === 'white' ? 'black' : 'white';
+        
+        // Simplified attack generation (reusing concepts from getPieceMoves but only checking captures)
+        // We reuse logic from 'getValidChessMoves' concepts but stripped down for speed
+        const p = board[r][c];
+        if (!p) return [];
+        const type = p.toLowerCase();
+        
+        // We only care if we attack valuable pieces (N, B, R, Q, K)
+        const isValuable = (tp) => tp && "nbrqk".includes(tp.toLowerCase());
+
+        const checkTarget = (tr, tc) => {
+            if (isValidPos(tr, tc)) {
+                const target = board[tr][tc];
+                if (target && getColor(target) === opponent && isValuable(target)) {
+                    targets.push(target);
+                }
+            }
+        };
+
+        if (type === 'n') {
+            [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]].forEach(([dr, dc]) => checkTarget(r+dr, c+dc));
+        } else if (type === 'p') {
+            const dir = attackerColor === 'white' ? -1 : 1;
+            checkTarget(r+dir, c-1);
+            checkTarget(r+dir, c+1);
+        } else if (type !== 'k') { // Sliders (K is irrelevant for forks usually)
+            const dirs = type==='b' ? [[-1,-1],[-1,1],[1,-1],[1,1]] : type==='r' ? [[-1,0],[1,0],[0,-1],[0,1]] : [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
+            for (const [dr, dc] of dirs) {
+                let d = 1;
+                while (true) {
+                    const tr = r + dr*d, tc = c + dc*d;
+                    if (!isValidPos(tr, tc)) break;
+                    const target = board[tr][tc];
+                    if (target) {
+                        if (getColor(target) === opponent && isValuable(target)) targets.push(target);
+                        break; // Blocked
+                    }
+                    d++;
+                }
+            }
+        }
+        return targets;
+    };
+
+    // Apply Fork Bonuses
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (p && getColor(p) === aiColor) {
+                const targets = getAttackedTargets(r, c, aiColor);
+                if (targets.length >= 2) {
+                    // Fork detected!
+                    // Value depends on targets. Forking K+Q is huge. Forking N+B is good.
+                    const forkValue = targets.reduce((sum, t) => sum + (mg_value[t.toLowerCase()] || 0), 0) / 10;
+                    score += forkValue; 
+                }
+            }
+        }
+    }
+
     // Endgame Mop-up Evaluation
     // Encourage pushing enemy king to edge if we have material advantage
     if (egPhase > 15 && aiMat > opMat + 100 && opKing && aiKing) {

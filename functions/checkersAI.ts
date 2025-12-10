@@ -320,6 +320,21 @@ const evaluate = (board, aiColor, turn) => {
         }
     }
 
+    // --- PATTERN DETECTION (Bridge & Oreo) ---
+    // Check specific formations on back ranks
+    
+    // White Bridge (Row 9, cols 1,3,5...) - Simplified: Pieces on 9,3 and 9,5 (approx squares 48, 50)
+    if (board[9][3] === 1 && board[9][5] === 1) score += WEIGHTS.BRIDGE;
+    
+    // Black Bridge (Row 0, cols 4,6...) - Simplified: Pieces on 0,4 and 0,6
+    if (board[0][4] === 2 && board[0][6] === 2) score -= WEIGHTS.BRIDGE; // Black score is negative
+
+    // White Oreo (Triangle: 9,1 - 9,3 - 8,2)
+    if (board[9][1] === 1 && board[9][3] === 1 && board[8][2] === 1) score += WEIGHTS.OREO;
+    
+    // Black Oreo (Triangle: 0,8 - 0,6 - 1,7)
+    if (board[0][8] === 2 && board[0][6] === 2 && board[1][7] === 2) score -= WEIGHTS.OREO;
+
             // --- ROBUST ENDGAME STRATEGY ---
             const myPieces = aiColor === 'white' ? whitePieces : blackPieces;
             const opPieces = aiColor === 'white' ? blackPieces : whitePieces;
