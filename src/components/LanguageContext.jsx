@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { translations } from './translations';
+import { translations } from './translations.js';
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, ru, de, zhCN, nl } from 'date-fns/locale';
 
