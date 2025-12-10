@@ -1,4 +1,4 @@
-export default {
+{
   "nav.home": "Home",
   "nav.tv": "TV",
   "nav.lobby": "Lobby",
@@ -511,7 +511,7 @@ export default {
   "tv.watch": "Kijken",
   "tv.review": "Bekijken",
   "academy.title": "Academie",
-  "academy.subtitle": "Verbeter je spel met unseren interactieve lessen en puzzels.",
+  "academy.subtitle": "Verbeter je spel met onze interactieve lessen en puzzels.",
   "academy.lessons": "Lessen",
   "academy.puzzles": "Puzzels",
   "academy.practice": "Oefenen",
@@ -620,4 +620,4 @@ export default {
   "wallet.transaction.entry_fee": "Inschrijfgeld",
   "wallet.transaction.withdrawal": "Geldopname",
   "wallet.transaction.prize": "Prijs"
-};
+}

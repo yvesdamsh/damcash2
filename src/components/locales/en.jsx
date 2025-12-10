@@ -1,4 +1,4 @@
-export default {
+{
   "nav.home": "Home",
   "nav.tv": "TV",
   "nav.lobby": "Lobby",
@@ -620,4 +620,4 @@ export default {
   "wallet.transaction.entry_fee": "Entry fee",
   "wallet.transaction.withdrawal": "Withdrawal",
   "wallet.transaction.prize": "Prize"
-};
+}

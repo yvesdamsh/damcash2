@@ -1,4 +1,4 @@
-export default {
+{
   "nav.home": "首页",
   "nav.tv": "电视",
   "nav.lobby": "大厅",
@@ -620,4 +620,4 @@ export default {
   "wallet.transaction.entry_fee": "报名费",
   "wallet.transaction.withdrawal": "提现",
   "wallet.transaction.prize": "奖金"
-};
+}

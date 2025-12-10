@@ -1,4 +1,4 @@
-export default {
+{
   "nav.home": "Главная",
   "nav.tv": "ТВ",
   "nav.lobby": "Лобби",
@@ -620,4 +620,4 @@ export default {
   "wallet.transaction.entry_fee": "Взнос за участие",
   "wallet.transaction.withdrawal": "Вывод средств",
   "wallet.transaction.prize": "Приз"
-};
+}
