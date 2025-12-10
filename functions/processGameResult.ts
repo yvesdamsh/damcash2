@@ -165,26 +165,12 @@ export default async function handler(req) {
         }
     }
 
-    // Broadcast Result to Realtime Socket (Activity Feed & Lobby)
-    try {
-        const bc = new BroadcastChannel("global_updates");
-        bc.postMessage({
-            channels: ['activity', 'lobby', 'tournaments'], // Broadcast to relevant channels
-            payload: {
-                type: 'game_finished',
-                gameId: game.id,
-                game: game, // Full game object for feed
-                winnerId: winnerId,
-                whiteId: whiteId,
-                blackId: blackId
-            }
-        });
-        setTimeout(() => bc.close(), 100); // Clean up
-    } catch(e) {
-        console.error("Broadcast failed", e);
-    }
-
     // 1. Update ELO
+    let newRatingA = null;
+    let newRatingB = null;
+    let ratingChangeA = 0;
+    let ratingChangeB = 0;
+
     if (whiteId && blackId && whiteId !== blackId) { // Don't rate solo games
         const [whiteUser, blackUser] = await Promise.all([
             base44.asServiceRole.entities.User.get(whiteId),
@@ -195,21 +181,23 @@ export default async function handler(req) {
             const ratingA = type === 'chess' ? (whiteUser.elo_chess || 1200) : (whiteUser.elo_checkers || 1200);
             const ratingB = type === 'chess' ? (blackUser.elo_chess || 1200) : (blackUser.elo_checkers || 1200);
             
-            // Dynamic K-factor based on games played
-            const getK = (games) => {
-                if (!games || games < 30) return 40; // Provisional rating (placement) - moves fast
-                if (games > 100) return 20; // Established rating - moves normally
-                return 32; // Intermediate
+            // Dynamic K-factor based on FIDE international standards
+            const getK = (games, rating) => {
+                if (!games || games < 30) return 40; // Provisional / New player
+                if (rating >= 2400) return 10;       // Elite / Grandmaster (stable)
+                return 20;                           // Standard player
             };
 
             const getTier = (elo) => {
                 if (elo < 1200) return 'Amateur';
+                if (elo < 1400) return 'Intermédiaire';
                 if (elo < 1800) return 'Pro';
+                if (elo < 2200) return 'Expert';
                 return 'Maître';
             };
 
-            const KA = getK(whiteUser.games_played);
-            const KB = getK(blackUser.games_played);
+            const KA = getK(whiteUser.games_played, ratingA);
+            const KB = getK(blackUser.games_played, ratingB);
 
             const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
             const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
@@ -219,8 +207,10 @@ export default async function handler(req) {
             if (winnerId === whiteId) { scoreA = 1; scoreB = 0; }
             else if (winnerId === blackId) { scoreA = 0; scoreB = 1; }
             
-            const newRatingA = Math.round(ratingA + KA * (scoreA - expectedA));
-            const newRatingB = Math.round(ratingB + KB * (scoreB - expectedB));
+            newRatingA = Math.round(ratingA + KA * (scoreA - expectedA));
+            newRatingB = Math.round(ratingB + KB * (scoreB - expectedB));
+            ratingChangeA = newRatingA - ratingA;
+            ratingChangeB = newRatingB - ratingB;
 
             // XP & Level Logic
             const calculateXP = (score) => {
@@ -267,35 +257,15 @@ export default async function handler(req) {
             const levelUpdatesA = await processLevelUpdate(whiteId, whiteUser.xp, xpA);
             const levelUpdatesB = await processLevelUpdate(blackId, blackUser.xp, xpB);
             
-                    // Notify Followers Helper
-            const notifyFollowers = async (userId, milestone) => {
-                try {
-                    const follows = await base44.asServiceRole.entities.Follow.filter({ target_id: userId });
-                    const actor = await base44.asServiceRole.entities.User.get(userId);
-                    const name = actor.username || actor.full_name || 'Un joueur';
-                    
-                    for (const f of follows) {
-                        await base44.asServiceRole.entities.Notification.create({
-                            recipient_id: f.follower_id,
-                            type: "info",
-                            title: "Activité Ami",
-                            message: `${name} a obtenu ${milestone} !`,
-                            link: `/Profile?id=${userId}`
-                        });
-                    }
-                } catch (e) { console.error("Follower notify error", e); }
-            };
-
             // Helper to update tier and notify
             const processTierUpdate = async (userId, oldTier, newElo, gameType) => {
                 const newTier = getTier(newElo);
                 if (oldTier !== newTier) {
                     // Badge/Notify logic
                     if (newTier === 'Maître' || newTier === 'Pro') {
-                        const badgeName = `Promotion ${newTier}`;
                         await base44.asServiceRole.entities.UserBadge.create({
                             user_id: userId,
-                            name: badgeName,
+                            name: `Promotion ${newTier}`,
                             icon: "Award",
                             awarded_at: new Date().toISOString()
                         });
@@ -306,8 +276,6 @@ export default async function handler(req) {
                             message: `Félicitations ! Vous êtes passé au rang ${newTier} en ${gameType === 'chess' ? 'Échecs' : 'Dames'}.`,
                             link: `/Profile`
                         });
-                        // Notify Followers
-                        await notifyFollowers(userId, badgeName);
                     }
                 }
                 return newTier;
@@ -377,11 +345,15 @@ export default async function handler(req) {
                 const whiteMsg = winnerId === whiteId ? "Vous avez gagné la partie !" : (winnerId ? "Vous avez perdu la partie." : "Match nul.");
                 const blackMsg = winnerId === blackId ? "Vous avez gagné la partie !" : (winnerId ? "Vous avez perdu la partie." : "Match nul.");
                 
+                // Detailed ELO change message
+                const signA = ratingChangeA >= 0 ? '+' : '';
+                const signB = ratingChangeB >= 0 ? '+' : '';
+
                 await base44.asServiceRole.entities.Notification.create({
                     recipient_id: whiteId,
                     type: "game",
                     title: "Fin de partie",
-                    message: `${whiteMsg} vs ${game.black_player_name}`,
+                    message: `${whiteMsg} ELO: ${newRatingA} (${signA}${ratingChangeA})`,
                     link: `/Game?id=${gameId}`
                 });
                 
@@ -389,11 +361,35 @@ export default async function handler(req) {
                     recipient_id: blackId,
                     type: "game",
                     title: "Fin de partie",
-                    message: `${blackMsg} vs ${game.white_player_name}`,
+                    message: `${blackMsg} ELO: ${newRatingB} (${signB}${ratingChangeB})`,
                     link: `/Game?id=${gameId}`
                 });
             }
         }
+    }
+
+    // Broadcast Result to Realtime Socket (Activity Feed & Lobby) - moved to end for updated stats
+    try {
+        const bc = new BroadcastChannel("global_updates");
+        bc.postMessage({
+            channels: ['activity', 'lobby', 'tournaments'], 
+            payload: {
+                type: 'game_finished',
+                gameId: game.id,
+                game: game,
+                winnerId: winnerId,
+                whiteId: whiteId,
+                blackId: blackId,
+                // Include updated ELOs for real-time frontend update
+                whiteElo: newRatingA,
+                blackElo: newRatingB,
+                whiteEloChange: ratingChangeA,
+                blackEloChange: ratingChangeB
+            }
+        });
+        setTimeout(() => bc.close(), 100); 
+    } catch(e) {
+        console.error("Broadcast failed", e);
     }
 
     // 2. Update Tournament Scores if applicable
