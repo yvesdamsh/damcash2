@@ -101,7 +101,7 @@ export default function Home() {
             id: 'kasparov',
             name: "Garry Kasparov",
             subtitle: "The Beast of Baku",
-            image: 'https://upload.wikimedia.org/wikipedia/commons/8/88/Garry_Kasparov_2017.jpg',
+            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/29a50e470_images.jpeg',
             description: "World Chess Champion (1985–2000). Widely considered the greatest chess player of all time due to his dominance and longevity at the top.",
             link: 'https://en.wikipedia.org/wiki/Garry_Kasparov',
             badge: "G.O.A.T.",
