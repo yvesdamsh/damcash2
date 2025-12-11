@@ -55,11 +55,22 @@ export default async function handler(req) {
     const nextStart = new Date(now); nextStart.setHours(currentHour + 1, 0, 0, 0);
     const nextEnd = new Date(nextStart); nextEnd.setMinutes(57, 0, 0);
 
-    // A. Hourly Arenas (Short duration, rotation)
-    await ensureScheduledTournament(`Arena ${currentTC} Dames`, 'checkers', 'arena', currentTC, currentStart, 'none', 50);
-    await ensureScheduledTournament(`Arena ${currentTC} Échecs`, 'chess', 'arena', currentTC, currentStart, 'none', 50);
-    await ensureScheduledTournament(`Arena ${nextTC} Dames`, 'checkers', 'arena', nextTC, nextStart, 'none', 50);
-    await ensureScheduledTournament(`Arena ${nextTC} Échecs`, 'chess', 'arena', nextTC, nextStart, 'none', 50);
+    // A. Hourly Arenas (Next 10 hours)
+    for (let i = 0; i < 10; i++) {
+        const targetTime = new Date(now);
+        targetTime.setMinutes(0, 0, 0); // Reset minutes/seconds
+        targetTime.setHours(currentHour + i); // Add hours (handles day rollover automatically)
+        
+        // Skip past? (Though i=0 starts at current hour, which might be ongoing or just started)
+        // If current hour is passed significantly (e.g. > 30 mins in), maybe we want to focus on next.
+        // But logic below checks for existence.
+        
+        const tcIndex = (currentHour + i) % 3;
+        const tc = timeControls[tcIndex];
+        
+        await ensureScheduledTournament(`Arena ${tc} Dames`, 'checkers', 'arena', tc, targetTime, 'none', 50);
+        await ensureScheduledTournament(`Arena ${tc} Échecs`, 'chess', 'arena', tc, targetTime, 'none', 50);
+    }
 
     // B. Daily Major Tournaments
     // Daily Checkers Rapid at 18:00

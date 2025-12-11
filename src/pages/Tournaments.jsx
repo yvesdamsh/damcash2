@@ -496,12 +496,13 @@ export default function Tournaments() {
                     <Crown className="w-6 h-6 text-yellow-600" />
                     <h2 className="text-2xl font-bold text-[#4a3728]">{t('tournaments.official_title')}</h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                     {tournaments
                         .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing') && t.game_type === gameMode)
-                        .slice(0, 4)
+                        // Show next 10 hours approximately (or just list all available upcoming)
+                        .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
                         .map(tournament => (
-                            <Card key={tournament.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group">
+                            <Card key={tournament.id} className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl relative overflow-hidden group min-w-[200px]">
                                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Trophy className="w-24 h-24" />
                                 </div>
@@ -627,9 +628,7 @@ export default function Tournaments() {
                             const isParticipant = myTournamentIds.has(t.id);
                             if (!isCreator && !isParticipant) return false;
                         } else {
-                            // 'all' tab usually hides finished tournaments to keep view clean, unless user filters for them
-                            // But let's keep 'all' showing everything unless filtered, OR hide finished by default in 'all' if 'history' exists?
-                            // Standard UX: 'All' shows Open/Ongoing. History shows Finished.
+                            // 'all' tab hides finished tournaments by default to show only upcoming/active
                             if (t.status === 'finished' && filterStatus === 'all') return false;
                         }
 
