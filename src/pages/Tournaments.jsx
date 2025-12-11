@@ -24,7 +24,7 @@ export default function Tournaments() {
     const [gameMode, setGameMode] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [newTournament, setNewTournament] = useState({
         name: '',
-        game_type: 'checkers', // Will sync with gameMode in useEffect
+        game_type: 'checkers', 
         format: 'bracket',
         max_players: '8',
         start_date: '',
@@ -35,10 +35,13 @@ export default function Tournaments() {
         rounds: 3,
         time_control: '5+0',
         team_mode: false,
-        custom_rules: '',
+        custom_rules: '', // Stores other rules text
+        scoring: { win: 1, draw: 0.5, loss: 0 }, // New structured scoring
         recurrence: 'none',
         elo_min: 0,
-        elo_max: 3000
+        elo_max: 3000,
+        badge_name: '',
+        badge_icon: 'Trophy'
     });
     const [accessCodeInput, setAccessCodeInput] = useState('');
     
@@ -169,8 +172,15 @@ export default function Tournaments() {
             return;
         }
         try {
+            // Combine custom_rules text with scoring JSON
+            const rulesPayload = JSON.stringify({
+                text: newTournament.custom_rules,
+                scoring: newTournament.scoring
+            });
+
             await base44.entities.Tournament.create({
                 ...newTournament,
+                custom_rules: rulesPayload,
                 max_players: parseInt(newTournament.max_players),
                 entry_fee: parseFloat(newTournament.entry_fee),
                 prize_pool: parseFloat(newTournament.prize_pool),
@@ -181,13 +191,14 @@ export default function Tournaments() {
                 elo_min: parseInt(newTournament.elo_min) || 0,
                 elo_max: parseInt(newTournament.elo_max) || 3000
             });
-            
+
             sendMessage({ type: 'tournament_created' }); 
 
             toast.success(t('tournaments.create_success'));
             setIsCreateOpen(false);
             fetchTournaments();
         } catch (e) {
+            console.error(e);
             toast.error(t('tournaments.create_error'));
         }
     };
@@ -227,171 +238,63 @@ export default function Tournaments() {
                             <Plus className="w-5 h-5" /> {t('tournaments.create_btn')}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0]">
+                    <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0] max-w-2xl h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle className="text-[#4a3728]">{t('tournaments.create_title')}</DialogTitle>
+                            <DialogTitle className="text-[#4a3728] text-2xl font-serif">{t('tournaments.create_title')}</DialogTitle>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label>{t('tournaments.form_name')}</Label>
-                                <Input 
-                                    value={newTournament.name} 
-                                    onChange={e => setNewTournament({...newTournament, name: e.target.value})}
-                                    placeholder="Ex: Coupe du Printemps"
-                                    className="border-[#d4c5b0]"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                <Label>{t('tournaments.form_game')}</Label>
-                                <Input value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
-                                </div>
-                                <div className="grid gap-2">
-                                <Label>{t('tournaments.form_format')}</Label>
-                                <Select 
-                                    value={newTournament.format || 'bracket'} 
-                                    onValueChange={v => setNewTournament({...newTournament, format: v})}
-                                >
-                                    <SelectTrigger className="border-[#d4c5b0]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="bracket">{t('tournaments.format_bracket')}</SelectItem>
-                                        <SelectItem value="hybrid">{t('tournaments.format_hybrid')}</SelectItem>
-                                        <SelectItem value="swiss">{t('tournaments.format_swiss')}</SelectItem>
-                                        <SelectItem value="arena">{t('tournaments.format_arena')}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>{t('tournaments.form_max_players')}</Label>
-                                    <Select 
-                                        value={newTournament.max_players} 
-                                        onValueChange={v => setNewTournament({...newTournament, max_players: v})}
-                                    >
-                                        <SelectTrigger className="border-[#d4c5b0]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="4">4</SelectItem>
-                                            <SelectItem value="8">8</SelectItem>
-                                            <SelectItem value="16">16</SelectItem>
-                                            <SelectItem value="32">32</SelectItem>
-                                            <SelectItem value="100">100 (Arena)</SelectItem>
-                                            </SelectContent>
-                                            </Select>
-                                            </div>
-                                            </div>
+                        
+                        <Tabs defaultValue="general" className="w-full">
+                            <TabsList className="w-full grid grid-cols-4 mb-4 bg-[#e8dcc5]">
+                                <TabsTrigger value="general">Général</TabsTrigger>
+                                <TabsTrigger value="format">Format</TabsTrigger>
+                                <TabsTrigger value="scoring">Points</TabsTrigger>
+                                <TabsTrigger value="prizes">Prix & Accès</TabsTrigger>
+                            </TabsList>
 
-                                            <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                            <Label>{t('tournaments.form_entry_fee')}</Label>
-                                            <Input 
-                                                type="number"
-                                                min="0"
-                                                value={newTournament.entry_fee} 
-                                                onChange={e => setNewTournament({...newTournament, entry_fee: e.target.value})}
-                                                className="border-[#d4c5b0]"
-                                            />
-                                            </div>
-                                            <div className="grid gap-2">
-                                            <Label>{t('tournaments.form_prize_pool')}</Label>
-                                            <Input 
-                                                type="number"
-                                                min="0"
-                                                value={newTournament.prize_pool} 
-                                                onChange={e => setNewTournament({...newTournament, prize_pool: e.target.value})}
-                                                className="border-[#d4c5b0]"
-                                            />
-                                            </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                            <Label>{t('tournaments.form_rounds')}</Label>
-                                            <Input 
-                                                type="number"
-                                                min="1"
-                                                value={newTournament.rounds} 
-                                                onChange={e => setNewTournament({...newTournament, rounds: e.target.value})}
-                                                className="border-[#d4c5b0]"
-                                            />
-                                            </div>
-                                            <div className="grid gap-2">
-                                            <Label>{t('tournaments.form_time_control')}</Label>
-                                            <Select 
-                                                value={newTournament.time_control} 
-                                                onValueChange={v => setNewTournament({...newTournament, time_control: v})}
-                                            >
-                                                <SelectTrigger className="border-[#d4c5b0]">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="1+0">1+0 (Bullet)</SelectItem>
-                                                    <SelectItem value="3+0">3+0 (Blitz)</SelectItem>
-                                                    <SelectItem value="3+2">3+2 (Blitz)</SelectItem>
-                                                    <SelectItem value="5+0">5+0 (Blitz)</SelectItem>
-                                                    <SelectItem value="10+0">10+0 (Rapid)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            </div>
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                            <Label>{t('tournaments.form_prizes')}</Label>
-                                <Input 
-                                    value={newTournament.prizes || ''} 
-                                    onChange={e => setNewTournament({...newTournament, prizes: e.target.value})}
-                                    placeholder="Ex: Badge Or + 500 points"
-                                    className="border-[#d4c5b0]"
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>{t('tournaments.form_start_date')}</Label>
-                                <Input 
-                                    type="datetime-local"
-                                    value={newTournament.start_date} 
-                                    onChange={e => setNewTournament({...newTournament, start_date: e.target.value})}
-                                    className="border-[#d4c5b0]"
-                                />
-                            </div>
-                            
-                            <div className="flex items-center gap-2 border-t pt-4 mt-2">
-                                <input 
-                                    type="checkbox" 
-                                    id="is_private" 
-                                    checked={newTournament.is_private}
-                                    onChange={e => setNewTournament({...newTournament, is_private: e.target.checked})}
-                                    className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
-                                />
-                                <Label htmlFor="is_private" className="font-bold text-[#4a3728]">{t('tournaments.form_private')}</Label>
-                            </div>
-                            
-                            {newTournament.is_private && (
-                                <div className="grid gap-2 pl-6">
-                                    <Label>{t('tournaments.form_access_code')}</Label>
+                            {/* TAB 1: GENERAL */}
+                            <TabsContent value="general" className="space-y-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-[#4a3728] font-bold">Nom du Tournoi</Label>
                                     <Input 
-                                        value={newTournament.access_code || ''} 
-                                        onChange={e => setNewTournament({...newTournament, access_code: e.target.value.toUpperCase()})}
-                                        placeholder="Ex: SECRET123"
-                                        className="border-[#d4c5b0] uppercase"
+                                        value={newTournament.name} 
+                                        onChange={e => setNewTournament({...newTournament, name: e.target.value})}
+                                        placeholder="Ex: Grand Tournoi du Samedi"
+                                        className="border-[#d4c5b0]"
                                     />
                                 </div>
-                            )}
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Date de début</Label>
+                                        <Input 
+                                            type="datetime-local"
+                                            value={newTournament.start_date} 
+                                            onChange={e => setNewTournament({...newTournament, start_date: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Jeu</Label>
+                                        <Input value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
+                                    </div>
+                                </div>
 
-                            <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-2">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3 p-3 bg-white border border-[#d4c5b0] rounded-lg">
                                     <input 
                                         type="checkbox" 
                                         id="team_mode" 
                                         checked={newTournament.team_mode}
                                         onChange={e => setNewTournament({...newTournament, team_mode: e.target.checked})}
-                                        className="w-4 h-4 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
+                                        className="w-5 h-5 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
                                     />
-                                    <Label htmlFor="team_mode" className="font-bold text-[#4a3728]">{t('tournaments.form_team_mode')}</Label>
+                                    <div>
+                                        <Label htmlFor="team_mode" className="font-bold text-[#4a3728] block">Mode Équipe</Label>
+                                        <span className="text-xs text-gray-500">Les joueurs rejoignent en tant qu'équipe constituée.</span>
+                                    </div>
                                 </div>
+                                
                                 <div className="grid gap-2">
-                                    <Label>{t('tournaments.form_recurrence')}</Label>
+                                    <Label>Récurrence</Label>
                                     <Select 
                                         value={newTournament.recurrence} 
                                         onValueChange={v => setNewTournament({...newTournament, recurrence: v})}
@@ -400,40 +303,109 @@ export default function Tournaments() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">{t('tournaments.recurrence_none')}</SelectItem>
-                                            <SelectItem value="daily">{t('tournaments.recurrence_daily')}</SelectItem>
-                                            <SelectItem value="weekly">{t('tournaments.recurrence_weekly')}</SelectItem>
+                                            <SelectItem value="none">Aucune</SelectItem>
+                                            <SelectItem value="daily">Quotidien (Même heure)</SelectItem>
+                                            <SelectItem value="weekly">Hebdomadaire</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </div>
+                            </TabsContent>
 
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div className="grid gap-2">
-                                    <Label>{t('tournaments.form_elo_min')}</Label>
-                                    <Input 
-                                        type="number"
-                                        min="0"
-                                        value={newTournament.elo_min} 
-                                        onChange={e => setNewTournament({...newTournament, elo_min: e.target.value})}
-                                        className="border-[#d4c5b0]"
-                                    />
+                            {/* TAB 2: FORMAT & RULES */}
+                            <TabsContent value="format" className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Format</Label>
+                                        <Select 
+                                            value={newTournament.format || 'bracket'} 
+                                            onValueChange={v => setNewTournament({...newTournament, format: v})}
+                                        >
+                                            <SelectTrigger className="border-[#d4c5b0]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="bracket">Arbre (Élimination)</SelectItem>
+                                                <SelectItem value="hybrid">Poules + Finale</SelectItem>
+                                                <SelectItem value="swiss">Système Suisse</SelectItem>
+                                                <SelectItem value="arena">Arène (Non-Stop)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Cadence</Label>
+                                        <Select 
+                                            value={newTournament.time_control} 
+                                            onValueChange={v => setNewTournament({...newTournament, time_control: v})}
+                                        >
+                                            <SelectTrigger className="border-[#d4c5b0]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1+0">1+0 (Bullet)</SelectItem>
+                                                <SelectItem value="3+0">3+0 (Blitz)</SelectItem>
+                                                <SelectItem value="3+2">3+2 (Blitz)</SelectItem>
+                                                <SelectItem value="5+0">5+0 (Blitz)</SelectItem>
+                                                <SelectItem value="10+0">10+0 (Rapid)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label>{t('tournaments.form_elo_max')}</Label>
-                                    <Input 
-                                        type="number"
-                                        min="0"
-                                        value={newTournament.elo_max} 
-                                        onChange={e => setNewTournament({...newTournament, elo_max: e.target.value})}
-                                        className="border-[#d4c5b0]"
-                                    />
-                                </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-4 mt-2">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Joueurs Max</Label>
+                                        <Select 
+                                            value={newTournament.max_players.toString()} 
+                                            onValueChange={v => setNewTournament({...newTournament, max_players: v})}
+                                        >
+                                            <SelectTrigger className="border-[#d4c5b0]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="4">4 Joueurs</SelectItem>
+                                                <SelectItem value="8">8 Joueurs</SelectItem>
+                                                <SelectItem value="16">16 Joueurs</SelectItem>
+                                                <SelectItem value="32">32 Joueurs</SelectItem>
+                                                <SelectItem value="64">64 Joueurs</SelectItem>
+                                                <SelectItem value="100">100 (Massif)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Rondes / Tours</Label>
+                                        <Input 
+                                            type="number"
+                                            min="1"
+                                            value={newTournament.rounds} 
+                                            onChange={e => setNewTournament({...newTournament, rounds: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2 pt-2">
+                                    <Label>Restrictions ELO (0 = Aucune)</Label>
+                                    <div className="flex gap-2 items-center">
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Min" 
+                                            value={newTournament.elo_min}
+                                            onChange={e => setNewTournament({...newTournament, elo_min: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                        <span className="text-gray-400">-</span>
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Max" 
+                                            value={newTournament.elo_max}
+                                            onChange={e => setNewTournament({...newTournament, elo_max: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="grid gap-2">
-                                    <Label>{t('tournaments.form_tie_breaker')}</Label>
+                                    <Label>Départage</Label>
                                     <Select 
                                         value={newTournament.tie_breaker || 'buchholz'} 
                                         onValueChange={v => setNewTournament({...newTournament, tie_breaker: v})}
@@ -442,59 +414,167 @@ export default function Tournaments() {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="buchholz">{t('tournaments.tie_buchholz')}</SelectItem>
+                                            <SelectItem value="buchholz">Buchholz (Score Opposants)</SelectItem>
                                             <SelectItem value="sonneborn_berger">Sonneborn-Berger</SelectItem>
-                                            <SelectItem value="head_to_head">{t('tournaments.tie_head_to_head')}</SelectItem>
-                                            <SelectItem value="wins">{t('tournaments.tie_wins')}</SelectItem>
+                                            <SelectItem value="head_to_head">Confrontation Directe</SelectItem>
+                                            <SelectItem value="wins">Nombre de Victoires</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                            </div>
+                            </TabsContent>
 
-                            <div className="grid grid-cols-2 gap-4 mt-2">
+                            {/* TAB 3: SCORING (NEW) */}
+                            <TabsContent value="scoring" className="space-y-4">
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800 mb-2">
+                                    Définissez les points gagnés pour chaque résultat.
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label className="text-green-700">Victoire</Label>
+                                        <Input 
+                                            type="number"
+                                            step="0.5"
+                                            value={newTournament.scoring?.win ?? 1} 
+                                            onChange={e => setNewTournament({
+                                                ...newTournament, 
+                                                scoring: { ...newTournament.scoring, win: parseFloat(e.target.value) }
+                                            })}
+                                            className="border-green-200 bg-green-50"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label className="text-blue-700">Nulle</Label>
+                                        <Input 
+                                            type="number"
+                                            step="0.5"
+                                            value={newTournament.scoring?.draw ?? 0.5} 
+                                            onChange={e => setNewTournament({
+                                                ...newTournament, 
+                                                scoring: { ...newTournament.scoring, draw: parseFloat(e.target.value) }
+                                            })}
+                                            className="border-blue-200 bg-blue-50"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label className="text-red-700">Défaite</Label>
+                                        <Input 
+                                            type="number"
+                                            step="0.5"
+                                            value={newTournament.scoring?.loss ?? 0} 
+                                            onChange={e => setNewTournament({
+                                                ...newTournament, 
+                                                scoring: { ...newTournament.scoring, loss: parseFloat(e.target.value) }
+                                            })}
+                                            className="border-red-200 bg-red-50"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="grid gap-2 mt-4">
+                                    <Label>Règles Spéciales (Texte)</Label>
+                                    <textarea 
+                                        value={newTournament.custom_rules} 
+                                        onChange={e => setNewTournament({...newTournament, custom_rules: e.target.value})}
+                                        placeholder="Ex: Berserk autorisé, Pas de nulle avant 30 coups..."
+                                        className="flex w-full rounded-md border border-[#d4c5b0] bg-transparent px-3 py-2 text-sm shadow-sm min-h-[100px]"
+                                    />
+                                </div>
+                            </TabsContent>
+
+                            {/* TAB 4: PRIZES & ACCESS */}
+                            <TabsContent value="prizes" className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Frais d'entrée ($)</Label>
+                                        <Input 
+                                            type="number"
+                                            min="0"
+                                            value={newTournament.entry_fee} 
+                                            onChange={e => setNewTournament({...newTournament, entry_fee: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Cagnotte Garantie ($)</Label>
+                                        <Input 
+                                            type="number"
+                                            min="0"
+                                            value={newTournament.prize_pool} 
+                                            onChange={e => setNewTournament({...newTournament, prize_pool: e.target.value})}
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="grid gap-2">
-                                    <Label>Badge Vainqueur (Nom)</Label>
+                                    <Label>Description des Prix</Label>
                                     <Input 
-                                        value={newTournament.badge_name || ''} 
-                                        onChange={e => setNewTournament({...newTournament, badge_name: e.target.value})}
-                                        placeholder="Ex: Champion d'Hiver"
+                                        value={newTournament.prizes || ''} 
+                                        onChange={e => setNewTournament({...newTournament, prizes: e.target.value})}
+                                        placeholder="Ex: 1er: 50% + Badge, 2ème: 30%, 3ème: 20%"
                                         className="border-[#d4c5b0]"
                                     />
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label>Icône Badge</Label>
-                                    <Select 
-                                        value={newTournament.badge_icon || 'Trophy'} 
-                                        onValueChange={v => setNewTournament({...newTournament, badge_icon: v})}
-                                    >
-                                        <SelectTrigger className="border-[#d4c5b0]">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="Trophy">Trophée 🏆</SelectItem>
-                                            <SelectItem value="Crown">Couronne 👑</SelectItem>
-                                            <SelectItem value="Star">Étoile ⭐</SelectItem>
-                                            <SelectItem value="Medal">Médaille 🥇</SelectItem>
-                                            <SelectItem value="Zap">Éclair ⚡</SelectItem>
-                                            <SelectItem value="Shield">Bouclier 🛡️</SelectItem>
-                                            <SelectItem value="Flame">Flamme 🔥</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
 
-                            <div className="grid gap-2 mt-2">
-                                <Label>{t('tournaments.form_custom_rules')}</Label>
-                                <textarea 
-                                    value={newTournament.custom_rules} 
-                                    onChange={e => setNewTournament({...newTournament, custom_rules: e.target.value})}
-                                    placeholder="..."
-                                    className="flex w-full rounded-md border border-[#d4c5b0] bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 min-h-[80px]"
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button onClick={handleCreate} className="bg-[#4a3728] hover:bg-[#2c1e12]">{t('tournaments.create_submit')}</Button>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label>Badge Vainqueur</Label>
+                                        <Input 
+                                            value={newTournament.badge_name || ''} 
+                                            onChange={e => setNewTournament({...newTournament, badge_name: e.target.value})}
+                                            placeholder="Nom du badge"
+                                            className="border-[#d4c5b0]"
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label>Icône</Label>
+                                        <Select 
+                                            value={newTournament.badge_icon || 'Trophy'} 
+                                            onValueChange={v => setNewTournament({...newTournament, badge_icon: v})}
+                                        >
+                                            <SelectTrigger className="border-[#d4c5b0]">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="Trophy">Trophée 🏆</SelectItem>
+                                                <SelectItem value="Crown">Couronne 👑</SelectItem>
+                                                <SelectItem value="Star">Étoile ⭐</SelectItem>
+                                                <SelectItem value="Medal">Médaille 🥇</SelectItem>
+                                                <SelectItem value="Zap">Éclair ⚡</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                <div className="border-t pt-4 mt-2">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <input 
+                                            type="checkbox" 
+                                            id="is_private" 
+                                            checked={newTournament.is_private}
+                                            onChange={e => setNewTournament({...newTournament, is_private: e.target.checked})}
+                                            className="w-5 h-5 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
+                                        />
+                                        <Label htmlFor="is_private" className="font-bold text-[#4a3728]">Tournoi Privé</Label>
+                                    </div>
+                                    
+                                    {newTournament.is_private && (
+                                        <div className="grid gap-2 pl-7 animate-in fade-in slide-in-from-top-2">
+                                            <Label>Code d'accès</Label>
+                                            <Input 
+                                                value={newTournament.access_code || ''} 
+                                                onChange={e => setNewTournament({...newTournament, access_code: e.target.value.toUpperCase()})}
+                                                placeholder="CODE SECRET"
+                                                className="border-[#d4c5b0] uppercase font-mono tracking-widest"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+
+                        <DialogFooter className="mt-4">
+                            <Button onClick={handleCreate} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-lg py-6">{t('tournaments.create_submit')}</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
