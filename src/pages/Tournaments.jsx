@@ -146,7 +146,12 @@ export default function Tournaments() {
             // Search optimization (if supported by backend)
             // if (searchQuery) query.name = { $regex: searchQuery, $options: 'i' };
 
-            const list = await base44.entities.Tournament.filter(query, '-start_date', 50);
+            // Sort logic: 
+            // If viewing History/Finished -> Descending (newest finished first)
+            // If viewing Upcoming/All -> Ascending (soonest starting first)
+            const sort = (activeTab === 'history' || filterStatus === 'finished') ? '-start_date' : 'start_date';
+            
+            const list = await base44.entities.Tournament.filter(query, sort, 50);
             setTournaments(list);
         } catch (e) {
             console.error("Fetch tournaments error", e);

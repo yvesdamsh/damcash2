@@ -81,6 +81,20 @@ export default async function handler(req) {
                  await finishTournament(t, base44);
             }
         }
+
+        // Cleanup "Future Garbage" (Tournaments > 48 hours ahead created by system)
+        // This prevents clutter from previous buggy recurrent logic
+        const futureGarbage = await base44.asServiceRole.entities.Tournament.filter({ 
+            status: 'open', 
+            created_by_user_id: 'system' 
+        });
+        const farFuture = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+        for (const t of futureGarbage) {
+            if (new Date(t.start_date) > farFuture) {
+                console.log(`Deleting far future tournament: ${t.name} (${t.start_date})`);
+                await base44.asServiceRole.entities.Tournament.delete(t.id);
+            }
+        }
     } catch (e) {
         console.error("Cleanup error:", e);
     }
