@@ -62,6 +62,7 @@ export default function Game() {
     const [inviteOpen, setInviteOpen] = useState(false);
     const [syncedMessages, setSyncedMessages] = useState([]);
     const [syncedSignals, setSyncedSignals] = useState([]);
+    const [lastDragMove, setLastDragMove] = useState(null);
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -1558,7 +1559,8 @@ export default function Game() {
                                 validMoves={validMoves} 
                                 currentTurn={game.current_turn} 
                                 playerColor={isAmBlack ? 'black' : 'white'} 
-                                lastMove={null}
+                                lastMove={movesList[movesList.length-1] || null}
+                                lastDragMove={lastDragMove}
                                 theme={currentUser?.preferences?.checkers_theme}
                                 pieceDesign={currentUser?.preferences?.checkers_pieces}
                                 premove={premove}
@@ -1574,6 +1576,7 @@ export default function Game() {
                                 currentTurn={game.current_turn} 
                                 playerColor={isAmBlack ? 'black' : 'white'} 
                                 lastMove={chessState.lastMove}
+                                lastDragMove={lastDragMove}
                                 theme={currentUser?.preferences?.chess_theme}
                                 pieceSet={currentUser?.preferences?.chess_pieces}
                                 premove={premove}

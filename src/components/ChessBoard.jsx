@@ -110,7 +110,7 @@ const ChessSquare = memo(({
            prev.isFlipped === next.isFlipped;
 });
 
-const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
+const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, lastDragMove, theme = 'standard', pieceSet = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
     
     const canInteract = isSoloMode || (currentTurn === playerColor);
     const boardRef = useRef(null);
@@ -179,7 +179,13 @@ const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMo
                             const isCheck = isKing && ((piece === 'K' && isWhiteCheck) || (piece === 'k' && isBlackCheck));
 
                             let animDelta = null;
-                            if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
+                            const isDragMove = lastDragMove && lastMove && 
+                                               lastDragMove.from.r === lastMove.from.r && 
+                                               lastDragMove.from.c === lastMove.from.c &&
+                                               lastDragMove.to.r === lastMove.to.r &&
+                                               lastDragMove.to.c === lastMove.to.c;
+
+                            if (!isDragMove && lastMove && lastMove.to.r === r && lastMove.to.c === c) {
                                 const dx = (lastMove.from.c - c);
                                 const dy = (lastMove.from.r - r);
                                 animDelta = {

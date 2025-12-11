@@ -103,7 +103,7 @@ const CheckerSquare = memo(({
            prev.animDelta === next.animDelta;
 });
 
-const CheckerBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
+const CheckerBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMoves, currentTurn, playerColor, lastMove, lastDragMove, theme = 'standard', pieceDesign = 'standard', premove, isSoloMode = false, orientation = 'white' }) => {
     
     const boardRef = useRef(null);
     const isFlipped = orientation === 'black';
@@ -158,7 +158,13 @@ const CheckerBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, valid
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
                             let animDelta = null;
-                            if (lastMove && lastMove.to.r === r && lastMove.to.c === c) {
+                            const isDragMove = lastDragMove && lastMove && 
+                                               lastDragMove.from.r === lastMove.from.r && 
+                                               lastDragMove.from.c === lastMove.from.c &&
+                                               lastDragMove.to.r === lastMove.to.r &&
+                                               lastDragMove.to.c === lastMove.to.c;
+
+                            if (!isDragMove && lastMove && lastMove.to.r === r && lastMove.to.c === c) {
                                 const dx = (lastMove.from.c - c);
                                 const dy = (lastMove.from.r - r);
                                 animDelta = {
