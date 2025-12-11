@@ -248,6 +248,7 @@ export default function Profile() {
                 await base44.entities.Follow.create({
                     follower_id: currentUser.id,
                     target_id: user.id,
+                    target_type: 'user',
                     created_at: new Date().toISOString()
                 });
                 setIsFollowing(true);

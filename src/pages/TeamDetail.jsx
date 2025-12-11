@@ -19,6 +19,7 @@ export default function TeamDetail() {
     const [members, setMembers] = useState([]);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isFollowing, setIsFollowing] = useState(false);
 
     useEffect(() => {
         const init = async () => {
@@ -33,6 +34,15 @@ export default function TeamDetail() {
                 ]);
                 setTeam(tData);
                 setMembers(mData);
+
+                // Check follow status
+                if (u) {
+                    const follows = await base44.entities.Follow.filter({ 
+                        follower_id: u.id, 
+                        target_id: id 
+                    });
+                    setIsFollowing(follows.length > 0);
+                }
             } catch (e) {
                 console.error(e);
             } finally {
@@ -102,6 +112,30 @@ export default function TeamDetail() {
         }
     };
 
+    const handleFollowToggle = async () => {
+        if (!user) return;
+        try {
+            if (isFollowing) {
+                const record = await base44.entities.Follow.filter({ follower_id: user.id, target_id: team.id });
+                if (record.length) await base44.entities.Follow.delete(record[0].id);
+                setIsFollowing(false);
+                toast.success("Vous ne suivez plus cette équipe");
+            } else {
+                await base44.entities.Follow.create({
+                    follower_id: user.id,
+                    target_id: team.id,
+                    target_type: 'team',
+                    created_at: new Date().toISOString()
+                });
+                setIsFollowing(true);
+                toast.success("Équipe suivie !");
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Erreur action");
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">{t('common.loading')}</div>;
     if (!team) return <div className="p-8 text-center">Not Found</div>;
 
@@ -135,7 +169,14 @@ export default function TeamDetail() {
                                 </div>
                             </div>
                         </div>
-                        <div>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant={isFollowing ? "secondary" : "outline"} 
+                                onClick={handleFollowToggle}
+                                className={isFollowing ? "bg-white/20 text-white border-none hover:bg-white/30" : "bg-transparent text-white border-white/50 hover:bg-white/10"}
+                            >
+                                {isFollowing ? "Suivi" : "Suivre"}
+                            </Button>
                             {!myMembership && (
                                 <Button onClick={handleJoin} className="bg-green-600 hover:bg-green-700">
                                     {t('team.join')}

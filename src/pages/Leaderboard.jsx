@@ -76,6 +76,7 @@ export default function Leaderboard() {
                 await base44.entities.Follow.create({
                     follower_id: currentUser.id,
                     target_id: targetId,
+                    target_type: 'user',
                     created_at: new Date().toISOString()
                 });
                 setFollowedIds(prev => new Set(prev).add(targetId));

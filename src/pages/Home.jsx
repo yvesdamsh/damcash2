@@ -52,6 +52,7 @@ export default function Home() {
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [rejoinOpen, setRejoinOpen] = useState(false);
     const [hasShownRejoin, setHasShownRejoin] = useState(false);
+    const [followingActivity, setFollowingActivity] = useState([]);
     const [gameConfig, setGameConfig] = useState({
         time: 10,
         increment: 0,
@@ -162,6 +163,38 @@ export default function Home() {
                     sessionStorage.setItem('damcash_rejoin_seen', 'true');
                 }
             }
+
+            // Fetch Following Activity
+            const follows = await base44.entities.Follow.filter({ follower_id: currentUser.id });
+            if (follows.length > 0) {
+                const userIds = follows.filter(f => f.target_type === 'user' || !f.target_type).map(f => f.target_id);
+                // Fetch recent games of followed users
+                if (userIds.length > 0) {
+                    // Simple logic: fetch recent games where white or black is in userIds
+                    // Note: This is an expensive generic query if not optimized, but for small scale fine.
+                    // We can't do "OR" easily in filter sometimes, so we might fetch list() sorted and filter client side if backend limits it.
+                    // Or iterate. Let's try iterating 5 users max for now to be safe or list recent finished games and match.
+                    
+                    const recentGames = await base44.entities.Game.filter({ status: 'finished' }, '-updated_date', 50);
+                    const relevant = recentGames.filter(g => userIds.includes(g.white_player_id) || userIds.includes(g.black_player_id));
+                    
+                    const activity = relevant.map(g => {
+                        const isWhite = userIds.includes(g.white_player_id);
+                        const friendId = isWhite ? g.white_player_id : g.black_player_id;
+                        const friendName = isWhite ? g.white_player_name : g.black_player_name;
+                        return {
+                            type: 'game',
+                            id: g.id,
+                            friendId,
+                            friendName,
+                            desc: `a joué une partie de ${g.game_type === 'chess' ? 'Chess' : 'Dames'}`,
+                            date: g.updated_date
+                        };
+                    });
+                    setFollowingActivity(activity.slice(0, 5));
+                }
+            }
+
         } catch(e) {
             console.error("Refresh error", e);
         }
@@ -841,6 +874,34 @@ export default function Home() {
                                     <p className="text-[10px] text-gray-500 text-center">{t('home.ask_code')}</p>
                                 </CardContent>
                             </Card>
+                            
+                            {/* Following Activity Feed */}
+                            {followingActivity.length > 0 && (
+                                <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="text-sm font-bold uppercase text-gray-500 flex items-center gap-2">
+                                            <Users className="w-4 h-4" /> Activité des amis
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-3">
+                                        {followingActivity.map((act, i) => (
+                                            <div key={i} className="flex items-center gap-3 text-sm p-2 bg-[#fdfbf7] dark:bg-[#2c241b] rounded border border-[#e8dcc5] dark:border-[#3d2b1f]">
+                                                <div className="w-8 h-8 rounded-full bg-[#d4c5b0] flex items-center justify-center text-[#4a3728] font-bold text-xs">
+                                                    {act.friendName?.[0]}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <span className="font-bold text-[#4a3728] dark:text-[#e8dcc5]">{act.friendName}</span>
+                                                    <span className="text-gray-500 dark:text-gray-400 text-xs block">{act.desc}</span>
+                                                </div>
+                                                <Link to={`/Game?id=${act.id}`}>
+                                                    <Button size="icon" variant="ghost" className="h-6 w-6"><Eye className="w-3 h-3" /></Button>
+                                                </Link>
+                                            </div>
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            )}
+
                             <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> {t('home.learn_play')}</Button>
                         </div>
                     </div>
