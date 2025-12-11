@@ -111,7 +111,7 @@ export default function Home() {
             id: 'magnus',
             name: "Magnus Carlsen",
             subtitle: "The Mozart of Chess",
-            image: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/Magnus_Carlsen_2013.jpg',
+            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/1abb4a478_Screenshot_20251211_072546_Facebook.jpg',
             description: "World Chess Champion (2013–2023). Highest rated player in history. Known for his intuitive style and endgame prowess.",
             link: 'https://en.wikipedia.org/wiki/Magnus_Carlsen',
             badge: "Champion",
