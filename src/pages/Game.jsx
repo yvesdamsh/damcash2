@@ -239,7 +239,15 @@ export default function Game() {
         else setShowResult(false);
 
         prevGameRef.current = game;
-    }, [game]);
+        }, [game]);
+
+        useEffect(() => {
+        window.onAnalyzeGame = () => {
+            setShowResult(false);
+            setActiveTab('analysis');
+        };
+        return () => { window.onAnalyzeGame = null; };
+        }, []);
 
     useEffect(() => {
         const checkAuth = async () => {

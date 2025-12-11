@@ -50,17 +50,17 @@ export default async function handler(req) {
         Moves:
         ${moveListString}
 
-        Provide a JSON response with:
-        1. "summary": A brief 2-3 sentence summary of the game style and turning point.
-        2. "opening_name": The name of the opening played (e.g. "Sicilian Defense", "Queens Gambit", "Russian Game"). If unknown, use "Unknown".
-        3. "white_accuracy": An estimated percentage (0-100) of White's move quality accuracy.
-        4. "black_accuracy": An estimated percentage (0-100) of Black's move quality accuracy.
-        5. "key_moments": An array of objects with:
-           - "move_index" (0-based index of the move in the list)
-           - "type" (brilliant, blunder, mistake, good)
-           - "comment" (short explanation of why it's good/bad)
-           - "better_move" (If it's a mistake/blunder, suggest the best move in standard notation e.g. "Nf3", "e5". If it's a good move, leave empty string).
-           Identify at least 3 key moments.
+        Provide a detailed JSON response with:
+        1. "summary": A brief 2-3 sentence summary of the game style, key turning points, and overall performance.
+        2. "opening_name": The name of the opening played.
+        3. "opening_advice": Specific advice on how to improve the opening play for both sides based on this game.
+        4. "white_accuracy": Estimated accuracy % (0-100).
+        5. "black_accuracy": Estimated accuracy % (0-100).
+        6. "key_moments": An array of CRITICAL moments (blunders, mistakes, missed wins, brilliant moves). For EACH mistake/blunder, you MUST provide the "better_move".
+           - "move_index": 0-based index.
+           - "type": "brilliant", "blunder", "mistake", "good", "book"
+           - "comment": Why it was good/bad.
+           - "better_move": The best move that should have been played.
         `;
 
         const response = await base44.integrations.Core.InvokeLLM({
@@ -70,6 +70,7 @@ export default async function handler(req) {
                 properties: {
                     summary: { type: "string" },
                     opening_name: { type: "string" },
+                    opening_advice: { type: "string" },
                     white_accuracy: { type: "number" },
                     black_accuracy: { type: "number" },
                     key_moments: { 
@@ -78,7 +79,7 @@ export default async function handler(req) {
                             type: "object",
                             properties: {
                                 move_index: { type: "number" },
-                                type: { type: "string", enum: ["brilliant", "blunder", "mistake", "good"] },
+                                type: { type: "string", enum: ["brilliant", "blunder", "mistake", "good", "book"] },
                                 comment: { type: "string" },
                                 better_move: { type: "string" }
                             }
@@ -96,7 +97,8 @@ export default async function handler(req) {
                 key_moments: response.key_moments,
                 white_accuracy: response.white_accuracy,
                 black_accuracy: response.black_accuracy,
-                opening_name: response.opening_name
+                opening_name: response.opening_name,
+                opening_advice: response.opening_advice
             })
         });
 

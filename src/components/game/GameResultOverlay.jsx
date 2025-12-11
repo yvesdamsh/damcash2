@@ -124,6 +124,13 @@ export default function GameResultOverlay({
                             <RotateCcw className="w-5 h-5 mr-2" /> {(game.series_length > 1 && !isSeriesDecided) ? t('game.result.next_round_mandatory') : t('game.result.rematch')}
                         </Button>
                     )}
+
+                    <Button onClick={() => {
+                        if (onClose) onClose(); 
+                        if (window.onAnalyzeGame) window.onAnalyzeGame();
+                    }} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-10 font-bold shadow-md">
+                        <Trophy className="w-4 h-4 mr-2" /> Analyse de Partie
+                    </Button>
                     
                     {(canForfeit || isSpectator) && (
                         <Button variant="outline" onClick={onHome} className="w-full border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]">

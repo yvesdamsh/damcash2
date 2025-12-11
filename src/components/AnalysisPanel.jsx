@@ -81,11 +81,12 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
     const whiteAcc = data.white_accuracy;
     const blackAcc = data.black_accuracy;
     const opening = data.opening_name;
+    const openingAdvice = data.opening_advice;
 
     const getIcon = (type) => {
         switch(type) {
             case 'brilliant': return <Star className="w-4 h-4 text-yellow-500" />;
-            case 'blunder': return <AlertTriangle className="w-4 h-4 text-red-500" />;
+            case 'blunder': return <AlertTriangle className="w-4 h-4 text-red-600" />;
             case 'mistake': return <AlertTriangle className="w-4 h-4 text-orange-500" />;
             case 'good': return <ThumbsUp className="w-4 h-4 text-green-500" />;
             default: return <Info className="w-4 h-4 text-blue-500" />;
@@ -96,7 +97,7 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
         <div className="h-full flex flex-col bg-white rounded-lg shadow-sm border border-[#d4c5b0]">
             <div className="p-3 bg-[#f5f0e6] border-b border-[#d4c5b0] flex justify-between items-center">
                 <h3 className="font-bold text-[#4a3728] flex items-center gap-2">
-                    <Brain className="w-4 h-4" /> Rapport
+                    <Brain className="w-4 h-4" /> Rapport d'Analyse
                 </h3>
                 <Button size="sm" variant="ghost" onClick={handleShare} disabled={sharing} className="h-6 text-xs gap-1 hover:bg-[#e8dcc5]">
                     <Share2 className="w-3 h-3" /> Partager
@@ -104,7 +105,7 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
             </div>
             <ScrollArea className="flex-1 p-4">
                 <div className="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                    <h4 className="text-xs font-bold text-blue-800 uppercase mb-1">Résumé</h4>
+                    <h4 className="text-xs font-bold text-blue-800 uppercase mb-1">Résumé de la Partie</h4>
                     <p className="text-sm text-blue-900 leading-relaxed">{analysis.summary}</p>
                 </div>
 
@@ -125,30 +126,42 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
                     </div>
                 )}
 
-                {opening && (
-                    <div className="mb-6 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        <TrendingUp className="w-4 h-4" />
-                        Ouverture: <span className="font-bold text-[#4a3728]">{opening}</span>
+                {(opening || openingAdvice) && (
+                    <div className="mb-6 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                            <TrendingUp className="w-4 h-4 text-amber-600" />
+                            Ouverture: <span className="font-bold text-[#4a3728]">{opening || 'Inconnue'}</span>
+                        </div>
+                        {openingAdvice && (
+                            <div className="text-sm text-amber-900 bg-amber-100/50 p-2 rounded">
+                                <span className="font-bold">Conseil:</span> {openingAdvice}
+                            </div>
+                        )}
                     </div>
                 )}
 
-                <h4 className="text-xs font-bold text-[#6b5138] uppercase mb-3">Moments Clés</h4>
+                <h4 className="text-xs font-bold text-[#6b5138] uppercase mb-3">Coups Clés & Opportunités</h4>
                 <div className="space-y-3">
-                    {moments.map((moment, i) => (
+                    {moments.length === 0 ? (
+                        <p className="text-sm text-gray-500 italic">Aucun moment clé détecté.</p>
+                    ) : moments.map((moment, i) => (
                         <div 
                             key={i} 
                             onClick={() => onJumpToMove(moment.move_index)}
-                            className="p-3 rounded-lg border hover:shadow-md cursor-pointer transition-all bg-white border-gray-100 hover:border-[#d4c5b0]"
+                            className={`p-3 rounded-lg border hover:shadow-md cursor-pointer transition-all ${moment.type === 'blunder' ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100 hover:border-[#d4c5b0]'}`}
                         >
                             <div className="flex items-center gap-2 mb-1">
                                 {getIcon(moment.type)}
-                                <span className="text-xs font-bold uppercase text-gray-600">{moment.type}</span>
+                                <span className={`text-xs font-bold uppercase ${moment.type === 'blunder' ? 'text-red-600' : 'text-gray-600'}`}>{moment.type}</span>
                                 <span className="text-xs text-gray-400 ml-auto">Coup #{moment.move_index + 1}</span>
                             </div>
-                            <p className="text-sm text-gray-700 mb-1">{moment.comment}</p>
+                            <p className="text-sm text-gray-700 mb-2">{moment.comment}</p>
                             {moment.better_move && (
-                                <div className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded inline-block border border-green-100">
-                                    Mieux : <span className="font-mono font-bold">{moment.better_move}</span>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="text-xs font-bold text-gray-500">Meilleur coup:</div>
+                                    <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded border border-green-200 font-mono font-bold flex items-center gap-1">
+                                        <TrendingUp className="w-3 h-3" /> {moment.better_move}
+                                    </div>
                                 </div>
                             )}
                         </div>
