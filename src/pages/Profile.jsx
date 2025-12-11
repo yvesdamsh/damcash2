@@ -28,6 +28,8 @@ export default function Profile() {
     const [badges, setBadges] = useState([]);
     const [followingList, setFollowingList] = useState([]);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [myTeams, setMyTeams] = useState([]);
+    const [teamInvites, setTeamInvites] = useState([]);
     const [isEditing, setIsEditing] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [editForm, setEditForm] = useState({ 
@@ -186,6 +188,23 @@ export default function Profile() {
                     setFollowingList(followingUsers.filter(u => u));
                 }
 
+                // Fetch Teams
+                const memberships = await base44.entities.TeamMember.filter({ user_id: u.id });
+                const activeMemberships = memberships.filter(m => m.status === 'active');
+                const invitedMemberships = memberships.filter(m => m.status === 'invited');
+
+                if (activeMemberships.length > 0) {
+                    const teams = await Promise.all(activeMemberships.map(m => base44.entities.Team.get(m.team_id).catch(() => null)));
+                    setMyTeams(teams.filter(t => t));
+                }
+                if (invitedMemberships.length > 0 && isOwnProfileLocal) {
+                    const invites = await Promise.all(invitedMemberships.map(async m => {
+                        const t = await base44.entities.Team.get(m.team_id).catch(() => null);
+                        return t ? { ...t, membershipId: m.id } : null;
+                    }));
+                    setTeamInvites(invites.filter(t => t));
+                }
+
                 // Check if current user is following this profile
                 if (!isOwnProfileLocal && currentUser) {
                     const amIFollowing = await base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: u.id });
@@ -255,6 +274,24 @@ export default function Profile() {
             }
         } catch (e) {
             console.error("Follow action failed", e);
+        }
+    };
+
+    const handleTeamInvite = async (membershipId, accept) => {
+        try {
+            if (accept) {
+                await base44.entities.TeamMember.update(membershipId, { status: 'active' });
+                // Optimistic update not fully done here, just reload or filter
+                setTeamInvites(prev => prev.filter(t => t.membershipId !== membershipId));
+                // Add to myTeams if we had the full object
+                const team = teamInvites.find(t => t.membershipId === membershipId);
+                if (team) setMyTeams(prev => [...prev, team]);
+            } else {
+                await base44.entities.TeamMember.delete(membershipId);
+                setTeamInvites(prev => prev.filter(t => t.membershipId !== membershipId));
+            }
+        } catch (e) {
+            console.error(e);
         }
     };
 
@@ -565,6 +602,7 @@ export default function Profile() {
                             <TabsTrigger value="history" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_history')}</TabsTrigger>
                             <TabsTrigger value="badges" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_badges')}</TabsTrigger>
                             <TabsTrigger value="following" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">{t('profile.tab_following')}</TabsTrigger>
+                            <TabsTrigger value="teams" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] py-2">Équipes</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="overview">
@@ -863,6 +901,63 @@ export default function Profile() {
                                 <div className="col-span-full text-center py-12 text-gray-500">
                                     <User className="w-12 h-12 mx-auto text-gray-300 mb-2" />
                                     <p>{t('profile.following_empty')}</p>
+                                </div>
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="teams">
+                        {isOwnProfile && teamInvites.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="font-bold text-[#4a3728] mb-4">Invitations en attente</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {teamInvites.map(t => (
+                                        <Card key={t.id} className="border-yellow-200 bg-yellow-50">
+                                            <CardContent className="p-4 flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded bg-white flex items-center justify-center border">
+                                                        {t.avatar_url ? <img src={t.avatar_url} className="w-full h-full object-cover rounded" /> : <Shield className="w-5 h-5 text-gray-400" />}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-[#4a3728]">{t.name}</div>
+                                                        <div className="text-xs text-gray-500">Vous a invité</div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button size="sm" onClick={() => handleTeamInvite(t.membershipId, true)} className="bg-green-600 hover:bg-green-700 h-8">Accepter</Button>
+                                                    <Button size="sm" variant="outline" onClick={() => handleTeamInvite(t.membershipId, false)} className="h-8 border-red-200 text-red-600">Refuser</Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {myTeams.length > 0 ? myTeams.map(team => (
+                                <Link key={team.id} to={`/TeamDetail?id=${team.id}`}>
+                                    <Card className="hover:shadow-md transition-all cursor-pointer border-[#d4c5b0]">
+                                        <CardContent className="p-4 flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-lg bg-[#4a3728] flex items-center justify-center text-[#e8dcc5]">
+                                                {team.avatar_url ? <img src={team.avatar_url} className="w-full h-full object-cover rounded-lg" /> : <Users className="w-6 h-6" />}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-[#4a3728]">{team.name}</div>
+                                                <div className="text-xs text-gray-500">{team.description || 'Aucune description'}</div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
+                            )) : (
+                                <div className="col-span-full text-center py-12 text-gray-500 bg-white/50 rounded-xl">
+                                    <Shield className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                                    <p>Aucune équipe</p>
+                                    {isOwnProfile && (
+                                        <Button variant="link" onClick={() => navigate('/Teams')} className="text-[#4a3728]">
+                                            Rejoindre ou créer une équipe
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                         </div>

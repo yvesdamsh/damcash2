@@ -17,6 +17,8 @@ export default function Teams() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newTeamName, setNewTeamName] = useState('');
     const [newTeamDesc, setNewTeamDesc] = useState('');
+    const [newTeamAvatar, setNewTeamAvatar] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [user, setUser] = useState(null);
 
@@ -41,6 +43,20 @@ export default function Teams() {
         }
     };
 
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(true);
+        try {
+            const { file_url } = await base44.integrations.Core.UploadFile({ file });
+            setNewTeamAvatar(file_url);
+        } catch (e) {
+            toast.error("Upload failed");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleCreateTeam = async () => {
         if (!newTeamName) return toast.error(t('teams.error_name'));
         if (!user) return toast.error(t('teams.error_login'));
@@ -50,6 +66,7 @@ export default function Teams() {
             const team = await base44.entities.Team.create({
                 name: newTeamName,
                 description: newTeamDesc,
+                avatar_url: newTeamAvatar,
                 leader_id: user.id,
                 created_at: new Date().toISOString()
             });
@@ -116,6 +133,20 @@ export default function Teams() {
                                     placeholder="..."
                                     className="border-[#d4c5b0]"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>{t('teams.form_avatar') || "Logo de l'équipe"}</Label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 rounded-lg bg-gray-100 border border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                                        {newTeamAvatar ? <img src={newTeamAvatar} className="w-full h-full object-cover" /> : <Users className="w-6 h-6 text-gray-400" />}
+                                    </div>
+                                    <Input 
+                                        type="file" 
+                                        onChange={handleFileUpload} 
+                                        disabled={uploading}
+                                        className="w-full"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>

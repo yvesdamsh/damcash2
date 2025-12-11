@@ -8,6 +8,7 @@ import { Users, Shield, Calendar, ArrowLeft, Check, X, Crown } from 'lucide-reac
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import UserSearchDialog from '@/components/UserSearchDialog';
 
 export default function TeamDetail() {
     const { t } = useLanguage();
@@ -20,6 +21,7 @@ export default function TeamDetail() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isFollowing, setIsFollowing] = useState(false);
+    const [inviteOpen, setInviteOpen] = useState(false);
 
     useEffect(() => {
         const init = async () => {
@@ -102,13 +104,44 @@ export default function TeamDetail() {
                 await base44.entities.TeamMember.update(memberId, { status: 'active' });
                 setMembers(members.map(m => m.id === memberId ? { ...m, status: 'active' } : m));
                 toast.success(t('team.success_accept'));
-            } else if (action === 'kick' || action === 'reject') {
+            } else if (action === 'kick' || action === 'reject' || action === 'cancel_invite') {
                 await base44.entities.TeamMember.delete(memberId);
                 setMembers(members.filter(m => m.id !== memberId));
-                toast.success(action === 'kick' ? t('team.success_kick') : t('team.success_reject'));
+                toast.success(t('common.success'));
             }
         } catch (e) {
             toast.error(t('common.error'));
+        }
+    };
+
+    const handleInviteUser = async (userToInvite) => {
+        if (members.some(m => m.user_id === userToInvite.id)) {
+            return toast.error("Utilisateur déjà dans l'équipe ou invité");
+        }
+        try {
+            const newMember = await base44.entities.TeamMember.create({
+                team_id: team.id,
+                user_id: userToInvite.id,
+                user_name: userToInvite.username || userToInvite.full_name,
+                user_avatar: userToInvite.avatar_url,
+                role: 'member',
+                status: 'invited',
+                joined_at: new Date().toISOString()
+            });
+            setMembers([...members, newMember]);
+            
+            await base44.entities.Notification.create({
+                recipient_id: userToInvite.id,
+                type: "team_request",
+                title: "Invitation d'équipe",
+                message: `Vous avez été invité à rejoindre ${team.name}`,
+                link: `/Profile`
+            });
+
+            toast.success("Invitation envoyée");
+            setInviteOpen(false);
+        } catch (e) {
+            toast.error("Erreur invitation");
         }
     };
 
@@ -177,6 +210,11 @@ export default function TeamDetail() {
                             >
                                 {isFollowing ? "Suivi" : "Suivre"}
                             </Button>
+                            {isLeader && (
+                                <Button onClick={() => setInviteOpen(true)} className="bg-[#4a3728] hover:bg-[#2c1e12]">
+                                    <Users className="w-4 h-4 mr-2" /> Inviter
+                                </Button>
+                            )}
                             {!myMembership && (
                                 <Button onClick={handleJoin} className="bg-green-600 hover:bg-green-700">
                                     {t('team.join')}
@@ -194,6 +232,13 @@ export default function TeamDetail() {
                     </div>
                 </div>
             </div>
+
+            <UserSearchDialog 
+                isOpen={inviteOpen} 
+                onClose={() => setInviteOpen(false)} 
+                onInvite={handleInviteUser} 
+                title="Inviter un joueur"
+            />
 
             <Tabs defaultValue="members" className="w-full">
                 <TabsList className="bg-[#e8dcc5]">
@@ -216,17 +261,19 @@ export default function TeamDetail() {
                                             {member.user_name}
                                             {member.role === 'leader' && <Crown className="w-4 h-4 text-yellow-500" />}
                                         </div>
-                                        <div className="text-xs text-gray-500 capitalize">{member.role}</div>
+                                        <div className="text-xs text-gray-500 capitalize">
+                                            {member.status === 'invited' ? 'Invité' : member.role}
+                                        </div>
                                     </div>
                                 </div>
                                 {isLeader && member.role !== 'leader' && (
                                     <Button 
-                                        onClick={() => handleAction(member.id, 'kick')}
+                                        onClick={() => handleAction(member.id, member.status === 'invited' ? 'cancel_invite' : 'kick')}
                                         size="sm" 
                                         variant="ghost" 
                                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                     >
-                                        {t('team.kick')}
+                                        {member.status === 'invited' ? 'Annuler' : t('team.kick')}
                                     </Button>
                                 )}
                             </Card>
