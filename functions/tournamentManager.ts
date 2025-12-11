@@ -100,18 +100,25 @@ export default async function handler(req) {
     }
 
     // A. Hourly Arenas (Next 12 hours to be safe)
+    // Note: currentHour is now.getHours(). 
+    // If now is 17:13, currentHour is 17.
+    // i=0 -> targetTime set to Hour 17:00 today.
+    // i=1 -> targetTime set to Hour 18:00 today.
+    // If we are at 17:13, the 17:00 tournament is already started or should have started.
+    // If it didn't start, ensureScheduledTournament will create it as "Open" with start time 17:00.
+    // BUT the start logic below (A. Start Tournaments) checks "if start_date <= now".
+    // 17:00 <= 17:13, so it will immediately start.
+    
+    // We loop through next 12 hours
     for (let i = 0; i < 12; i++) {
         const targetTime = new Date(now);
         targetTime.setMinutes(0, 0, 0); 
+        // We must use setHours on the targetTime object correctly to handle date rollover
+        // The previous code did: targetTime.setHours(currentHour + i) which is correct for Date object.
         targetTime.setHours(currentHour + i); 
         
         const tcIndex = (currentHour + i) % 3;
         const tc = timeControls[tcIndex];
-        
-        // Ensure we create them even if slightly in the past (e.g. current hour started 5 mins ago)
-        // But don't create way in the past. 
-        // targetTime is basically "Hour X".
-        // ensureScheduledTournament checks existence.
         
         try {
             await ensureScheduledTournament(`Arena ${tc} Dames`, 'checkers', 'arena', tc, targetTime, 'none', 50);

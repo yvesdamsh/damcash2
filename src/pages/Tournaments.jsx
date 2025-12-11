@@ -640,6 +640,14 @@ export default function Tournaments() {
                         } else {
                             // 'all' tab hides finished tournaments by default to show only upcoming/active
                             if (t.status === 'finished' && filterStatus === 'all') return false;
+                            
+                            // HACK: Filter out tournaments significantly in the past that are somehow still Open/Ongoing but stale
+                            // This hides the "01 Dec" ghosts from the UI even if they exist in DB
+                            // (e.g. if start_date is older than 24 hours and it's still 'open' or 'ongoing' without being 'finished')
+                            // Ideally backend cleans them up, but this is a fail-safe.
+                            const start = new Date(t.start_date);
+                            const now = new Date();
+                            if (now - start > 24 * 60 * 60 * 1000 && t.status !== 'finished') return false;
                         }
 
                         // 3. Status Filter
