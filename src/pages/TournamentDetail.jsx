@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare, Bell, BellOff, Eye, ArrowUp, ArrowDown, Medal, Crown } from 'lucide-react';
+import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquare, Bell, BellOff, Eye, ArrowUp, ArrowDown, Medal, Crown, Trash2, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -439,6 +439,25 @@ export default function TournamentDetail() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm("Voulez-vous vraiment SUPPRIMER ce tournoi ? Cette action est irréversible.")) return;
+        try {
+            // Delete logic - should ideally be a backend function to refund everyone, but for now simple delete
+            // Better to update status to 'cancelled' if we want to keep history, or hard delete?
+            // Let's hard delete for custom tournaments that haven't started.
+            if (tournament.status === 'ongoing') {
+                toast.error("Impossible de supprimer un tournoi en cours");
+                return;
+            }
+            
+            await base44.entities.Tournament.delete(tournament.id);
+            toast.success("Tournoi supprimé");
+            window.location.href = '/Tournaments';
+        } catch (e) {
+            toast.error("Erreur suppression");
+        }
+    };
+
     const advanceGroupsToBracket = async () => {
         // Calculate standings and generate bracket
         try {
@@ -563,6 +582,21 @@ export default function TournamentDetail() {
                                  </div>
                              )
                          ) : null}
+
+                         {/* Creator Controls */}
+                         {user && tournament.created_by_user_id === user.id && (
+                            <div className="flex flex-col gap-2 border-l pl-4 border-gray-200">
+                                <div className="text-[10px] uppercase font-bold text-gray-400 text-center">Gestion</div>
+                                {tournament.status === 'open' && (
+                                    <Button onClick={handleStartTournament} size="sm" className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+                                        <Play className="w-3 h-3 mr-1" /> Démarrer
+                                    </Button>
+                                )}
+                                <Button onClick={handleDelete} size="sm" variant="destructive" className="h-8">
+                                    <Trash2 className="w-3 h-3 mr-1" /> Supprimer
+                                </Button>
+                            </div>
+                         )}
                     </div>
                 </div>
             </div>
