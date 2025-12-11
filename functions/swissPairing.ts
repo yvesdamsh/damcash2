@@ -202,6 +202,22 @@ export default async function handler(req) {
         
         await base44.asServiceRole.entities.TournamentParticipant.update(p1.id, { current_game_id: game.id });
         await base44.asServiceRole.entities.TournamentParticipant.update(p2.id, { current_game_id: game.id });
+
+        // Notify Match
+        const notifyMatch = async (pid, opponentName) => {
+            const u = userMap.get(pid);
+            if (u && u.preferences && u.preferences.notify_match === false) return;
+            
+            await base44.asServiceRole.entities.Notification.create({
+                recipient_id: pid,
+                type: 'game',
+                title: 'Nouveau Match (Suisse)',
+                message: `Round ${newRound}: Contre ${opponentName}`,
+                link: `/Game?id=${game.id}`
+            });
+        };
+        await notifyMatch(p1.user_id, p2.user_name);
+        await notifyMatch(p2.user_id, p1.user_name);
     }
 
     await base44.asServiceRole.entities.Tournament.update(tournament.id, { 

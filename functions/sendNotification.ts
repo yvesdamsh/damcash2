@@ -15,6 +15,18 @@ export default async function handler(req) {
             return Response.json({ error: "Missing fields" }, { status: 400 });
         }
 
+        // Check User Preferences
+        const recipient = await base44.asServiceRole.entities.User.get(recipient_id);
+        if (recipient && recipient.preferences) {
+            if (type === 'game_invite' && recipient.preferences.notify_invite === false) {
+                return Response.json({ skipped: true, reason: 'user_disabled_invites' });
+            }
+            // Other types if sent via this endpoint
+            if ((type === 'tournament' || type === 'tournament_update') && recipient.preferences.notify_tournament === false) {
+                return Response.json({ skipped: true, reason: 'user_disabled_tournament' });
+            }
+        }
+
         // Create DB record
         const notification = await base44.asServiceRole.entities.Notification.create({
             recipient_id,

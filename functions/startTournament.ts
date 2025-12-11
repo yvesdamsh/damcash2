@@ -83,8 +83,27 @@ export default async function handler(req) {
             black_seconds_left: timeSeconds,
             increment: increment,
             is_private: true,
-            prize_pool: 0 // Individual game prize? Maybe 0, tournament has prize
+            prize_pool: 0 
         });
+
+        // Notify Match Start
+        const notifyMatch = async (uid, opponentName) => {
+            const u = userMap.get(uid); // Ensure userMap is available or fetch
+            if (u && u.preferences && u.preferences.notify_match === false) return;
+            
+            await base44.asServiceRole.entities.Notification.create({
+                recipient_id: uid,
+                type: 'game',
+                title: 'Match Prêt !',
+                message: `Votre partie contre ${opponentName} commence.`,
+                link: `/Game?id=${game.id}`
+            });
+        };
+        // Note: userMap might not be populated in all contexts (e.g. bracket only fetches allUsers if we moved logic).
+        // If userMap is missing in 'createGame' scope, we might need to fetch. 
+        // In startTournament context, 'userMap' is defined before.
+        await notifyMatch(p1.user_id, p2.user_name);
+        await notifyMatch(p2.user_id, p1.user_name);
     };
 
     // 1. Arena
@@ -128,6 +147,10 @@ export default async function handler(req) {
     // Notify all participants
     const notifChannel = new BroadcastChannel('notifications');
     for (const p of participants) {
+        // Check Prefs
+        const pUser = userMap.get(p.user_id);
+        if (pUser && pUser.preferences && pUser.preferences.notify_tournament === false) continue;
+
         // Create Notification Entity
         base44.asServiceRole.entities.Notification.create({
             recipient_id: p.user_id,

@@ -23,7 +23,10 @@ export default function Preferences() {
         sound_move: true,
         sound_capture: true,
         sound_notify: true,
-        notifications_browser: true
+        notifications_browser: true,
+        notify_tournament: true,
+        notify_match: true,
+        notify_invite: true
     });
 
     useEffect(() => {
@@ -253,6 +256,39 @@ export default function Preferences() {
                                             Notification.requestPermission();
                                         }
                                     }} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Tournois</Label>
+                                    <div className="text-sm text-gray-500">Alertes de début/fin de tournoi et inscriptions</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_tournament !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_tournament', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Matchs & Appariements</Label>
+                                    <div className="text-sm text-gray-500">Alertes quand un match commence ou qu'un appariement est prêt</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_match !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_match', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Invitations</Label>
+                                    <div className="text-sm text-gray-500">Invitations directes d'autres joueurs</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_invite !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_invite', c)} 
                                 />
                             </div>
                         </CardContent>

@@ -109,6 +109,9 @@ export default async function handler(req) {
             ]);
 
             for (const uid of recipientIds) {
+                const u = await base44.asServiceRole.entities.User.get(uid);
+                if (u && u.preferences && u.preferences.notify_tournament === false) continue;
+
                 await base44.asServiceRole.entities.Notification.create({
                     recipient_id: uid,
                     type: "tournament",
@@ -408,6 +411,9 @@ async function finishTournament(tournament, base44) {
     // Notify Followers of Winner
     const followers = await base44.asServiceRole.entities.TournamentFollow.filter({ tournament_id: tournament.id });
     for (const f of followers) {
+        const u = await base44.asServiceRole.entities.User.get(f.user_id);
+        if (u && u.preferences && u.preferences.notify_tournament === false) continue;
+
         await base44.asServiceRole.entities.Notification.create({
             recipient_id: f.user_id,
             type: "tournament",
