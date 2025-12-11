@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, Filter, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Filter, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
@@ -690,12 +690,27 @@ export default function Tournaments() {
                                 <span className="font-bold">{tournament.current_round || 0} / {tournament.max_players}</span>
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Link to={`/TournamentDetail?id=${tournament.id}`} className="w-full">
-                                <Button className="w-full bg-[#e8dcc5] hover:bg-[#d4c5b0] text-[#4a3728] border border-[#d4c5b0] group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-all">
-                                    {t('tournaments.view_btn')} <ArrowRight className="w-4 h-4 ml-2" />
-                                </Button>
-                            </Link>
+                        <CardFooter className="gap-2">
+                            {tournament.status === 'open' && !myTournamentIds.has(tournament.id) ? (
+                                <>
+                                    <Link to={`/TournamentDetail?id=${tournament.id}`} className="flex-1">
+                                        <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white font-bold shadow-sm">
+                                            {t('common.join')}
+                                        </Button>
+                                    </Link>
+                                    <Link to={`/TournamentDetail?id=${tournament.id}`}>
+                                        <Button variant="outline" className="border-[#d4c5b0] hover:bg-[#f5f0e6] text-[#4a3728]">
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                    </Link>
+                                </>
+                            ) : (
+                                <Link to={`/TournamentDetail?id=${tournament.id}`} className="w-full">
+                                    <Button className="w-full bg-[#e8dcc5] hover:bg-[#d4c5b0] text-[#4a3728] border border-[#d4c5b0] group-hover:bg-[#4a3728] group-hover:text-[#e8dcc5] transition-all">
+                                        {myTournamentIds.has(tournament.id) ? "Accéder" : t('tournaments.view_btn')} <ArrowRight className="w-4 h-4 ml-2" />
+                                    </Button>
+                                </Link>
+                            )}
                         </CardFooter>
                     </Card>
                 ))}
