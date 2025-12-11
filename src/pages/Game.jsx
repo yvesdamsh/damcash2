@@ -308,11 +308,18 @@ export default function Game() {
 
                             const isNewer = fetchedGame.last_move_at && prev.last_move_at && new Date(fetchedGame.last_move_at) > new Date(prev.last_move_at);
                             
-                            // Only update if server has MORE moves, or SAME moves but strictly newer timestamp (to avoid overwriting optimistic updates with stale/echoed data)
-                            if (isRematch || fetchedMoves.length > localMoves.length || (fetchedMoves.length === localMoves.length && isNewer)) {
-                                return fetchedGame;
+                            // STRICT UPDATE POLICY:
+                            // 1. Never revert to fewer moves (client is ahead)
+                            if (fetchedMoves.length < localMoves.length) return prev;
+
+                            // 2. If same move count and same turn, prefer local state to avoid timer jumps and "piece returning" visual glitches
+                            // Exception: If board state is materially different (e.g. invalid move correction), we might need to accept, but standard flow assumes optimistic is correct.
+                            if (fetchedMoves.length === localMoves.length && fetchedGame.current_turn === prev.current_turn && !isRematch) {
+                                return prev;
                             }
-                            return prev;
+
+                            // 3. Otherwise accept (More moves, new turn, or rematch)
+                            return fetchedGame;
                         });
                     }
                     
@@ -362,17 +369,16 @@ export default function Game() {
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
                         
-                        // Stale check: reject if older timestamp
-                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
+                        // STRICT SOCKET UPDATE POLICY:
+                        // 1. Never revert to fewer moves
+                        if (incomingMoves.length < localMoves.length) return prev;
+
+                        // 2. If same move count and turn, ignore to prevent timer/animation jitter
+                        if (incomingMoves.length === localMoves.length && data.payload.current_turn === prev.current_turn) {
                             return prev;
                         }
 
-                        // Move count check: reject if fewer OR EQUAL moves AND not newer (preserves local optimistic state against stale echoes)
-                        const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
-                        
-                        if (data.payload.moves && incomingMoves.length <= localMoves.length && !isNewer) {
-                            return prev;
-                        }
+                        // 3. Accept valid update
                         return { ...prev, ...data.payload };
                     });
                 }
