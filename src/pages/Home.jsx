@@ -63,38 +63,67 @@ export default function Home() {
     const [currentLegendIndex, setCurrentLegendIndex] = useState(0);
     const navigate = useNavigate();
 
-    const legends = [
+    const checkersLegends = [
         {
             id: 'babasy',
-            name: t('legend.babasy.name'),
-            subtitle: t('legend.babasy.subtitle'),
+            name: t('legend.babasy.name') || "Baba Sy",
+            subtitle: t('legend.babasy.subtitle') || "Le génie africain",
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg',
-            description: t('legend.babasy.desc'),
+            description: t('legend.babasy.desc') || "Grand Maître sénégalais, considéré comme l'un des plus grands joueurs de dames de tous les temps.",
             link: 'https://fr.wikipedia.org/wiki/Baba_Sy',
-            badge: t('legend.babasy.badge'),
+            badge: t('legend.babasy.badge') || "Légende",
             position: 'object-top'
         },
         {
             id: 'sijbrands',
-            name: t('legend.sijbrands.name'),
-            subtitle: t('legend.sijbrands.subtitle'),
+            name: t('legend.sijbrands.name') || "Ton Sijbrands",
+            subtitle: t('legend.sijbrands.subtitle') || "Le virtuose hollandais",
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/62119ad07_1764873196043.jpg',
-            description: t('legend.sijbrands.desc'),
+            description: t('legend.sijbrands.desc') || "Champion du monde à plusieurs reprises, connu pour ses parties à l'aveugle.",
             link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
-            badge: t('legend.sijbrands.badge'),
+            badge: t('legend.sijbrands.badge') || "Champion",
             position: 'object-[center_30%]'
         },
         {
             id: 'boomstra',
-            name: t('legend.boomstra.name'),
-            subtitle: t('legend.boomstra.subtitle'),
+            name: t('legend.boomstra.name') || "Roel Boomstra",
+            subtitle: t('legend.boomstra.subtitle') || "Le prodige moderne",
             image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/38a69b1a1_Screenshot_20251206_032614_SamsungInternet.jpg',
-            description: t('legend.boomstra.desc'),
+            description: t('legend.boomstra.desc') || "Champion du monde en titre, alliant technique et créativité.",
             link: 'https://fr.wikipedia.org/wiki/Roel_Boomstra',
-            badge: t('legend.boomstra.badge'),
+            badge: t('legend.boomstra.badge') || "Maitre",
             position: 'object-top'
         }
     ];
+
+    const chessLegends = [
+        {
+            id: 'kasparov',
+            name: "Garry Kasparov",
+            subtitle: "The Beast of Baku",
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Garry_Kasparov_2017.jpg/600px-Garry_Kasparov_2017.jpg',
+            description: "World Chess Champion (1985–2000). Widely considered the greatest chess player of all time due to his dominance and longevity at the top.",
+            link: 'https://en.wikipedia.org/wiki/Garry_Kasparov',
+            badge: "G.O.A.T.",
+            position: 'object-top'
+        },
+        {
+            id: 'magnus',
+            name: "Magnus Carlsen",
+            subtitle: "The Mozart of Chess",
+            image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Magnus_Carlsen_2013.jpg/600px-Magnus_Carlsen_2013.jpg',
+            description: "World Chess Champion (2013–2023). Highest rated player in history. Known for his intuitive style and endgame prowess.",
+            link: 'https://en.wikipedia.org/wiki/Magnus_Carlsen',
+            badge: "Champion",
+            position: 'object-top'
+        }
+    ];
+
+    const legends = gameType === 'chess' ? chessLegends : checkersLegends;
+
+    useEffect(() => {
+        setCurrentLegendIndex(0);
+    }, [gameType]);
 
     const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
     const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
