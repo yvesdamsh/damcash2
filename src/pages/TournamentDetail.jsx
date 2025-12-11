@@ -504,7 +504,7 @@ export default function TournamentDetail() {
     if (!tournament) return <div className="text-center p-10">Tournoi introuvable</div>;
 
     return (
-        <div className="max-w-6xl mx-auto p-4">
+        <div className="max-w-6xl mx-auto p-4 font-sans">
             <TournamentVictoryDialog 
                 open={showVictory} 
                 onOpenChange={setShowVictory} 
@@ -519,249 +519,148 @@ export default function TournamentDetail() {
                 stats={resultStats}
                 rank={resultStats?.rank}
             />
-            <div className="mb-6">
-                <Link to="/Tournaments">
-                    <Button variant="ghost" className="hover:bg-[#d4c5b0] text-[#4a3728]">
-                        <ArrowLeft className="w-4 h-4 mr-2" /> Retour aux tournois
-                    </Button>
-                </Link>
+            
+            {/* Header: Clean Arena Style */}
+            <div className="bg-white rounded-t-lg shadow-sm border-b border-gray-200 mb-0">
+                <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex items-center gap-4">
+                        <Trophy className="w-10 h-10 text-yellow-600" />
+                        <div>
+                            <h1 className="text-2xl font-light text-[#a88a68]">
+                                {tournament.name}
+                            </h1>
+                            <div className="text-sm text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                {tournament.game_type === 'checkers' ? 'Dames' : 'Échecs'} • {tournament.time_control} • {tournament.format}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                         <div className="text-right">
+                             <div className="text-xs text-gray-400 uppercase font-bold">Commence dans</div>
+                             <div className="text-2xl font-mono text-gray-600 font-medium">
+                                 {countdown.replace(/[^0-9:]/g, '') || "00:00"}
+                             </div>
+                         </div>
+                         
+                         {tournament.status === 'open' || tournament.status === 'ongoing' ? (
+                             !isParticipant ? (
+                                 <Button 
+                                     onClick={handleJoin} 
+                                     className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white font-bold px-8 py-6 rounded shadow-lg text-lg uppercase tracking-wider"
+                                 >
+                                     <Play className="w-5 h-5 mr-2 fill-current" />
+                                     Rejoindre
+                                 </Button>
+                             ) : (
+                                 <div className="flex flex-col gap-2">
+                                     <Button disabled className="bg-gray-200 text-gray-500 font-bold px-6 py-2">
+                                         Inscrit
+                                     </Button>
+                                     <button onClick={handleWithdraw} className="text-xs text-red-400 hover:text-red-600 underline">
+                                         Quitter
+                                     </button>
+                                 </div>
+                             )
+                         ) : null}
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Info Column */}
-                <div className="space-y-6">
-                    
-                    <Dialog open={isTeamJoinOpen} onOpenChange={setIsTeamJoinOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Sélectionner une équipe</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-2">
-                                {myLedTeams.map(t => (
-                                    <Button key={t.id} onClick={() => handleJoinAsTeam(t)} className="w-full justify-start" variant="outline">
-                                        {t.name}
-                                    </Button>
-                                ))}
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-
-                    <Card className="border-t-4 border-t-[#4a3728] shadow-lg bg-white/90">
-                        <CardHeader>
-                            <div className="uppercase tracking-wider text-xs font-bold text-gray-500 mb-2 flex items-center gap-2">
-                                {tournament.game_type === 'checkers' ? 'Dames' : 'Échecs'}
-                                {tournament.team_mode && <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-[10px]">PAR ÉQUIPE</span>}
-                            </div>
-                            <div className="flex justify-between items-start">
-                                <CardTitle className="text-3xl font-bold text-[#4a3728] font-serif">
-                                    {tournament.name}
-                                </CardTitle>
-                                {user && (
-                                    <Button 
-                                        size="sm" 
-                                        variant={isFollowing ? "secondary" : "outline"} 
-                                        onClick={handleFollowToggle}
-                                        className={isFollowing ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" : "border-[#d4c5b0]"}
-                                    >
-                                        {isFollowing ? <BellOff className="w-4 h-4 mr-2" /> : <Bell className="w-4 h-4 mr-2" />}
-                                        {isFollowing ? 'Suivi' : 'Suivre'}
-                                    </Button>
-                                )}
-                                <Button 
-                                    size="sm"
-                                    variant="outline"
-                                    className="border-[#d4c5b0]"
-                                    onClick={async () => {
-                                        const toastId = toast.loading("Ajout au calendrier...");
-                                        try {
-                                            const res = await base44.functions.invoke('addToGoogleCalendar', { tournamentId: tournament.id });
-                                            if (res.data.success) {
-                                                toast.success("Ajouté à Google Agenda !", { id: toastId });
-                                                window.open(res.data.link, '_blank');
-                                            } else {
-                                                if (res.data.needsAuth) {
-                                                    toast.error("Veuillez connecter Google Calendar via l'assistant", { id: toastId });
-                                                } else {
-                                                    toast.error("Erreur lors de l'ajout", { id: toastId });
-                                                }
-                                            }
-                                        } catch (e) {
-                                            toast.error("Erreur de connexion", { id: toastId });
-                                        }
-                                    }}
-                                >
-                                    <Calendar className="w-4 h-4 mr-2" /> Agenda
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center gap-3 text-gray-700">
-                                <div className="w-8 h-8 rounded-full bg-[#f0e6d2] flex items-center justify-center">
-                                    <Calendar className="w-4 h-4 text-[#6b5138]" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase">Début</p>
-                                    <p className="font-medium">{format(new Date(tournament.start_date), 'dd MMMM yyyy HH:mm', { locale: fr })}</p>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 text-gray-700">
-                                <div className="w-8 h-8 rounded-full bg-[#f0e6d2] flex items-center justify-center">
-                                    <Users className="w-4 h-4 text-[#6b5138]" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase">Participants</p>
-                                    <p className="font-medium">{participants.length} / {tournament.max_players}</p>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 text-gray-700">
-                                <div className="w-8 h-8 rounded-full bg-[#f0e6d2] flex items-center justify-center">
-                                    <Trophy className="w-4 h-4 text-[#6b5138]" />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-500 uppercase">Frais / Cagnotte</p>
-                                    <p className="font-medium">
-                                        {tournament.entry_fee > 0 ? `$${tournament.entry_fee}` : 'Gratuit'} / 
-                                        <span className="text-green-600 font-bold ml-1">${tournament.prize_pool || 0}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 border-t border-gray-100 space-y-3">
-                                <div className="text-center font-mono font-bold text-xl text-[#d45c30]">
-                                    {countdown}
-                                </div>
-
-                                {pairingsClosed && tournament.status === 'ongoing' && (
-                                    <div className="bg-blue-600 text-white text-center py-2 px-4 rounded font-bold shadow-sm animate-in fade-in">
-                                        Les appariements du tournoi sont maintenant terminés.
-                                    </div>
-                                )}
-
-                                {tournament.format === 'arena' && isParticipant && !pairingsClosed && (
-                                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                                        {participants.find(p => p.user_id === user?.id)?.current_game_id ? (
-                                            <Button onClick={handleEnterGame} className="w-full bg-green-600 hover:bg-green-700 animate-pulse">
-                                                PARTIE EN COURS ! REJOINDRE
-                                            </Button>
-                                        ) : (
-                                            <div className="text-sm text-blue-800 font-bold flex items-center justify-center gap-2">
-                                                <Loader2 className="animate-spin w-4 h-4" /> Recherche d'adversaire...
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {tournament.status === 'open' ? (
-                                    !isParticipant ? (
-                                        <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md text-lg font-bold">
-                                            S'inscrire
-                                        </Button>
-                                    ) : (
-                                        <div className="space-y-2">
-                                            <Button disabled className="w-full opacity-80 bg-green-700 text-white">Inscrit ✅</Button>
-                                            <Button onClick={handleWithdraw} variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
-                                                Se désinscrire
-                                            </Button>
-                                        </div>
-                                    )
-                                ) : tournament.status === 'ongoing' ? (
-                                    !isParticipant ? (
-                                        tournament.format === 'arena' ? (
-                                            <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md text-lg font-bold">
-                                                Rejoindre l'Arène
-                                            </Button>
-                                        ) : (
-                                            <div className="text-center font-bold text-gray-500">Inscriptions fermées</div>
-                                        )
-                                    ) : (
-                                        <div className="space-y-2">
-                                            {tournament.format !== 'arena' && <div className="text-center font-bold text-green-600 mb-2">Tournoi en cours</div>}
-                                            <Button onClick={handleWithdraw} variant="ghost" size="sm" className="w-full text-red-500 hover:text-red-700 hover:bg-red-50">
-                                                Abandonner le tournoi
-                                            </Button>
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="text-center font-bold text-gray-500">Tournoi terminé</div>
-                                )}
-
-                                {/* Admin Start Button */}
-                                {tournament.status === 'open' && participants.length >= 2 && user && tournament.created_by_user_id === user.id && (
-                                    <Button onClick={handleStartTournament} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
-                                        <Play className="w-4 h-4 mr-2" /> Démarrer le Tournoi (Admin)
-                                    </Button>
-                                )}
-
-                                {/* Next Round Swiss */}
-                                {tournament.status === 'ongoing' && tournament.format === 'swiss' && (
-                                    <Button onClick={async () => {
-                                        await base44.functions.invoke('swissPairing', { tournamentId: tournament.id });
-                                        toast.success("Nouveau round généré !");
-                                        // Reload data
-                                    }} variant="outline" className="w-full mt-2 border-[#4a3728] text-[#4a3728] hover:bg-[#f5f0e6]">
-                                        <Play className="w-4 h-4 mr-2" /> Round Suivant (Admin)
-                                    </Button>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5]">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4 mb-4">
-                                <Trophy className="w-12 h-12 text-yellow-500" />
-                                <div>
-                                    <h3 className="font-bold text-lg">Récompenses</h3>
-                                    <p className="text-sm opacity-80">{tournament.prizes || "La gloire éternelle !"}</p>
-                                </div>
-                            </div>
-                            {tournament.rewards && (
-                                <div className="grid grid-cols-3 gap-2 text-center text-xs mt-4 border-t border-white/10 pt-4">
-                                    <div className="bg-white/10 p-2 rounded">
-                                        <div className="font-bold text-yellow-400">1er</div>
-                                        <div>{tournament.rewards.first || 'Or'}</div>
-                                    </div>
-                                    <div className="bg-white/10 p-2 rounded">
-                                        <div className="font-bold text-gray-300">2ème</div>
-                                        <div>{tournament.rewards.second || 'Argent'}</div>
-                                    </div>
-                                    <div className="bg-white/10 p-2 rounded">
-                                        <div className="font-bold text-orange-400">3ème</div>
-                                        <div>{tournament.rewards.third || 'Bronze'}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {tournament.winner_id && (
-                        <Card className="mt-6 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-xl animate-in fade-in zoom-in duration-500">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-white">
-                                    <Crown className="w-6 h-6" /> Vainqueur
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4">
-                                    <div className="text-2xl font-black">
-                                        {participants.find(p => p.user_id === tournament.winner_id)?.user_name || 'Champion'}
-                                    </div>
-                                    <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold backdrop-blur-sm">
-                                        🏆 Champion
-                                    </div>
-                                </div>
-                                <p className="mt-2 text-white/80 text-sm">
-                                    A remporté le badge "Vainqueur {tournament.name}"
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
+            {/* Main Content Area */}
+            <div className="bg-white rounded-b-lg shadow-sm min-h-[600px] border border-gray-100">
+                {/* Controls Bar */}
+                <div className="border-b border-gray-100 p-2 flex items-center justify-between bg-gray-50/50">
+                    <div className="flex gap-2">
+                        {/* Pagination or Search Placeholders */}
+                         <div className="text-sm text-gray-400 font-mono px-4">
+                             1-{Math.min(participants.length, 50)} / {participants.length}
+                         </div>
+                    </div>
                 </div>
 
-                {/* Right Content Area */}
-                <div className="lg:col-span-2">
+                {/* Main Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3">
+                    {/* Left: Player List (Takes 2/3 roughly or full if no chat) */}
+                    <div className="lg:col-span-2 border-r border-gray-100">
+                         {participants.length === 0 ? (
+                             <div className="p-10 text-center text-gray-400">En attente de joueurs...</div>
+                         ) : (
+                             <div className="divide-y divide-gray-100">
+                                 {participants.map((p, i) => (
+                                     <div key={p.id} className={`flex items-center p-3 hover:bg-blue-50/50 transition-colors ${p.user_id === user?.id ? 'bg-yellow-50' : ''}`}>
+                                         <div className="w-12 text-center text-gray-400 font-mono text-sm">{i + 1}</div>
+                                         <div className="flex-1 flex items-center gap-3">
+                                             <div className="font-bold text-gray-700 flex items-center gap-2">
+                                                 {p.user_name}
+                                                 {p.streak >= 2 && <span className="text-xs bg-orange-100 text-orange-600 px-1 rounded font-bold">🔥 {p.streak}</span>}
+                                             </div>
+                                             <div className="text-sm text-gray-400 font-mono">
+                                                 {tournament.game_type === 'chess' 
+                                                      ? (usersMap[p.user_id]?.elo_chess || 1200) 
+                                                      : (usersMap[p.user_id]?.elo_checkers || 1200)}
+                                             </div>
+                                         </div>
+                                         <div className="px-4 font-bold text-lg text-gray-800">
+                                             {p.score || 0}
+                                         </div>
+                                     </div>
+                                 ))}
+                             </div>
+                         )}
+                    </div>
+
+                    {/* Right: Info / Chat / Live Game Preview */}
+                    <div className="lg:col-span-1 bg-gray-50/30">
+                        <Tabs defaultValue="chat" className="w-full">
+                            <TabsList className="w-full rounded-none bg-transparent border-b border-gray-200 p-0 h-10">
+                                <TabsTrigger value="chat" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#6B8E4E] data-[state=active]:text-[#6B8E4E] data-[state=active]:bg-transparent">Chat</TabsTrigger>
+                                <TabsTrigger value="games" className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-[#6B8E4E] data-[state=active]:text-[#6B8E4E] data-[state=active]:bg-transparent">Parties</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="chat" className="h-[500px]">
+                                <TournamentChat tournamentId={tournament.id} currentUser={user} />
+                            </TabsContent>
+                            <TabsContent value="games" className="p-4">
+                                <div className="space-y-2">
+                                    {matches.filter(m => m.status === 'playing').length === 0 ? (
+                                        <div className="text-center text-gray-400 text-sm py-4">Aucune partie en cours</div>
+                                    ) : (
+                                        matches.filter(m => m.status === 'playing').map(m => (
+                                            <div 
+                                                key={m.id} 
+                                                onClick={() => { setSpectatingGame(m); }}
+                                                className="bg-white p-3 rounded shadow-sm border border-gray-100 cursor-pointer hover:border-[#6B8E4E]"
+                                            >
+                                                <div className="flex justify-between text-sm font-bold text-gray-700">
+                                                    <span>{m.white_player_name}</span>
+                                                    <span>{m.black_player_name}</span>
+                                                </div>
+                                                <div className="text-xs text-gray-400 text-center mt-1">En cours</div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </div>
+            </div>
+
+            {/* Team/Admin Dialogs (Hidden/Preserved) */}
+            <Dialog open={isTeamJoinOpen} onOpenChange={setIsTeamJoinOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Sélectionner une équipe</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        {myLedTeams.map(t => (
+                            <Button key={t.id} onClick={() => handleJoinAsTeam(t)} className="w-full justify-start" variant="outline">
+                                {t.name}
+                            </Button>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
                     <Tabs defaultValue="live" className="w-full">
                         <TabsList className="grid w-full grid-cols-4 bg-[#e8dcc5]">
                             <TabsTrigger value="live" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5] flex gap-2">

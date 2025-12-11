@@ -405,16 +405,61 @@ export default async function handler(req) {
         let pointsWhite = 0.5;
         let pointsBlack = 0.5;
         
-        // Arena: Win=2, Draw=1, Loss=0 (As per previous prompt)
-        // Swiss/Standard: Win=1, Draw=0.5, Loss=0 (Standard)
+        // Arena: Win=2, Draw=1, Loss=0 
+        // Streak: >=2 wins -> Win=4 (Double), Draw=2 (Double) ?
+        // Berserk: Win=+1
+        // Streak+Berserk Win = 5 (2*2 + 1)
         const tournament = await base44.asServiceRole.entities.Tournament.get(game.tournament_id);
         
+        let streakWhite = pWhite ? (pWhite.streak || 0) : 0;
+        let streakBlack = pBlack ? (pBlack.streak || 0) : 0;
+        
         if (tournament.format === 'arena') {
-            if (winnerId === whiteId) { pointsWhite = 2; pointsBlack = 0; }
-            else if (winnerId === blackId) { pointsWhite = 0; pointsBlack = 2; }
-            else { pointsWhite = 1; pointsBlack = 1; } // Draw
+            const isWhiteBerserk = game.white_berserk;
+            const isBlackBerserk = game.black_berserk;
+            
+            // White Result
+            if (winnerId === whiteId) {
+                // WIN
+                let base = 2;
+                if (streakWhite >= 2) base = 4; // Double points on streak? Prompt says "3ème victoire est 4 point" which is usually 3rd game (streak=2)
+                
+                pointsWhite = base + (isWhiteBerserk ? 1 : 0);
+                streakWhite++; // Increment streak
+            } else if (winnerId === blackId) {
+                // LOSS
+                pointsWhite = 0;
+                streakWhite = 0; // Reset
+            } else {
+                // DRAW
+                let base = 1;
+                if (streakWhite >= 2) base = 2; // "Après 2 victoires consécutive si partie nulle c'est 2 points"
+                pointsWhite = base; 
+                streakWhite = 0; // Draw usually resets streak in Lichess, assumes same here unless specified otherwise. Prompt doesn't say "conserve streak".
+            }
+
+            // Black Result
+            if (winnerId === blackId) {
+                // WIN
+                let base = 2;
+                if (streakBlack >= 2) base = 4;
+                
+                pointsBlack = base + (isBlackBerserk ? 1 : 0);
+                streakBlack++;
+            } else if (winnerId === whiteId) {
+                // LOSS
+                pointsBlack = 0;
+                streakBlack = 0;
+            } else {
+                // DRAW
+                let base = 1;
+                if (streakBlack >= 2) base = 2;
+                pointsBlack = base;
+                streakBlack = 0;
+            }
+
         } else {
-            // Swiss / Bracket
+            // Swiss / Bracket (Standard)
             if (winnerId === whiteId) { pointsWhite = 1; pointsBlack = 0; }
             else if (winnerId === blackId) { pointsWhite = 0; pointsBlack = 1; }
             else { pointsWhite = 0.5; pointsBlack = 0.5; }
@@ -423,6 +468,7 @@ export default async function handler(req) {
         if (pWhite) {
             await base44.asServiceRole.entities.TournamentParticipant.update(pWhite.id, {
                 score: (pWhite.score || 0) + pointsWhite,
+                streak: streakWhite,
                 games_played: (pWhite.games_played || 0) + 1,
                 current_game_id: null // Free up for next pairing
             });
@@ -430,6 +476,7 @@ export default async function handler(req) {
         if (pBlack) {
             await base44.asServiceRole.entities.TournamentParticipant.update(pBlack.id, {
                 score: (pBlack.score || 0) + pointsBlack,
+                streak: streakBlack,
                 games_played: (pBlack.games_played || 0) + 1,
                 current_game_id: null
             });
