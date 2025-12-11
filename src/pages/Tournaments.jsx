@@ -67,10 +67,15 @@ export default function Tournaments() {
             try {
                 const u = await base44.auth.me();
                 setUser(u);
-                // Ensure tournaments exist
-                await base44.functions.invoke('tournamentManager', {});
-                // Initial fetch is now handled by the filter useEffect
                 
+                // Trigger manager to clean up old tournaments and create new ones
+                // We call it but don't await blocking the UI for too long, 
+                // but we want to fetch AFTER it runs to see new data.
+                await base44.functions.invoke('tournamentManager', {});
+                
+                // Fetch immediately after manager runs
+                fetchTournaments();
+
                 // Fetch my participations
                 if (u) {
                     const parts = await base44.entities.TournamentParticipant.filter({ user_id: u.id });

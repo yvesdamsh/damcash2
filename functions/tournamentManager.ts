@@ -55,21 +55,56 @@ export default async function handler(req) {
     const nextStart = new Date(now); nextStart.setHours(currentHour + 1, 0, 0, 0);
     const nextEnd = new Date(nextStart); nextEnd.setMinutes(57, 0, 0);
 
-    // A. Hourly Arenas (Next 10 hours)
-    for (let i = 0; i < 10; i++) {
+    // 0. CLEANUP STALE DATA (Critical for display)
+    try {
+        // Cancel "Open" system tournaments that are > 2 hours old (never started)
+        const staleOpen = await base44.asServiceRole.entities.Tournament.filter({ 
+            status: 'open', 
+            created_by_user_id: 'system' 
+        });
+        for (const t of staleOpen) {
+            // If start date is more than 2 hours in the past
+            if (new Date(t.start_date) < new Date(now.getTime() - 2 * 60 * 60 * 1000)) {
+                console.log(`Cancelling stale tournament: ${t.name}`);
+                await base44.asServiceRole.entities.Tournament.update(t.id, { status: 'cancelled' });
+            }
+        }
+
+        // Force Finish "Ongoing" system tournaments that are > 2 hours past END date (stuck)
+        const stuckOngoing = await base44.asServiceRole.entities.Tournament.filter({ 
+            status: 'ongoing', 
+            created_by_user_id: 'system' 
+        });
+        for (const t of stuckOngoing) {
+            if (t.end_date && new Date(t.end_date) < new Date(now.getTime() - 2 * 60 * 60 * 1000)) {
+                 console.log(`Force finishing stuck tournament: ${t.name}`);
+                 await finishTournament(t, base44);
+            }
+        }
+    } catch (e) {
+        console.error("Cleanup error:", e);
+    }
+
+    // A. Hourly Arenas (Next 12 hours to be safe)
+    for (let i = 0; i < 12; i++) {
         const targetTime = new Date(now);
-        targetTime.setMinutes(0, 0, 0); // Reset minutes/seconds
-        targetTime.setHours(currentHour + i); // Add hours (handles day rollover automatically)
-        
-        // Skip past? (Though i=0 starts at current hour, which might be ongoing or just started)
-        // If current hour is passed significantly (e.g. > 30 mins in), maybe we want to focus on next.
-        // But logic below checks for existence.
+        targetTime.setMinutes(0, 0, 0); 
+        targetTime.setHours(currentHour + i); 
         
         const tcIndex = (currentHour + i) % 3;
         const tc = timeControls[tcIndex];
         
-        await ensureScheduledTournament(`Arena ${tc} Dames`, 'checkers', 'arena', tc, targetTime, 'none', 50);
-        await ensureScheduledTournament(`Arena ${tc} Échecs`, 'chess', 'arena', tc, targetTime, 'none', 50);
+        // Ensure we create them even if slightly in the past (e.g. current hour started 5 mins ago)
+        // But don't create way in the past. 
+        // targetTime is basically "Hour X".
+        // ensureScheduledTournament checks existence.
+        
+        try {
+            await ensureScheduledTournament(`Arena ${tc} Dames`, 'checkers', 'arena', tc, targetTime, 'none', 50);
+            await ensureScheduledTournament(`Arena ${tc} Échecs`, 'chess', 'arena', tc, targetTime, 'none', 50);
+        } catch (e) {
+            console.error(`Failed to schedule hour ${i}`, e);
+        }
     }
 
     // B. Daily Major Tournaments
