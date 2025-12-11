@@ -157,8 +157,29 @@ export default async function handler(req) {
 
     // 2. GENERAL TOURNAMENT MANAGER (Starts and Ends ANY tournament)
     
-    // A. Start Tournaments
-    const pendingStart = await base44.asServiceRole.entities.Tournament.filter({ status: 'open' });
+    // A.1 Upcoming Reminders (15 mins before)
+    const upcoming = await base44.asServiceRole.entities.Tournament.filter({ status: 'open' });
+    for (const t of upcoming) {
+        const start = new Date(t.start_date);
+        const diff = start - now;
+        // Check if between 14 and 16 minutes away (to send once approx)
+        if (diff > 14 * 60 * 1000 && diff < 16 * 60 * 1000) {
+            // Send reminder
+             const participants = await base44.asServiceRole.entities.TournamentParticipant.filter({ tournament_id: t.id });
+             for (const p of participants) {
+                 await base44.asServiceRole.entities.Notification.create({
+                    recipient_id: p.user_id,
+                    type: "tournament",
+                    title: "Rappel Tournoi",
+                    message: `Le tournoi ${t.name} commence dans 15 minutes !`,
+                    link: `/TournamentDetail?id=${t.id}`
+                });
+             }
+        }
+    }
+
+    // A.2 Start Tournaments
+    const pendingStart = upcoming; // reused list
     for (const t of pendingStart) {
         if (new Date(t.start_date) <= now) {
             // Start it

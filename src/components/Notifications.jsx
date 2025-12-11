@@ -13,6 +13,7 @@ export default function Notifications() {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('all');
     const [pushEnabled, setPushEnabled] = useState(
         typeof Notification !== 'undefined' && Notification.permission === 'granted'
     );
@@ -33,10 +34,9 @@ export default function Notifications() {
             if (!user) return;
 
             // Fetch notifications with explicit limit and sort
-            // Filter only invitations and messages as requested
             const notifs = await base44.entities.Notification.filter({ 
-                recipient_id: user.id,
-                type: { $in: ['game_invite', 'message', 'team_challenge', 'team_request'] }
+                recipient_id: user.id
+                // Fetch all types
             }, '-created_date', 50);
             
             // Client-side sort fallback just in case
@@ -166,14 +166,45 @@ export default function Notifications() {
                         )}
                     </div>
                 </div>
+                
+                {/* Category Tabs */}
+                <div className="flex border-b border-[#d4c5b0] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#1e1814]">
+                    {['all', 'game', 'system'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors
+                                ${activeTab === tab 
+                                    ? 'text-[#4a3728] dark:text-[#e8dcc5] border-b-2 border-[#4a3728] dark:border-[#e8dcc5]' 
+                                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
+                        >
+                            {tab === 'all' ? 'Tout' : tab === 'game' ? 'Jeu' : 'Système'}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#d4c5b0] dark:scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
-                    {notifications.length === 0 ? (
+                    {notifications
+                        .filter(n => {
+                            if (activeTab === 'all') return true;
+                            if (activeTab === 'game') return ['game', 'game_invite', 'team_challenge', 'team_request', 'tournament_update'].includes(n.type);
+                            if (activeTab === 'system') return ['info', 'success', 'warning', 'tournament', 'message', 'forum'].includes(n.type);
+                            return true;
+                        })
+                        .length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                             Aucune notification
                         </div>
                     ) : (
                         <div className="divide-y divide-[#e8dcc5] dark:divide-[#3d2b1f]">
-                            {notifications.map((notification) => (
+                            {notifications
+                                .filter(n => {
+                                    if (activeTab === 'all') return true;
+                                    if (activeTab === 'game') return ['game', 'game_invite', 'team_challenge', 'team_request', 'tournament_update'].includes(n.type);
+                                    if (activeTab === 'system') return ['info', 'success', 'warning', 'tournament', 'message', 'forum'].includes(n.type);
+                                    return true;
+                                })
+                                .map((notification) => (
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}

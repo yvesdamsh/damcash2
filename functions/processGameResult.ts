@@ -470,22 +470,33 @@ export default async function handler(req) {
                         else if (newPoints < 800) tier = 'diamond';
                         else tier = 'master';
 
-                        // Check for badges
-                        if (tier !== p.rank_tier && tier === 'gold') {
-                            await base44.asServiceRole.entities.UserBadge.create({
-                                user_id: p.user_id,
-                                name: "Promotion Or",
-                                icon: "Crown",
-                                awarded_at: new Date().toISOString()
+                        // Check for badges and Notifications
+                        if (tier !== p.rank_tier) {
+                            // Notify promotion
+                            await base44.asServiceRole.entities.Notification.create({
+                                recipient_id: p.user_id,
+                                type: "success",
+                                title: "Promotion de Ligue !",
+                                message: `Vous êtes passé au rang ${tier.toUpperCase()} dans ${league.name} !`,
+                                link: `/LeagueDetail?id=${league.id}`
                             });
-                        }
-                        if (tier !== p.rank_tier && tier === 'master') {
-                            await base44.asServiceRole.entities.UserBadge.create({
-                                user_id: p.user_id,
-                                name: "Maître de la Ligue",
-                                icon: "Trophy",
-                                awarded_at: new Date().toISOString()
-                            });
+
+                            if (tier === 'gold') {
+                                await base44.asServiceRole.entities.UserBadge.create({
+                                    user_id: p.user_id,
+                                    name: "Promotion Or",
+                                    icon: "Crown",
+                                    awarded_at: new Date().toISOString()
+                                });
+                            }
+                            if (tier === 'master') {
+                                await base44.asServiceRole.entities.UserBadge.create({
+                                    user_id: p.user_id,
+                                    name: "Maître de la Ligue",
+                                    icon: "Trophy",
+                                    awarded_at: new Date().toISOString()
+                                });
+                            }
                         }
                         
                         await base44.asServiceRole.entities.LeagueParticipant.update(p.id, {
