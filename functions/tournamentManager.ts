@@ -459,6 +459,38 @@ async function finishTournament(tournament, base44) {
         }
     }
 
+    // Check for "Invincible" Badge (No losses)
+    let isInvincible = false;
+    try {
+        const winnerGames = games.filter(g => 
+            (g.white_player_id === winner.user_id || g.black_player_id === winner.user_id)
+        );
+        // Invincible if played at least 3 games and lost none (draws allowed? usually invincible implies no loss)
+        // Check for any loss
+        const hasLoss = winnerGames.some(g => g.winner_id && g.winner_id !== winner.user_id);
+        if (winnerGames.length >= 3 && !hasLoss) {
+            isInvincible = true;
+        }
+    } catch(e) {}
+
+    if (isInvincible) {
+        await base44.asServiceRole.entities.UserBadge.create({
+            user_id: winner.user_id,
+            tournament_id: tournament.id,
+            name: "Invincible",
+            icon: "Shield",
+            description: `A remporté ${tournament.name} sans aucune défaite !`,
+            awarded_at: new Date().toISOString()
+        });
+        await base44.asServiceRole.entities.Notification.create({
+            recipient_id: winner.user_id,
+            type: "success",
+            title: "Badge Légendaire !",
+            message: "Vous avez débloqué le badge 'Invincible' pour votre performance parfaite.",
+            link: "/Profile"
+        });
+    }
+
     // Badge for Winner (Individual or Team)
     if (tournament.team_mode && winner.team_id) {
         // Award to all team members (assuming we can fetch them)

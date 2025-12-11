@@ -56,6 +56,14 @@ export default function GameResultOverlay({
                             <Trophy className="w-20 h-20 mx-auto text-yellow-500 mb-4 animate-bounce" />
                             <h2 className="text-4xl font-black text-[#4a3728] mb-2">{t('game.result.victory')}</h2>
                             <p className="text-[#6b5138] font-medium">{t('game.result.victory_desc')}</p>
+                            <div className="mt-4 flex justify-center gap-4">
+                                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+                                    +100 XP
+                                </div>
+                                <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1">
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span> +10 Coins
+                                </div>
+                            </div>
                         </>
                     ) : isLoser ? (
                         <>
