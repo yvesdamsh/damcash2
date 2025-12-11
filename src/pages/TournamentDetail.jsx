@@ -582,32 +582,98 @@ export default function TournamentDetail() {
                 {/* Main Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3">
                     {/* Left: Player List (Takes 2/3 roughly or full if no chat) */}
-                    <div className="lg:col-span-2 border-r border-gray-100">
-                         {participants.length === 0 ? (
-                             <div className="p-10 text-center text-gray-400">En attente de joueurs...</div>
-                         ) : (
-                             <div className="divide-y divide-gray-100">
-                                 {participants.map((p, i) => (
-                                     <div key={p.id} className={`flex items-center p-3 hover:bg-blue-50/50 transition-colors ${p.user_id === user?.id ? 'bg-yellow-50' : ''}`}>
-                                         <div className="w-12 text-center text-gray-400 font-mono text-sm">{i + 1}</div>
-                                         <div className="flex-1 flex items-center gap-3">
-                                             <div className="font-bold text-gray-700 flex items-center gap-2">
-                                                 {p.user_name}
-                                                 {p.streak >= 2 && <span className="text-xs bg-orange-100 text-orange-600 px-1 rounded font-bold">🔥 {p.streak}</span>}
-                                             </div>
-                                             <div className="text-sm text-gray-400 font-mono">
-                                                 {tournament.game_type === 'chess' 
-                                                      ? (usersMap[p.user_id]?.elo_chess || 1200) 
-                                                      : (usersMap[p.user_id]?.elo_checkers || 1200)}
-                                             </div>
+                    <div className="lg:col-span-2 border-r border-gray-100 flex flex-col">
+                         {/* Live Spectate View Overlay (if active) */}
+                         {spectatingGame && (
+                             <div className="bg-[#2c241b] text-[#e8dcc5] p-4 flex flex-col md:flex-row gap-4 border-b border-gray-800">
+                                 <div className="flex-1 flex justify-center bg-[#261c16] rounded-lg p-2 min-h-[300px]">
+                                     <div className="w-full max-w-[400px] aspect-square">
+                                         {tournament.game_type === 'chess' ? (
+                                             <ChessBoard 
+                                                 board={spectateBoard} 
+                                                 currentTurn={spectatingGame.current_turn} 
+                                                 playerColor="spectator" 
+                                                 isSoloMode={false}
+                                                 validMoves={[]} onSquareClick={()=>{}} onPieceDrop={()=>{}}
+                                             />
+                                         ) : (
+                                             <CheckerBoard 
+                                                 board={spectateBoard} 
+                                                 currentTurn={spectatingGame.current_turn} 
+                                                 playerColor="spectator" 
+                                                 isSoloMode={false}
+                                                 validMoves={[]} onSquareClick={()=>{}}
+                                             />
+                                         )}
+                                     </div>
+                                 </div>
+                                 <div className="w-full md:w-64 flex flex-col gap-4">
+                                     <div className="bg-[#3d2b1f] p-3 rounded-lg">
+                                         <div className="flex justify-between items-center text-sm font-bold mb-2">
+                                             <span className="text-white">{spectatingGame.white_player_name}</span>
+                                             <span className="text-gray-400">vs</span>
+                                             <span className="text-white">{spectatingGame.black_player_name}</span>
                                          </div>
-                                         <div className="px-4 font-bold text-lg text-gray-800">
-                                             {p.score || 0}
+                                         <div className="flex justify-between text-xs text-gray-400 font-mono">
+                                             <span>ELO: {spectatingGame.white_player_elo || '?'}</span>
+                                             <span>ELO: {spectatingGame.black_player_elo || '?'}</span>
                                          </div>
                                      </div>
-                                 ))}
+                                     
+                                     {/* Move History Placeholder (Or Component if available) */}
+                                     <div className="flex-1 bg-white/10 rounded-lg p-2 overflow-y-auto text-xs font-mono space-y-1 h-32 md:h-auto">
+                                         <div className="text-gray-400 uppercase text-[10px] mb-1">Derniers coups</div>
+                                         {/* Parse moves if available or show placeholder */}
+                                         <div className="text-white/80">
+                                             {spectatingGame.moves ? spectatingGame.moves.split(' ').slice(-10).join(' ') : 'Partie démarrée...'}
+                                         </div>
+                                     </div>
+
+                                     <Button 
+                                         variant="destructive" 
+                                         size="sm" 
+                                         onClick={() => setSpectatingGame(null)}
+                                         className="w-full"
+                                     >
+                                         Fermer le Spectateur
+                                     </Button>
+                                 </div>
                              </div>
                          )}
+
+                         <div className="flex-1 overflow-y-auto max-h-[600px]">
+                             {participants.length === 0 ? (
+                                 <div className="p-10 text-center text-gray-400">En attente de joueurs...</div>
+                             ) : (
+                                 <div className="divide-y divide-gray-100">
+                                     {participants.map((p, i) => (
+                                         <div key={p.id} className={`flex items-center p-3 hover:bg-blue-50/50 transition-colors ${p.user_id === user?.id ? 'bg-yellow-50' : ''}`}>
+                                             <div className="w-12 text-center text-gray-400 font-mono text-sm">{i + 1}</div>
+                                             <div className="flex-1 flex items-center gap-3">
+                                                 <div className="font-bold text-gray-700 flex items-center gap-2">
+                                                     {p.user_name}
+                                                     {p.streak >= 2 && <span className="text-xs bg-orange-100 text-orange-600 px-1 rounded font-bold">🔥 {p.streak}</span>}
+                                                 </div>
+                                                 <div className="text-sm text-gray-400 font-mono">
+                                                     {tournament.game_type === 'chess' 
+                                                          ? (usersMap[p.user_id]?.elo_chess || 1200) 
+                                                          : (usersMap[p.user_id]?.elo_checkers || 1200)}
+                                                 </div>
+                                             </div>
+                                             <div className="flex items-center gap-4">
+                                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-300 hover:text-blue-500" title="Suivre">
+                                                     {/* Future: Follow Logic */}
+                                                     <Share2 className="w-3 h-3" />
+                                                 </Button>
+                                                 <div className="px-4 font-bold text-lg text-gray-800 w-16 text-right">
+                                                     {p.score || 0}
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     ))}
+                                 </div>
+                             )}
+                         </div>
                     </div>
 
                     {/* Right: Info / Chat / Live Game Preview */}
@@ -622,6 +688,14 @@ export default function TournamentDetail() {
                             </TabsContent>
                             <TabsContent value="games" className="p-4">
                                 <div className="space-y-2">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="text-xs font-bold text-gray-500 uppercase">Parties en cours</h4>
+                                        <Link to="/ReplayCenter">
+                                            <Button variant="ghost" size="sm" className="h-6 text-xs text-[#6B8E4E] hover:text-[#5a7a40] px-0 hover:bg-transparent">
+                                                Historique <ArrowRight className="w-3 h-3 ml-1" />
+                                            </Button>
+                                        </Link>
+                                    </div>
                                     {matches.filter(m => m.status === 'playing').length === 0 ? (
                                         <div className="text-center text-gray-400 text-sm py-4">Aucune partie en cours</div>
                                     ) : (
@@ -629,13 +703,17 @@ export default function TournamentDetail() {
                                             <div 
                                                 key={m.id} 
                                                 onClick={() => { setSpectatingGame(m); }}
-                                                className="bg-white p-3 rounded shadow-sm border border-gray-100 cursor-pointer hover:border-[#6B8E4E]"
+                                                className={`bg-white p-3 rounded shadow-sm border cursor-pointer hover:border-[#6B8E4E] transition-all ${spectatingGame?.id === m.id ? 'border-[#6B8E4E] ring-1 ring-[#6B8E4E]/30 bg-green-50/20' : 'border-gray-100'}`}
                                             >
                                                 <div className="flex justify-between text-sm font-bold text-gray-700">
                                                     <span>{m.white_player_name}</span>
+                                                    <span className="text-gray-400 font-normal mx-1">vs</span>
                                                     <span>{m.black_player_name}</span>
                                                 </div>
-                                                <div className="text-xs text-gray-400 text-center mt-1">En cours</div>
+                                                <div className="text-xs text-gray-400 flex justify-between mt-1">
+                                                    <span>Round {m.tournament_round}</span>
+                                                    <span className="text-green-600 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"/> En cours</span>
+                                                </div>
                                             </div>
                                         ))
                                     )}
