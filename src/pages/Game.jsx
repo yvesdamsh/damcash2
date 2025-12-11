@@ -647,6 +647,7 @@ export default function Game() {
             const validMove = moves.find(m => m.from.r === fromR && m.from.c === fromC && m.to.r === toR && m.to.c === toC);
             
             if (validMove) {
+                setLastDragMove(validMove);
                 const movingPiece = board[fromR][fromC];
                 if (movingPiece && movingPiece.toLowerCase() === 'p' && (toR === 0 || toR === 7)) {
                     setPromotionPending(validMove);
@@ -664,6 +665,7 @@ export default function Game() {
             const validMove = moves.find(m => m.from.r === fromR && m.from.c === fromC && m.to.r === toR && m.to.c === toC);
             
             if (validMove) {
+                setLastDragMove(validMove);
                 executeCheckersMove(validMove);
             } else {
                 setSelectedSquare(null);
@@ -700,7 +702,10 @@ export default function Game() {
         if (mustContinueWith) {
             if (selectedSquare && selectedSquare[0] === mustContinueWith.r && selectedSquare[1] === mustContinueWith.c) {
                 const move = validMoves.find(m => m.to.r === r && m.to.c === c);
-                if (move) executeCheckersMove(move);
+                if (move) {
+                    setLastDragMove(null);
+                    executeCheckersMove(move);
+                }
             }
             return; 
         }
@@ -717,7 +722,10 @@ export default function Game() {
             setValidMoves(pieceMoves);
         } else if (selectedSquare) {
             const move = validMoves.find(m => m.to.r === r && m.to.c === c);
-            if (move) executeCheckersMove(move);
+            if (move) {
+                setLastDragMove(null);
+                executeCheckersMove(move);
+            }
             else { setSelectedSquare(null); setValidMoves([]); }
         }
     };
@@ -835,6 +843,7 @@ export default function Game() {
         } else if (selectedSquare || isPremove) {
             const move = precalculatedMove || validMoves.find(m => m.to.r === r && m.to.c === c);
             if (move) {
+                if (!isPremove) setLastDragMove(null);
                 // Check for Promotion
                 const movingPiece = board[move.from.r][move.from.c];
                 if (movingPiece && movingPiece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
