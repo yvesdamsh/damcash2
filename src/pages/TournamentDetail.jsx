@@ -416,6 +416,29 @@ export default function TournamentDetail() {
         }
     };
 
+    const handleWithdraw = async () => {
+        if (!confirm(tournament.status === 'open' 
+            ? "Voulez-vous vraiment annuler votre inscription ? (Remboursement automatique)" 
+            : "Voulez-vous abandonner le tournoi ?")) return;
+        
+        try {
+            const res = await base44.functions.invoke('withdrawTournament', { tournamentId: tournament.id });
+            if (res.data.error) {
+                toast.error(res.data.error);
+            } else {
+                toast.success(res.data.message);
+                // Refresh participant list immediately
+                const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
+                setParticipants(pData);
+                // Trigger manager update
+                base44.functions.invoke('tournamentManager', {}); 
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("Erreur lors du retrait");
+        }
+    };
+
     const advanceGroupsToBracket = async () => {
         // Calculate standings and generate bracket
         try {
@@ -630,13 +653,35 @@ export default function TournamentDetail() {
                                     </div>
                                 )}
 
-                                {tournament.status === 'open' || (tournament.status === 'ongoing' && tournament.format === 'arena') ? (
+                                {tournament.status === 'open' ? (
                                     !isParticipant ? (
                                         <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md text-lg font-bold">
-                                            {tournament.format === 'arena' ? 'Rejoindre l\'Arène' : 'S\'inscrire'}
+                                            S'inscrire
                                         </Button>
                                     ) : (
-                                        tournament.format !== 'arena' && <Button disabled className="w-full opacity-80">Inscrit</Button>
+                                        <div className="space-y-2">
+                                            <Button disabled className="w-full opacity-80 bg-green-700 text-white">Inscrit ✅</Button>
+                                            <Button onClick={handleWithdraw} variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                                                Se désinscrire
+                                            </Button>
+                                        </div>
+                                    )
+                                ) : tournament.status === 'ongoing' ? (
+                                    !isParticipant ? (
+                                        tournament.format === 'arena' ? (
+                                            <Button onClick={handleJoin} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white shadow-md text-lg font-bold">
+                                                Rejoindre l'Arène
+                                            </Button>
+                                        ) : (
+                                            <div className="text-center font-bold text-gray-500">Inscriptions fermées</div>
+                                        )
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {tournament.format !== 'arena' && <div className="text-center font-bold text-green-600 mb-2">Tournoi en cours</div>}
+                                            <Button onClick={handleWithdraw} variant="ghost" size="sm" className="w-full text-red-500 hover:text-red-700 hover:bg-red-50">
+                                                Abandonner le tournoi
+                                            </Button>
+                                        </div>
                                     )
                                 ) : (
                                     <div className="text-center font-bold text-gray-500">Tournoi terminé</div>
