@@ -91,6 +91,47 @@ export default async function handler(req) {
     const winnerId = game.winner_id;
     const type = game.game_type; // 'checkers' or 'chess'
 
+    // -1. Process Bets
+    try {
+        const bets = await base44.asServiceRole.entities.Bet.filter({ game_id: gameId, status: 'pending' });
+        for (const bet of bets) {
+            let won = false;
+            if (bet.pick === 'draw' && !winnerId) won = true;
+            else if (bet.pick === 'white' && winnerId === whiteId) won = true;
+            else if (bet.pick === 'black' && winnerId === blackId) won = true;
+
+            if (won) {
+                const wallet = (await base44.asServiceRole.entities.Wallet.filter({ user_id: bet.user_id }))[0];
+                if (wallet) {
+                    await base44.asServiceRole.entities.Wallet.update(wallet.id, {
+                        balance: (wallet.balance || 0) + bet.potential_payout
+                    });
+                    await base44.asServiceRole.entities.Transaction.create({
+                        user_id: bet.user_id,
+                        type: 'bet_won',
+                        amount: bet.potential_payout,
+                        game_id: gameId,
+                        status: 'completed',
+                        description: `Pari gagné ! (${bet.pick})`
+                    });
+                    await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'won' });
+                    
+                    await base44.asServiceRole.entities.Notification.create({
+                        recipient_id: bet.user_id,
+                        type: "success",
+                        title: "Pari Gagnant !",
+                        message: `Vous avez remporté ${bet.potential_payout} D$ sur votre pari !`,
+                        link: `/Wallet`
+                    });
+                }
+            } else {
+                await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'lost' });
+            }
+        }
+    } catch (e) {
+        console.error("Bet processing error", e);
+    }
+
     // 0. Process Payouts if Prize Pool exists
     if (game.prize_pool && game.prize_pool > 0) {
         const commissionRate = 0.10;
@@ -318,6 +359,26 @@ export default async function handler(req) {
                 else if (scoreB === 0) blackUpdates.losses_checkers = (blackUser.losses_checkers || 0) + 1;
             }
             await base44.asServiceRole.entities.User.update(blackId, blackUpdates);
+
+            // Base Coin Reward for Winner (Standard Game)
+            if (winnerId && !game.prize_pool) {
+                const rewardAmount = 10; // 10 coins for a win
+                const wallet = (await base44.asServiceRole.entities.Wallet.filter({ user_id: winnerId }))[0];
+                if (wallet) {
+                    await base44.asServiceRole.entities.Wallet.update(wallet.id, { balance: (wallet.balance || 0) + rewardAmount });
+                    await base44.asServiceRole.entities.Transaction.create({
+                        user_id: winnerId,
+                        type: 'reward',
+                        amount: rewardAmount,
+                        game_id: gameId,
+                        status: 'completed',
+                        description: 'Victoire (Standard)'
+                    });
+                } else {
+                    // Create wallet if not exists
+                    await base44.asServiceRole.entities.Wallet.create({ user_id: winnerId, balance: rewardAmount });
+                }
+            }
 
             // Record Elo History
             await base44.asServiceRole.entities.EloHistory.create({

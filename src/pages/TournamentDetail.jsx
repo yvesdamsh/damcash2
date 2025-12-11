@@ -17,6 +17,7 @@ import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import TournamentVictoryDialog from '@/components/tournaments/TournamentVictoryDialog';
 import TournamentDefeatDialog from '@/components/tournaments/TournamentDefeatDialog';
+import BettingPanel from '@/components/BettingPanel';
 
 export default function TournamentDetail() {
     const location = useLocation();
@@ -664,16 +665,17 @@ export default function TournamentDetail() {
                                      </div>
 
                                      <Button 
-                                         variant="destructive" 
-                                         size="sm" 
-                                         onClick={() => setSpectatingGame(null)}
-                                         className="w-full"
+                                     variant="destructive" 
+                                     size="sm" 
+                                     onClick={() => setSpectatingGame(null)}
+                                     className="w-full"
                                      >
-                                         Fermer le Spectateur
+                                     Fermer le Spectateur
                                      </Button>
-                                 </div>
-                             </div>
-                         )}
+                                     <BettingPanel game={spectatingGame} currentUser={user} />
+                                     </div>
+                                     </div>
+                                     )}
 
                          <div className="flex-1 overflow-y-auto max-h-[600px]">
                              {participants.length === 0 ? (

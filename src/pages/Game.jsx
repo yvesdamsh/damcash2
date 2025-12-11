@@ -32,6 +32,7 @@ import PlayerInfoCard from '@/components/game/PlayerInfoCard';
 import GameControls from '@/components/game/GameControls';
 import ReplayControls from '@/components/game/ReplayControls';
 import GameReactions from '@/components/game/GameReactions';
+import BettingPanel from '@/components/BettingPanel';
 
 export default function Game() {
     const { t } = useLanguage();
@@ -1486,6 +1487,13 @@ export default function Game() {
                                 <span className={game.series_score_black > game.series_score_white ? "text-green-400" : "text-white"}>: {game.series_score_black}</span>
                             </span>
                         </div>
+                    </div>
+                )}
+
+                {/* Betting for Spectators */}
+                {isSpectator && game.status === 'playing' && (
+                    <div className="absolute left-4 top-20 z-20 w-64 hidden xl:block">
+                        <BettingPanel game={game} currentUser={currentUser} />
                     </div>
                 )}
 

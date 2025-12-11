@@ -13,7 +13,7 @@ const checkRateLimit = (userId) => {
 };
 
 const walletSchema = z.object({
-    action: z.enum(['get_balance', 'deposit', 'pay_entry_fee', 'withdraw']),
+    action: z.enum(['get_balance', 'deposit', 'pay_entry_fee', 'withdraw', 'place_bet']),
     userId: z.string().optional(),
     amount: z.number().optional(),
     gameId: z.string().optional()
@@ -161,7 +161,63 @@ export default async function handler(req) {
         return Response.json({ success: true });
     }
 
-    // 4. Withdraw
+    // 4. Place Bet
+    if (action === 'place_bet') {
+        const { pick, amount, gameId } = rawBody;
+        if (!gameId || !amount || amount <= 0) return Response.json({ error: 'Invalid params' }, { status: 400 });
+        
+        const wallet = await getWallet(user.id);
+        if ((wallet.balance || 0) < amount) {
+            return Response.json({ error: 'Fonds insuffisants' }, { status: 400 });
+        }
+
+        // Fetch game to calculate odds (simple version: based on ELO)
+        const game = await base44.asServiceRole.entities.Game.get(gameId);
+        if (!game || game.status !== 'playing') return Response.json({ error: 'Partie non disponible' }, { status: 400 });
+
+        // Simple Odds Calculation
+        const ratingA = game.white_player_elo || 1200;
+        const ratingB = game.black_player_elo || 1200;
+        const probA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+        
+        let odds = 2.0; // Default
+        if (pick === 'white') odds = (1 / probA) * 0.9; // 10% house edge
+        else if (pick === 'black') odds = (1 / (1 - probA)) * 0.9;
+        else if (pick === 'draw') odds = 3.0; // Fixed draw odds for simplicity
+
+        // Cap odds
+        odds = Math.max(1.1, Math.min(odds, 10));
+        const potential_payout = Math.floor(amount * odds);
+
+        // Deduct
+        await base44.asServiceRole.entities.Wallet.update(wallet.id, { balance: wallet.balance - amount });
+        
+        // Log transaction
+        await base44.asServiceRole.entities.Transaction.create({
+            user_id: user.id,
+            type: 'bet_placed',
+            amount: -amount,
+            game_id: gameId,
+            status: 'completed',
+            description: `Pari sur ${pick} (Cote: ${odds.toFixed(2)})`
+        });
+
+        // Create Bet
+        const bet = await base44.asServiceRole.entities.Bet.create({
+            user_id: user.id,
+            game_id: gameId,
+            pick,
+            amount,
+            odds,
+            potential_payout,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        });
+
+        return Response.json({ success: true, bet });
+    }
+
+    // 5. Withdraw
     if (action === 'withdraw') {
         if (!amount || amount <= 0) return Response.json({ error: 'Invalid amount' }, { status: 400 });
         const wallet = await getWallet(userId || user.id);
