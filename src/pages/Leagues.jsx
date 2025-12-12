@@ -192,10 +192,76 @@ export default function LeaguesPage() {
                 <p className="text-lg text-[#6b5138] max-w-2xl mx-auto">
                     {t('leagues.subtitle')}
                 </p>
-                {/* Admin Button for setup */}
-                {leagues.length === 0 && (
-                    <Button onClick={createDemoLeague} variant="outline" className="mt-4">{t('leagues.create_demo')}</Button>
-                )}
+                
+                <div className="mt-6">
+                    <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="bg-[#4a3728] text-[#e8dcc5] hover:bg-[#5c4430]">
+                                <Plus className="w-4 h-4 mr-2" /> {t('leagues.create_new') || "Créer une Ligue"}
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0]">
+                            <DialogHeader>
+                                <DialogTitle>{t('leagues.create_new') || "Créer une nouvelle Ligue"}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                    <Label>{t('common.name') || "Nom"}</Label>
+                                    <Input 
+                                        value={newLeague.name} 
+                                        onChange={e => setNewLeague({...newLeague, name: e.target.value})} 
+                                        placeholder="Ex: Ligue de Printemps" 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>{t('common.description') || "Description"}</Label>
+                                    <Input 
+                                        value={newLeague.description} 
+                                        onChange={e => setNewLeague({...newLeague, description: e.target.value})} 
+                                        placeholder="Description de la ligue..." 
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>{t('game.type') || "Jeu"}</Label>
+                                    <Select 
+                                        value={newLeague.game_type} 
+                                        onValueChange={v => setNewLeague({...newLeague, game_type: v})}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="checkers">{t('game.checkers')}</SelectItem>
+                                            <SelectItem value="chess">{t('game.chess')}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>{t('leagues.start_date') || "Date de début"}</Label>
+                                        <Input 
+                                            type="date" 
+                                            value={newLeague.start_date} 
+                                            onChange={e => setNewLeague({...newLeague, start_date: e.target.value})} 
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>{t('leagues.end_date') || "Date de fin"}</Label>
+                                        <Input 
+                                            type="date" 
+                                            value={newLeague.end_date} 
+                                            onChange={e => setNewLeague({...newLeague, end_date: e.target.value})} 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setCreateOpen(false)}>{t('common.cancel')}</Button>
+                                <Button onClick={handleCreateLeague} className="bg-[#4a3728] text-[#e8dcc5]">{t('common.create')}</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <div className="space-y-8">
