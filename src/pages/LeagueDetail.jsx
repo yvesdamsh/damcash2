@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useLocation, Link } from 'react-router-dom';
-import { Trophy, Medal, Crown, Shield, User, ArrowUpCircle, ArrowDownCircle, ChevronLeft } from 'lucide-react';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { Trophy, Medal, Crown, Shield, User, ArrowUpCircle, ArrowDownCircle, ChevronLeft, Sword, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
+import { toast } from 'sonner';
+import { initializeBoard } from '@/components/checkersLogic';
+import { initializeChessBoard } from '@/components/chessLogic';
 
 const TierIcon = ({ tier }) => {
     const colors = {
