@@ -55,6 +55,56 @@ export default function LeagueDetail() {
         fetchDetails();
     }, [id]);
 
+    const handlePlayMatch = async () => {
+        if (!currentUser) return;
+        setMatching(true);
+        try {
+            // 1. Look for open games in this league
+            const games = await base44.entities.Game.filter({ 
+                league_id: league.id, 
+                status: 'waiting',
+                game_type: league.game_type
+            });
+            
+            // Filter games where I am not the host
+            const validGame = games.find(g => g.white_player_id !== currentUser.id);
+
+            if (validGame) {
+                // Join existing
+                await base44.entities.Game.update(validGame.id, {
+                    black_player_id: currentUser.id,
+                    black_player_name: currentUser.username || currentUser.full_name || "Joueur",
+                    status: 'playing'
+                });
+                navigate(`/Game?id=${validGame.id}`);
+            } else {
+                // Create new
+                const initialBoard = league.game_type === 'chess' 
+                    ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                    : JSON.stringify(initializeBoard());
+
+                const newGame = await base44.entities.Game.create({
+                    league_id: league.id,
+                    game_type: league.game_type,
+                    status: 'waiting',
+                    white_player_id: currentUser.id,
+                    white_player_name: currentUser.username || currentUser.full_name || "Joueur",
+                    current_turn: 'white',
+                    board_state: initialBoard,
+                    initial_time: 5, // Standard league Blitz 5+0
+                    increment: 0,
+                    white_seconds_left: 300,
+                    black_seconds_left: 300
+                });
+                navigate(`/Game?id=${newGame.id}`);
+            }
+        } catch (e) {
+            console.error("Matchmaking error", e);
+            toast.error(t('common.error'));
+            setMatching(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">{t('league.loading')}</div>;
     if (!league) return <div className="p-8 text-center">{t('league.not_found')}</div>;
 
