@@ -620,5 +620,6 @@ export default {
   "wallet.transaction.deposit": "Funds deposit",
   "wallet.transaction.entry_fee": "Entry fee",
   "wallet.transaction.withdrawal": "Withdrawal",
-  "wallet.transaction.prize": "Prize"
+  "wallet.transaction.prize": "Prize",
+  "leagues.create_new": "Create New League"
 };
