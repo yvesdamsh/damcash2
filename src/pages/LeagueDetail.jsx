@@ -108,6 +108,49 @@ export default function LeagueDetail() {
         }
     };
 
+    const handleJoin = async () => {
+        if (!currentUser) return;
+        setJoining(true);
+        try {
+            await base44.entities.LeagueParticipant.create({
+                league_id: league.id,
+                user_id: currentUser.id,
+                user_name: currentUser.username || currentUser.full_name || "Joueur",
+                avatar_url: currentUser.avatar_url,
+                points: 0,
+                wins: 0, losses: 0, draws: 0,
+                rank_tier: 'bronze'
+            });
+            toast.success(t('leagues.success_join') || "Bienvenue !");
+            // Refresh
+            const parts = await base44.entities.LeagueParticipant.list({ league_id: id }, { points: -1 });
+            setParticipants(parts);
+        } catch (e) {
+            console.error(e);
+            toast.error(t('leagues.error_join'));
+        } finally {
+            setJoining(false);
+        }
+    };
+
+    const handleInvite = async (userToInvite) => {
+        try {
+            await base44.entities.Notification.create({
+                recipient_id: userToInvite.id,
+                type: "info",
+                title: "Invitation à une Ligue",
+                message: `${currentUser.username || 'Un joueur'} vous invite à rejoindre la ligue "${league.name}" !`,
+                link: `/LeagueDetail?id=${league.id}`,
+                sender_id: currentUser.id
+            });
+            toast.success(`Invitation envoyée à ${userToInvite.username || 'Joueur'}`);
+            setInviteOpen(false);
+        } catch (e) {
+            console.error(e);
+            toast.error(t('common.error'));
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">{t('league.loading')}</div>;
     if (!league) return <div className="p-8 text-center">{t('league.not_found')}</div>;
 
