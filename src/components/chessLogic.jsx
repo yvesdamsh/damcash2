@@ -1,4 +1,3 @@
-
 // Chess Game Logic
 
 export const INITIAL_BOARD_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -22,8 +21,8 @@ export const initializeChessBoard = () => {
     return setup;
 };
 
-const isWhite = (piece) => piece && piece === piece.toUpperCase();
-const isBlack = (piece) => piece && piece === piece.toLowerCase();
+const isWhite = (piece) => piece && typeof piece === 'string' && piece === piece.toUpperCase();
+const isBlack = (piece) => piece && typeof piece === 'string' && piece === piece.toLowerCase();
 const getColor = (piece) => {
     if (!piece) return null;
     return isWhite(piece) ? 'white' : 'black';
