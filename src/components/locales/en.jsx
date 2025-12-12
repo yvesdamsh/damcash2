@@ -482,6 +482,7 @@ export default {
   "tournament.back_list": "Back to Tournaments",
   "leagues.title": "COMPETITIVE LEAGUES",
   "leagues.subtitle": "Join a season, accumulate points, and climb divisions to win exclusive rewards.",
+  "leagues.create_new": "Create New League",
   "leagues.create_demo": "Create Demo League",
   "leagues.active_seasons": "Active Seasons",
   "leagues.upcoming_seasons": "Upcoming",
