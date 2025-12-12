@@ -504,6 +504,9 @@ export default function Game() {
     useEffect(() => {
         if (!isAiGame || !game || game.status !== 'playing') return;
         
+        let isActive = true;
+        let timer = null;
+
         const isUserWhite = currentUser?.id === game.white_player_id;
         const isUserBlack = currentUser?.id === game.black_player_id;
         // If both are false (e.g. local-ai mismatch), default to User=White for safety, unless we know we swapped.
@@ -514,6 +517,7 @@ export default function Game() {
         
         if (game.current_turn === aiColor && !isAiThinking) {
             const makeAiMove = async () => {
+                if (!isActive) return;
                 setIsAiThinking(true);
                 try {
                     const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
@@ -531,6 +535,8 @@ export default function Game() {
 
                     const res = await base44.functions.invoke(aiFunctionName, payload);
                     
+                    if (!isActive) return;
+
                     if (res.data && res.data.move) {
                         const move = res.data.move;
                         
@@ -610,11 +616,16 @@ export default function Game() {
                 } catch (err) {
                     console.error("AI Error:", err);
                 } finally {
-                    setIsAiThinking(false);
+                    if (isActive) setIsAiThinking(false);
                 }
             };
-            setTimeout(makeAiMove, 1000);
+            timer = setTimeout(makeAiMove, 1000);
         }
+
+        return () => {
+            isActive = false;
+            if (timer) clearTimeout(timer);
+        };
     }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
