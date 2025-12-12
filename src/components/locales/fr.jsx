@@ -661,5 +661,10 @@ export default {
   "common.participate_chat": "Rejoignez la discussion...",
   "common.login_chat": "Connectez-vous pour discuter",
   "common.be_first_post": "Soyez le premier à poster !",
-  "common.search_player_placeholder": "Rechercher un joueur..."
+  "common.search_player_placeholder": "Rechercher un joueur...",
+  "leagues.create_new": "Créer une nouvelle Ligue",
+  "leagues.relegation": "Relégation :",
+  "leagues.promotion": "Promotion :",
+  "leagues.end_date": "Fin :",
+  "leagues.active_divisions": "Divisions actives"
 };
