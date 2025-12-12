@@ -85,8 +85,8 @@ const ChessSquare = memo(({
                         onDragEnd={handleDragEnd}
                         dragConstraints={boardRef}
                         canDrag={canInteract && (
-                            (currentTurn === 'white' && piece === piece.toUpperCase()) ||
-                            (currentTurn === 'black' && piece === piece.toLowerCase())
+                            (currentTurn === 'white' && typeof piece === 'string' && piece === piece.toUpperCase()) ||
+                            (currentTurn === 'black' && typeof piece === 'string' && piece === piece.toLowerCase())
                         )}
                         animateFrom={animDelta}
                     />
@@ -175,7 +175,7 @@ const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMo
                             const isPremoveSource = premove && premove.from.r === r && premove.from.c === c;
                             const isPremoveTarget = premove && premove.to.r === r && premove.to.c === c;
 
-                            const isKing = piece && piece.toLowerCase() === 'k';
+                            const isKing = piece && typeof piece === 'string' && piece.toLowerCase() === 'k';
                             const isCheck = isKing && ((piece === 'K' && isWhiteCheck) || (piece === 'k' && isBlackCheck));
 
                             let animDelta = null;
