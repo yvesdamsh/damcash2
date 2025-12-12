@@ -179,19 +179,49 @@ export default function LeagueDetail() {
                                 <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status === 'active' ? t('leagues.status_active') : (league.status === 'upcoming' ? t('leagues.status_upcoming') : league.status)}</span>
                             </div>
                         </div>
-                        {league.status === 'active' && participants.some(p => p.user_id === currentUser?.id) && (
-                            <Button 
-                                onClick={handlePlayMatch} 
-                                disabled={matching}
-                                className="bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
-                            >
-                                {matching ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Sword className="w-6 h-6 mr-2" />}
-                                {t('league.play_match') || "Jouer un Match"}
-                            </Button>
-                        )}
+                        <div className="flex flex-col gap-2 items-end">
+                            {league.status === 'active' && participants.some(p => p.user_id === currentUser?.id) ? (
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant="outline"
+                                        onClick={() => setInviteOpen(true)}
+                                        className="bg-black/20 text-[#e8dcc5] border-transparent hover:bg-black/30"
+                                    >
+                                        <UserPlus className="w-5 h-5 mr-2" />
+                                        {t('game.invite') || "Inviter"}
+                                    </Button>
+                                    <Button 
+                                        onClick={handlePlayMatch} 
+                                        disabled={matching}
+                                        className="bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
+                                    >
+                                        {matching ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Sword className="w-6 h-6 mr-2" />}
+                                        {t('league.play_match') || "Jouer un Match"}
+                                    </Button>
+                                </div>
+                            ) : (
+                                league.status === 'active' && (
+                                    <Button 
+                                        onClick={handleJoin} 
+                                        disabled={joining || !currentUser}
+                                        className="bg-green-600 text-white hover:bg-green-700 font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
+                                    >
+                                        {joining ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
+                                        {t('leagues.join_btn') || "Rejoindre la Ligue"}
+                                    </Button>
+                                )
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <UserSearchDialog 
+                isOpen={inviteOpen} 
+                onClose={() => setInviteOpen(false)} 
+                onInvite={handleInvite} 
+                title={t('home.search_invite') || "Inviter un joueur"} 
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Rewards Card */}
