@@ -131,25 +131,25 @@ export default function LeaguesPage() {
 
     const handleJoin = async (league) => {
         if (!user) {
-            toast.error("Connectez-vous pour rejoindre une ligue");
+            toast.error(t('leagues.login_required'));
             return;
         }
         try {
             await base44.entities.LeagueParticipant.create({
                 league_id: league.id,
                 user_id: user.id,
-                user_name: user.full_name || user.username || "Joueur",
+                user_name: user.full_name || user.username || t('common.player'),
                 avatar_url: user.avatar_url,
                 points: 0,
                 wins: 0, losses: 0, draws: 0,
                 rank_tier: 'bronze'
             });
-            toast.success(`Bienvenue dans la ligue ${league.name} !`);
+            toast.success(t('leagues.welcome_msg', { name: league.name }));
             // Refresh
             const parts = await base44.entities.LeagueParticipant.list({ user_id: user.id });
             setMyParticipations(parts);
         } catch (e) {
-            toast.error("Erreur lors de l'inscription");
+            toast.error(t('leagues.join_error'));
         }
     };
 
@@ -168,9 +168,9 @@ export default function LeaguesPage() {
                 status: "active", // Auto-activate for ease of use
                 start_date: new Date(newLeague.start_date).toISOString(),
                 end_date: new Date(newLeague.end_date).toISOString(),
-                rules_summary: "Règles standard de compétition."
+                rules_summary: t('league.rules_default')
             });
-            toast.success(t('leagues.created_success') || "Ligue créée !");
+            toast.success(t('leagues.created_success'));
             setCreateOpen(false);
             // Refresh list
             const allLeagues = await base44.entities.League.list('-start_date', 50);
@@ -197,32 +197,32 @@ export default function LeaguesPage() {
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogTrigger asChild>
                             <Button className="bg-[#4a3728] text-[#e8dcc5] hover:bg-[#5c4430]">
-                                <Plus className="w-4 h-4 mr-2" /> {t('leagues.create_new') || "Créer une Ligue"}
+                                <Plus className="w-4 h-4 mr-2" /> {t('leagues.create_new')}
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0]">
                             <DialogHeader>
-                                <DialogTitle>{t('leagues.create_new') || "Créer une nouvelle Ligue"}</DialogTitle>
+                                <DialogTitle>{t('leagues.create_new')}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4 py-4">
                                 <div className="space-y-2">
-                                    <Label>{t('common.name') || "Nom"}</Label>
+                                    <Label>{t('common.name')}</Label>
                                     <Input 
                                         value={newLeague.name} 
                                         onChange={e => setNewLeague({...newLeague, name: e.target.value})} 
-                                        placeholder="Ex: Ligue de Printemps" 
+                                        placeholder={t('leagues.placeholder_name')}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>{t('common.description') || "Description"}</Label>
+                                    <Label>{t('common.description')}</Label>
                                     <Input 
                                         value={newLeague.description} 
                                         onChange={e => setNewLeague({...newLeague, description: e.target.value})} 
-                                        placeholder="Description de la ligue..." 
+                                        placeholder={t('leagues.placeholder_desc')}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>{t('game.type') || "Jeu"}</Label>
+                                    <Label>{t('game.type')}</Label>
                                     <Select 
                                         value={newLeague.game_type} 
                                         onValueChange={v => setNewLeague({...newLeague, game_type: v})}
@@ -238,7 +238,7 @@ export default function LeaguesPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label>{t('leagues.start_date') || "Date de début"}</Label>
+                                        <Label>{t('leagues.start_date')}</Label>
                                         <Input 
                                             type="date" 
                                             value={newLeague.start_date} 
@@ -246,7 +246,7 @@ export default function LeaguesPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>{t('leagues.end_date') || "Date de fin"}</Label>
+                                        <Label>{t('leagues.end_date')}</Label>
                                         <Input 
                                             type="date" 
                                             value={newLeague.end_date} 
