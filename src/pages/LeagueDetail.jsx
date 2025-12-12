@@ -123,12 +123,26 @@ export default function LeagueDetail() {
                     <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
                         <Trophy className="w-64 h-64" />
                     </div>
-                    <h1 className="text-4xl font-black mb-2">{league.name}</h1>
-                    <p className="text-xl opacity-80 mb-4">{league.description}</p>
-                    <div className="flex gap-4 text-sm font-bold">
-                        <span className="bg-black/20 px-3 py-1 rounded-full">{t('league.season')} {league.season}</span>
-                        <span className="bg-black/20 px-3 py-1 rounded-full">{league.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
-                        <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status === 'active' ? t('leagues.status_active') : (league.status === 'upcoming' ? t('leagues.status_upcoming') : league.status)}</span>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+                        <div>
+                            <h1 className="text-4xl font-black mb-2">{league.name}</h1>
+                            <p className="text-xl opacity-80 mb-4">{league.description}</p>
+                            <div className="flex gap-4 text-sm font-bold">
+                                <span className="bg-black/20 px-3 py-1 rounded-full">{t('league.season')} {league.season}</span>
+                                <span className="bg-black/20 px-3 py-1 rounded-full">{league.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
+                                <span className="bg-green-600/80 px-3 py-1 rounded-full uppercase">{league.status === 'active' ? t('leagues.status_active') : (league.status === 'upcoming' ? t('leagues.status_upcoming') : league.status)}</span>
+                            </div>
+                        </div>
+                        {league.status === 'active' && participants.some(p => p.user_id === currentUser?.id) && (
+                            <Button 
+                                onClick={handlePlayMatch} 
+                                disabled={matching}
+                                className="bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
+                            >
+                                {matching ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Sword className="w-6 h-6 mr-2" />}
+                                {t('league.play_match') || "Jouer un Match"}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
