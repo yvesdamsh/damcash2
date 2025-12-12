@@ -44,7 +44,7 @@ const ChessPiece = memo(({ type, isSelected, animateFrom, set = 'standard', onDr
     };
 
     if (set === 'unicode') {
-        const isWhite = type === type.toUpperCase();
+        const isWhite = typeof type === 'string' && type === type.toUpperCase();
         return (
             <motion.div
                 {...dragProps}
