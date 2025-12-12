@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Crown, Shield, ChevronRight, Star, Info, Calendar, Medal } from 'lucide-react';
+import { Trophy, Crown, Shield, ChevronRight, Star, Info, Calendar, Medal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import { useLanguage } from '@/components/LanguageContext';
