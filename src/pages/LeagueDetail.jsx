@@ -24,10 +24,17 @@ export default function LeagueDetail() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const id = searchParams.get('id');
+    const navigate = useNavigate();
 
     const [league, setLeague] = useState(null);
     const [participants, setParticipants] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [matching, setMatching] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        base44.auth.me().then(setCurrentUser).catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (!id) return;
