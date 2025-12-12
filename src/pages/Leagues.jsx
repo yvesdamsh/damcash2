@@ -80,6 +80,14 @@ export default function LeaguesPage() {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [gameMode, setGameMode] = useState(localStorage.getItem('gameMode') || 'checkers');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [newLeague, setNewLeague] = useState({
+        name: '',
+        description: '',
+        game_type: 'checkers',
+        start_date: '',
+        end_date: ''
+    });
 
     useEffect(() => {
         const handleModeChange = () => setGameMode(localStorage.getItem('gameMode') || 'checkers');
