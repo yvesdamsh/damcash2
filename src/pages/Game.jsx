@@ -92,57 +92,71 @@ export default function Game() {
 
     useEffect(() => {
         const gameId = searchParams.get('id');
-        // Reset game state immediately when ID changes to avoid showing old data (timer, board)
+        
+        // Only reset if ID actually changed
         if (gameId !== id) {
             setGame(null);
             setBoard([]);
             setValidMoves([]);
             setSelectedSquare(null);
             setMustContinueWith(null);
+            setId(gameId);
+            setReplayIndex(-1);
         }
-
-        setId(gameId);
-        setReplayIndex(-1);
 
         if (gameId === 'local-ai') {
             const difficulty = searchParams.get('difficulty') || 'medium';
-            // Read type from URL first (passed by Home), then fallback to localStorage
             const type = searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers';
             
             setAiDifficulty(difficulty);
             setIsAiGame(true);
             
-            let initialBoard;
-            if (type === 'chess') {
-                // Need to ensure initializeChessBoard is available or we use defaults
-                // It is imported in Game.js
-                initialBoard = initializeChessBoard();
-                setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
-            } else {
-                initialBoard = initializeBoard();
-            }
+            // Only initialize if game is not set OR if it's a different game type/difficulty (prevent reset on currentUser change)
+            setGame(prev => {
+                if (prev && prev.id === 'local-ai' && prev.game_type === type) {
+                    // Just update names if user logged in, but keep state
+                    if (currentUser && prev.white_player_id === 'guest') {
+                        return {
+                            ...prev,
+                            white_player_name: currentUser.username || t('common.you'),
+                            white_player_id: currentUser.id
+                        };
+                    }
+                    return prev;
+                }
 
-            const boardStr = type === 'chess' 
-                ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
-                : JSON.stringify(initialBoard);
+                // Initial Setup
+                let initialBoard;
+                if (type === 'chess') {
+                    initialBoard = initializeChessBoard();
+                    setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+                } else {
+                    initialBoard = initializeBoard();
+                }
 
-            setGame({
-                id: 'local-ai',
-                status: 'playing',
-                game_type: type,
-                white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
-                black_player_name: `AI (${difficulty})`,
-                white_player_id: currentUser?.id || 'guest',
-                black_player_id: 'ai',
-                current_turn: 'white',
-                board_state: boardStr,
-                moves: JSON.stringify([]),
-                white_seconds_left: 600,
-                black_seconds_left: 600,
-                last_move_at: null,
+                const boardStr = type === 'chess' 
+                    ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                    : JSON.stringify(initialBoard);
+
+                setBoard(initialBoard);
+                setLoading(false);
+
+                return {
+                    id: 'local-ai',
+                    status: 'playing',
+                    game_type: type,
+                    white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
+                    black_player_name: `AI (${difficulty})`,
+                    white_player_id: currentUser?.id || 'guest',
+                    black_player_id: 'ai',
+                    current_turn: 'white',
+                    board_state: boardStr,
+                    moves: JSON.stringify([]),
+                    white_seconds_left: 600,
+                    black_seconds_left: 600,
+                    last_move_at: null,
+                };
             });
-            setBoard(initialBoard);
-            setLoading(false);
         } else {
             setIsAiGame(false);
         }
@@ -507,15 +521,14 @@ export default function Game() {
         let isActive = true;
         let timer = null;
 
-        const isUserWhite = currentUser?.id === game.white_player_id;
-        const isUserBlack = currentUser?.id === game.black_player_id;
-        // If both are false (e.g. local-ai mismatch), default to User=White for safety, unless we know we swapped.
-        // But in handleRematch we swap IDs. 
-        // If game.white_player_id is NOT currentUser.id, then AI is White.
+        // Robust check: Is it AI's turn?
+        // In local-ai, the AI player ID is always 'ai'
+        const isAiTurn = (game.current_turn === 'white' && game.white_player_id === 'ai') || 
+                         (game.current_turn === 'black' && game.black_player_id === 'ai');
         
-        const aiColor = isUserWhite ? 'black' : 'white';
+        const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
         
-        if (game.current_turn === aiColor && !isAiThinking) {
+        if (isAiTurn && !isAiThinking) {
             const makeAiMove = async () => {
                 if (!isActive) return;
                 setIsAiThinking(true);
