@@ -153,20 +153,32 @@ export default function LeaguesPage() {
         }
     };
 
-    // Admin: Create League (hidden for regular users usually, but shown for demo)
-    const createDemoLeague = async () => {
+    const handleCreateLeague = async () => {
+        if (!newLeague.name || !newLeague.start_date || !newLeague.end_date) {
+            toast.error(t('common.fill_required'));
+            return;
+        }
+
         try {
             await base44.entities.League.create({
-                name: "Ligue d'Hiver 2025",
+                name: newLeague.name,
+                description: newLeague.description,
                 season: 1,
-                game_type: "checkers",
-                status: "active",
-                start_date: new Date().toISOString(),
-                end_date: new Date(Date.now() + 30*24*60*60*1000).toISOString(), // 30 days
-                description: "La compétition officielle de dames pour l'hiver. Gagnez des points en jouant des parties classées !"
+                game_type: newLeague.game_type,
+                status: "active", // Auto-activate for ease of use
+                start_date: new Date(newLeague.start_date).toISOString(),
+                end_date: new Date(newLeague.end_date).toISOString(),
+                rules_summary: "Règles standard de compétition."
             });
-            window.location.reload();
-        } catch(e) { console.error(e); }
+            toast.success(t('leagues.created_success') || "Ligue créée !");
+            setCreateOpen(false);
+            // Refresh list
+            const allLeagues = await base44.entities.League.list('-start_date', 50);
+            setLeagues(allLeagues);
+        } catch(e) { 
+            console.error(e); 
+            toast.error(t('common.error'));
+        }
     };
 
     if (loading) return <div className="p-8 text-center text-[#4a3728]">{t('leagues.loading')}</div>;
