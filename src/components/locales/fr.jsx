@@ -671,5 +671,20 @@ export default {
   "leagues.relegation": "Relégation :",
   "leagues.promotion": "Promotion :",
   "leagues.end_date": "Fin :",
-  "leagues.active_divisions": "Divisions actives"
+  "leagues.active_divisions": "Divisions actives",
+  "leagues.created_success": "Ligue créée !",
+  "league.play_match": "Jouer un Match",
+  "leagues.login_required": "Connectez-vous pour rejoindre une ligue",
+  "leagues.welcome_msg": "Bienvenue dans la ligue {{name}} !",
+  "leagues.join_error": "Erreur lors de l'inscription",
+  "leagues.invite_title": "Invitation à une Ligue",
+  "leagues.invite_msg": "{{name}} vous invite à rejoindre la ligue \"{{league}}\" !",
+  "leagues.invite_sent": "Invitation envoyée à {{name}}",
+  "common.name": "Nom",
+  "common.description": "Description",
+  "leagues.start_date": "Date de début",
+  "game.type": "Jeu",
+  "common.fill_required": "Veuillez remplir tous les champs requis",
+  "leagues.placeholder_name": "Ex: Ligue de Printemps",
+  "leagues.placeholder_desc": "Description de la ligue..."
 };

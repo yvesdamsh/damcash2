@@ -621,5 +621,20 @@ export default {
   "wallet.transaction.entry_fee": "Entry fee",
   "wallet.transaction.withdrawal": "Withdrawal",
   "wallet.transaction.prize": "Prize",
-  "leagues.create_new": "Create New League"
+  "leagues.create_new": "Create New League",
+  "leagues.created_success": "League created!",
+  "league.play_match": "Play Match",
+  "leagues.login_required": "Log in to join a league",
+  "leagues.welcome_msg": "Welcome to league {{name}}!",
+  "leagues.join_error": "Error joining league",
+  "leagues.invite_title": "League Invitation",
+  "leagues.invite_msg": "{{name}} invites you to join league \"{{league}}\"!",
+  "leagues.invite_sent": "Invitation sent to {{name}}",
+  "common.name": "Name",
+  "common.description": "Description",
+  "leagues.start_date": "Start Date",
+  "game.type": "Game",
+  "common.fill_required": "Please fill all required fields",
+  "leagues.placeholder_name": "Ex: Spring League",
+  "leagues.placeholder_desc": "League description..."
 };
