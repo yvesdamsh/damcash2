@@ -666,5 +666,10 @@ export default {
   "leagues.relegation": "Relégation :",
   "leagues.promotion": "Promotion :",
   "leagues.end_date": "Fin :",
+  "leagues.active_divisions": "Divisions actives",
+  "leagues.create_new": "Créer une nouvelle Ligue",
+  "leagues.relegation": "Relégation :",
+  "leagues.promotion": "Promotion :",
+  "leagues.end_date": "Fin :",
   "leagues.active_divisions": "Divisions actives"
 };
