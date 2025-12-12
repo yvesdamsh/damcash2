@@ -76,7 +76,7 @@ export default function LeagueDetail() {
                 // Join existing
                 await base44.entities.Game.update(validGame.id, {
                     black_player_id: currentUser.id,
-                    black_player_name: currentUser.username || currentUser.full_name || "Joueur",
+                    black_player_name: currentUser.username || currentUser.full_name || t('common.player'),
                     status: 'playing'
                 });
                 navigate(`/Game?id=${validGame.id}`);
@@ -91,7 +91,7 @@ export default function LeagueDetail() {
                     game_type: league.game_type,
                     status: 'waiting',
                     white_player_id: currentUser.id,
-                    white_player_name: currentUser.username || currentUser.full_name || "Joueur",
+                    white_player_name: currentUser.username || currentUser.full_name || t('common.player'),
                     current_turn: 'white',
                     board_state: initialBoard,
                     initial_time: 5, // Standard league Blitz 5+0
@@ -115,13 +115,13 @@ export default function LeagueDetail() {
             await base44.entities.LeagueParticipant.create({
                 league_id: league.id,
                 user_id: currentUser.id,
-                user_name: currentUser.username || currentUser.full_name || "Joueur",
+                user_name: currentUser.username || currentUser.full_name || t('common.player'),
                 avatar_url: currentUser.avatar_url,
                 points: 0,
                 wins: 0, losses: 0, draws: 0,
                 rank_tier: 'bronze'
             });
-            toast.success(t('leagues.success_join') || "Bienvenue !");
+            toast.success(t('leagues.success_join'));
             // Refresh
             const parts = await base44.entities.LeagueParticipant.list({ league_id: id }, { points: -1 });
             setParticipants(parts);
@@ -138,12 +138,12 @@ export default function LeagueDetail() {
             await base44.entities.Notification.create({
                 recipient_id: userToInvite.id,
                 type: "info",
-                title: "Invitation à une Ligue",
-                message: `${currentUser.username || 'Un joueur'} vous invite à rejoindre la ligue "${league.name}" !`,
+                title: t('leagues.invite_title'),
+                message: t('leagues.invite_msg', { name: currentUser.username || t('common.player'), league: league.name }),
                 link: `/LeagueDetail?id=${league.id}`,
                 sender_id: currentUser.id
             });
-            toast.success(`Invitation envoyée à ${userToInvite.username || 'Joueur'}`);
+            toast.success(t('leagues.invite_sent', { name: userToInvite.username || t('common.player') }));
             setInviteOpen(false);
         } catch (e) {
             console.error(e);
@@ -188,7 +188,7 @@ export default function LeagueDetail() {
                                         className="bg-black/20 text-[#e8dcc5] border-transparent hover:bg-black/30"
                                     >
                                         <UserPlus className="w-5 h-5 mr-2" />
-                                        {t('game.invite') || "Inviter"}
+                                        {t('game.invite')}
                                     </Button>
                                     <Button 
                                         onClick={handlePlayMatch} 
@@ -196,7 +196,7 @@ export default function LeagueDetail() {
                                         className="bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
                                     >
                                         {matching ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Sword className="w-6 h-6 mr-2" />}
-                                        {t('league.play_match') || "Jouer un Match"}
+                                        {t('league.play_match')}
                                     </Button>
                                 </div>
                             ) : (
@@ -207,7 +207,7 @@ export default function LeagueDetail() {
                                         className="bg-green-600 text-white hover:bg-green-700 font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
                                     >
                                         {joining ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <LogIn className="w-6 h-6 mr-2" />}
-                                        {t('leagues.join_btn') || "Rejoindre la Ligue"}
+                                        {t('leagues.join_btn')}
                                     </Button>
                                 )
                             )}
@@ -220,7 +220,7 @@ export default function LeagueDetail() {
                 isOpen={inviteOpen} 
                 onClose={() => setInviteOpen(false)} 
                 onInvite={handleInvite} 
-                title={t('home.search_invite') || "Inviter un joueur"} 
+                title={t('home.search_invite')} 
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
