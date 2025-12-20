@@ -266,9 +266,12 @@ function LayoutContent({ children }) {
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
                             <Link to="/Home" className="flex-shrink-0 flex items-center gap-2 group">
-                                <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full shadow-lg border-2 border-[#e8dcc5] flex items-center justify-center transform group-hover:scale-110 transition-transform">
-                                    <span className="text-[#2c1e12] font-black text-base lg:text-lg">D</span>
-                                    <span className="text-[#e8dcc5] font-black text-base lg:text-lg -ml-1">$</span>
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full shadow-lg border-2 border-[#e8dcc5] overflow-hidden transform group-hover:scale-110 transition-transform">
+                                    <img
+                                      src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/b31958665_Screenshot2025-12-21at121530AM.png"
+                                      alt="DamCash Logo"
+                                      className="w-full h-full object-cover"
+                                    />
                                 </div>
                                 <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#e8dcc5] to-yellow-500 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
                                     DAMCASH
