@@ -79,10 +79,9 @@ Deno.serve(async (req) => {
       // Create next season league according to recurrence
       const start = now;
       const end = new Date(start);
-      const rec = league.recurrence || 'monthly';
+      const rec = league.recurrence || 'weekly';
       if (rec === 'weekly') end.setDate(start.getDate() + 7);
       else if (rec === 'daily') end.setDate(start.getDate() + 1);
-      else if (rec === 'monthly') end.setDate(start.getDate() + 30);
       else end.setDate(start.getDate() + 30);
 
       const nextLeague = await base44.asServiceRole.entities.League.create({
