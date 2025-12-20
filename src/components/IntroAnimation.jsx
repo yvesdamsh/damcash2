@@ -1,11 +1,23 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { soundManager } from '@/components/SoundManager';
 
 export default function IntroAnimation() {
     useEffect(() => {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3'); // Majestic reveal sound
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log("Audio autoplay prevented:", e));
+        // Try playing the start sound; also unlock on first user interaction if autoplay is blocked
+        const tryPlay = () => soundManager.play('start');
+        tryPlay();
+        const unlock = () => {
+            tryPlay();
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('keydown', unlock);
+        };
+        window.addEventListener('pointerdown', unlock, { once: true });
+        window.addEventListener('keydown', unlock, { once: true });
+        return () => {
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('keydown', unlock);
+        };
     }, []);
 
     return (

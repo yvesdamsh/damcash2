@@ -722,6 +722,9 @@ export default function Home() {
             )}
 
             <div className="text-center mb-4 space-y-4">
+                <div className="mx-auto w-32 h-32 md:w-40 md:h-40 rounded-2xl shadow-xl overflow-hidden border-2 border-[#d4c5b0]">
+                    <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/b31958665_Screenshot2025-12-21at121530AM.png" alt="DamCash Logo" className="w-full h-full object-cover" />
+                </div>
                 <h1 className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#4a3728] to-[#b8860b] dark:from-[#b8860b] dark:to-[#e8dcc5] drop-shadow-md" style={{ fontFamily: 'Georgia, serif' }}>
                     DAMCASH
                 </h1>
