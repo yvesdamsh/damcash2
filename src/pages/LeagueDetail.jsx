@@ -69,8 +69,19 @@ export default function LeagueDetail() {
                 game_type: league.game_type
             });
             
-            // Filter games where I am not the host
-            const validGame = games.find(g => g.white_player_id !== currentUser.id);
+            // Choose the closest ELO opponent (league-specific)
+            const mePart = (await base44.entities.LeagueParticipant.list({ league_id: league.id, user_id: currentUser.id }))[0];
+            let bestGame = null;
+            let bestDist = Infinity;
+            for (const g of games) {
+                if (g.white_player_id === currentUser.id) continue;
+                const hostPart = (await base44.entities.LeagueParticipant.list({ league_id: league.id, user_id: g.white_player_id }))[0];
+                const hostElo = hostPart?.elo ?? 1200;
+                const myElo = mePart?.elo ?? 1200;
+                const dist = Math.abs(hostElo - myElo);
+                if (dist < bestDist) { bestDist = dist; bestGame = g; }
+            }
+            const validGame = bestGame;
 
             if (validGame) {
                 // Join existing

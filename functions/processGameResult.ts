@@ -543,86 +543,62 @@ export default async function handler(req) {
             });
         }
     } else if (whiteId && blackId && whiteId !== blackId) {
-        // 3. Update LEAGUE Scores if it's a ranked game (non-tournament)
-        // Find active leagues for this game type
         try {
-            const activeLeagues = await base44.asServiceRole.entities.League.list({ 
-                status: 'active', 
-                game_type: type 
-            });
-            
-            if (activeLeagues && activeLeagues.length > 0) {
-                // Update stats for all active leagues where users are participants
+            if (game.league_id) {
+                // League-specific ELO + points update for this league only
+                const [pWhite] = await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: game.league_id, user_id: whiteId });
+                const [pBlack] = await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: game.league_id, user_id: blackId });
+
+                const ratingA = pWhite?.elo ?? 1200;
+                const ratingB = pBlack?.elo ?? 1200;
+                const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+                const expectedB = 1 / (1 + Math.pow(10, (ratingA - ratingB) / 400));
+                let scoreA = 0.5, scoreB = 0.5;
+                if (winnerId === whiteId) { scoreA = 1; scoreB = 0; }
+                else if (winnerId === blackId) { scoreA = 0; scoreB = 1; }
+                const K = 24;
+                const newA = Math.round(ratingA + K * (scoreA - expectedA));
+                const newB = Math.round(ratingB + K * (scoreB - expectedB));
+                const isDraw = !winnerId;
+
+                if (pWhite) await base44.asServiceRole.entities.LeagueParticipant.update(pWhite.id, {
+                    elo: newA,
+                    points: (pWhite.points || 0) + (scoreA === 1 ? 3 : (isDraw ? 1 : 0)),
+                    wins: (pWhite.wins || 0) + (scoreA === 1 ? 1 : 0),
+                    losses: (pWhite.losses || 0) + (scoreA === 0 ? 1 : 0),
+                    draws: (pWhite.draws || 0) + (isDraw ? 1 : 0)
+                });
+                if (pBlack) await base44.asServiceRole.entities.LeagueParticipant.update(pBlack.id, {
+                    elo: newB,
+                    points: (pBlack.points || 0) + (scoreB === 1 ? 3 : (isDraw ? 1 : 0)),
+                    wins: (pBlack.wins || 0) + (scoreB === 1 ? 1 : 0),
+                    losses: (pBlack.losses || 0) + (scoreB === 0 ? 1 : 0),
+                    draws: (pBlack.draws || 0) + (isDraw ? 1 : 0)
+                });
+            } else {
+                // Fallback legacy behavior: update any active leagues of this type (points only)
+                const activeLeagues = await base44.asServiceRole.entities.League.filter({ status: 'active', game_type: type });
                 for (const league of activeLeagues) {
-                    const participants = await base44.asServiceRole.entities.LeagueParticipant.list({
-                        league_id: league.id,
-                        user_id: { '$in': [whiteId, blackId] } // Filter is nicer if supported, otherwise fetch individually
-                    });
-                    // Note: The above list query might not work perfectly if $in is not supported by Base44 SDK mock,
-                    // fallback to checking individually. Assuming basic filter works.
-                    // If not, we'd do loop. Let's do safe loop.
-                    
                     const whiteParticipant = (await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: league.id, user_id: whiteId }))[0];
                     const blackParticipant = (await base44.asServiceRole.entities.LeagueParticipant.list({ league_id: league.id, user_id: blackId }))[0];
 
-                    const updateParticipant = async (p, isWinner, isDraw) => {
+                    const isDraw = !winnerId;
+                    const updateP = async (p, isWin) => {
                         if (!p) return;
-                        const points = isWinner ? 3 : (isDraw ? 1 : 0); // 3 points for win, 1 for draw
-                        const newPoints = (p.points || 0) + points;
-                        
-                        // Advanced tier calculation
-                        let tier = p.rank_tier;
-                        if (newPoints < 100) tier = 'bronze';
-                        else if (newPoints < 250) tier = 'silver';
-                        else if (newPoints < 500) tier = 'gold';
-                        else if (newPoints < 800) tier = 'diamond';
-                        else tier = 'master';
-
-                        // Check for badges and Notifications
-                        if (tier !== p.rank_tier) {
-                            // Notify promotion
-                            await base44.asServiceRole.entities.Notification.create({
-                                recipient_id: p.user_id,
-                                type: "success",
-                                title: "Promotion de Ligue !",
-                                message: `Vous êtes passé au rang ${tier.toUpperCase()} dans ${league.name} !`,
-                                link: `/LeagueDetail?id=${league.id}`
-                            });
-
-                            if (tier === 'gold') {
-                                await base44.asServiceRole.entities.UserBadge.create({
-                                    user_id: p.user_id,
-                                    name: "Promotion Or",
-                                    icon: "Crown",
-                                    awarded_at: new Date().toISOString()
-                                });
-                            }
-                            if (tier === 'master') {
-                                await base44.asServiceRole.entities.UserBadge.create({
-                                    user_id: p.user_id,
-                                    name: "Maître de la Ligue",
-                                    icon: "Trophy",
-                                    awarded_at: new Date().toISOString()
-                                });
-                            }
-                        }
-                        
+                        const pts = isWin ? 3 : (isDraw ? 1 : 0);
                         await base44.asServiceRole.entities.LeagueParticipant.update(p.id, {
-                            points: newPoints,
-                            wins: (p.wins || 0) + (isWinner ? 1 : 0),
-                            losses: (p.losses || 0) + (isWinner || isDraw ? 0 : 1),
-                            draws: (p.draws || 0) + (isDraw ? 1 : 0),
-                            rank_tier: tier
+                            points: (p.points || 0) + pts,
+                            wins: (p.wins || 0) + (isWin ? 1 : 0),
+                            losses: (p.losses || 0) + ((!isWin && !isDraw) ? 1 : 0),
+                            draws: (p.draws || 0) + (isDraw ? 1 : 0)
                         });
                     };
-
-                    const isDraw = !winnerId;
-                    await updateParticipant(whiteParticipant, winnerId === whiteId, isDraw);
-                    await updateParticipant(blackParticipant, winnerId === blackId, isDraw);
+                    await updateP(whiteParticipant, winnerId === whiteId);
+                    await updateP(blackParticipant, winnerId === blackId);
                 }
             }
         } catch (err) {
-            console.error("Error updating leagues", err);
+            console.error('Error updating leagues', err);
         }
     }
 

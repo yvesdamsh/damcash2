@@ -1,106 +1,159 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-export default async function handler(req) {
+Deno.serve(async (req) => {
+  try {
     const base44 = createClientFromRequest(req);
     const now = new Date();
 
-    // 1. End Active Leagues
-    const activeLeagues = await base44.asServiceRole.entities.League.list({ status: 'active' });
+    const tiers = ['bronze', 'silver', 'gold', 'diamond', 'master'];
+    const activeLeagues = await base44.asServiceRole.entities.League.filter({ status: 'active' });
+
     for (const league of activeLeagues) {
-        if (new Date(league.end_date) < now) {
-            // End Season
-            await base44.asServiceRole.entities.League.update(league.id, { status: 'completed' });
-            
-            // Process Promotions/Relegations
-            const participants = await base44.asServiceRole.entities.LeagueParticipant.filter({ league_id: league.id });
-            
-            // Group by tier (though usually a league is one tier, or multi-tier if global league?)
-            // Assuming global league structure for now based on entity
-            // If league represents a SEASON containing all tiers, we sort all.
-            // If league is specific tier, we sort that tier.
-            // Let's assume League entity is a "Season".
-            
-            const tiers = ['master', 'diamond', 'gold', 'silver', 'bronze']; // High to Low
-            
-            // Sort all participants by points
-            const sorted = participants.sort((a, b) => (b.points || 0) - (a.points || 0));
-            
-            // Simple Logic: Top 10% promote, Bottom 10% relegate (if applicable)
-            // Or based on fixed points thresholds defined in previous turn?
-            // User asked for "Automatic Promotion/Relegation at START of season"
-            // So we calculate new tiers here for next season.
-            
-            for (let i = 0; i < sorted.length; i++) {
-                const p = sorted[i];
-                const percentile = i / sorted.length;
-                let newTier = p.rank_tier; // Default keep
-                
-                // Promotion Logic (Top 15%)
-                if (percentile <= 0.15) {
-                    const currentIndex = tiers.indexOf(p.rank_tier);
-                    if (currentIndex > 0) newTier = tiers[currentIndex - 1]; // Move up (lower index)
-                }
-                // Relegation Logic (Bottom 15%)
-                else if (percentile >= 0.85) {
-                    const currentIndex = tiers.indexOf(p.rank_tier);
-                    if (currentIndex < tiers.length - 1) newTier = tiers[currentIndex + 1]; // Move down
-                }
-                
-                // Update User Profile for global tier tracking
-                // Assuming we store current tier in User entity too
-                if (league.game_type === 'chess') {
-                    await base44.asServiceRole.entities.User.update(p.user_id, { tier_chess: newTier });
-                } else {
-                    await base44.asServiceRole.entities.User.update(p.user_id, { tier_checkers: newTier });
-                }
-                
-                // Notify
-                if (newTier !== p.rank_tier) {
-                    const isPromo = tiers.indexOf(newTier) < tiers.indexOf(p.rank_tier);
-                    const title = `Saison terminée : ${isPromo ? 'Promotion !' : 'Relégation'}`;
-                    const message = `Vous commencez la nouvelle saison en division ${newTier.toUpperCase()}.`;
-                    
-                    // Create Entity
-                    await base44.asServiceRole.entities.Notification.create({
-                        recipient_id: p.user_id,
-                        type: "info",
-                        title,
-                        message,
-                        link: '/Leagues'
-                    });
+      if (new Date(league.end_date) > now) continue;
 
-                    // Real-time Push
-                    const notifChannel = new BroadcastChannel('notifications');
-                    notifChannel.postMessage({
-                        recipientId: p.user_id,
-                        type: 'info',
-                        title,
-                        message,
-                        link: '/Leagues'
-                    });
-                    notifChannel.close();
-                }
-            }
+      // Fetch participants of this league
+      const participants = await base44.asServiceRole.entities.LeagueParticipant.filter({ league_id: league.id });
 
-            // Create New Season League
-            const nextEnd = new Date(now);
-            nextEnd.setDate(nextEnd.getDate() + 30); // 30 days seasons
-            
-            await base44.asServiceRole.entities.League.create({
-                name: `Saison ${league.season + 1}`,
-                season: league.season + 1,
-                game_type: league.game_type,
-                status: 'active',
-                start_date: now.toISOString(),
-                end_date: nextEnd.toISOString(),
-                description: `Saison ${league.season + 1} officielle.`,
-                rewards: league.rewards, // Carry over rewards structure
-                rules_summary: league.rules_summary
-            });
+      // Group participants by tier
+      const byTier = Object.fromEntries(tiers.map(t => [t, []]));
+      for (const p of participants) {
+        const key = tiers.includes(p.rank_tier) ? p.rank_tier : 'bronze';
+        byTier[key].push(p);
+      }
+
+      const promotionMap = new Map();
+      const relegationMap = new Map();
+      const TOP_PERCENT = 0.15; // 15% promotion
+      const BOTTOM_PERCENT = 0.15; // 15% relegation
+
+      // Rewards: top 3 per tier
+      for (const tier of tiers) {
+        const arr = byTier[tier].sort((a, b) => (b.points || 0) - (a.points || 0));
+        if (arr.length === 0) continue;
+
+        const topCount = Math.max(1, Math.floor(arr.length * TOP_PERCENT));
+        const bottomCount = Math.max(1, Math.floor(arr.length * BOTTOM_PERCENT));
+        const idx = tiers.indexOf(tier);
+        const upTier = idx > 0 ? tiers[idx - 1] : tier;
+        const downTier = idx < tiers.length - 1 ? tiers[idx + 1] : tier;
+
+        // Promotions & Relegations
+        for (const p of arr.slice(0, topCount)) promotionMap.set(p.user_id, upTier);
+        for (const p of arr.slice(-bottomCount)) relegationMap.set(p.user_id, downTier);
+
+        // Podium rewards
+        const podium = arr.slice(0, 3);
+        for (let i = 0; i < podium.length; i++) {
+          const place = i + 1;
+          const labels = ['Champion', 'Vice-champion', 'Troisième'];
+          await base44.asServiceRole.entities.UserBadge.create({
+            user_id: podium[i].user_id,
+            name: `${labels[i]} ${tier} - Saison ${league.season}`,
+            icon: place === 1 ? 'Crown' : 'Medal',
+            awarded_at: new Date().toISOString()
+          });
+          await base44.asServiceRole.entities.Notification.create({
+            recipient_id: podium[i].user_id,
+            type: 'success',
+            title: `Récompense de fin de saison (${tier})`,
+            message: `Bravo ! Vous terminez #${place} en ${tier}.`,
+            link: '/Leagues'
+          });
         }
+      }
+
+      // Compute new tiers for next season (promotion has priority over relegation)
+      const newTierByUser = new Map();
+      for (const p of participants) {
+        const promo = promotionMap.get(p.user_id);
+        const releg = relegationMap.get(p.user_id);
+        let newTier = p.rank_tier;
+        if (promo && promo !== p.rank_tier) newTier = promo;
+        else if (releg && releg !== p.rank_tier) newTier = releg;
+        newTierByUser.set(p.user_id, newTier);
+      }
+
+      // Close current league
+      await base44.asServiceRole.entities.League.update(league.id, { status: 'completed' });
+
+      // Create next season league according to recurrence
+      const start = now;
+      const end = new Date(start);
+      const rec = league.recurrence || 'monthly';
+      if (rec === 'weekly') end.setDate(start.getDate() + 7);
+      else if (rec === 'daily') end.setDate(start.getDate() + 1);
+      else if (rec === 'monthly') end.setDate(start.getDate() + 30);
+      else end.setDate(start.getDate() + 30);
+
+      const nextLeague = await base44.asServiceRole.entities.League.create({
+        name: `${league.name} - Saison ${Number(league.season || 0) + 1}`,
+        description: league.description,
+        series_id: league.series_id,
+        prizes: league.prizes,
+        entry_fee: league.entry_fee || 0,
+        prize_pool: 0,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        status: 'active',
+        game_type: league.game_type,
+        format: league.format || 'bracket',
+        stage: league.stage || 'knockout',
+        rounds: league.rounds || 3,
+        group_size: league.group_size || 4,
+        time_control: league.time_control || '5+0',
+        max_players: league.max_players || 0,
+        current_round: 0,
+        is_private: league.is_private || false,
+        created_by_user_id: league.created_by_user_id,
+        rewards: league.rewards,
+        prize_distribution: league.prize_distribution,
+        team_mode: league.team_mode || false,
+        custom_rules: league.custom_rules,
+        recurrence: league.recurrence || 'monthly',
+        tie_breaker: league.tie_breaker || 'buchholz',
+        elo_min: league.elo_min || 0,
+        elo_max: league.elo_max || 3000,
+        season: (league.season || 1) + 1
+      });
+
+      // Auto-enroll participants into the new season with reset stats and ELO
+      for (const p of participants) {
+        const newTier = newTierByUser.get(p.user_id) || p.rank_tier;
+        await base44.asServiceRole.entities.LeagueParticipant.create({
+          league_id: nextLeague.id,
+          user_id: p.user_id,
+          user_name: p.user_name,
+          avatar_url: p.avatar_url,
+          points: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          rank_tier: newTier,
+          elo: 1200
+        });
+
+        if (newTier !== p.rank_tier) {
+          const movedUp = tiers.indexOf(newTier) < tiers.indexOf(p.rank_tier);
+          await base44.asServiceRole.entities.Notification.create({
+            recipient_id: p.user_id,
+            type: 'info',
+            title: movedUp ? 'Promotion de division' : 'Relégation de division',
+            message: `Nouvelle saison: vous démarrez en ${newTier.toUpperCase()}.`,
+            link: '/Leagues'
+          });
+        }
+      }
+
+      // Realtime broadcast
+      try {
+        const bc = new BroadcastChannel('leagues');
+        bc.postMessage({ type: 'league_update' });
+        setTimeout(() => bc.close(), 100);
+      } catch (_) {}
     }
 
-    return Response.json({ status: 'success' });
-}
-
-Deno.serve(handler);
+    return Response.json({ status: 'ok' });
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: 500 });
+  }
+});
