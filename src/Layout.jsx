@@ -70,7 +70,7 @@ function LayoutContent({ children }) {
                 // We keep showIntro true so it shows on Home
             }
 
-            const timer = setTimeout(() => setShowIntro(false), 5000);
+            const timer = setTimeout(() => setShowIntro(false), 7000);
             return () => clearTimeout(timer);
         } else {
              // Subsequent navigations

@@ -39,27 +39,39 @@ export default function IntroAnimation() {
             <div className="relative z-10 flex flex-col items-center">
                 {/* Logo Animation */}
                 <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ 
-                        type: "spring",
-                        stiffness: 260,
-                        damping: 20,
-                        duration: 1.5 
-                    }}
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
                     className="mb-8"
                 >
-                    <div className="w-32 h-32 bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-full shadow-2xl border-4 border-[#e8dcc5] flex items-center justify-center relative overflow-hidden">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.5, duration: 0.5 }}
-                            className="absolute inset-0 bg-white/20"
+                    <div className="relative w-56 h-56 md:w-64 md:h-64 rounded-2xl shadow-2xl overflow-hidden border-4 border-[#e8dcc5]" style={{ perspective: '1000px' }}>
+                        <img
+                          src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/b31958665_Screenshot2025-12-21at121530AM.png"
+                          alt="DamCash Logo"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
-                        <div className="flex items-center justify-center transform scale-125">
-                            <span className="text-[#2c1e12] font-black text-6xl" style={{ fontFamily: 'Georgia, serif' }}>D</span>
-                            <span className="text-[#e8dcc5] font-black text-6xl -ml-2" style={{ fontFamily: 'Georgia, serif' }}>$</span>
-                        </div>
+                        {/* Door halves opening */}
+                        <motion.div
+                          initial={{ rotateY: 0 }}
+                          animate={{ rotateY: 90 }}
+                          transition={{ delay: 0.6, duration: 1.8, ease: 'easeInOut' }}
+                          style={{ transformOrigin: 'left center' }}
+                          className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-br from-[#6b5138] to-[#b8860b]"
+                        />
+                        <motion.div
+                          initial={{ rotateY: 0 }}
+                          animate={{ rotateY: -90 }}
+                          transition={{ delay: 0.6, duration: 1.8, ease: 'easeInOut' }}
+                          style={{ transformOrigin: 'right center' }}
+                          className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-tl from-[#6b5138] to-[#b8860b]"
+                        />
+                        {/* Glow after opening */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: [0, 0.25, 0.15] }}
+                          transition={{ delay: 2.6, duration: 2.4, repeat: Infinity }}
+                          className="absolute -inset-12 bg-[radial-gradient(circle_at_center,rgba(255,215,130,0.35),transparent_60%)] pointer-events-none"
+                        />
                     </div>
                 </motion.div>
 
