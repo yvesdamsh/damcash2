@@ -120,10 +120,19 @@ export default function Home() {
     ];
 
     const legends = gameType === 'chess' ? chessLegends : checkersLegends;
+    const safeIndex = Number.isFinite(currentLegendIndex) && currentLegendIndex >= 0 && currentLegendIndex < (legends?.length || 0) ? currentLegendIndex : 0;
+    const currentLegend = (legends && legends.length > 0) ? legends[safeIndex] : null;
 
     useEffect(() => {
         setCurrentLegendIndex(0);
     }, [gameType]);
+
+    useEffect(() => {
+        if (!Array.isArray(legends) || legends.length === 0) return;
+        if (!Number.isFinite(currentLegendIndex) || currentLegendIndex >= legends.length) {
+            setCurrentLegendIndex(0);
+        }
+    }, [legends.length]);
 
     const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
     const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
@@ -965,29 +974,29 @@ export default function Home() {
                                         >
                                             <div className="w-full h-60 md:h-full md:w-2/5 relative shrink-0 overflow-hidden">
                                                 <img 
-                                                    src={legends[currentLegendIndex].image} 
-                                                    alt={legends[currentLegendIndex].name} 
-                                                    className={`w-full h-full object-cover ${legends[currentLegendIndex].position || 'object-top'}`}
+                                                    src={currentLegend?.image} 
+                                                    alt={currentLegend?.name || 'Legend'} 
+                                                    className={`w-full h-full object-cover ${currentLegend?.position || 'object-top'}`}
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-[#4a3728] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#fdfbf7] dark:md:to-[#1e1814]" />
                                                 <div className="absolute bottom-0 left-0 p-4 text-[#e8dcc5] md:hidden">
-                                                    <h3 className="text-xl font-bold">{legends[currentLegendIndex].name}</h3>
-                                                    <p className="text-xs opacity-90">{legends[currentLegendIndex].badge}</p>
+                                                    <h3 className="text-xl font-bold">{currentLegend?.name}</h3>
+                                                    <p className="text-xs opacity-90">{currentLegend?.badge}</p>
                                                 </div>
                                             </div>
                                             <div className="p-6 md:w-3/5 flex flex-col justify-center h-full">
                                                 <div className="hidden md:block mb-3">
                                                     <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] hover:bg-[#d4c5b0] dark:bg-[#3d2b1f] dark:text-[#e8dcc5] mb-2">
-                                                        {legends[currentLegendIndex].badge}
+                                                        {currentLegend?.badge}
                                                     </Badge>
-                                                    <h3 className="text-3xl font-black text-[#4a3728] dark:text-[#e8dcc5] mb-1">{legends[currentLegendIndex].name}</h3>
-                                                    <p className="text-sm text-[#8c6b4a] dark:text-[#a8907a] font-serif italic">{legends[currentLegendIndex].subtitle}</p>
+                                                    <h3 className="text-3xl font-black text-[#4a3728] dark:text-[#e8dcc5] mb-1">{currentLegend?.name}</h3>
+                                                    <p className="text-sm text-[#8c6b4a] dark:text-[#a8907a] font-serif italic">{currentLegend?.subtitle}</p>
                                                 </div>
                                                 <p className="text-[#6b5138] dark:text-[#b09a85] mb-6 text-sm leading-relaxed md:text-base line-clamp-5 md:line-clamp-none">
-                                                    {legends[currentLegendIndex].description}
+                                                    {currentLegend?.description}
                                                 </p>
                                                 <div className="flex gap-3 mt-auto md:mt-0">
-                                                    <Button variant="outline" className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5] dark:border-[#e8dcc5] dark:text-[#e8dcc5] dark:hover:bg-[#e8dcc5] dark:hover:text-[#1e1814]" onClick={() => window.open(legends[currentLegendIndex].link, '_blank')}>
+                                                    <Button variant="outline" disabled={!currentLegend?.link} className="border-[#4a3728] text-[#4a3728] hover:bg-[#4a3728] hover:text-[#e8dcc5] dark:border-[#e8dcc5] dark:text-[#e8dcc5] dark:hover:bg-[#e8dcc5] dark:hover:text-[#1e1814]" onClick={() => currentLegend?.link && window.open(currentLegend.link, '_blank')}>
                                                         <BookOpen className="w-4 h-4 mr-2" />
                                                         {t('common.read_bio')}
                                                     </Button>
