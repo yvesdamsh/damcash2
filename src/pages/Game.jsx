@@ -321,19 +321,27 @@ export default function Game() {
                     if (fetchedGame) {
                         setGame(prev => {
                             if (!prev) return fetchedGame;
-                            
+
                             const localMoves = prev.moves ? JSON.parse(prev.moves) : [];
                             const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
-                            
+
                             const isRematch = (prev.status === 'finished' && fetchedGame.status === 'playing') ||
                                               (fetchedGame.white_player_id && prev.white_player_id && fetchedGame.white_player_id !== prev.white_player_id) ||
                                               (fetchedMoves.length === 0 && localMoves.length > 0 && fetchedGame.status === 'playing');
 
                             const isNewer = fetchedGame.last_move_at && prev.last_move_at && new Date(fetchedGame.last_move_at) > new Date(prev.last_move_at);
-                            
-                            // Only update if server has MORE moves, or SAME moves but strictly newer timestamp (to avoid overwriting optimistic updates with stale/echoed data)
-                            if (isRematch || fetchedMoves.length > localMoves.length || (fetchedMoves.length === localMoves.length && isNewer)) {
-                                return fetchedGame;
+                            const updatedNewer = fetchedGame.updated_date && (!prev.updated_date || new Date(fetchedGame.updated_date) > new Date(prev.updated_date));
+                            const essentialChanged = prev.status !== fetchedGame.status
+                              || prev.white_player_id !== fetchedGame.white_player_id
+                              || prev.black_player_id !== fetchedGame.black_player_id
+                              || prev.current_turn !== fetchedGame.current_turn;
+
+                            if (
+                              isRematch ||
+                              fetchedMoves.length > localMoves.length ||
+                              (fetchedMoves.length === localMoves.length && (isNewer || updatedNewer || essentialChanged))
+                            ) {
+                              return fetchedGame;
                             }
                             return prev;
                         });
@@ -381,30 +389,28 @@ export default function Game() {
             if (data.type === 'GAME_UPDATE') {
                 if (data.payload) {
                     setGame(prev => {
-                        // Prevent stale updates via socket too
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
-                        
-                        // Stale check: reject if older timestamp
-                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at)) {
+
+                        const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
+                        const updatedNewer = data.payload.updated_date && (!prev.updated_date || new Date(data.payload.updated_date) > new Date(prev.updated_date));
+                        const essentialChanged = (typeof data.payload.status !== 'undefined' && data.payload.status !== prev.status)
+                          || (typeof data.payload.white_player_id !== 'undefined' && data.payload.white_player_id !== prev.white_player_id)
+                          || (typeof data.payload.black_player_id !== 'undefined' && data.payload.black_player_id !== prev.black_player_id)
+                          || (typeof data.payload.current_turn !== 'undefined' && data.payload.current_turn !== prev.current_turn);
+
+                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at) && !essentialChanged && !updatedNewer) {
                             return prev;
                         }
 
-                        // Move count check: reject if fewer OR EQUAL moves AND not newer (preserves local optimistic state against stale echoes)
-                        const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
-                        
-                        if (data.payload.moves && incomingMoves.length <= localMoves.length && !isNewer) {
+                        if (data.payload.moves && incomingMoves.length < localMoves.length && !isNewer && !updatedNewer && !essentialChanged) {
                             return prev;
                         }
                         return { ...prev, ...data.payload };
                     });
                 }
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then((g) => {
-                    setGame(g);
-                    // If game finished via timeout/resign on remote, pop result overlay
-                    if (g && g.status === 'finished') setShowResult(true);
-                });
+                base44.entities.Game.get(id).then(setGame);
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
@@ -1052,7 +1058,7 @@ export default function Game() {
             if (socket && socket.readyState === WebSocket.OPEN) {
                 // Send full state update to avoid fetch latency on opponent side
                 socket.send(JSON.stringify({ 
-                    type: 'STATE_UPDATE', 
+                    type: 'GAME_UPDATE', 
                     payload: updateData 
                 }));
             }
@@ -1211,7 +1217,13 @@ export default function Game() {
         
         try {
             if (!isAiGame) {
-                // Secure Server-Side End
+                // First mark game finished so both clients stop clocks immediately
+                await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() });
+                // Broadcast state through socket
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                }
+                // Then trigger server-side processing (elo, payouts, leagues)
                 await base44.functions.invoke('processGameResult', { 
                     gameId: game.id, 
                     outcome: { winnerId, result: 'timeout' } 
@@ -1227,7 +1239,6 @@ export default function Game() {
                 toast.error(t('game.time_out_loss'));
             }
 
-            // Force local update
             setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
             setShowResult(true);
         } catch (e) {
@@ -1466,6 +1477,10 @@ export default function Game() {
                                                 gameId: game.id, 
                                                 outcome: { winnerId, result: 'resignation' } 
                                             });
+                                            // Broadcast via socket so opponent stops immediately
+                                            if (socket && socket.readyState === WebSocket.OPEN) {
+                                                socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                                            }
                                         }
                                         soundManager.play('loss');
                                     }}
