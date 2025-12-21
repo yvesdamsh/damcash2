@@ -400,7 +400,11 @@ export default function Game() {
                     });
                 }
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(setGame);
+                base44.entities.Game.get(id).then((g) => {
+                    setGame(g);
+                    // If game finished via timeout/resign on remote, pop result overlay
+                    if (g && g.status === 'finished') setShowResult(true);
+                });
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
