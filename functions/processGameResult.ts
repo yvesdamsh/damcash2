@@ -602,6 +602,13 @@ export default async function handler(req) {
         }
     }
 
+    // Notify live clients to refresh game state
+    try {
+        const gameUpdates = new BroadcastChannel('game_updates');
+        gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+        setTimeout(() => gameUpdates.close(), 100);
+    } catch (_) {}
+
     return Response.json({ status: 'success', message: 'Elo and scores updated' });
 }
 

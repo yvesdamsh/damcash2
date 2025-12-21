@@ -304,14 +304,8 @@ export default function Home() {
     const handleAcceptInvite = async (invite) => {
         try {
             await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
-            const game = await base44.entities.Game.get(invite.game_id);
-            if (game && !game.black_player_id) {
-            await base44.entities.Game.update(game.id, {
-               black_player_id: user.id,
-               black_player_name: user.username || 'Invité',
-               status: 'playing'
-            });
-            }
+            // Use server join function to update game and broadcast to both players
+            await base44.functions.invoke('joinGame', { gameId: invite.game_id });
             navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
             console.error("Error accepting invite", e);
