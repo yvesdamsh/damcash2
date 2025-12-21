@@ -1221,7 +1221,7 @@ export default function Game() {
                 await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() });
                 // Broadcast state through socket
                 if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                    socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
                 }
                 // Then trigger server-side processing (elo, payouts, leagues)
                 await base44.functions.invoke('processGameResult', { 
@@ -1479,7 +1479,7 @@ export default function Game() {
                                             });
                                             // Broadcast via socket so opponent stops immediately
                                             if (socket && socket.readyState === WebSocket.OPEN) {
-                                                socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                                                socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
                                             }
                                         }
                                         soundManager.play('loss');
