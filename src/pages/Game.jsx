@@ -1420,6 +1420,7 @@ export default function Game() {
                         opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
                         socket={socket}
                         externalSignals={syncedSignals}
+                        gameStatus={game?.status}
                     />
                  )}
                 {isSpectator && (

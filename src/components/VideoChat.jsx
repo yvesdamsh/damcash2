@@ -12,7 +12,7 @@ const ICE_SERVERS = {
     ]
 };
 
-export default function VideoChat({ gameId, currentUser, opponentId, socket, externalSignals }) {
+export default function VideoChat({ gameId, currentUser, opponentId, socket, externalSignals, gameStatus }) {
     const { t } = useLanguage();
     const [isCallActive, setIsCallActive] = useState(false);
     const [localStream, setLocalStream] = useState(null);
@@ -80,8 +80,22 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, ext
     };
 
     useEffect(() => {
-        return cleanup;
-    }, []);
+        return () => {
+            if (isCallActive || status === 'connected' || status === 'calling' || status === 'incoming') {
+                try { sendSignal('hangup', '{}'); } catch (e) {}
+            }
+            cleanup();
+        };
+    }, [isCallActive, status]);
+
+    useEffect(() => {
+        if (gameStatus && gameStatus !== 'playing') {
+            if (isCallActive || status === 'connected' || status === 'calling' || status === 'incoming') {
+                try { sendSignal('hangup', '{}'); } catch (e) {}
+                cleanup();
+            }
+        }
+    }, [gameStatus]);
 
     const processBufferedCandidates = async () => {
         if (!peerConnection.current || !peerConnection.current.remoteDescription) return;
@@ -95,6 +109,20 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, ext
             }
         }
     };
+
+    useEffect(() => {
+        const onUnload = () => {
+            if (isCallActive || status === 'connected' || status === 'calling' || status === 'incoming') {
+                try { sendSignal('hangup', '{}'); } catch (e) {}
+            }
+        };
+        window.addEventListener('beforeunload', onUnload);
+        window.addEventListener('pagehide', onUnload);
+        return () => {
+            window.removeEventListener('beforeunload', onUnload);
+            window.removeEventListener('pagehide', onUnload);
+        };
+    }, [isCallActive, status]);
 
     const createPeerConnection = () => {
         if (peerConnection.current) {
