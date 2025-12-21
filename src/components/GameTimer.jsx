@@ -14,7 +14,7 @@ export default function GameTimer({ initialSeconds, isActive, onTimeout }) {
             const targetEndTime = now + (initialSeconds * 1000);
             
             // Initialize or resync if deviation is significant (>1s)
-            if (!endTimeRef.current || Math.abs(targetEndTime - endTimeRef.current) > 1000) {
+            if (!endTimeRef.current || Math.abs(targetEndTime - endTimeRef.current) > 500) {
                 endTimeRef.current = targetEndTime;
                 timeoutTriggeredRef.current = false; // Reset timeout trigger on new turn/sync
             }
