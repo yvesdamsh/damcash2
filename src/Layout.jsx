@@ -179,6 +179,16 @@ function LayoutContent({ children }) {
         checkUser();
     }, []);
 
+    // If the app is embedded (iframe) and user isn't authenticated, force open in top window
+    React.useEffect(() => {
+        if (isFramed && !isAuthed) {
+            const t = setTimeout(() => {
+                try { window.top.location.href = window.location.href; } catch (_) {}
+            }, 800);
+            return () => clearTimeout(t);
+        }
+    }, [isFramed, isAuthed]);
+
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     
     const toggleSound = () => {
