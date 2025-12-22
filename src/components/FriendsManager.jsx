@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import DirectChat from './DirectChat';
 
 export default function FriendsManager() {
@@ -23,7 +23,21 @@ export default function FriendsManager() {
     const [challengeConfigOpen, setChallengeConfigOpen] = useState(false);
     const [challengeTarget, setChallengeTarget] = useState(null);
     const [challengeConfig, setChallengeConfig] = useState({ time: 10, increment: 0, gameType: 'checkers' });
+    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+    const [inviteTarget, setInviteTarget] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const currentGameId = React.useMemo(() => {
+        try {
+            const url = new URL(window.location.href);
+            if (url.pathname.endsWith('/Game') || location.pathname.toLowerCase().includes('/game')) {
+                const sp = new URLSearchParams(url.search || location.search);
+                return sp.get('id');
+            }
+        } catch (_) {}
+        return null;
+    }, [location]);
 
     // Listen for open-chat events from Notifications
     useEffect(() => {
@@ -166,6 +180,12 @@ export default function FriendsManager() {
         } catch (e) { console.error(e); }
     };
 
+    const openInviteModal = (friend) => {
+        setInviteTarget(friend);
+        setInviteDialogOpen(true);
+        setIsOpen(false);
+    };
+
     const openChallengeModal = (friend) => {
         setChallengeTarget(friend);
         setChallengeConfigOpen(true);
@@ -264,6 +284,61 @@ export default function FriendsManager() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={inviteDialogOpen} onOpenChange={(v) => { setInviteDialogOpen(v); if (!v) setInviteTarget(null); }}>
+                <DialogContent className="sm:max-w-[380px] bg-[#fdfbf7] border-[#d4c5b0]">
+                    <DialogHeader>
+                        <DialogTitle className="text-[#4a3728]">Inviter {inviteTarget?.username || 'joueur'}</DialogTitle>
+                    </DialogHeader>
+                    {currentGameId ? (
+                        <div className="grid gap-3 py-2">
+                            <Button
+                                variant="outline"
+                                className="border-[#d4c5b0] text-[#6b5138]"
+                                onClick={async () => {
+                                    try {
+                                        await base44.entities.Notification.create({
+                                            recipient_id: inviteTarget.id,
+                                            type: 'info',
+                                            title: 'Invitation à regarder',
+                                            message: `${currentUser?.username || 'Un joueur'} vous invite à regarder sa partie`,
+                                            link: `/Game?id=${currentGameId}`,
+                                            sender_id: currentUser?.id,
+                                            metadata: JSON.stringify({ kind: 'spectator' })
+                                        });
+                                        toast.success('Invitation spectateur envoyée');
+                                        setInviteDialogOpen(false);
+                                    } catch (e) { toast.error('Erreur lors de l\'invitation'); }
+                                }}
+                            >
+                                Inviter comme spectateur
+                            </Button>
+                            <Button
+                                className="bg-[#4a3728] hover:bg-[#2c1e12] text-white"
+                                onClick={async () => {
+                                    try {
+                                        await base44.entities.Notification.create({
+                                            recipient_id: inviteTarget.id,
+                                            type: 'game_invite',
+                                            title: 'Invitation à jouer',
+                                            message: `${currentUser?.username || 'Un joueur'} vous invite à rejoindre sa table`,
+                                            link: `/Game?id=${currentGameId}`,
+                                            sender_id: currentUser?.id,
+                                            metadata: JSON.stringify({ kind: 'player', gameId: currentGameId })
+                                        });
+                                        toast.success('Invitation joueur envoyée');
+                                        setInviteDialogOpen(false);
+                                    } catch (e) { toast.error('Erreur lors de l\'invitation'); }
+                                }}
+                            >
+                                Inviter comme joueur
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="text-sm text-[#6b5138]">Aucune table active. Lancez une partie puis invitez vos amis.</div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
             <Popover open={isOpen} onOpenChange={setIsOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="ghost" size="icon" className="text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
@@ -328,7 +403,13 @@ export default function FriendsManager() {
                                                     }`} title={(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}></span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-[#4a3728]">{friend.username || `Joueur ${friend.id.substring(0,4)}`}</p>
+                                                    <p
+                                                        className="text-sm font-medium text-[#4a3728] cursor-pointer hover:underline"
+                                                        onClick={() => openInviteModal(friend)}
+                                                        title="Inviter"
+                                                    >
+                                                        {friend.username || `Joueur ${friend.id.substring(0,4)}`}
+                                                    </p>
                                                     <p className="text-[10px] text-gray-500">
                                                         {(Date.now() - new Date(friend.last_seen).getTime() < 5 * 60 * 1000) ? "En ligne" : "Hors ligne"}
                                                     </p>
