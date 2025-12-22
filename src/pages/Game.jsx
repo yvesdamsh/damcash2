@@ -1147,6 +1147,16 @@ export default function Game() {
          }
         };
 
+        const freeMyAccount = async () => {
+         try {
+           await base44.functions.invoke('cancelActiveGames', {});
+           toast.success(t('game.active_games_cleared') || 'Parties en cours annulées');
+           setTimeout(() => attemptJoin(), 400);
+         } catch (e) {
+           toast.error(t('game.action_failed') || 'Annulation impossible');
+         }
+        };
+
         const handleRematch = async () => {
         if (!game) return;
         
@@ -1822,6 +1832,12 @@ export default function Game() {
                         {isSpectator && (!game.white_player_id || !game.black_player_id) && (
                             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={attemptJoin}>
                                 {t('game.join') || 'Rejoindre'}
+                            </Button>
+                        )}
+
+                        {isSpectator && (
+                            <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138]" onClick={freeMyAccount}>
+                                Débloquer
                             </Button>
                         )}
 
