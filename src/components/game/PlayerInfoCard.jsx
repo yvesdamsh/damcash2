@@ -9,6 +9,8 @@ export default function PlayerInfoCard({
     onTimeout,
     getElo 
 }) {
+    const displayName = player?.name || (player?.color === 'white' ? 'Blanc' : 'Noir');
+    const isWaiting = !player?.id || !player?.name;
     return (
         <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
             <div className="flex items-center gap-3">
@@ -21,11 +23,15 @@ export default function PlayerInfoCard({
                 </div>
                 <div>
                     <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-                        {player.id ? (player.name || (player.color === 'white' ? 'Blanc' : 'Noir')) : 'En attente…'}
-                        {player.id && (
-                          <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">
-                              {getElo ? getElo(player.info, game.game_type) : (player.info?.elo || 1200)}
-                          </span>
+                        {isWaiting ? (
+                            <span className="text-gray-400 italic">En attente...</span>
+                        ) : (
+                            <>
+                                {displayName}
+                                <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">
+                                    {getElo ? getElo(player.info, game.game_type) : (player.info?.elo || 1200)}
+                                </span>
+                            </>
                         )}
                     </div>
                     {game.winner_id === player.id && !isSoloMode && (
