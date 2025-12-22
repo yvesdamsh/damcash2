@@ -63,9 +63,15 @@ Deno.serve(async (req) => {
     if (targetCurrency === 'XAF') {
       rate = 1; // parity
     } else if (targetCurrency !== 'XOF') {
-      const xr = await stripe.exchangeRates.retrieve('xof');
-      const key = (targetCurrency || 'usd').toLowerCase();
-      rate = xr?.rates?.[key] || 1;
+      const xr = await stripe.exchangeRates.retrieve('usd');
+      const r = xr?.rates || {};
+      const rXOF = r['xof'];
+      const rTarget = r[(targetCurrency || 'usd').toLowerCase()];
+      if (rXOF && rTarget) {
+        rate = rTarget / rXOF;
+      } else {
+        rate = 1;
+      }
     }
 
     const amountMajor = packageCfa * rate;

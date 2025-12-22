@@ -60,9 +60,15 @@ Deno.serve(async (req) => {
     if (targetCurrency === 'XAF') {
       rate = 1; // XOF and XAF are at parity
     } else if (targetCurrency !== 'XOF') {
-      const xr = await stripe.exchangeRates.retrieve('xof');
-      const key = (targetCurrency || 'usd').toLowerCase();
-      rate = xr?.rates?.[key] || 1; // fallback 1:1 if missing
+      const xr = await stripe.exchangeRates.retrieve('usd');
+      const r = xr?.rates || {};
+      const rXOF = r['xof'];
+      const rTarget = r[(targetCurrency || 'usd').toLowerCase()];
+      if (rXOF && rTarget) {
+        rate = rTarget / rXOF; // cross-rate XOF -> target via USD
+      } else {
+        rate = 1; // fallback 1:1
+      }
     }
 
     const packages = packagesCfa.map((cfa) => {
