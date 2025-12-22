@@ -104,6 +104,11 @@ export default async function handler(req) {
             type: 'GAME_UPDATE',
             payload: updatedGame
         });
+        // Also trigger a refetch signal for clients that rely on it
+        gameUpdates.postMessage({
+            gameId,
+            type: 'GAME_REFETCH'
+        });
 
         // Notify opponent
         const opponentId = updatedGame.white_player_id === user.id ? updatedGame.black_player_id : updatedGame.white_player_id;

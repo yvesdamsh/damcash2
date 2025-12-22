@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { translations } from './AppTranslations'; // Import translations
 import { format, formatDistanceToNow } from 'date-fns';
-import { enUS, ru, de, zhCN, nl } from 'date-fns/locale';
+import { enUS, ru, de, zhCN, nl, fr } from 'date-fns/locale';
 
 const LanguageContext = createContext(null);
 
 const dateFnsLocales = {
   en: enUS,
+  fr: fr,
   ru: ru,
   de: de,
   zh: zhCN,
