@@ -237,8 +237,8 @@ export default function FriendsManager() {
                 type: "game_invite",
                 title: "Défi reçu",
                 message: `${currentUser.username || 'Ami'} vous défie aux ${challengeConfig.gameType === 'chess' ? 'Échecs' : 'Dames'} (${challengeConfig.time}+${challengeConfig.increment})`,
-                link: `/Game?id=${game.id}`,
-                metadata: { gameId: game.id }
+                link: `/Game?id=${game.id}&join=player`,
+                metadata: { gameId: game.id, kind: 'player' }
             });
 
             toast.success(`Défi envoyé à ${challengeTarget.username}`);
