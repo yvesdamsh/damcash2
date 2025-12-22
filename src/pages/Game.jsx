@@ -1415,6 +1415,24 @@ export default function Game() {
 
     if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
+    // Safe fallback when game failed to load (avoid null property access)
+    if (!game) return (
+        <div className="flex flex-col justify-center h-screen items-center gap-3 text-[#4a3728]">
+            <div className="text-sm">Synchronisation en cours…</div>
+            <Button
+                variant="outline"
+                onClick={async () => {
+                    try {
+                        const g = await base44.entities.Game.get(id);
+                        if (g) setGame(g);
+                    } catch (e) {}
+                }}
+            >
+                Rafraîchir
+            </Button>
+        </div>
+    );
+
     const movesList = game?.moves ? JSON.parse(game.moves) : [];
     let displayBoard = board;
     if (replayIndex !== -1 && movesList[replayIndex]) {
@@ -1460,7 +1478,7 @@ export default function Game() {
         timeLeft: getTimeLeft('white')
     };
 
-    const isSpectator = !currentUser?.id || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id);
+    const isSpectator = !currentUser?.id || !game || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id);
 
     const getElo = (info, type) => {
         if (!info) return 1200;
