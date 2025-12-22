@@ -423,7 +423,20 @@ export default function Game() {
                         // Nettoie l'URL pour éviter de relancer l'action
                         navigate(`/Game?id=${game.id}`, { replace: true });
                     }
-                } catch (_) {}
+                } catch (e) {
+                    try {
+                        // Fallback: si une partie active bloque, on libère puis on réessaie
+                        await base44.functions.invoke('cancelActiveGames', {});
+                        await base44.functions.invoke('joinGame', { gameId: game.id });
+                        const fresh = await base44.entities.Game.get(game.id);
+                        setGame(fresh);
+                        setTimeout(async () => {
+                            const refreshed = await base44.entities.Game.get(game.id);
+                            setGame(refreshed);
+                        }, 300);
+                        navigate(`/Game?id=${game.id}`, { replace: true });
+                    } catch (_) {}
+                }
                 }
                 };
                 run();
