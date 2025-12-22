@@ -43,6 +43,10 @@ export default async function handler(req) {
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
+            if (data?.type === 'PING') {
+                socket.send(JSON.stringify({ type: 'PONG' }));
+                return;
+            }
             // Forward client message to others in the same channel (Local echo)
             // Note: This only echoes to clients on THIS instance.
             // To echo to clients on OTHER instances, we should technically put it on BroadcastChannel too.

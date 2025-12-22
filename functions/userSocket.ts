@@ -16,33 +16,30 @@ channel.onmessage = (event) => {
 };
 
 export default async function handler(req) {
-    const base44 = createClientFromRequest(req);
-    
     const upgrade = req.headers.get("upgrade");
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
         return new Response("Expected a WebSocket request", { status: 400 });
     }
 
-    let user = null;
-    try {
-        user = await base44.auth.me();
-    } catch (e) {
-        user = null; // Allow anonymous spectators; no targeted notifications
-    }
-
+    const base44 = createClientFromRequest(req);
     const { socket, response } = Deno.upgradeWebSocket(req);
-    const userId = user?.id;
+    socket.userId = null;
 
-    socket.onopen = () => {
-        if (!userId) {
+    socket.onopen = async () => {
+        try {
+            const me = await base44.auth.me();
+            socket.userId = me?.id || null;
+        } catch (_) {
+            socket.userId = null;
+        }
+        if (!socket.userId) {
             // Anonymous connection: keep socket open but don't register for targeted notifications
             return;
         }
-        if (!connections.has(userId)) {
-            connections.set(userId, new Set());
+        if (!connections.has(socket.userId)) {
+            connections.set(socket.userId, new Set());
         }
-        connections.get(userId).add(socket);
-        // console.log(`User connected to notifications: ${userId}`);
+        connections.get(socket.userId).add(socket);
     };
 
     socket.onmessage = (event) => {
@@ -55,12 +52,13 @@ export default async function handler(req) {
     };
 
     socket.onclose = () => {
-        if (!userId) return;
-        const userConns = connections.get(userId);
+        const uid = socket.userId;
+        if (!uid) return;
+        const userConns = connections.get(uid);
         if (userConns) {
             userConns.delete(socket);
             if (userConns.size === 0) {
-                connections.delete(userId);
+                connections.delete(uid);
             }
         }
     };

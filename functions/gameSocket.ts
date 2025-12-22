@@ -23,31 +23,24 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    let user = null;
-    try {
-        user = await base44.auth.me();
-    } catch (e) {
-        // Allow spectators without auth
-        user = null;
-    }
-    
-    // Deny anonymous connections for playing? Or allow for spectating?
-    // For now allow, but store user info
-    
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     // Store socket info
     socket.gameId = gameId;
-    socket.user = user;
+    socket.user = null;
 
-    socket.onopen = () => {
+    socket.onopen = async () => {
+        try {
+            socket.user = await base44.auth.me();
+        } catch (_) {
+            socket.user = null; // allow spectators
+        }
+
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
         }
         connections.get(gameId).add(socket);
-        
-        // Send immediate state sync request if needed
-        // Or rely on client to fetch initial state
+        // Initial sync can be client-driven
     };
 
     socket.onmessage = async (event) => {
@@ -136,10 +129,12 @@ Deno.serve(async (req) => {
                 broadcast(gameId, { type: 'GAME_REACTION', payload });
                 gameUpdates.postMessage({ gameId, type: 'GAME_REACTION', payload });
             }
+            else if (data.type === 'PING') {
+                // Heartbeat support
+                socket.send(JSON.stringify({ type: 'PONG' }));
+            }
             else if (data.type === 'SIGNAL') {
                 const payload = data.payload;
-                // Exclude sender from broadcast? 
-                // Front end usually handles filtering, but we can try.
                 broadcast(gameId, { type: 'SIGNAL', payload });
                 gameUpdates.postMessage({ gameId, type: 'SIGNAL', payload });
             }
