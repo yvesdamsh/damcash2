@@ -48,6 +48,11 @@ export default async function handler(req) {
 
         // Get the game to check status and vacancy
         const game = await base44.entities.Game.get(gameId);
+
+        // If the user already owns a seat in this game, just return success
+        if (game.white_player_id === user.id || game.black_player_id === user.id) {
+            return Response.json({ success: true, game });
+        }
         if (!game) {
             return Response.json({ error: "Game not found" }, { status: 404 });
         }

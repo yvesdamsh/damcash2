@@ -1133,6 +1133,8 @@ export default function Game() {
              return;
          }
          try {
+             // Free stuck sessions then join
+             await base44.functions.invoke('cancelActiveGames', {});
              await base44.functions.invoke('joinGame', { gameId: game.id });
              const fresh = await base44.entities.Game.get(game.id);
              setGame(fresh);
@@ -1143,7 +1145,7 @@ export default function Game() {
              }, 300);
              toast.success(t('game.joined') || 'Vous avez rejoint la table');
          } catch (e) {
-             toast.error(t('game.join_failed') || 'Impossible de rejoindre');
+             toast.error((e?.response?.data?.error) || t('game.join_failed') || 'Impossible de rejoindre');
          }
         };
 
