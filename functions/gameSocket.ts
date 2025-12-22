@@ -22,8 +22,8 @@ Deno.serve(async (req) => {
         return new Response("Missing gameId", { status: 400 });
     }
 
-    const base44 = createClientFromRequest(req);
     const { socket, response } = Deno.upgradeWebSocket(req);
+    const base44 = createClientFromRequest(req);
 
     // Store socket info
     socket.gameId = gameId;
