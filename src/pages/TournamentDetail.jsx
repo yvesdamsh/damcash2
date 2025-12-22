@@ -678,6 +678,15 @@ export default function TournamentDetail() {
                                      )}
 
                          <div className="flex-1 overflow-y-auto max-h-[600px]">
+                             {(tournament?.format === 'bracket' || tournament?.stage === 'knockout') && (
+                                 <div className="mb-4">
+                                     <div className="flex items-center justify-between mb-2">
+                                         <h3 className="text-sm font-bold text-[#4a3728]">Bracket</h3>
+                                     </div>
+                                     <TournamentBracket matches={matches} players={participants} currentRound={tournament?.current_round || 1} />
+                                 </div>
+                             )}
+
                              {participants.length === 0 ? (
                                  <div className="p-10 text-center text-gray-400">En attente de joueurs...</div>
                              ) : (
@@ -698,7 +707,6 @@ export default function TournamentDetail() {
                                              </div>
                                              <div className="flex items-center gap-4">
                                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-gray-300 hover:text-blue-500" title="Suivre">
-                                                     {/* Future: Follow Logic */}
                                                      <Share2 className="w-3 h-3" />
                                                  </Button>
                                                  <div className="px-4 font-bold text-lg text-gray-800 w-16 text-right">
