@@ -99,11 +99,20 @@ export default async function handler(req) {
         // Perform Update
         const updatedGame = await base44.asServiceRole.entities.Game.update(gameId, updateData);
 
-        // Broadcast start
+        // Broadcast start with explicit player fields to avoid stale caches on clients
         gameUpdates.postMessage({
             gameId,
             type: 'GAME_UPDATE',
-            payload: updatedGame
+            payload: {
+                id: updatedGame.id,
+                status: updatedGame.status,
+                current_turn: updatedGame.current_turn,
+                last_move_at: updatedGame.last_move_at,
+                white_player_id: updatedGame.white_player_id,
+                white_player_name: updatedGame.white_player_name,
+                black_player_id: updatedGame.black_player_id,
+                black_player_name: updatedGame.black_player_name
+            }
         });
         // Also trigger a refetch signal for clients that rely on it
         gameUpdates.postMessage({
