@@ -1657,14 +1657,14 @@ export default function Game() {
                                   onInvitePlayer={async (userToInvite) => {
                                     try {
                                       await base44.entities.Notification.create({
-                                        recipient_id: userToInvite.id,
-                                        type: "game_invite",
-                                        title: t('game.player_invite_title') || 'Invitation à la table',
-                                        message: t('game.player_invite_msg', { name: currentUser.username || t('common.anonymous') }) || 'Rejoins ma table',
-                                        link: `/Game?id=${game.id}`,
-                                        sender_id: currentUser.id,
-                                        metadata: JSON.stringify({ kind: 'player', gameId: game.id })
-                                      });
+                                                            recipient_id: userToInvite.id,
+                                                            type: "game_invite",
+                                                            title: t('game.player_invite_title') || 'Invitation à la table',
+                                                            message: t('game.player_invite_msg', { name: currentUser.username || t('common.anonymous') }) || 'Rejoins ma table',
+                                                            link: `/Game?id=${game.id}&join=player`,
+                                                            sender_id: currentUser.id,
+                                                            metadata: JSON.stringify({ kind: 'player', gameId: game.id })
+                                                          });
                                       toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
                                       setInviteOpen(false);
                                     } catch (e) { toast.error(t('game.invite_error')); }

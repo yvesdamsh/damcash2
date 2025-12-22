@@ -317,14 +317,14 @@ export default function FriendsManager() {
                                 onClick={async () => {
                                     try {
                                         await base44.entities.Notification.create({
-                                            recipient_id: inviteTarget.id,
-                                            type: 'game_invite',
-                                            title: 'Invitation à jouer',
-                                            message: `${currentUser?.username || 'Un joueur'} vous invite à rejoindre sa table`,
-                                            link: `/Game?id=${currentGameId}`,
-                                            sender_id: currentUser?.id,
-                                            metadata: JSON.stringify({ kind: 'player', gameId: currentGameId })
-                                        });
+                                                                                recipient_id: inviteTarget.id,
+                                                                                type: 'game_invite',
+                                                                                title: 'Invitation à jouer',
+                                                                                message: `${currentUser?.username || 'Un joueur'} vous invite à rejoindre sa table`,
+                                                                                link: `/Game?id=${currentGameId}&join=player`,
+                                                                                sender_id: currentUser?.id,
+                                                                                metadata: JSON.stringify({ kind: 'player', gameId: currentGameId })
+                                                                            });
                                         toast.success('Invitation joueur envoyée');
                                         setInviteDialogOpen(false);
                                     } catch (e) { toast.error('Erreur lors de l\'invitation'); }
