@@ -334,12 +334,17 @@ export default function Game() {
                             const essentialChanged = prev.status !== fetchedGame.status
                               || prev.white_player_id !== fetchedGame.white_player_id
                               || prev.black_player_id !== fetchedGame.black_player_id
+                              || prev.white_player_name !== fetchedGame.white_player_name
+                              || prev.black_player_name !== fetchedGame.black_player_name
                               || prev.current_turn !== fetchedGame.current_turn;
 
+                            if (essentialChanged) {
+                              return fetchedGame;
+                            }
                             if (
                               isRematch ||
                               fetchedMoves.length > localMoves.length ||
-                              (fetchedMoves.length === localMoves.length && (isNewer || updatedNewer || essentialChanged))
+                              (fetchedMoves.length === localMoves.length && (isNewer || updatedNewer))
                             ) {
                               return fetchedGame;
                             }
