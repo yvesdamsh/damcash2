@@ -1412,7 +1412,7 @@ export default function Game() {
         timeLeft: getTimeLeft('white')
     };
 
-    const isSpectator = currentUser?.id !== game.white_player_id && currentUser?.id !== game.black_player_id;
+    const isSpectator = !currentUser?.id || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id);
 
     const getElo = (info, type) => {
         if (!info) return 1200;
