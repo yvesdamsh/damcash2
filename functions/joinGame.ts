@@ -111,7 +111,8 @@ export default async function handler(req) {
                 white_player_id: updatedGame.white_player_id,
                 white_player_name: updatedGame.white_player_name,
                 black_player_id: updatedGame.black_player_id,
-                black_player_name: updatedGame.black_player_name
+                black_player_name: updatedGame.black_player_name,
+                updated_date: new Date().toISOString()
             }
         });
         // Also trigger a refetch signal for clients that rely on it
