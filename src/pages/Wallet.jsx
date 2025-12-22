@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
-import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownLeft, History, Coins } from 'lucide-react';
+import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownLeft, History, Coins, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -12,6 +13,11 @@ export default function WalletPage() {
     const [balance, setBalance] = useState(0);
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showDeposit, setShowDeposit] = useState(false);
+    const [stripeProducts, setStripeProducts] = useState([]);
+    const [selectedPrice, setSelectedPrice] = useState(null);
+    const [loadingDeposit, setLoadingDeposit] = useState(false);
+    const [productsLoading, setProductsLoading] = useState(false);
 
     const { t } = useLanguage();
 
@@ -39,12 +45,45 @@ export default function WalletPage() {
     }, []);
 
     const handleDeposit = async () => {
+        setShowDeposit(true);
+        setProductsLoading(true);
         try {
-            await base44.functions.invoke('walletManager', { action: 'deposit', amount: 100 });
-            toast.success(t('wallet.deposit_success', { amount: 100 }) || "100 crédits ajoutés !");
-            fetchWallet();
+            const res = await base44.functions.invoke('getStripeProducts', {});
+            const items = res.data?.products || [];
+            const coinProducts = items.filter(p => /coin/i.test(p.name) || /credit|coin/i.test(p.description || ''));
+            const list = (coinProducts.length ? coinProducts : items).flatMap(p => p.prices.map(pr => ({ ...pr, productName: p.name })));
+            setStripeProducts(list);
+            setSelectedPrice(list[0] || null);
         } catch (e) {
-            toast.error(t('wallet.deposit_error') || "Erreur dépôt");
+            toast.error("Erreur de chargement Stripe");
+            setShowDeposit(false);
+        } finally {
+            setProductsLoading(false);
+        }
+    };
+
+    const startCheckout = async () => {
+        if (!selectedPrice?.id) return;
+        setLoadingDeposit(true);
+        try {
+            const mode = selectedPrice.interval ? 'subscription' : 'payment';
+            const { data } = await base44.functions.invoke('stripeCheckout', {
+                priceId: selectedPrice.id,
+                quantity: 1,
+                mode,
+                metadata: { reason: 'wallet_deposit', product: selectedPrice.productName }
+            });
+            if (data?.url) {
+                window.location.href = data.url;
+            } else if (data?.sessionId) {
+                window.location.href = `https://checkout.stripe.com/pay/${data.sessionId}`;
+            } else {
+                toast.error("Impossible d’ouvrir le paiement.");
+            }
+        } catch (e) {
+            toast.error("Erreur de démarrage du paiement.");
+        } finally {
+            setLoadingDeposit(false);
         }
     };
 
@@ -52,6 +91,45 @@ export default function WalletPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-8">
+            {/* Deposit Modal */}
+            <Dialog open={showDeposit} onOpenChange={setShowDeposit}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{t('wallet.buy_coins') || 'Acheter des Coins'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        {productsLoading ? (
+                            <div className="py-8 text-center text-sm text-gray-500">Chargement des options…</div>
+                        ) : stripeProducts.length === 0 ? (
+                            <div className="py-8 text-center text-sm text-gray-500">
+                                Aucune option Stripe trouvée. Ajoutez un Price dans Stripe.
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-2">
+                                {stripeProducts.map((p) => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => setSelectedPrice(p)}
+                                        className={`w-full border rounded-lg p-3 text-left ${selectedPrice?.id === p.id ? 'border-[#4a3728] bg-[#e8dcc5]' : 'border-gray-200 bg-white'}`}
+                                    >
+                                        <div className="font-medium text-[#4a3728]">{p.productName}</div>
+                                        <div className="text-sm text-gray-600">
+                                            {(p.amount/100).toLocaleString(undefined,{style:'currency',currency:(p.currency||'usd').toUpperCase()})}
+                                            {p.interval ? ` / ${p.interval}` : ''}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowDeposit(false)}>Annuler</Button>
+                        <Button disabled={!selectedPrice || loadingDeposit || productsLoading} onClick={startCheckout} className="bg-yellow-600 hover:bg-yellow-700 text-white">
+                            {loadingDeposit ? 'Redirection…' : 'Payer avec Stripe'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="flex flex-col md:flex-row gap-6">
                 {/* Balance Card */}
                 <Card className="flex-1 bg-gradient-to-br from-[#4a3728] to-[#2c1e12] text-[#e8dcc5] border-none shadow-xl">
