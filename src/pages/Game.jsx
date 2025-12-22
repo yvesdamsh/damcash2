@@ -385,7 +385,7 @@ export default function Game() {
         if (!game || !currentUser) return;
         const amInGame = currentUser.id === game.white_player_id || currentUser.id === game.black_player_id;
         const slotOpen = !game.white_player_id || !game.black_player_id;
-        if (game.status === 'waiting' && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
+        if ((game.status === 'waiting' || game.status === 'playing') && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
             base44.functions.invoke('joinGame', { gameId: game.id }).catch(() => {});
         }
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
