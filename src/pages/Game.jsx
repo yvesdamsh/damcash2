@@ -63,6 +63,7 @@ export default function Game() {
     const [syncedMessages, setSyncedMessages] = useState([]);
     const [syncedSignals, setSyncedSignals] = useState([]);
     const [lastDragMove, setLastDragMove] = useState(null);
+    const [isAuthed, setIsAuthed] = useState(false);
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -282,6 +283,8 @@ export default function Game() {
                     }
                 }
                 setCurrentUser(user);
+                const authed = await base44.auth.isAuthenticated().catch(() => false);
+                setIsAuthed(authed);
             } catch (e) {
                 console.error("Auth check error", e);
             }
@@ -1122,7 +1125,11 @@ export default function Game() {
          if (!game || game.id === 'local-ai') return;
          const authed = await base44.auth.isAuthenticated().catch(() => false);
          if (!authed) {
-             base44.auth.redirectToLogin(window.location.href);
+             try {
+                 base44.auth.redirectToLogin(window.location.href);
+             } finally {
+                 try { window.top.location.href = window.location.href; } catch (e) {}
+             }
              return;
          }
          try {
@@ -1512,6 +1519,22 @@ export default function Game() {
                     </div>
                 )}
             </div>
+
+            {!isAuthed && (
+              <div className="max-w-4xl mx-auto mt-2 mb-2 px-3">
+                <div className="bg-yellow-50 border border-yellow-200 text-[#6b5138] rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-2">
+                  <div className="text-sm font-medium">Connexion requise pour rejoindre la table et activer la vidéo.</div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => { try { base44.auth.redirectToLogin(window.location.href); } finally { try { window.top.location.href = window.location.href; } catch (e) {} } }}>
+                      Se connecter
+                    </Button>
+                    <Button size="sm" onClick={() => { try { window.top.location.href = window.location.href; } catch (e) { window.location.href = window.location.href; } }}>
+                      Ouvrir en plein écran
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Resign Confirmation Overlay */}
             <AnimatePresence>
