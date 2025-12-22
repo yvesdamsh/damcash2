@@ -21,10 +21,12 @@ export default function PlayerInfoCard({
                 </div>
                 <div>
                     <div className="font-bold text-gray-800 flex items-center gap-2 text-sm md:text-base">
-                        {player.name || (player.color === 'white' ? 'Blanc' : 'Noir')}
-                        <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">
-                            {getElo ? getElo(player.info, game.game_type) : (player.info?.elo || 1200)}
-                        </span>
+                        {player.id ? (player.name || (player.color === 'white' ? 'Blanc' : 'Noir')) : 'En attente…'}
+                        {player.id && (
+                          <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-600">
+                              {getElo ? getElo(player.info, game.game_type) : (player.info?.elo || 1200)}
+                          </span>
+                        )}
                     </div>
                     {game.winner_id === player.id && !isSoloMode && (
                         <span className="text-green-600 text-xs font-bold flex items-center">

@@ -105,7 +105,22 @@ export default function Notifications() {
         try {
             if (n.type === 'game_invite' || n.type === 'team_challenge') {
                 if (action === 'accept') {
-                    navigate(n.link); // Link usually goes to game
+                    // Ensure user joins the game before navigating so names/video appear immediately
+                    try {
+                        const meta = typeof n.metadata === 'string' ? JSON.parse(n.metadata) : n.metadata;
+                        const gameIdFromMeta = meta?.game_id || meta?.gameId;
+                        let gameId = gameIdFromMeta;
+                        if (!gameId && n.link) {
+                            const url = new URL(n.link, window.location.origin);
+                            gameId = url.searchParams.get('id');
+                        }
+                        if (gameId) {
+                            await base44.functions.invoke('joinGame', { gameId });
+                        }
+                    } catch (e) {
+                        console.warn('Join on accept failed (will still navigate):', e);
+                    }
+                    navigate(n.link);
                 } else {
                     // Reject logic (could be a cloud function)
                     // For now just delete notification
