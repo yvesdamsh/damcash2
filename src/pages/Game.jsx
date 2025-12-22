@@ -380,6 +380,16 @@ export default function Game() {
         };
     }, [id]);
 
+    // Auto-join game on arrival if a seat is free (fixes missing opponent name/video after accepting invite)
+    useEffect(() => {
+        if (!game || !currentUser) return;
+        const amInGame = currentUser.id === game.white_player_id || currentUser.id === game.black_player_id;
+        const slotOpen = !game.white_player_id || !game.black_player_id;
+        if (game.status === 'waiting' && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
+            base44.functions.invoke('joinGame', { gameId: game.id }).catch(() => {});
+        }
+    }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
+
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
         autoConnect: !!id && id !== 'local-ai',
