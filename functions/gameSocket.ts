@@ -134,6 +134,13 @@ Deno.serve(async (req) => {
                 // Heartbeat support
                 socket.send(JSON.stringify({ type: 'PONG' }));
             }
+            else if (data.type === 'GAME_UPDATE') {
+                 // Back-compat: rebroadcast direct updates
+                 const { payload } = data;
+                 const msg = { type: 'GAME_UPDATE', payload };
+                 broadcast(gameId, msg, null);
+                 gameUpdates.postMessage({ gameId, ...msg });
+            }
             else if (data.type === 'SIGNAL') {
                 const payload = data.payload;
                 broadcast(gameId, { type: 'SIGNAL', payload });

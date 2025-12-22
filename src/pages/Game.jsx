@@ -374,7 +374,7 @@ export default function Game() {
         syncState();
         
         // 2s Interval for high responsiveness
-        const interval = setInterval(syncState, 1000);
+        const interval = setInterval(syncState, 500);
 
         const onFocus = () => syncState();
         window.addEventListener('focus', onFocus);
