@@ -15,7 +15,7 @@ channel.onmessage = (event) => {
     }
 };
 
-export default async function handler(req) {
+Deno.serve(async (req) => {
     const upgrade = req.headers.get("upgrade");
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
         return new Response("Expected a WebSocket request", { status: 400 });
@@ -64,6 +64,4 @@ export default async function handler(req) {
     };
 
     return response;
-}
-
-Deno.serve(handler);
+});
