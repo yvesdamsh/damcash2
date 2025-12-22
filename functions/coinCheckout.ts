@@ -63,14 +63,28 @@ Deno.serve(async (req) => {
     if (targetCurrency === 'XAF') {
       rate = 1; // parity
     } else if (targetCurrency !== 'XOF') {
-      const xr = await stripe.exchangeRates.retrieve('usd');
-      const r = xr?.rates || {};
-      const rXOF = r['xof'];
-      const rTarget = r[(targetCurrency || 'usd').toLowerCase()];
-      if (rXOF && rTarget) {
-        rate = rTarget / rXOF;
-      } else {
-        rate = 1;
+      try {
+        const xr = await stripe.exchangeRates.retrieve('usd');
+        const r = xr?.rates || {};
+        const rXOF = r['xof'];
+        const rTarget = r[(targetCurrency || 'usd').toLowerCase()];
+        if (rXOF && rTarget) {
+          rate = rTarget / rXOF;
+        } else {
+          throw new Error('missing rate');
+        }
+      } catch (_) {
+        const fb = {
+          USD: 1/600,
+          EUR: 1/655.957,
+          GBP: 1/760,
+          CAD: 1/450,
+          MAD: 1/10,
+          DZD: 1/135,
+          TND: 1/3,
+          CHF: 1/660,
+        };
+        rate = fb[targetCurrency] || 1/600;
       }
     }
 

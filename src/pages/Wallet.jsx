@@ -53,8 +53,12 @@ export default function WalletPage() {
             setStripeProducts(list);
             setSelectedPrice(list[0] || null);
         } catch (e) {
-            toast.error("Erreur de chargement Stripe");
-            setShowDeposit(false);
+            console.error(e);
+            toast.error("Erreur de chargement des packs. Utilisation d'un tarif par défaut.");
+            // Fallback local (XOF) pour garantir l'affichage
+            const fb = [500,2000,3500,5000,10000].map(cfa => ({ cfa, coins: cfa, currency: 'XOF', amount: cfa }));
+            setStripeProducts(fb);
+            setSelectedPrice(fb[0]);
         } finally {
             setProductsLoading(false);
         }
