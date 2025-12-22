@@ -1120,7 +1120,7 @@ export default function Game() {
 
         // Notify via socket immediately to reduce perceived latency
                       if (socket && socket.readyState === WebSocket.OPEN) {
-                          socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
+                          socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: updateData }));
                       }
 
                       // Write to DB (authoritative)
