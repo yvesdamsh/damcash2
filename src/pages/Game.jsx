@@ -1428,9 +1428,9 @@ export default function Game() {
     if (!Array.isArray(displayBoard)) displayBoard = [];
 
     // Orientation Logic
-    const isFlipped = currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id;
-    const autoOrientation = isFlipped ? 'black' : 'white';
+    const autoOrientation = (currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id) ? 'black' : 'white';
     const orientation = manualOrientation || autoOrientation;
+    const isFlipped = orientation === 'black';
     
     const topPlayer = (isFlipped) ? { 
         id: game.white_player_id, 
