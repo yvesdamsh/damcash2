@@ -202,7 +202,7 @@ function LayoutContent({ children }) {
     // Filter items based on auth state to save space
     const navItems = [
         { label: t('nav.home'), path: '/Home', icon: Home, public: true },
-        { label: t('nav.tv'), path: '/Spectate', icon: EyeIcon, public: true },
+        
         { label: t('nav.lobby'), path: '/Lobby', icon: Users, public: true },
         { label: t('nav.leagues'), path: '/Leagues', icon: Shield, public: true },
         { label: t('nav.tournaments'), path: '/Tournaments', icon: Flag, public: true },
