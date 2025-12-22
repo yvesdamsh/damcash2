@@ -33,10 +33,14 @@ export default async function handler(req) {
         const { gameId } = validation.data;
 
         // Check active games limit
-        const [activeWhite, activeBlack] = await Promise.all([
+        const [activeWhiteRaw, activeBlackRaw] = await Promise.all([
             base44.entities.Game.filter({ white_player_id: user.id, status: 'playing' }),
             base44.entities.Game.filter({ black_player_id: user.id, status: 'playing' })
         ]);
+
+        // Autoriser si l'unique partie "en cours" est précisément celle qu'on tente de rejoindre
+        const activeWhite = (activeWhiteRaw || []).filter(g => g.id !== gameId);
+        const activeBlack = (activeBlackRaw || []).filter(g => g.id !== gameId);
 
         if (activeWhite.length > 0 || activeBlack.length > 0) {
             return Response.json({ error: "Vous avez déjà une partie en cours." }, { status: 400 });
