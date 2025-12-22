@@ -115,7 +115,9 @@ export default function Notifications() {
                             gameId = url.searchParams.get('id');
                         }
                         if (gameId) {
-                            await base44.functions.invoke('joinGame', { gameId });
+                            const res = await base44.functions.invoke('joinGame', { gameId });
+                            // Force a fresh game fetch right after join so names/orientation are correct
+                            base44.entities.Game.get(gameId).then(g => window.__damcash_last_game = g);
                         }
                     } catch (e) {
                         console.warn('Join on accept failed (will still navigate):', e);
