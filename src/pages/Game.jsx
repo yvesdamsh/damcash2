@@ -422,7 +422,7 @@ export default function Game() {
 
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
-                  autoConnect: !!id && id !== 'local-ai' && !!game && !!currentUser && (currentUser.id === game.white_player_id || currentUser.id === game.black_player_id),
+                  autoConnect: !!id && id !== 'local-ai',
                   onMessage: (event, data) => {
             if (!data) return;
             
@@ -1459,22 +1459,7 @@ export default function Game() {
         </div>
     );
 
-    // Blocage complet des spectateurs (hors partie locale IA)
-if (game.id !== 'local-ai') {
-  const isPlayer = currentUser?.id && (currentUser.id === game.white_player_id || currentUser.id === game.black_player_id);
-  if (!isPlayer) {
-    return (
-      <div className="flex flex-col justify-center items-center h-[60vh] gap-4 text-[#4a3728]">
-        <div className="text-lg font-bold">Accès réservé aux joueurs de la table.</div>
-        <div className="flex gap-2">
-          <Button onClick={() => navigate('/Lobby')}>Retour au Lobby</Button>
-          <Button variant="outline" onClick={() => navigate('/Home')}>Accueil</Button>
-        </div>
-      </div>
-    );
-  }
-}
-const movesList = game?.moves ? JSON.parse(game.moves) : [];
+    const movesList = game?.moves ? JSON.parse(game.moves) : [];
     let displayBoard = board;
     if (replayIndex !== -1 && movesList[replayIndex]) {
         try {

@@ -36,20 +36,7 @@ Deno.serve(async (req) => {
             socket.user = null;
         }
 
-        try {
-            const game = await base44.asServiceRole.entities.Game.get(gameId);
-            const uid = socket.user?.id;
-            const isPlayer = uid && (uid === game.white_player_id || uid === game.black_player_id);
-            if (!isPlayer) {
-                // Refuser toute connexion non-joueur
-                socket.close(1008, "Spectators not allowed");
-                return;
-            }
-        } catch (e) {
-            socket.close(1011, "Server error");
-            return;
-        }
-
+        // Autoriser spectateurs
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
         }
