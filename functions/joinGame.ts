@@ -45,8 +45,9 @@ export default async function handler(req) {
             return Response.json({ error: "Game not found" }, { status: 404 });
         }
 
-        if (game.status !== 'waiting') {
-            return Response.json({ error: "Game is not waiting for players" }, { status: 400 });
+        const seatAvailable = !game.white_player_id || !game.black_player_id;
+        if (!(game.status === 'waiting' || (game.status === 'playing' && seatAvailable))) {
+            return Response.json({ error: "Game is not accepting players" }, { status: 400 });
         }
 
         // Determine role
