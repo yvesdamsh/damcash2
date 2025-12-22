@@ -374,7 +374,7 @@ export default function Game() {
         syncState();
         
         // 2s Interval for high responsiveness
-        const interval = setInterval(syncState, 2000);
+        const interval = setInterval(syncState, 1000);
 
         const onFocus = () => syncState();
         window.addEventListener('focus', onFocus);
@@ -1118,19 +1118,15 @@ export default function Game() {
 
         if (game.id === 'local-ai') return;
 
-        // ALWAYS write to DB directly for maximum reliability
-        try {
-            await base44.entities.Game.update(game.id, updateData);
-            
-            // Then notify via socket to wake up opponents
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                // Send full state update to avoid fetch latency on opponent side
-                socket.send(JSON.stringify({ 
-                    type: 'GAME_UPDATE', 
-                    payload: updateData 
-                }));
-            }
-        } catch (e) {
+        // Notify via socket immediately to reduce perceived latency
+                      if (socket && socket.readyState === WebSocket.OPEN) {
+                          socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
+                      }
+
+                      // Write to DB (authoritative)
+                      try {
+                          await base44.entities.Game.update(game.id, updateData);
+                      } catch (e) {
             console.error("Move save error", e);
             // If DB write fails, try socket as backup (which does server-side write)
             if (socket && socket.readyState === WebSocket.OPEN) {
