@@ -18,17 +18,26 @@ channel.onmessage = (event) => {
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
     
-    if (req.headers.get("upgrade") !== "websocket") {
-        return new Response(null, { status: 501 });
+    const upgrade = req.headers.get("upgrade");
+    if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+        return new Response("Expected a WebSocket request", { status: 400 });
     }
 
-    const user = await base44.auth.me();
-    if (!user) return new Response("Unauthorized", { status: 401 });
+    let user = null;
+    try {
+        user = await base44.auth.me();
+    } catch (e) {
+        user = null; // Allow anonymous spectators; no targeted notifications
+    }
 
     const { socket, response } = Deno.upgradeWebSocket(req);
-    const userId = user.id;
+    const userId = user?.id;
 
     socket.onopen = () => {
+        if (!userId) {
+            // Anonymous connection: keep socket open but don't register for targeted notifications
+            return;
+        }
         if (!connections.has(userId)) {
             connections.set(userId, new Set());
         }
@@ -46,6 +55,7 @@ export default async function handler(req) {
     };
 
     socket.onclose = () => {
+        if (!userId) return;
         const userConns = connections.get(userId);
         if (userConns) {
             userConns.delete(socket);

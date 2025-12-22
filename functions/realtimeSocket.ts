@@ -23,8 +23,9 @@ bc.onmessage = (event) => {
 };
 
 export default async function handler(req) {
-    if (req.headers.get("upgrade") !== "websocket") {
-        return new Response("Expected WebSocket", { status: 400 });
+    const upgrade = req.headers.get("upgrade");
+    if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+        return new Response("Expected a WebSocket request", { status: 400 });
     }
 
     const url = new URL(req.url);
