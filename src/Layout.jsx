@@ -56,6 +56,8 @@ function LayoutContent({ children }) {
     const navigate = useNavigate();
     const [user, setUser] = React.useState(null);
     const [showIntro, setShowIntro] = React.useState(!window.hasShownIntro);
+    const [isFramed, setIsFramed] = React.useState(false);
+    const [isAuthed, setIsAuthed] = React.useState(false);
 
     React.useEffect(() => {
         // Initial app load logic
@@ -160,13 +162,18 @@ function LayoutContent({ children }) {
     }, [appTheme]);
 
     React.useEffect(() => {
+        setIsFramed(() => {
+            try { return window.self !== window.top; } catch (_) { return true; }
+        });
         const checkUser = async () => {
             try {
                 const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
             } catch (e) {
-                // Not logged in - stay on page to show public content or login button
                 console.error("Auth check failed", e);
+            } finally {
+                const authed = await base44.auth.isAuthenticated().catch(() => false);
+                setIsAuthed(authed);
             }
         };
         checkUser();
@@ -432,6 +439,31 @@ function LayoutContent({ children }) {
                     )}
                 </AnimatePresence>
             </nav>
+
+            {isFramed && !isAuthed && (
+                <div className="relative z-[90] bg-yellow-50 border-b border-yellow-200">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-col md:flex-row items-center justify-between gap-2 text-[#6b5138]">
+                        <div className="text-sm font-medium">
+                            Vous êtes dans une fenêtre intégrée. Pour vous connecter et rejoindre la partie, ouvrez l’app en plein écran.
+                        </div>
+                        <div className="flex gap-2">
+                            <a
+                                href={typeof window !== 'undefined' ? window.location.href : '/Home'}
+                                target="_top"
+                                className="px-3 py-1.5 rounded-md bg-[#6B8E4E] text-white text-sm font-bold border border-[#3d2b1f] hover:bg-[#5a7a40]"
+                            >
+                                Ouvrir en plein écran
+                            </a>
+                            <button
+                                onClick={() => base44.auth.redirectToLogin(typeof window !== 'undefined' ? window.location.href : '/Home')}
+                                className="px-3 py-1.5 rounded-md border text-sm font-bold bg-white hover:bg-[#f5f0e6]"
+                            >
+                                Se connecter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content */}
             <main className={`relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 ${location.pathname.toLowerCase().startsWith('/game') ? 'px-0' : 'px-4'}`}>
