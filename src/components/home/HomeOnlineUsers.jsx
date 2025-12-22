@@ -4,12 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function HomeOnlineUsers() {
   const { t } = useLanguage();
   const [me, setMe] = React.useState(null);
   const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
+  const navigate = useNavigate();
+  const [configOpen, setConfigOpen] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState(null);
+  const [creating, setCreating] = React.useState(false);
+  const [cfg, setCfg] = React.useState({
+    time: 10,
+    increment: 0,
+    series: 1,
+    stake: 0,
+    type: (localStorage.getItem('gameMode') || 'checkers')
+  });
 
   const fetchOnline = React.useCallback(async () => {
     setLoading(true);
@@ -49,6 +62,78 @@ export default function HomeOnlineUsers() {
     }, ...users].slice(0, 20);
   })();
 
+  const openConfig = (u) => {
+    if (!me || (u && me && u.id === me.id)) return;
+    setSelectedUser(u);
+    setConfigOpen(true);
+  };
+
+  const handleConfirmInvite = async () => {
+    if (!selectedUser) return;
+    setCreating(true);
+    try {
+      const authed = await base44.auth.isAuthenticated().catch(() => false);
+      if (!authed) {
+        base44.auth.redirectToLogin(window.location.href);
+        return;
+      }
+      const current = await base44.auth.me();
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      let initialBoard;
+      if (cfg.type === 'chess') {
+        const { initializeChessBoard } = await import('@/components/chessLogic');
+        initialBoard = JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+      } else {
+        const { initializeBoard } = await import('@/components/checkersLogic');
+        initialBoard = JSON.stringify(initializeBoard());
+      }
+
+      const newGame = await base44.entities.Game.create({
+        status: 'waiting',
+        game_type: cfg.type,
+        white_player_id: current.id,
+        white_player_name: current.username || `Joueur ${current.id.substring(0,4)}`,
+        current_turn: 'white',
+        board_state: initialBoard,
+        is_private: true,
+        access_code: code,
+        initial_time: cfg.time,
+        increment: cfg.increment,
+        white_seconds_left: cfg.time * 60,
+        black_seconds_left: cfg.time * 60,
+        series_length: cfg.series,
+        series_score_white: 0,
+        series_score_black: 0,
+        entry_fee: cfg.stake,
+        prize_pool: 0
+      });
+
+      await base44.entities.Invitation.create({
+        from_user_id: current.id,
+        from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
+        to_user_email: selectedUser.email,
+        game_type: cfg.type,
+        game_id: newGame.id,
+        status: 'pending'
+      });
+
+      await base44.functions.invoke('sendNotification', {
+        recipient_id: selectedUser.id,
+        type: 'game_invite',
+        title: t('home.invite_friend'),
+        message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
+        link: `/Game?id=${newGame.id}`,
+        metadata: { gameId: newGame.id }
+      });
+
+      setConfigOpen(false);
+      navigate(`/Game?id=${newGame.id}`);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
       <CardHeader className="pb-2 flex items-center justify-between">
@@ -79,9 +164,9 @@ export default function HomeOnlineUsers() {
                 <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? 'bg-green-500' : 'bg-gray-300'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] truncate">
+                <button onClick={() => !isMe && openConfig(u)} disabled={isMe} className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 hover:underline truncate disabled:opacity-60">
                   {isMe ? (u.username || u.full_name || 'Moi') + ' • ' + (t('home.you') || 'Vous') : (u.username || u.full_name || 'Joueur')}
-                </div>
+                </button>
                 <div className="text-[10px] text-gray-500 truncate">
                   {online ? (t('home.status_online') || 'En ligne') : (t('home.status_recent') || 'Récemment')}
                 </div>
