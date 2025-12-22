@@ -10,8 +10,9 @@ gameUpdates.onmessage = (event) => {
 };
 
 Deno.serve(async (req) => {
-    if (req.headers.get("upgrade") !== "websocket") {
-        return new Response(null, { status: 501 });
+    const upgrade = req.headers.get("upgrade");
+    if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+        return new Response("Expected a WebSocket request", { status: 400 });
     }
 
     const url = new URL(req.url);
@@ -22,7 +23,13 @@ Deno.serve(async (req) => {
     }
 
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    let user = null;
+    try {
+        user = await base44.auth.me();
+    } catch (e) {
+        // Allow spectators without auth
+        user = null;
+    }
     
     // Deny anonymous connections for playing? Or allow for spectating?
     // For now allow, but store user info
