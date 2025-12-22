@@ -21,8 +21,8 @@ export default async function handler(req) {
         return new Response("Expected a WebSocket request", { status: 400 });
     }
 
-    const { socket, response } = Deno.upgradeWebSocket(req);
     const base44 = createClientFromRequest(req);
+    const { socket, response } = Deno.upgradeWebSocket(req);
     socket.userId = null;
 
     socket.onopen = async () => {
