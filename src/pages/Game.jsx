@@ -444,8 +444,10 @@ export default function Game() {
 
     // Robust WebSocket Connection
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
-                  autoConnect: !!id && id !== 'local-ai',
-                  onMessage: (event, data) => {
+                            autoConnect: !!id && id !== 'local-ai',
+                            reconnectInterval: 1000,
+                            heartbeatInterval: 10000,
+                            onMessage: (event, data) => {
             if (!data) return;
             
             if (data.type === 'GAME_UPDATE') {
