@@ -380,14 +380,30 @@ export default function Game() {
         };
     }, [id]);
 
-    // Auto-join game on arrival if a seat is free (fixes missing opponent name/video after accepting invite)
+    // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
-        if (!game || !currentUser) return;
-        const amInGame = currentUser.id === game.white_player_id || currentUser.id === game.black_player_id;
-        const slotOpen = !game.white_player_id || !game.black_player_id;
-        if ((game.status === 'waiting' || game.status === 'playing') && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
-            base44.functions.invoke('joinGame', { gameId: game.id }).catch(() => {});
-        }
+        if (!game) return;
+        const run = async () => {
+            const currentId = (await base44.auth.me().catch(() => null))?.id || currentUser?.id;
+            const amInGame = !!currentId && (currentId === game.white_player_id || currentId === game.black_player_id);
+            const slotOpen = !game.white_player_id || !game.black_player_id;
+            if ((game.status === 'waiting' || game.status === 'playing') && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
+                const authed = await base44.auth.isAuthenticated().catch(() => false);
+                if (!authed) {
+                    if (!window.__damcash_login_prompted) {
+                        window.__damcash_login_prompted = true;
+                        base44.auth.redirectToLogin(window.location.href);
+                    }
+                    return;
+                }
+                try {
+                    await base44.functions.invoke('joinGame', { gameId: game.id });
+                    const fresh = await base44.entities.Game.get(game.id);
+                    setGame(fresh);
+                } catch (_) {}
+            }
+        };
+        run();
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
 
     // Robust WebSocket Connection
@@ -1082,9 +1098,27 @@ export default function Game() {
                 }));
             }
         }
-    };
+        };
 
-    const handleRematch = async () => {
+        // Manual join helper for spectators
+        const attemptJoin = async () => {
+         if (!game || game.id === 'local-ai') return;
+         const authed = await base44.auth.isAuthenticated().catch(() => false);
+         if (!authed) {
+             base44.auth.redirectToLogin(window.location.href);
+             return;
+         }
+         try {
+             await base44.functions.invoke('joinGame', { gameId: game.id });
+             const fresh = await base44.entities.Game.get(game.id);
+             setGame(fresh);
+             toast.success(t('game.joined') || 'Vous avez rejoint la table');
+         } catch (e) {
+             toast.error(t('game.join_failed') || 'Impossible de rejoindre');
+         }
+        };
+
+        const handleRematch = async () => {
         if (!game) return;
         
         try {
@@ -1721,6 +1755,12 @@ export default function Game() {
                                 <span className="text-xs font-mono font-bold">{game.access_code}</span>
                                 <Button size="sm" variant="ghost" className="h-6 px-2" onClick={copyInviteCode}>{inviteCopied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}</Button>
                             </div>
+                        )}
+
+                        {isSpectator && (!game.white_player_id || !game.black_player_id) && (
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={attemptJoin}>
+                                {t('game.join') || 'Rejoindre'}
+                            </Button>
                         )}
 
                         <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]" onClick={() => setInviteOpen(true)}>
