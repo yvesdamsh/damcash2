@@ -16,28 +16,8 @@ export default function UserSearchDialog({ isOpen, onClose, onInvite, title = "I
         if (!search.trim()) return;
         setLoading(true);
         try {
-            const me = await base44.auth.me().catch(() => null);
-            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-            
-            // Use backend search with regex for better scalability
-            const searchQ = { 
-                $and: [
-                    {
-                        $or: [
-                            { username: { $regex: search, $options: 'i' } },
-                            { full_name: { $regex: search, $options: 'i' } },
-                            { email: { $regex: search, $options: 'i' } }
-                        ]
-                    },
-                    { last_seen: { $gte: thirtyMinutesAgo } }
-                ]
-            };
-
-            if (me) {
-                searchQ.$and.push({ id: { $ne: me.id } });
-            }
-
-            const users = await base44.entities.User.filter(searchQ, '-last_seen', 50);
+            const res = await base44.functions.invoke('listOnlineUsers', { limit: 50, search });
+            const users = res?.data?.users || [];
             setResults(users);
         } catch (e) {
             console.error(e);

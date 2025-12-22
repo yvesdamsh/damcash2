@@ -16,6 +16,7 @@ import UserSearchDialog from '@/components/UserSearchDialog';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 import SplashScreen from '@/components/SplashScreen';
 import RejoinGameDialog from '@/components/RejoinGameDialog';
+import HomeOnlineUsers from '@/components/home/HomeOnlineUsers.jsx';
 import NextTournamentBanner from '@/components/NextTournamentBanner';
 
 export default function Home() {
@@ -304,8 +305,14 @@ export default function Home() {
     const handleAcceptInvite = async (invite) => {
         try {
             await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
-            // Use server join function to update game and broadcast to both players
-            await base44.functions.invoke('joinGame', { gameId: invite.game_id });
+            const game = await base44.entities.Game.get(invite.game_id);
+            if (game && !game.black_player_id) {
+            await base44.entities.Game.update(game.id, {
+               black_player_id: user.id,
+               black_player_name: user.username || 'Invité',
+               status: 'playing'
+            });
+            }
             navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
             console.error("Error accepting invite", e);
@@ -740,6 +747,10 @@ export default function Home() {
             </div>
 
             <PlayerSearchBar />
+
+            <div className="my-6">
+              <HomeOnlineUsers />
+            </div>
 
             <NextTournamentBanner />
 
