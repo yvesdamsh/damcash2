@@ -1,7 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { z } from 'npm:zod@^3.24.2';
+import { z } from 'npm:zod@3.24.2';
 
 const gameUpdates = new BroadcastChannel('game_updates');
+
+// Ensure function is served via Deno.serve wrapper per platform requirements
+Deno.serve(handler);
 
 const joinGameSchema = z.object({
     gameId: z.string().min(1, "Game ID is required")
