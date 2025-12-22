@@ -48,10 +48,8 @@ export default function WalletPage() {
         setShowDeposit(true);
         setProductsLoading(true);
         try {
-            const res = await base44.functions.invoke('getStripeProducts', {});
-            const items = res.data?.products || [];
-            const coinProducts = items.filter(p => /coin/i.test(p.name) || /credit|coin/i.test(p.description || ''));
-            const list = (coinProducts.length ? coinProducts : items).flatMap(p => p.prices.map(pr => ({ ...pr, productName: p.name })));
+            const res = await base44.functions.invoke('quoteCoinPackages', {});
+            const list = res.data?.packages || [];
             setStripeProducts(list);
             setSelectedPrice(list[0] || null);
         } catch (e) {
@@ -66,12 +64,8 @@ export default function WalletPage() {
         if (!selectedPrice?.id) return;
         setLoadingDeposit(true);
         try {
-            const mode = selectedPrice.interval ? 'subscription' : 'payment';
-            const { data } = await base44.functions.invoke('stripeCheckout', {
-                priceId: selectedPrice.id,
-                quantity: 1,
-                mode,
-                metadata: { reason: 'wallet_deposit', product: selectedPrice.productName }
+            const { data } = await base44.functions.invoke('coinCheckout', {
+                packageCfa: selectedPrice.cfa
             });
             if (data?.url) {
                 window.location.href = data.url;
@@ -108,14 +102,13 @@ export default function WalletPage() {
                             <div className="grid grid-cols-1 gap-2">
                                 {stripeProducts.map((p) => (
                                     <button
-                                        key={p.id}
+                                        key={p.cfa}
                                         onClick={() => setSelectedPrice(p)}
-                                        className={`w-full border rounded-lg p-3 text-left ${selectedPrice?.id === p.id ? 'border-[#4a3728] bg-[#e8dcc5]' : 'border-gray-200 bg-white'}`}
+                                        className={`w-full border rounded-lg p-3 text-left ${selectedPrice?.cfa === p.cfa ? 'border-[#4a3728] bg-[#e8dcc5]' : 'border-gray-200 bg-white'}`}
                                     >
-                                        <div className="font-medium text-[#4a3728]">{p.productName}</div>
+                                        <div className="font-medium text-[#4a3728]">{p.coins} D$</div>
                                         <div className="text-sm text-gray-600">
-                                            {(p.amount/100).toLocaleString(undefined,{style:'currency',currency:(p.currency||'usd').toUpperCase()})}
-                                            {p.interval ? ` / ${p.interval}` : ''}
+                                            {p.amount.toLocaleString(undefined,{style:'currency',currency:(p.currency||'USD').toUpperCase()})}
                                         </div>
                                     </button>
                                 ))}
