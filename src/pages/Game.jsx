@@ -1600,6 +1600,11 @@ export default function Game() {
                                         toast.info(t('game.syncing'));
                                         const g = await base44.entities.Game.get(game.id);
                                         setGame(g);
+                                        // Also check if a cached fresh game exists (after join via notification)
+                                        if (window.__damcash_last_game && window.__damcash_last_game.id === game.id) {
+                                            setGame(window.__damcash_last_game);
+                                            window.__damcash_last_game = null;
+                                        }
                                     }}
                                     title="Forcer la synchronisation"
                                 >
