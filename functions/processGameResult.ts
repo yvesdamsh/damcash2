@@ -91,10 +91,11 @@ export default async function handler(req) {
     const winnerId = game.winner_id;
     const type = game.game_type; // 'checkers' or 'chess'
 
-    // -1. Process Bets
+    // -1. Process Bets (singles + parlays)
     try {
-        const bets = await base44.asServiceRole.entities.Bet.filter({ game_id: gameId, status: 'pending' });
-        for (const bet of bets) {
+        // Settle single bets on this game
+        const singleBets = await base44.asServiceRole.entities.Bet.filter({ game_id: gameId, status: 'pending', type: 'single' });
+        for (const bet of singleBets) {
             let won = false;
             if (bet.pick === 'draw' && !winnerId) won = true;
             else if (bet.pick === 'white' && winnerId === whiteId) won = true;
@@ -103,29 +104,55 @@ export default async function handler(req) {
             if (won) {
                 const wallet = (await base44.asServiceRole.entities.Wallet.filter({ user_id: bet.user_id }))[0];
                 if (wallet) {
-                    await base44.asServiceRole.entities.Wallet.update(wallet.id, {
-                        balance: (wallet.balance || 0) + bet.potential_payout
-                    });
-                    await base44.asServiceRole.entities.Transaction.create({
-                        user_id: bet.user_id,
-                        type: 'bet_won',
-                        amount: bet.potential_payout,
-                        game_id: gameId,
-                        status: 'completed',
-                        description: `Pari gagné ! (${bet.pick})`
-                    });
+                    await base44.asServiceRole.entities.Wallet.update(wallet.id, { balance: (wallet.balance || 0) + bet.potential_payout });
+                    await base44.asServiceRole.entities.Transaction.create({ user_id: bet.user_id, type: 'bet_won', amount: bet.potential_payout, game_id: gameId, status: 'completed', description: `Pari gagné ! (${bet.pick})` });
                     await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'won' });
-                    
-                    await base44.asServiceRole.entities.Notification.create({
-                        recipient_id: bet.user_id,
-                        type: "success",
-                        title: "Pari Gagnant !",
-                        message: `Vous avez remporté ${bet.potential_payout} D$ sur votre pari !`,
-                        link: `/Wallet`
-                    });
+                    await base44.asServiceRole.entities.Notification.create({ recipient_id: bet.user_id, type: "success", title: "Pari Gagnant !", message: `Vous avez remporté ${bet.potential_payout} D$ sur votre pari !`, link: `/Wallet` });
                 }
             } else {
                 await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'lost' });
+            }
+        }
+
+        // Update parlays that include this game
+        const parlayCandidates = await base44.asServiceRole.entities.Bet.filter({ status: 'pending', type: 'parlay' });
+        for (const bet of parlayCandidates) {
+            if (!Array.isArray(bet.legs) || bet.legs.length === 0) continue;
+            let includes = false; let anyLost = false; let allWon = true;
+            const updatedLegs = bet.legs.map((leg) => {
+                if (leg.game_id !== gameId) {
+                    if (leg.status !== 'won') allWon = false; // still pending
+                    return leg;
+                }
+                includes = true;
+                let legWon = false;
+                if (leg.pick === 'draw' && !winnerId) legWon = true;
+                else if (leg.pick === 'white' && winnerId === whiteId) legWon = true;
+                else if (leg.pick === 'black' && winnerId === blackId) legWon = true;
+                const status = legWon ? 'won' : 'lost';
+                if (!legWon) anyLost = true;
+                return { ...leg, status };
+            });
+            if (!includes) continue;
+
+            if (anyLost) {
+                await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'lost', legs: updatedLegs });
+                continue;
+            }
+
+            // if all legs are now won -> pay out
+            allWon = updatedLegs.every(l => l.status === 'won');
+            if (allWon) {
+                const wallet = (await base44.asServiceRole.entities.Wallet.filter({ user_id: bet.user_id }))[0];
+                if (wallet) {
+                    await base44.asServiceRole.entities.Wallet.update(wallet.id, { balance: (wallet.balance || 0) + (bet.potential_payout || 0) });
+                    await base44.asServiceRole.entities.Transaction.create({ user_id: bet.user_id, type: 'bet_won', amount: bet.potential_payout || 0, game_id: gameId, status: 'completed', description: `Combiné gagné (${bet.legs.length})` });
+                }
+                await base44.asServiceRole.entities.Bet.update(bet.id, { status: 'won', legs: updatedLegs });
+                await base44.asServiceRole.entities.Notification.create({ recipient_id: bet.user_id, type: "success", title: "Combiné Gagnant !", message: `Votre combiné est gagnant. Gain: ${bet.potential_payout} D$`, link: `/Wallet` });
+            } else {
+                // still pending with this leg resolved
+                await base44.asServiceRole.entities.Bet.update(bet.id, { legs: updatedLegs });
             }
         }
     } catch (e) {
@@ -601,13 +628,6 @@ export default async function handler(req) {
             console.error('Error updating leagues', err);
         }
     }
-
-    // Notify live clients to refresh game state
-    try {
-        const gameUpdates = new BroadcastChannel('game_updates');
-        gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
-        setTimeout(() => gameUpdates.close(), 100);
-    } catch (_) {}
 
     return Response.json({ status: 'success', message: 'Elo and scores updated' });
 }

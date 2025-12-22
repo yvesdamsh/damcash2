@@ -13,52 +13,71 @@ export default function BettingPanel({ game, currentUser }) {
     const [odds, setOdds] = useState({ white: 2.0, black: 2.0, draw: 3.0 });
     const [myBets, setMyBets] = useState([]);
 
-    // Calculate Odds roughly
+    // Fetch dynamic odds from backend (live)
     useEffect(() => {
-        if (!game) return;
-        const eloA = game.white_player_elo || 1200;
-        const eloB = game.black_player_elo || 1200;
-        const probA = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
-        
-        const oddsA = Math.max(1.1, Math.min((1 / probA) * 0.9, 10));
-        const oddsB = Math.max(1.1, Math.min((1 / (1 - probA)) * 0.9, 10));
-        
-        setOdds({
-            white: parseFloat(oddsA.toFixed(2)),
-            black: parseFloat(oddsB.toFixed(2)),
-            draw: 3.00
-        });
-
-        // Load existing bets
-        if (currentUser) {
-            base44.entities.Bet.filter({ game_id: game.id, user_id: currentUser.id }).then(setMyBets);
-        }
+        let timer;
+        const load = async () => {
+            if (!game) return;
+            try {
+                const res = await base44.functions.invoke('betsManager', { action: 'get_odds', gameId: game.id });
+                if (res.data?.odds) setOdds(res.data.odds);
+                if (currentUser) {
+                    base44.entities.Bet.filter({ game_id: game.id, user_id: currentUser.id }).then(setMyBets);
+                }
+            } catch (_) {}
+        };
+        load();
+        // refresh every 5s for live odds
+        timer = setInterval(load, 5000);
+        return () => clearInterval(timer);
     }, [game, currentUser]);
 
     const handlePlaceBet = async () => {
         if (!pick || amount <= 0) return;
         if (!currentUser) return toast.error("Connectez-vous pour parier");
-        
         setLoading(true);
         try {
-            const res = await base44.functions.invoke('walletManager', {
-                action: 'place_bet',
+            const res = await base44.functions.invoke('betsManager', {
+                action: 'place_bet_single',
                 gameId: game.id,
                 amount: parseFloat(amount),
-                pick
+                pick,
+                live: game.status === 'playing'
             });
-
-            if (res.data.error) {
-                toast.error(res.data.error);
-            } else {
+            if (res.data?.error) toast.error(res.data.error);
+            else {
                 toast.success("Pari placé ! Bonne chance !");
-                setMyBets([...myBets, res.data.bet]);
+                if (res.data.bet) setMyBets([...myBets, res.data.bet]);
             }
-        } catch (e) {
+        } catch (_) {
             toast.error("Erreur technique");
-        } finally {
-            setLoading(false);
-        }
+        } finally { setLoading(false); }
+    };
+
+    // Parlay helpers using localStorage scratch
+    const getParlay = () => {
+        try { return JSON.parse(localStorage.getItem('damcash_parlay') || '[]'); } catch { return []; }
+    };
+    const setParlay = (legs) => localStorage.setItem('damcash_parlay', JSON.stringify(legs));
+
+    const addToParlay = async () => {
+        if (!pick) return toast.error('Sélectionnez un pari');
+        const legs = getParlay();
+        if (legs.find(l => l.gameId === game.id)) return toast.info('Déjà dans le combiné');
+        const next = [...legs, { gameId: game.id, pick }];
+        setParlay(next);
+        toast.success(`Ajouté au combiné (${next.length})`);
+    };
+
+    const placeParlay = async () => {
+        const legs = getParlay();
+        if (legs.length < 2) return toast.error('Ajoutez au moins 2 sélections');
+        setLoading(true);
+        try {
+            const res = await base44.functions.invoke('betsManager', { action: 'place_parlay', legs, amount: parseFloat(amount) });
+            if (res.data?.error) toast.error(res.data.error);
+            else { toast.success('Combiné placé !'); setParlay([]); }
+        } catch (_) { toast.error('Erreur technique'); } finally { setLoading(false); }
     };
 
     if (!game || game.status !== 'playing') {
@@ -135,9 +154,15 @@ export default function BettingPanel({ game, currentUser }) {
                             <Button onClick={handlePlaceBet} disabled={loading} className="bg-green-600 hover:bg-green-700 h-9 text-xs">
                                 {loading ? '...' : 'Parier'}
                             </Button>
+                            <Button onClick={addToParlay} variant="outline" disabled={loading} className="h-9 text-xs border-[#d4c5b0]">
+                                Ajouter au combiné
+                            </Button>
+                            <Button onClick={placeParlay} variant="secondary" disabled={loading} className="h-9 text-xs">
+                                Placer combiné
+                            </Button>
                         </div>
                         <div className="text-xs text-center text-gray-500">
-                            Gain potentiel: <span className="font-bold text-green-600">{Math.floor(amount * odds[pick])} D$</span>
+                            Gain potentiel: <span className="font-bold text-green-600">{Math.floor(amount * (odds[pick] || 1))} D$</span>
                         </div>
                     </div>
                 )}
