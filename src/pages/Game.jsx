@@ -1643,11 +1643,40 @@ const movesList = game?.moves ? JSON.parse(game.moves) : [];
 
             {/* Invite Dialog */}
             <UserSearchDialog 
-                isOpen={inviteOpen} 
-                onClose={() => setInviteOpen(false)} 
-                onInvite={inviteSpectator} 
-                title={t('game.invite_spectator')}
-            />
+                                  isOpen={inviteOpen} 
+                                  onClose={() => setInviteOpen(false)} 
+                                  onInviteSpectator={async (userToInvite) => {
+                                    try {
+                                      await base44.entities.Notification.create({
+                                        recipient_id: userToInvite.id,
+                                        type: "info",
+                                        title: t('game.spectate_invite_title'),
+                                        message: t('game.spectate_invite_msg', { name: currentUser.username || t('common.anonymous'), game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') }),
+                                        link: `/Game?id=${game.id}`,
+                                        sender_id: currentUser.id,
+                                        metadata: JSON.stringify({ kind: 'spectator' })
+                                      });
+                                      toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
+                                      setInviteOpen(false);
+                                    } catch (e) { toast.error(t('game.invite_error')); }
+                                  }}
+                                  onInvitePlayer={async (userToInvite) => {
+                                    try {
+                                      await base44.entities.Notification.create({
+                                        recipient_id: userToInvite.id,
+                                        type: "game_invite",
+                                        title: t('game.player_invite_title') || 'Invitation à la table',
+                                        message: t('game.player_invite_msg', { name: currentUser.username || t('common.anonymous') }) || 'Rejoins ma table',
+                                        link: `/Game?id=${game.id}`,
+                                        sender_id: currentUser.id,
+                                        metadata: JSON.stringify({ kind: 'player', gameId: game.id })
+                                      });
+                                      toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
+                                      setInviteOpen(false);
+                                    } catch (e) { toast.error(t('game.invite_error')); }
+                                  }}
+                                  title={t('game.invite_dialog_title') || 'Inviter'}
+                              />
 
             {/* Result Overlay */}
             <AnimatePresence>
