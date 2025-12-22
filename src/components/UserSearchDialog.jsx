@@ -7,7 +7,7 @@ import { Search, User, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
-export default function UserSearchDialog({ isOpen, onClose, onInvite, title = "Inviter un joueur" }) {
+export default function UserSearchDialog({ isOpen, onClose, onInvite, onInviteSpectator, onInvitePlayer, title = "Inviter un joueur/spectateur" }) {
     const [search, setSearch] = useState("");
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -65,9 +65,14 @@ export default function UserSearchDialog({ isOpen, onClose, onInvite, title = "I
                                                 <span className="text-[10px] text-gray-500 truncate">{u.email}</span>
                                             </div>
                                         </div>
-                                        <Button size="sm" variant="outline" onClick={() => onInvite(u)} className="ml-2 border-[#d4c5b0] text-[#6b5138] hover:bg-[#4a3728] hover:text-white">
-                                            Inviter
-                                        </Button>
+                                        <div className="flex gap-2 ml-2">
+                                            <Button size="sm" variant="outline" onClick={() => (onInviteSpectator || onInvite)?.(u)} className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#4a3728] hover:text-white">
+                                                Spectateur
+                                            </Button>
+                                            <Button size="sm" onClick={() => (onInvitePlayer || onInvite)?.(u)} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+                                                Joueur
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
