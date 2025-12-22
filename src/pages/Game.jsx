@@ -406,6 +406,11 @@ export default function Game() {
                     return;
                 }
                 try {
+                    const urlSp = new URLSearchParams(window.location.search);
+                    const joinIntent = urlSp.get('join');
+                    if (joinIntent === 'player') {
+                        await base44.functions.invoke('cancelActiveGames', {});
+                    }
                     await base44.functions.invoke('joinGame', { gameId: game.id });
                     const fresh = await base44.entities.Game.get(game.id);
                     setGame(fresh);
@@ -414,10 +419,14 @@ export default function Game() {
                         const refreshed = await base44.entities.Game.get(game.id);
                         setGame(refreshed);
                     }, 300);
+                    if (joinIntent) {
+                        // Nettoie l'URL pour éviter de relancer l'action
+                        navigate(`/Game?id=${game.id}`, { replace: true });
+                    }
                 } catch (_) {}
-            }
-        };
-        run();
+                }
+                };
+                run();
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
 
     // Robust WebSocket Connection
