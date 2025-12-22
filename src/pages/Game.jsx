@@ -405,6 +405,11 @@ export default function Game() {
                     await base44.functions.invoke('joinGame', { gameId: game.id });
                     const fresh = await base44.entities.Game.get(game.id);
                     setGame(fresh);
+                    // Force secondary refetch to ensure names propagate
+                    setTimeout(async () => {
+                        const refreshed = await base44.entities.Game.get(game.id);
+                        setGame(refreshed);
+                    }, 300);
                 } catch (_) {}
             }
         };
@@ -1117,6 +1122,11 @@ export default function Game() {
              await base44.functions.invoke('joinGame', { gameId: game.id });
              const fresh = await base44.entities.Game.get(game.id);
              setGame(fresh);
+             // Force secondary refetch to ensure names propagate
+             setTimeout(async () => {
+                 const refreshed = await base44.entities.Game.get(game.id);
+                 setGame(refreshed);
+             }, 300);
              toast.success(t('game.joined') || 'Vous avez rejoint la table');
          } catch (e) {
              toast.error(t('game.join_failed') || 'Impossible de rejoindre');
@@ -1418,10 +1428,9 @@ export default function Game() {
     if (!Array.isArray(displayBoard)) displayBoard = [];
 
     // Orientation Logic
-    const isAmBlack = currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id && currentUser.id !== game.white_player_id;
-    const autoOrientation = isAmBlack ? 'black' : 'white';
+    const isFlipped = currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id;
+    const autoOrientation = isFlipped ? 'black' : 'white';
     const orientation = manualOrientation || autoOrientation;
-    const isFlipped = orientation === 'black';
     
     const topPlayer = (isFlipped) ? { 
         id: game.white_player_id, 
@@ -1673,7 +1682,7 @@ export default function Game() {
                                 selectedSquare={selectedSquare} 
                                 validMoves={validMoves} 
                                 currentTurn={game.current_turn} 
-                                playerColor={isAmBlack ? 'black' : 'white'} 
+                                playerColor={isFlipped ? 'black' : 'white'} 
                                 lastMove={movesList[movesList.length-1] || null}
                                 lastDragMove={lastDragMove}
                                 theme={currentUser?.preferences?.checkers_theme}
@@ -1689,7 +1698,7 @@ export default function Game() {
                                 selectedSquare={selectedSquare} 
                                 validMoves={validMoves} 
                                 currentTurn={game.current_turn} 
-                                playerColor={isAmBlack ? 'black' : 'white'} 
+                                playerColor={isFlipped ? 'black' : 'white'} 
                                 lastMove={chessState.lastMove}
                                 lastDragMove={lastDragMove}
                                 theme={currentUser?.preferences?.chess_theme}
