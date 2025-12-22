@@ -8,8 +8,8 @@ export function useRobustWebSocket(url, options = {}) {
         onClose,
         onError,
         reconnectAttempts = 5,
-        reconnectInterval = 3000,
-        heartbeatInterval = 30000,
+        reconnectInterval = 1000,
+        heartbeatInterval = 10000,
         autoConnect = true
     } = options;
 
