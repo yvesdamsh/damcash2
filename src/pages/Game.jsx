@@ -390,8 +390,8 @@ export default function Game() {
 
         syncState();
         
-        // 2s Interval for high responsiveness
-        const interval = setInterval(syncState, 500);
+        const intervalMs = (game?.status === 'playing') ? 200 : 500;
+        const interval = setInterval(syncState, intervalMs);
 
         const onFocus = () => syncState();
         window.addEventListener('focus', onFocus);
@@ -404,7 +404,7 @@ export default function Game() {
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onFocus);
         };
-    }, [id]);
+    }, [id, game?.status]);
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {

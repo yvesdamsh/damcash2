@@ -65,17 +65,19 @@ Deno.serve(async (req) => {
                 // Compromise: Trust client side validation + verify user ID matches player ID in updateData if present
                 // Or simply: Assume only players send MOVE.
                 
-                // Persist Move
+                // Persist Move (socket-first)
                 const { updateData } = data.payload;
                 if (updateData) {
                     // Override with server timestamp for consistency
                     updateData.last_move_at = new Date().toISOString();
 
-                    await base44.asServiceRole.entities.Game.update(gameId, updateData);
-                    
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
+                    // Broadcast first for instant UI
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
+
+                    // Then write to DB (authoritative)
+                    await base44.asServiceRole.entities.Game.update(gameId, updateData);
                 }
             } 
             else if (data.type === 'MOVE_NOTIFY') {
