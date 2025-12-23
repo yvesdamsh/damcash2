@@ -74,6 +74,8 @@ export default function Game() {
     const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
     const [id, setId] = useState(searchParams.get('id'));
+    const isPreview = (searchParams.get('preview') === '1' || searchParams.get('embed') === '1' || searchParams.get('preview') === 'true');
+    const forceMuteMedia = (searchParams.get('mute') === '1' || searchParams.get('mute') === 'true');
 
     // Preload heavy logic modules
     useEffect(() => {
@@ -210,7 +212,7 @@ export default function Game() {
         }
 
         // Sound & Notification Logic
-        if (prevGameRef.current && prevGameRef.current.current_turn !== game.current_turn) {
+        if (!isPreview && prevGameRef.current && prevGameRef.current.current_turn !== game.current_turn) {
             if (prevGameRef.current) {
                 let soundPlayed = false;
                 
@@ -256,6 +258,20 @@ export default function Game() {
 
         prevGameRef.current = game;
         }, [game]);
+
+        // Mute all media elements in preview if requested
+        useEffect(() => {
+            if (!forceMuteMedia) return;
+            const muteAll = () => {
+                document.querySelectorAll('video,audio').forEach((m) => {
+                    try { m.muted = true; } catch(_) {}
+                    try { m.volume = 0; } catch(_) {}
+                });
+            };
+            muteAll();
+            const iv = setInterval(muteAll, 1500);
+            return () => clearInterval(iv);
+        }, [forceMuteMedia]);
 
         useEffect(() => {
         window.onAnalyzeGame = () => {

@@ -18,6 +18,7 @@ import SplashScreen from '@/components/SplashScreen';
 import RejoinGameDialog from '@/components/RejoinGameDialog';
 import HomeOnlineUsers from '@/components/home/HomeOnlineUsers.jsx';
 import NextTournamentBanner from '@/components/NextTournamentBanner';
+import LiveGameEmbed from '@/components/home/LiveGameEmbed';
 
 export default function Home() {
     const { t } = useLanguage();
@@ -47,6 +48,7 @@ export default function Home() {
     const [aiLevel, setAiLevel] = useState('medium');
     const [activeGames, setActiveGames] = useState([]);
     const [featuredGames, setFeaturedGames] = useState([]);
+    const [testerGames, setTesterGames] = useState([]);
     const [invitations, setInvitations] = useState([]);
     const [configOpen, setConfigOpen] = useState(false);
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
@@ -158,6 +160,27 @@ export default function Home() {
                 return eloB - eloA;
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
+
+            // Ensure tester games (you and Missdeecash) always appear in featured embeds
+            try {
+                const testerNamesRaw = [currentUser?.username, 'Missdeecash'];
+                const testerNames = Array.from(new Set((testerNamesRaw.filter(Boolean) || []).map(n => String(n))));
+                if (testerNames.length > 0) {
+                    const queries = [];
+                    testerNames.forEach(name => {
+                        queries.push(base44.entities.Game.filter({ status: 'playing', white_player_name: name }, '-updated_date', 5));
+                        queries.push(base44.entities.Game.filter({ status: 'playing', black_player_name: name }, '-updated_date', 5));
+                    });
+                    const results = await Promise.all(queries);
+                    const merged = results.flat();
+                    const unique = Array.from(new Map(merged.map(g => [g.id, g])).values());
+                    setTesterGames(unique.slice(0, 2));
+                } else {
+                    setTesterGames([]);
+                }
+            } catch (_) {
+                setTesterGames([]);
+            }
             
             // Deduplicate and STRICTLY filter games
             const allGames = [...myGamesWhite, ...myGamesBlack];
@@ -1071,6 +1094,14 @@ export default function Home() {
                                                     </Button>
                                                 </div>
                                                 <div className="p-4 space-y-3 bg-[#fdfbf7] dark:bg-[#1a120b]">
+                                                    {testerGames.length > 0 && (
+                                                        <div className="space-y-3">
+                                                            {testerGames.map(g => (
+                                                                <LiveGameEmbed key={g.id} game={g} />
+                                                            ))}
+                                                            <div className="h-px bg-[#e8dcc5] dark:bg-[#3d2b1f]" />
+                                                        </div>
+                                                    )}
                                                     {featuredGames.filter(g => g.game_type === gameType).length > 0 ? featuredGames.filter(g => g.game_type === gameType).map(g => (
                                                         <div key={g.id} className="flex justify-between items-center p-3 bg-white dark:bg-[#2a201a] border border-[#e8dcc5] dark:border-[#3d2b1f] rounded-lg hover:border-[#b8860b] dark:hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
                                                             <div>
