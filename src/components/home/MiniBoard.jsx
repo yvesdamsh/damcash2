@@ -43,7 +43,7 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               type="button"
               onClick={onSquareClick ? () => onSquareClick(r, c) : undefined}
               style={{ backgroundColor: dark ? darkColor : lightColor }}
-              className="w-full h-full flex items-center justify-center"
+              className="w-full h-full flex items-center justify-center text-[min(2.3vw,22px)] md:text-[min(1.2vw,24px)]"
             >
               {renderPiece()}
             </button>
