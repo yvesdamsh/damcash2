@@ -30,7 +30,7 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               const isWhite = piece === 1 || piece === 3;
               const isKing = piece === 3 || piece === 4;
               return (
-                <div className="relative w-5 h-5 md:w-6 md:h-6">
+                <div className="relative w-[min(2.2vw,22px)] h-[min(2.2vw,22px)] md:w-[min(1.2vw,24px)] md:h-[min(1.2vw,24px)]">
                   <div className="absolute inset-0 rounded-full" style={{ backgroundColor: isWhite ? '#f5f5f5' : '#2b2b2b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.4)' }} />
                   {isKing && <span className="absolute -top-1 -right-1 text-[9px] md:text-[10px]">👑</span>}
                 </div>
