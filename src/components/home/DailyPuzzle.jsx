@@ -7,6 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";
 import MiniBoard from "@/components/home/MiniBoard";
+import PuzzleEditor from "@/components/home/PuzzleEditor";
 
 export default function DailyPuzzle({ gameType: propGameType }) {
   const { t, formatDate } = useLanguage();
@@ -24,7 +25,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
     (async () => {
       try {
         setLoading(true);
-        const list = await base44.entities.Puzzle.filter({ game_type: gameType }, '-updated_date', 1);
+        const list = await base44.entities.Puzzle.filter({ game_type: gameType, theme: 'daily' }, '-created_date', 1);
         if (mounted) setPuzzle(list?.[0] || null);
       } finally {
         if (mounted) setLoading(false);
@@ -46,10 +47,23 @@ export default function DailyPuzzle({ gameType: propGameType }) {
             <Loader2 className="w-4 h-4 animate-spin" /> {tt('common.loading', 'Chargement...')}
           </div>
         ) : (
-          <div className="space-y-3">
-            <MiniBoard type={gameType === 'chess' ? 'chess' : 'checkers'} />
-            {puzzle ? (
-              <>
+          (() => {
+            const now = Date.now();
+            const created = puzzle?.created_date ? new Date(puzzle.created_date).getTime() : 0;
+            const valid = puzzle && (now - created <= 24*60*60*1000);
+
+            // Parse board for display
+            let board = null;
+            if (valid && puzzle?.board_state) {
+              try {
+                const parsed = JSON.parse(puzzle.board_state);
+                board = gameType === 'chess' ? (parsed?.board || null) : (Array.isArray(parsed) ? parsed : null);
+              } catch (_) {}
+            }
+
+            return valid ? (
+              <div className="space-y-3">
+                <MiniBoard type={gameType} board={board} />
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
                     {puzzle.difficulty || 'medium'}
@@ -66,6 +80,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <span>{tt('common.updated', 'Mise à jour')} : {puzzle.updated_date ? formatDate(puzzle.updated_date) : '-'}</span>
+                  <span>{tt('home.expires_in', 'Expire dans')} ~{Math.max(0, Math.ceil((24*60*60*1000 - (now - created)) / (60*60*1000)))}h</span>
                 </div>
                 <div className="flex gap-2">
                   <Link to="/Training" className="flex-1">
@@ -73,25 +88,13 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                       <Brain className="w-4 h-4 mr-2" /> {tt('home.solve_now', 'Résoudre maintenant')}
                     </Button>
                   </Link>
-                  <Link to="/Academy">
-                    <Button variant="outline" className="border-[#d4c5b0] text-[#4a3728] dark:border-[#3d2b1f] dark:text-[#e8dcc5]">
-                      {tt('home.more_puzzles', 'Plus de puzzles')}
-                    </Button>
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <div className="space-y-2">
-                <p className="text-sm text-[#6b5138] dark:text-[#b09a85]">{tt('home.no_puzzle', "Pas de puzzle aujourd’hui.")}</p>
-                <div className="flex gap-2">
-                  <Link to="/Academy" className="flex-1">
-                    <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">{tt('home.explore_academy', "Explorer l’Académie")}</Button>
-                  </Link>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            ) : (
+              <PuzzleEditor gameType={gameType} onSaved={(p) => setPuzzle(p)} />
+            );
+          })()
+        )
       </CardContent>
     </Card>
   );
