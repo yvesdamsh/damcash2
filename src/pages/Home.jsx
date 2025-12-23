@@ -330,7 +330,22 @@ export default function Home() {
         }
     };
 
-     const saveGameTypePref = (type) => {
+    // Auto-remove pending invitations older than 1 minute while the page is open
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setInvitations((prev) => {
+                const cutoff = Date.now() - 60*1000;
+                return (prev || []).filter(inv => {
+                    if (!inv || inv.status !== 'pending') return false;
+                    const created = inv.created_date ? new Date(inv.created_date).getTime() : 0;
+                    return created >= cutoff;
+                });
+            });
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const saveGameTypePref = (type) => {
         setGameType(type);
         localStorage.setItem('gameMode', type);
         window.dispatchEvent(new Event('gameModeChanged'));
