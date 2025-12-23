@@ -14,24 +14,18 @@ Deno.serve(async (req) => {
 
     const since = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // last 5 minutes
 
-    let query = { last_seen: { $gte: since } };
-    if (search && String(search).trim()) {
-      query = {
-        $and: [
-          { last_seen: { $gte: since } },
-          {
-            $or: [
-              { username: { $regex: search, $options: 'i' } },
-              { full_name: { $regex: search, $options: 'i' } },
-              { email: { $regex: search, $options: 'i' } },
-            ],
-          },
-        ],
-      };
-    }
-
-    // Use service role to list users (regular users can't list users)
-    const users = await base44.asServiceRole.entities.User.filter(query, '-last_seen', Math.min(50, Math.max(1, Number(limit)||20)));
+    // Fetch recent users and filter client-side to avoid unsupported operators
+    const recentUsers = await base44.asServiceRole.entities.User.list('-last_seen', 200);
+    const lcSearch = String(search || '').toLowerCase();
+    const filtered = (recentUsers || [])
+      .filter(u => u?.last_seen && u.last_seen >= since)
+      .filter(u => {
+        if (!lcSearch) return true;
+        const hay = `${u?.username||''} ${u?.full_name||''} ${u?.email||''}`.toLowerCase();
+        return hay.includes(lcSearch);
+      })
+      .slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
+    const users = filtered;
 
     // Return only needed fields
     const sanitized = users.map((u) => ({

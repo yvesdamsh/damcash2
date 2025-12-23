@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-const channel = new BroadcastChannel('notifications');
+let channel; try { channel = new BroadcastChannel('notifications'); } catch (_) { channel = null; }
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
@@ -41,7 +41,7 @@ export default async function handler(req) {
 
         // Broadcast to WebSocket via Channel
         // Note: userSocket.js expects recipientId (camelCase) in event.data
-        channel.postMessage({
+        if (channel) channel.postMessage({
             recipientId: recipient_id,
             type,
             title,
