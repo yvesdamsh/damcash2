@@ -143,20 +143,11 @@ export default function Home() {
         try {
             // Parallel fetching for games
             const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
-            base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
-            base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-            base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
-            base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
+                base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
+                base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
+                base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
+                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
             ]);
-
-            // Clean up stale invitations older than 24h or already handled elsewhere
-            const dayAgo = Date.now() - 24*60*60*1000;
-            const freshInvites = (myInvites || []).filter(inv => {
-                if (inv.status !== 'pending') return false;
-                if (!inv.created_date) return true;
-                return new Date(inv.created_date).getTime() >= dayAgo;
-            });
-            setInvitations(freshInvites);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
             // Actually, just showing the highest rated active games is good.
@@ -314,13 +305,15 @@ export default function Home() {
     const handleAcceptInvite = async (invite) => {
         try {
             await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
+            // Optimistic UI removal
+            setInvitations((prev) => prev.filter(i => i.id !== invite.id));
             const game = await base44.entities.Game.get(invite.game_id);
             if (game && !game.black_player_id) {
-            await base44.entities.Game.update(game.id, {
-               black_player_id: user.id,
-               black_player_name: user.username || 'Invité',
-               status: 'playing'
-            });
+                await base44.entities.Game.update(game.id, {
+                    black_player_id: user.id,
+                    black_player_name: user.username || 'Invité',
+                    status: 'playing'
+                });
             }
             navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
@@ -331,13 +324,13 @@ export default function Home() {
     const handleDeclineInvite = async (invite) => {
         try {
             await base44.entities.Invitation.update(invite.id, { status: 'declined' });
-            setInvitations(prev => prev.filter(i => i.id !== invite.id));
+            setInvitations((prev) => prev.filter(i => i.id !== invite.id));
         } catch (e) {
             console.error("Error declining invite", e);
         }
     };
 
-    const saveGameTypePref = (type) => {
+     const saveGameTypePref = (type) => {
         setGameType(type);
         localStorage.setItem('gameMode', type);
         window.dispatchEvent(new Event('gameModeChanged'));
@@ -1090,11 +1083,11 @@ export default function Home() {
                                                                 <div>
                                                                     <div className="font-bold text-[#3d2b1f] dark:text-[#e8dcc5]">{inv.from_user_name}</div>
                                                                     <div className="text-xs text-[#5c6e46] dark:text-[#a8907a]">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2">
+                                                                </div>
+                                                                <div className="flex gap-2">
                                                                     <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept')}</Button>
-                                                                    <Button size="sm" variant="outline" onClick={() => handleDeclineInvite(inv)} className="h-8 border-[#d4c5b0] text-[#6b5138] dark:border-[#3d2b1f] dark:text-[#b09a85]">{t('common.decline') || 'Refuser'}</Button>
-                                                                    </div>
+                                                                    <Button size="sm" variant="outline" onClick={() => handleDeclineInvite(inv)} className="h-8">{t('common.decline')}</Button>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </CardContent>
