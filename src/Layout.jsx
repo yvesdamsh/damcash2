@@ -84,16 +84,8 @@ function LayoutContent({ children }) {
         }
     }, []); // Run once on mount to handle initial load state correctly
 
-    // Play splash sound when intro shows (with autoplay fallback handled in SoundManager)
-    React.useEffect(() => {
-        if (showIntro) {
-            try {
-                if (localStorage.getItem('soundEnabled') !== 'false') {
-                    soundManager.play('start');
-                }
-            } catch (_) {}
-        }
-    }, [showIntro]);
+    // Intro sound handled inside IntroAnimation to avoid double plays
+    React.useEffect(() => {}, [showIntro]);
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {
@@ -274,9 +266,6 @@ function LayoutContent({ children }) {
                         className="fixed inset-0 z-[200]"
                         exit={{ opacity: 0 }}
                         transition={{ duration: 1 }}
-                                                      onAnimationStart={() => {
-                                                          try { soundManager.play('start'); } catch (_) {}
-                                                      }}
                     >
                         <IntroAnimation />
                     </motion.div>
