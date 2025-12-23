@@ -94,7 +94,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
               <PuzzleEditor gameType={gameType} onSaved={(p) => setPuzzle(p)} />
             );
           })()
-        )
+        )}
       </CardContent>
     </Card>
   );
