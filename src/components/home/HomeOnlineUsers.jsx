@@ -179,7 +179,7 @@ export default function HomeOnlineUsers() {
 
       <CardHeader className="pb-2 flex items-center justify-between">
         <CardTitle className="text-sm font-bold uppercase text-gray-600 dark:text-[#b09a85]">
-          {t('home.online_now') !== 'home.online_now' ? t('home.online_now') : 'En ligne maintenant'} ({rows.length})
+          {(() => { const v = t('home.online_now'); return (typeof v === 'string' && v.includes('.')) ? 'En ligne maintenant' : v; })()} ({rows.length})
         </CardTitle>
         <Button size="icon" variant="ghost" onClick={fetchOnline} className="h-7 w-7">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
