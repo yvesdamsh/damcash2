@@ -259,6 +259,80 @@ function LayoutContent({ children }) {
 
     return (
         <div className={`min-h-screen font-sans relative transition-colors duration-300 ${isDark ? 'bg-[#0f0a06] text-[#e8dcc5]' : 'bg-[#e8dcc5] text-slate-900'}`}>
+            <style>{`
+:root {
+  /* Spacing (8px scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Radius */
+  --radius: 10px;
+
+  /* Animation durations */
+  --anim-fast: 150ms;
+  --anim-normal: 200ms;
+  --anim-slow: 250ms;
+
+  /* Accessible palette (light) */
+  --background: 39 43% 85%; /* #e8dcc5 */
+  --foreground: 220 13% 15%; /* slate-900 */
+
+  --primary: 93 29% 43%; /* #6B8E4E */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 24 28% 23%; /* #4a3728 */
+  --secondary-foreground: 39 43% 85%;
+
+  --muted: 32 36% 85%;
+  --muted-foreground: 24 15% 35%;
+
+  --accent: 48 96% 53%; /* warm gold */
+  --destructive: 0 72% 50%;
+
+  --border: 24 28% 23%;
+  --input: 24 28% 23%;
+  --ring: var(--primary);
+}
+
+.dark {
+  /* Accessible palette (dark) */
+  --background: 22 39% 5%; /* #0f0a06 */
+  --foreground: 39 39% 90%; /* #e8dcc5 */
+
+  --primary: 93 29% 43%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 24 28% 23%;
+  --secondary-foreground: 39 39% 90%;
+
+  --muted: 24 18% 20%;
+  --muted-foreground: 39 30% 80%;
+
+  --accent: 48 96% 53%;
+  --destructive: 0 72% 50%;
+
+  --border: 24 18% 20%;
+  --input: 24 18% 20%;
+  --ring: var(--primary);
+}
+
+/* Typography scale */
+:root h1 { font-size: clamp(28px, 4vw, 36px); line-height: 1.2; letter-spacing: -0.01em; }
+:root h2 { font-size: clamp(22px, 3vw, 28px); line-height: 1.25; }
+:root h3 { font-size: clamp(18px, 2.5vw, 22px); line-height: 1.3; }
+:root p, :root li, :root label, :root input, :root button { line-height: 1.5; }
+
+/* Micro-animations baseline */
+:root button, :root a, :root .card, :root .badge, :root .chip {
+  transition-duration: var(--anim-normal);
+}
+`}</style>
             <AnimatePresence>
                 {showIntro && (
                     <motion.div 
