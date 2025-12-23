@@ -9,8 +9,9 @@ export default function SplashScreen({ onPlayAsGuest }) {
     const playOnce = () => {
         try {
             if (sessionStorage.getItem('splash_sound_played') === 'true') return;
+            const unlocked = sessionStorage.getItem('audio_unlocked') === 'true';
             soundManager.play('splash');
-            sessionStorage.setItem('splash_sound_played', 'true');
+            if (unlocked) sessionStorage.setItem('splash_sound_played', 'true');
         } catch (_) {}
     };
     const handleLogin = () => {
@@ -45,6 +46,8 @@ export default function SplashScreen({ onPlayAsGuest }) {
         window.addEventListener('keydown', unlock, { once: true });
         window.addEventListener('touchstart', unlock, { once: true });
         window.addEventListener('click', unlock, { once: true });
+        // Try to play once immediately; if blocked, unlock will replay
+        setTimeout(() => playOnce(), 250);
         return cleanup;
     }, []);
 

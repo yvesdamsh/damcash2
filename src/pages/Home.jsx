@@ -1083,43 +1083,18 @@ export default function Home() {
                             </div>
                         </div>
                                         <div className="md:col-span-1 space-y-6">
-                                            <div className="bg-white dark:bg-[#1e1814] rounded-xl border border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg overflow-hidden">
-                                                <div className="bg-[#4a3728] dark:bg-[#2c1e12] p-3 flex items-center justify-between gap-2 text-[#e8dcc5]">
-                                                    <div className="flex items-center gap-2">
-                                                        <Eye className="w-5 h-5" />
-                                                        <h3 className="font-bold">{t('home.featured')} ({gameType === 'chess' ? t('game.chess') : t('game.checkers')})</h3>
-                                                    </div>
-                                                    <Button size="sm" variant="ghost" onClick={() => navigate('/Spectate')} className="text-[#e8dcc5] hover:text-white hover:bg-white/10 h-6 px-2 text-xs">
-                                                        {t('home.see_all')} <ArrowRight className="w-3 h-3 ml-1" />
-                                                    </Button>
-                                                </div>
-                                                <div className="p-4 space-y-3 bg-[#fdfbf7] dark:bg-[#1a120b]">
-                                                    {testerGames.length > 0 && (
-                                                        <div className="space-y-3">
-                                                            {testerGames.map(g => (
-                                                                <LiveGameEmbed key={g.id} game={g} />
-                                                            ))}
-                                                            <div className="h-px bg-[#e8dcc5] dark:bg-[#3d2b1f]" />
-                                                        </div>
-                                                    )}
-                                                    {featuredGames.filter(g => g.game_type === gameType).length > 0 ? featuredGames.filter(g => g.game_type === gameType).map(g => (
-                                                        <div key={g.id} className="flex justify-between items-center p-3 bg-white dark:bg-[#2a201a] border border-[#e8dcc5] dark:border-[#3d2b1f] rounded-lg hover:border-[#b8860b] dark:hover:border-[#b8860b] transition-colors cursor-pointer group" onClick={() => navigate(`/Game?id=${g.id}`)}>
-                                                            <div>
-                                                                <div className="text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] group-hover:text-[#b8860b] transition-colors">{g.white_player_name} vs {g.black_player_name}</div>
-                                                                <div className="text-xs text-[#6b5138] dark:text-[#a8907a] capitalize flex items-center gap-2">
-                                                                    <span>{g.game_type === 'chess' ? '♟️' : '⚪'} {g.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</span>
-                                                                    {g.prize_pool > 0 && <span className="text-yellow-600 font-bold flex items-center gap-0.5"><span className="text-[10px]">D$</span>{g.prize_pool}</span>}
-                                                                </div>
-                                                            </div>
-                                                            <Button size="sm" variant="ghost" className="text-[#b8860b]"><Eye className="w-4 h-4" /></Button>
-                                                        </div>
-                                                    )) : (
-                                                        <div className="text-center text-sm text-gray-400 italic py-4">
-                                                            {t('home.no_games')}
-                                                            <br/>
-                                                            <span className="text-xs">{t('home.create_one')}</span>
-                                                        </div>
-                                                    )}
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {(() => {
+                                                        const list = [
+                                                            ...(testerGames || []),
+                                                            ...((featuredGames || []).filter(g => g.game_type === gameType))
+                                                        ];
+                                                        const unique = Array.from(new Map(list.map(g => [g.id, g])).values()).slice(0, 5);
+                                                        return unique.map(g => (
+                                                            <LiveGameEmbed key={g.id} game={g} />
+                                                        ));
+                                                    })()}
                                                 </div>
                                             </div>
                                             {invitations.length > 0 && (
