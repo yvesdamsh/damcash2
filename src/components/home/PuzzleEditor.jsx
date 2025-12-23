@@ -90,7 +90,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid md:grid-cols-[1fr,280px] gap-4 items-start">
+        <div className="grid gap-4 items-start lg:grid-cols-[1fr_360px]">
           <MiniBoard
             type={gameType}
             board={gameType === 'chess' ? chessBoard : checkersBoard}
