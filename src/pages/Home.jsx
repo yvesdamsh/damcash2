@@ -143,11 +143,20 @@ export default function Home() {
         try {
             // Parallel fetching for games
             const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
-                base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
-                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
+            base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
+            base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
+            base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
+            base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
             ]);
+
+            // Clean up stale invitations older than 24h or already handled elsewhere
+            const dayAgo = Date.now() - 24*60*60*1000;
+            const freshInvites = (myInvites || []).filter(inv => {
+                if (inv.status !== 'pending') return false;
+                if (!inv.created_date) return true;
+                return new Date(inv.created_date).getTime() >= dayAgo;
+            });
+            setInvitations(freshInvites);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
             // Actually, just showing the highest rated active games is good.
@@ -158,15 +167,6 @@ export default function Home() {
                 return eloB - eloA;
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
-            
-            // Filter PENDING invites to only recent ones (auto-expire after 24h)
-            const nowTs = Date.now();
-            const filteredInvites = (myInvites || []).filter(inv => {
-                if (!inv || inv.status !== 'pending') return false;
-                const created = inv.created_date ? new Date(inv.created_date).getTime() : 0;
-                return created > nowTs - 24*60*60*1000;
-            });
-            setInvitations(filteredInvites);
             
             // Deduplicate and STRICTLY filter games
             const allGames = [...myGamesWhite, ...myGamesBlack];
@@ -201,6 +201,7 @@ export default function Home() {
                 })
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
+            setInvitations(myInvites);
             
             if (checkRejoin && active.length > 0 && !hasShownRejoin) {
                 const hasSeen = sessionStorage.getItem('damcash_rejoin_seen');
@@ -324,6 +325,15 @@ export default function Home() {
             navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
             console.error("Error accepting invite", e);
+        }
+    };
+
+    const handleDeclineInvite = async (invite) => {
+        try {
+            await base44.entities.Invitation.update(invite.id, { status: 'declined' });
+            setInvitations(prev => prev.filter(i => i.id !== invite.id));
+        } catch (e) {
+            console.error("Error declining invite", e);
         }
     };
 
@@ -1080,11 +1090,11 @@ export default function Home() {
                                                                 <div>
                                                                     <div className="font-bold text-[#3d2b1f] dark:text-[#e8dcc5]">{inv.from_user_name}</div>
                                                                     <div className="text-xs text-[#5c6e46] dark:text-[#a8907a]">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div>
-                                                                </div>
-                                                                <div className="flex gap-2">
-                                                                    <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept') || 'Accepter'}</Button>
-                                                                    <Button size="sm" variant="outline" onClick={() => handleDeclineInvite(inv)} className="h-8 border-[#3d2b1f] text-[#3d2b1f] dark:border-[#3d2b1f] dark:text-[#e8dcc5]">{t('common.ignore') || 'Ignorer'}</Button>
-                                                                </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                    <Button size="sm" onClick={() => handleAcceptInvite(inv)} className="bg-[#6B8E4E] hover:bg-[#5a7a40] h-8">{t('home.accept')}</Button>
+                                                                    <Button size="sm" variant="outline" onClick={() => handleDeclineInvite(inv)} className="h-8 border-[#d4c5b0] text-[#6b5138] dark:border-[#3d2b1f] dark:text-[#b09a85]">{t('common.decline') || 'Refuser'}</Button>
+                                                                    </div>
                                                             </div>
                                                         ))}
                                                     </CardContent>
