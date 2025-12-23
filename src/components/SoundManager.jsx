@@ -55,7 +55,25 @@ class SoundManager {
             audio.volume = 0.5;
             audio.currentTime = 0;
             audio.play().catch(e => {
-                console.debug("Sound play failed", e);
+                // Autoplay blocked: wait for first user interaction then retry once
+                const unlock = () => {
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                    window.removeEventListener('pointerdown', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                    window.removeEventListener('click', unlock);
+                    window.removeEventListener('keydown', unlock);
+                    window.removeEventListener('mousedown', unlock);
+                };
+                if (e && (e.name === 'NotAllowedError' || (e.message && e.message.toLowerCase().includes('play() failed')))) {
+                    window.addEventListener('pointerdown', unlock, { once: true });
+                    window.addEventListener('touchstart', unlock, { once: true });
+                    window.addEventListener('click', unlock, { once: true });
+                    window.addEventListener('keydown', unlock, { once: true });
+                    window.addEventListener('mousedown', unlock, { once: true });
+                } else {
+                    console.debug('Sound play failed', e);
+                }
             });
         } catch (e) {
             console.error("Audio error", e);
