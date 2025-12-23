@@ -80,8 +80,8 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                   )}
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>{tt('common.updated', 'Mise à jour')} : {puzzle.updated_date ? formatDate(puzzle.updated_date) : '-'}</span>
-                  <span>{tt('home.expires_in', 'Expire dans')} ~{Math.max(0, Math.ceil((24*60*60*1000 - (now - created)) / (60*60*1000)))}h</span>
+                  <span>{tf('common.updated', 'Mise à jour')} : {puzzle.updated_date ? formatDate(puzzle.updated_date) : '-'}</span>
+                  <span>{tf('home.expires_in', 'Expire dans')} ~{Math.max(0, Math.ceil((24*60*60*1000 - (now - created)) / (60*60*1000)))}h</span>
                 </div>
                 <div className="flex gap-2">
                   <Link to="/Training" className="flex-1">
