@@ -86,7 +86,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                 <div className="flex gap-2">
                   <Link to="/Training" className="flex-1">
                     <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">
-                      <Brain className="w-4 h-4 mr-2" /> {tt('home.solve_now', 'Résoudre maintenant')}
+                      <Brain className="w-4 h-4 mr-2" /> {tf('home.solve_now', 'Résoudre maintenant')}
                     </Button>
                   </Link>
                 </div>
