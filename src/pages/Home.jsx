@@ -379,10 +379,8 @@ export default function Home() {
         localStorage.setItem('gameMode', type);
         window.dispatchEvent(new Event('gameModeChanged'));
         if (user) {
-            base44.entities.User.list().then(users => {
-                 const myUser = users.find(u => u.created_by === user.email);
-                 if (myUser) base44.entities.User.update(myUser.id, { default_game: type });
-            });
+            // Save preference on current user safely (no listing required)
+            base44.auth.updateMe({ default_game: type }).catch(() => {});
         }
     };
 
@@ -590,7 +588,7 @@ export default function Home() {
         if (!canStartNewGame()) return;
 
         try {
-            const games = await base44.entities.Game.filter({ access_code: joinCode.toUpperCase(), status: 'waiting' }, {}, 1);
+            const games = await base44.entities.Game.filter({ access_code: joinCode.toUpperCase(), status: 'waiting' }, '-created_date', 1);
             if (games.length > 0) {
                 const game = games[0];
                  await base44.entities.Game.update(game.id, {

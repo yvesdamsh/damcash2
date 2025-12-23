@@ -29,8 +29,14 @@ export default function HomeOnlineUsers() {
     try {
       const current = await base44.auth.me().catch(() => null);
       setMe(current);
-      const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
-      const list = res?.data?.users || [];
+      if (!current) { setUsers([]); return; }
+      let list = [];
+      try {
+        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
+        list = res?.data?.users || [];
+      } catch (_) {
+        list = [];
+      }
       setUsers(list);
     } finally {
       setLoading(false);
