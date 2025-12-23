@@ -11,6 +11,7 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
   const tf = (k, f) => (t(k) === k ? f : t(k));
   const created = puzzle?.created_date ? new Date(puzzle.created_date) : null;
 
+  const noPuzzle = !puzzle;
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="flex items-center justify-center">
@@ -21,6 +22,9 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400">{tf('puzzle.daily','Puzzle du jour')}</div>
             <h3 className="text-lg font-bold text-[#4a3728] dark:text-[#e8dcc5] line-clamp-2">{puzzle?.title || tf('puzzle.checkers_title','Tactique de dames')}</h3>
+            {noPuzzle && (
+              <div className="mt-1 text-xs text-gray-500">{tf('puzzle.none','Aucun puzzle publié aujourd\'hui')}</div>
+            )}
           </div>
           <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{puzzle?.difficulty || 'medium'}</Badge>
         </div>
@@ -43,14 +47,21 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
         <div className="space-y-2">
           <Link to="/Training">
             <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">
-              <Brain className="w-4 h-4 mr-2" /> {tf('home.solve_now','Résoudre maintenant')}
+              <Brain className="w-4 h-4 mr-2" /> {noPuzzle ? tf('puzzle.practice','S\'entraîner') : tf('home.solve_now','Résoudre maintenant')}
             </Button>
           </Link>
-          <Link to="/Training">
-            <Button variant="outline" className="w-full">
-              <Eye className="w-4 h-4 mr-2" /> {tf('puzzle.view_solution','Voir la solution')}
-            </Button>
-          </Link>
+          <div className="grid grid-cols-2 gap-2">
+            <Link to="/Training">
+              <Button variant="outline" className="w-full">
+                <Eye className="w-4 h-4 mr-2" /> {tf('puzzle.view_solution','Voir la solution')}
+              </Button>
+            </Link>
+            <Link to="/CreatePuzzle">
+              <Button variant="outline" className="w-full">
+                + {tf('puzzle.create','Proposer un puzzle')}
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">

@@ -64,41 +64,43 @@ export default function DailyPuzzle({ gameType: propGameType }) {
               } catch (_) {}
             }
 
-            return valid ? (
+            return (
               gameType === 'checkers' ? (
-                <DailyCheckersPuzzle puzzle={puzzle} board={board} />
+                <DailyCheckersPuzzle puzzle={valid ? puzzle : null} board={valid ? board : null} />
               ) : (
-              <div className="space-y-3">
-                <MiniBoard type={gameType} board={board} className="w-full max-w-[420px] mx-auto ring-1 ring-[#4a3728]/15" />
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
-                    {puzzle.difficulty || 'medium'}
-                  </Badge>
-                  {puzzle.rating ? (
-                    <span className="text-xs text-gray-600 dark:text-gray-300">ELO {puzzle.rating}</span>
-                  ) : null}
-                </div>
-                <div>
-                  <div className="font-bold text-[#4a3728] dark:text-[#e8dcc5] text-lg line-clamp-1">{puzzle.title || (gameType === 'chess' ? 'Tactique d’échecs' : 'Tactique de dames')}</div>
-                  {puzzle.description && (
-                    <p className="text-sm text-[#6b5138] dark:text-[#b09a85] line-clamp-3">{puzzle.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>{tf('common.updated', 'Mise à jour')} : {puzzle.updated_date ? formatDate(puzzle.updated_date) : '-'}</span>
-                  <span>{tf('home.expires_in', 'Expire dans')} ~{Math.max(0, Math.ceil((24*60*60*1000 - (now - created)) / (60*60*1000)))}h</span>
-                </div>
-                <div className="flex gap-2">
-                  <Link to="/Training" className="flex-1">
-                    <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">
-                      <Brain className="w-4 h-4 mr-2" /> {tf('home.solve_now', 'Résoudre maintenant')}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+                valid ? (
+                  <div className="space-y-3">
+                    <MiniBoard type={gameType} board={board} className="w-full max-w-[520px] mx-auto ring-1 ring-[#4a3728]/15" />
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
+                        {puzzle.difficulty || 'medium'}
+                      </Badge>
+                      {puzzle.rating ? (
+                        <span className="text-xs text-gray-600 dark:text-gray-300">ELO {puzzle.rating}</span>
+                      ) : null}
+                    </div>
+                    <div>
+                      <div className="font-bold text-[#4a3728] dark:text-[#e8dcc5] text-lg line-clamp-1">{puzzle.title || 'Tactique d’échecs'}</div>
+                      {puzzle.description && (
+                        <p className="text-sm text-[#6b5138] dark:text-[#b09a85] line-clamp-3">{puzzle.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>{tf('common.updated', 'Mise à jour')} : {puzzle.updated_date ? formatDate(puzzle.updated_date) : '-'}</span>
+                      <span>{tf('home.expires_in', 'Expire dans')} ~{Math.max(0, Math.ceil((24*60*60*1000 - (now - created)) / (60*60*1000)))}h</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link to="/Training" className="flex-1">
+                        <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">
+                          <Brain className="w-4 h-4 mr-2" /> {tf('home.solve_now', 'Résoudre maintenant')}
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <PuzzleEditor gameType={gameType} onSaved={(p) => setPuzzle(p)} />
+                )
               )
-            ) : (
-              <PuzzleEditor gameType={gameType} onSaved={(p) => setPuzzle(p)} />
             );
           })()
         )}
