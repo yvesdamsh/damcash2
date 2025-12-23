@@ -6,15 +6,15 @@ import { base44 } from '@/api/base44Client';
 import { soundManager } from '@/components/SoundManager';
 
 export default function SplashScreen({ onPlayAsGuest }) {
-    const playSplashOnce = () => {
+    const playOnce = () => {
         try {
-            if (sessionStorage.getItem('splash_played') === 'true') return;
+            if (sessionStorage.getItem('splash_sound_played') === 'true') return;
             soundManager.play('splash');
-            sessionStorage.setItem('splash_played', 'true');
+            sessionStorage.setItem('splash_sound_played', 'true');
         } catch (_) {}
     };
     const handleLogin = () => {
-        playSplashOnce();
+        playOnce();
         setTimeout(() => {
             base44.auth.redirectToLogin(window.location.origin + '/Home');
         }, 80);
@@ -25,7 +25,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
         const enabled = localStorage.getItem('soundEnabled') !== 'false';
         if (!enabled) return;
 
-        const play = () => setTimeout(() => playSplashOnce(), 200);
+        const play = () => setTimeout(() => playOnce(), 200);
         const cleanup = () => {
             window.removeEventListener('pointerdown', unlock);
             window.removeEventListener('keydown', unlock);
@@ -107,7 +107,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
                         </div>
 
                         <Button 
-                            onClick={() => { playSplashOnce(); onPlayAsGuest && onPlayAsGuest(); }}
+                            onClick={() => { playOnce(); onPlayAsGuest && onPlayAsGuest(); }}
                             variant="outline"
                             className="w-full h-12 border-2 border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6] hover:text-[#4a3728] font-bold"
                         >

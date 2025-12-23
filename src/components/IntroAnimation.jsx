@@ -9,7 +9,13 @@ export default function IntroAnimation() {
             const enabled = localStorage.getItem('soundEnabled') !== 'false';
             const hasUserGesture = sessionStorage.getItem('audio_unlocked') === 'true';
             if (enabled) {
-                const tryPlay = () => soundManager.play('start');
+                const tryPlay = () => {
+                    try {
+                        if (sessionStorage.getItem('start_sound_played') === 'true') return;
+                        soundManager.play('start');
+                        sessionStorage.setItem('start_sound_played', 'true');
+                    } catch (_) {}
+                };
                 // Only attempt immediate play if we already have a gesture
                 if (hasUserGesture) tryPlay();
                 const unlock = () => {

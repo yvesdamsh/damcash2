@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import IntroAnimation from '@/components/IntroAnimation';
-import { soundManager } from '@/components/SoundManager';
 import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { 
@@ -84,7 +83,7 @@ function LayoutContent({ children }) {
         }
     }, []); // Run once on mount to handle initial load state correctly
 
-    // Intro sound handled inside IntroAnimation to avoid double plays
+    // Sound is handled inside IntroAnimation with strict single-play guard
     React.useEffect(() => {}, [showIntro]);
 
     // Save last location for persistent navigation (excluding Profile)
@@ -266,6 +265,7 @@ function LayoutContent({ children }) {
                         className="fixed inset-0 z-[200]"
                         exit={{ opacity: 0 }}
                         transition={{ duration: 1 }}
+
                     >
                         <IntroAnimation />
                     </motion.div>
