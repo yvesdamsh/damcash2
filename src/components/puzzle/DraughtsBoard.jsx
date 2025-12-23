@@ -7,7 +7,7 @@ export default function DraughtsBoard({ board, className = "", size = 520 }) {
   const ranks = Array.from({ length: n }, (_, i) => n - i); // n..1
 
   return (
-    <div className={`relative mx-auto pb-6 pr-6 ${className}`} style={{ width: '100%', maxWidth: size }}>
+    <div className={`relative mx-auto pb-6 pr-6 ${className}`} style={{ width: '100%', maxWidth: size, minWidth: 260 }}>
       <MiniBoard type="checkers" board={board} className="w-full" />
       {/* Bottom file letters */}
       <div className="absolute -bottom-6 left-0 right-0 grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
