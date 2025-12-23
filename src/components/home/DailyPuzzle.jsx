@@ -45,7 +45,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
       <CardContent className="space-y-4">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Loader2 className="w-4 h-4 animate-spin" /> {tt('common.loading', 'Chargement...')}
+            <Loader2 className="w-4 h-4 animate-spin" /> {tf('common.loading', 'Chargement...')}
           </div>
         ) : (
           (() => {
