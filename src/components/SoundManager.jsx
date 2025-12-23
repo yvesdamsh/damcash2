@@ -55,17 +55,39 @@ class SoundManager {
             audio.volume = 0.5;
             audio.currentTime = 0;
             audio.play().catch(e => {
-                // Autoplay blocked: wait for first user interaction then retry once
+                // Autoplay blocked or format/network issue: wait for first user interaction then retry once
+                const beep = () => {
+                    try {
+                        const Ctx = window.AudioContext || window.webkitAudioContext;
+                        if (!Ctx) return;
+                        const ctx = new Ctx();
+                        const o = ctx.createOscillator();
+                        const g = ctx.createGain();
+                        o.type = 'sine';
+                        o.frequency.value = 660;
+                        o.connect(g); g.connect(ctx.destination);
+                        const now = ctx.currentTime;
+                        g.gain.setValueAtTime(0.0001, now);
+                        g.gain.exponentialRampToValueAtTime(0.2, now + 0.02);
+                        o.start(now);
+                        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+                        o.stop(now + 0.2);
+                    } catch(_) {}
+                };
                 const unlock = () => {
                     audio.currentTime = 0;
-                    audio.play().catch(() => {});
+                    audio.play().catch(() => {
+                        // If still blocked or unsupported, do a tiny WebAudio beep so the user hears feedback
+                        beep();
+                    });
                     window.removeEventListener('pointerdown', unlock);
                     window.removeEventListener('touchstart', unlock);
                     window.removeEventListener('click', unlock);
                     window.removeEventListener('keydown', unlock);
                     window.removeEventListener('mousedown', unlock);
                 };
-                if (e && (e.name === 'NotAllowedError' || (e.message && e.message.toLowerCase().includes('play() failed')))) {
+                const msg = (e && e.message) ? e.message.toLowerCase() : '';
+                if (e && (e.name === 'NotAllowedError' || e.name === 'NotSupportedError' || /play\(\) failed|not supported/.test(msg))) {
                     window.addEventListener('pointerdown', unlock, { once: true });
                     window.addEventListener('touchstart', unlock, { once: true });
                     window.addEventListener('click', unlock, { once: true });
