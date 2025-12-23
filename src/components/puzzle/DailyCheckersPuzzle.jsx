@@ -13,11 +13,11 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
 
   const noPuzzle = !puzzle;
   return (
-    <div className="flex flex-col md:flex-row gap-6">
+    <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex items-center justify-center flex-1 min-w-[260px]">
         <DraughtsBoard board={board} />
       </div>
-      <aside className="w-full md:w-[320px] bg-white/80 dark:bg-[#2a201a] border rounded-xl p-4 h-fit border-[#e8dcc5] dark:border-[#3d2b1f]">
+      <aside className="w-full lg:w-[320px] bg-white/80 dark:bg-[#2a201a] border rounded-xl p-4 h-fit border-[#e8dcc5] dark:border-[#3d2b1f]">
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="text-xs text-gray-500 dark:text-gray-400">{tf('puzzle.daily','Puzzle du jour')}</div>
