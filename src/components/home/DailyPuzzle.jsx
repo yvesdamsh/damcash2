@@ -11,6 +11,7 @@ import PuzzleEditor from "@/components/home/PuzzleEditor";
 
 export default function DailyPuzzle({ gameType: propGameType }) {
   const { t, formatDate } = useLanguage();
+  const tf = (key, fallback) => (t(key) === key ? fallback : t(key));
   const [loading, setLoading] = React.useState(true);
   const [puzzle, setPuzzle] = React.useState(null);
   const gameType = propGameType || (typeof window !== 'undefined' ? (localStorage.getItem('gameMode') || 'checkers') : 'checkers');
