@@ -7,10 +7,13 @@ export default function IntroAnimation() {
         // Respect user preference and browser autoplay policies
         if (typeof window !== 'undefined') {
             const enabled = localStorage.getItem('soundEnabled') !== 'false';
+            const hasUserGesture = sessionStorage.getItem('audio_unlocked') === 'true';
             if (enabled) {
                 const tryPlay = () => soundManager.play('start');
-                tryPlay();
+                // Only attempt immediate play if we already have a gesture
+                if (hasUserGesture) tryPlay();
                 const unlock = () => {
+                    sessionStorage.setItem('audio_unlocked', 'true');
                     tryPlay();
                     window.removeEventListener('pointerdown', unlock);
                     window.removeEventListener('keydown', unlock);
