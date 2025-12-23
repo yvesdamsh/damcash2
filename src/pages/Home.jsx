@@ -192,7 +192,13 @@ export default function Home() {
                 })
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
-            setInvitations(myInvites);
+            const minuteAgo = Date.now() - 60*1000;
+            const recentInvites = (myInvites || []).filter(inv => {
+                if (!inv || inv.status !== 'pending') return false;
+                if (!inv.created_date) return false;
+                return new Date(inv.created_date).getTime() >= minuteAgo;
+            });
+            setInvitations(recentInvites);
             
             if (checkRejoin && active.length > 0 && !hasShownRejoin) {
                 const hasSeen = sessionStorage.getItem('damcash_rejoin_seen');
