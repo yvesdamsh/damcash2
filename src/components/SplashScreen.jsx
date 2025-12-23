@@ -6,6 +6,14 @@ import { base44 } from '@/api/base44Client';
 import { soundManager } from '@/components/SoundManager';
 
 export default function SplashScreen({ onPlayAsGuest }) {
+    const [mobileSafe, setMobileSafe] = React.useState(false);
+    React.useEffect(() => {
+        try {
+            const small = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+            const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            setMobileSafe(!!(small || reduced));
+        } catch (_) {}
+    }, []);
     const playOnce = () => {
         try {
             if (sessionStorage.getItem('splash_sound_played') === 'true') return;
@@ -26,7 +34,8 @@ export default function SplashScreen({ onPlayAsGuest }) {
         const enabled = localStorage.getItem('soundEnabled') !== 'false';
         if (!enabled) return;
 
-        const play = () => setTimeout(() => playOnce(), 200);
+        let t1, t2;
+        const play = () => { t1 = setTimeout(() => playOnce(), 200); };
         const cleanup = () => {
             window.removeEventListener('pointerdown', unlock);
             window.removeEventListener('keydown', unlock);
@@ -47,8 +56,8 @@ export default function SplashScreen({ onPlayAsGuest }) {
         window.addEventListener('touchstart', unlock, { once: true });
         window.addEventListener('click', unlock, { once: true });
         // Try to play once immediately; if blocked, unlock will replay
-        setTimeout(() => playOnce(), 250);
-        return cleanup;
+        t2 = setTimeout(() => playOnce(), 250);
+        return () => { cleanup(); if (t1) clearTimeout(t1); if (t2) clearTimeout(t2); };
     }, []);
 
     return (
@@ -61,18 +70,27 @@ export default function SplashScreen({ onPlayAsGuest }) {
                 }} 
             />
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 0.1, scale: 1.2 }}
-                    transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
-                    className="absolute -top-[20%] -left-[20%] w-[70%] h-[70%] bg-gradient-to-br from-[#4a3728] to-transparent rounded-full blur-3xl"
-                />
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 0.1, scale: 1.2 }}
-                    transition={{ duration: 15, repeat: Infinity, repeatType: "reverse", delay: 2 }}
-                    className="absolute -bottom-[20%] -right-[20%] w-[70%] h-[70%] bg-gradient-to-tl from-[#b8860b] to-transparent rounded-full blur-3xl"
-                />
+                {mobileSafe ? (
+                  <>
+                    <div className="absolute -top-[30%] -left-[30%] w-[80%] h-[80%] bg-gradient-to-br from-[#4a3728]/60 to-transparent rounded-full blur-xl" />
+                    <div className="absolute -bottom-[30%] -right-[30%] w-[80%] h-[80%] bg-gradient-to-tl from-[#b8860b]/50 to-transparent rounded-full blur-xl" />
+                  </>
+                ) : (
+                  <>
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 0.12, scale: 1.1 }}
+                        transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
+                        className="absolute -top-[20%] -left-[20%] w-[70%] h-[70%] bg-gradient-to-br from-[#4a3728] to-transparent rounded-full blur-3xl"
+                    />
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 0.12, scale: 1.1 }}
+                        transition={{ duration: 15, repeat: Infinity, repeatType: "reverse", delay: 2 }}
+                        className="absolute -bottom-[20%] -right-[20%] w-[70%] h-[70%] bg-gradient-to-tl from-[#b8860b] to-transparent rounded-full blur-3xl"
+                    />
+                  </>
+                )}
             </div>
 
             {/* Content */}
@@ -95,7 +113,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
                     transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
                     className="space-y-4 w-full"
                 >
-                    <div className="p-6 bg-white/80 backdrop-blur-md border border-[#d4c5b0] rounded-2xl shadow-xl space-y-4">
+                    <div className="p-6 bg-white/80 md:backdrop-blur-md border border-[#d4c5b0] rounded-2xl shadow-xl space-y-4">
                         <Button 
                             onClick={handleLogin}
                             className="w-full h-14 text-lg font-bold bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] shadow-lg transition-all transform hover:scale-[1.02]"
