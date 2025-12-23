@@ -262,6 +262,10 @@ function LayoutContent({ children }) {
                         className="fixed inset-0 z-[200]"
                         exit={{ opacity: 0 }}
                         transition={{ duration: 1 }}
+                        onAnimationStart={() => {
+                            // Fire start sound the moment splash mounts (best effort)
+                            try { require('@/components/SoundManager').soundManager.play('start'); } catch (_) {}
+                        }}
                     >
                         <IntroAnimation />
                     </motion.div>
