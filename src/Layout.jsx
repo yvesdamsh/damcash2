@@ -253,12 +253,42 @@ function LayoutContent({ children }) {
     // Elegant dark mode palette
     const isDark = appTheme === 'dark' || (appTheme === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-    const activeNavTheme = isDark 
-        ? "bg-[#1a120b] text-[#e8dcc5] border-[#3d2b1f]" 
-        : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]";
+    // Theme classes and dynamic colors based on game mode
+    const themeClass = gameMode === 'chess' ? 'theme-chess' : 'theme-checkers';
+    const appBgClass = gameMode === 'chess'
+        ? (isDark ? 'bg-[#0b2e16] text-[#e8f5e9]' : 'bg-[#eaf5ea] text-[#0b2e16]')
+        : (isDark ? 'bg-[#0f0a06] text-[#e8dcc5]' : 'bg-[#e8dcc5] text-slate-900');
+    const bgFilter = gameMode === 'chess'
+        ? (isDark ? 'hue-rotate(80deg) saturate(1.2) contrast(1.1)' : 'hue-rotate(80deg) saturate(1.4) sepia(0.1) contrast(1.1)')
+        : (isDark ? 'grayscale(0.5) contrast(1.2)' : 'sepia(0.3) contrast(1.1)');
+
+    const activeNavTheme = gameMode === 'chess'
+        ? (isDark 
+            ? "bg-[#0f3d1a] text-[#e8f5e9] border-[#166534]" 
+            : "bg-[#1f4d2e] text-[#0b2e16] border-[#14532d] text-[#e8dcc5]")
+        : (isDark 
+            ? "bg-[#1a120b] text-[#e8dcc5] border-[#3d2b1f]" 
+            : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
 
     return (
-        <div className={`min-h-screen font-sans relative transition-colors duration-300 ${isDark ? 'bg-[#0f0a06] text-[#e8dcc5]' : 'bg-[#e8dcc5] text-slate-900'}`}>
+        <div className={`min-h-screen font-sans relative transition-colors duration-300 ${appBgClass} ${themeClass}`}>
+            <style>{`
+.theme-chess {
+  /* Green-dominant palette for chess */
+  --background: 140 40% 94%;
+  --foreground: 140 20% 12%;
+  --primary: 140 38% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 140 30% 20%;
+  --secondary-foreground: 140 35% 92%;
+  --muted: 140 30% 90%;
+  --muted-foreground: 140 18% 30%;
+  --accent: 140 45% 45%;
+  --border: 140 25% 28%;
+  --input: 140 25% 28%;
+  --ring: var(--primary);
+}
+`}</style>
             <style>{`
 :root {
   /* Spacing (8px scale) */
@@ -351,7 +381,7 @@ function LayoutContent({ children }) {
                 style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1575018288729-6e0993577181?q=80&w=2574&auto=format&fit=crop')`,
                     backgroundSize: 'cover',
-                    filter: isDark ? 'grayscale(0.5) contrast(1.2)' : 'sepia(0.3) contrast(1.1)'
+                    filter: bgFilter
                 }}
             />
 
