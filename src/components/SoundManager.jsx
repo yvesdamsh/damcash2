@@ -1,5 +1,6 @@
 // Simple sound manager for game effects
 const SOUNDS = {
+    splash: "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3",
     move: "https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3", // Soft wood click
     capture: "https://assets.mixkit.co/active_storage/sfx/2072/2072-preview.mp3", // Capture/Hit
     start: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3", // Game start

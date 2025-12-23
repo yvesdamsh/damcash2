@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { LogIn, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { soundManager } from '@/components/SoundManager';
 
 export default function SplashScreen({ onPlayAsGuest }) {
     const handleLogin = () => {
@@ -11,6 +12,34 @@ export default function SplashScreen({ onPlayAsGuest }) {
         // If we are already on a "login" path (which shouldn't exist as a page), ensure we go to Home first
         base44.auth.redirectToLogin(window.location.origin + '/Home');
     };
+
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const enabled = localStorage.getItem('soundEnabled') !== 'false';
+        if (!enabled) return;
+
+        const play = () => setTimeout(() => soundManager.play('splash'), 200);
+        const cleanup = () => {
+            window.removeEventListener('pointerdown', unlock);
+            window.removeEventListener('keydown', unlock);
+            window.removeEventListener('touchstart', unlock);
+            window.removeEventListener('click', unlock);
+        };
+        const unlock = () => {
+            try { sessionStorage.setItem('audio_unlocked', 'true'); } catch(_) {}
+            play();
+            cleanup();
+        };
+
+        const hasGesture = sessionStorage.getItem('audio_unlocked') === 'true';
+        if (hasGesture) play();
+
+        window.addEventListener('pointerdown', unlock, { once: true });
+        window.addEventListener('keydown', unlock, { once: true });
+        window.addEventListener('touchstart', unlock, { once: true });
+        window.addEventListener('click', unlock, { once: true });
+        return cleanup;
+    }, []);
 
     return (
         <div className="fixed inset-0 z-[100] bg-[#fdfbf7] flex flex-col items-center justify-center overflow-hidden">
