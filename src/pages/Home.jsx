@@ -143,11 +143,16 @@ export default function Home() {
         try {
             // Parallel fetching for games
             const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
-                base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
-                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
+            base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
+            base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
+            base44.entities.Invitation.filter({ to_user_email: currentUser.email, status: 'pending' }),
+            base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
             ]);
+
+            // Clean up stale invitations older than 24h or already handled elsewhere
+            const nowIso = new Date().toISOString();
+            const freshInvites = (myInvites || []).filter(inv => inv.status === 'pending');
+            setInvitations(freshInvites);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
             // Actually, just showing the highest rated active games is good.
