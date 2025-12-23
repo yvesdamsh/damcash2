@@ -16,8 +16,8 @@ export default function IntroAnimation() {
                         sessionStorage.setItem('start_sound_played', 'true');
                     } catch (_) {}
                 };
-                // Only attempt immediate play if we already have a gesture
-                if (hasUserGesture) tryPlay();
+                // Attempt immediately; if blocked, SoundManager will attach unlock handlers and retry
+                tryPlay();
                 const unlock = () => {
                     sessionStorage.setItem('audio_unlocked', 'true');
                     tryPlay();
