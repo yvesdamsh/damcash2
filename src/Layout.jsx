@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import IntroAnimation from '@/components/IntroAnimation';
+import { soundManager } from '@/components/SoundManager';
 import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { 
@@ -82,6 +83,17 @@ function LayoutContent({ children }) {
              }
         }
     }, []); // Run once on mount to handle initial load state correctly
+
+    // Play splash sound when intro shows (with autoplay fallback handled in SoundManager)
+    React.useEffect(() => {
+        if (showIntro) {
+            try {
+                if (localStorage.getItem('soundEnabled') !== 'false') {
+                    soundManager.play('start');
+                }
+            } catch (_) {}
+        }
+    }, [showIntro]);
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {
@@ -262,10 +274,9 @@ function LayoutContent({ children }) {
                         className="fixed inset-0 z-[200]"
                         exit={{ opacity: 0 }}
                         transition={{ duration: 1 }}
-                        onAnimationStart={() => {
-                            // Fire start sound the moment splash mounts (best effort)
-                            try { require('@/components/SoundManager').soundManager.play('start'); } catch (_) {}
-                        }}
+                                                      onAnimationStart={() => {
+                                                          try { soundManager.play('start'); } catch (_) {}
+                                                      }}
                     >
                         <IntroAnimation />
                     </motion.div>
