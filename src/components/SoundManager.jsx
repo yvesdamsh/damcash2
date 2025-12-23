@@ -51,7 +51,7 @@ class SoundManager {
         
         try {
             if (typeof Audio === 'undefined') return;
-            const audio = this.audioCache[name] || new Audio(SOUNDS[name]);
+            const audio = this.audioCache[name] || (() => { const a = new Audio(); try { a.crossOrigin = 'anonymous'; } catch(_) {} a.src = SOUNDS[name]; return a; })();
             this.audioCache[name] = audio; // Cache it for next time
             audio.volume = 0.5;
             audio.currentTime = 0;
