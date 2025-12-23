@@ -8,6 +8,7 @@ import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";
 import MiniBoard from "@/components/home/MiniBoard";
 import PuzzleEditor from "@/components/home/PuzzleEditor";
+import DailyCheckersPuzzle from "@/components/puzzle/DailyCheckersPuzzle";
 
 export default function DailyPuzzle({ gameType: propGameType }) {
   const { t, formatDate } = useLanguage();
@@ -64,6 +65,9 @@ export default function DailyPuzzle({ gameType: propGameType }) {
             }
 
             return valid ? (
+              gameType === 'checkers' ? (
+                <DailyCheckersPuzzle puzzle={puzzle} board={board} />
+              ) : (
               <div className="space-y-3">
                 <MiniBoard type={gameType} board={board} className="w-full max-w-[420px] mx-auto ring-1 ring-[#4a3728]/15" />
                 <div className="flex items-center gap-2">
@@ -92,6 +96,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                   </Link>
                 </div>
               </div>
+              )
             ) : (
               <PuzzleEditor gameType={gameType} onSaved={(p) => setPuzzle(p)} />
             );
