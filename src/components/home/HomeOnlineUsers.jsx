@@ -179,7 +179,7 @@ export default function HomeOnlineUsers() {
 
       <CardHeader className="pb-2 flex items-center justify-between">
         <CardTitle className="text-sm font-bold uppercase text-gray-600 dark:text-[#b09a85]">
-          {t('home.online_now') || 'En ligne maintenant'} ({rows.length})
+          {t('home.online_now') !== 'home.online_now' ? t('home.online_now') : 'En ligne maintenant'} ({rows.length})
         </CardTitle>
         <Button size="icon" variant="ghost" onClick={fetchOnline} className="h-7 w-7">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -206,7 +206,7 @@ export default function HomeOnlineUsers() {
               </div>
               <div className="flex-1 min-w-0">
                 <button onClick={() => !isMe && openConfig(u)} disabled={isMe} className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 hover:underline truncate disabled:opacity-60">
-                  {isMe ? (u.username || u.full_name || 'Moi') + ' • ' + (t('home.you') || 'Vous') : (u.username || u.full_name || 'Joueur')}
+                  {isMe ? (u.username || u.full_name || 'Moi') : (u.username || u.full_name || 'Joueur')}
                 </button>
                 <div className="text-[10px] text-gray-500 truncate">
                   {online ? (t('home.status_online') || 'En ligne') : (t('home.status_recent') || 'Récemment')}
