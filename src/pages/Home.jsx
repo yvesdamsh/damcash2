@@ -41,6 +41,14 @@ export default function Home() {
 
     const [user, setUser] = useState(null);
     const [showSplash, setShowSplash] = useState(true);
+
+    // Disable SplashScreen on small screens to avoid mobile crashes/perf issues
+    useEffect(() => {
+        try {
+            const isSmall = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+            if (isSmall) setShowSplash(false);
+        } catch (_) {}
+    }, []);
     const [loading, setLoading] = useState(true);
     const [joinCode, setJoinCode] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -597,7 +605,7 @@ export default function Home() {
 
     if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin" /></div>;
 
-    if (showSplash && !user) {
+    if (showSplash && !user && !(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches)) {
         return <SplashScreen onPlayAsGuest={handleGuestPlay} />;
     }
 
