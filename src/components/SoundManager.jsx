@@ -1,9 +1,9 @@
 // Simple sound manager for game effects
 const SOUNDS = {
-    splash: "https://raw.githubusercontent.com/JimLynchCodes/Game-Sound-Effects/refs/heads/master/Sounds/Splash_Small.wav",
+    splash: "https://cdn.jsdelivr.net/gh/JimLynchCodes/Game-Sound-Effects/Sounds/Splash_Small.wav",
     move: "https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3", // Soft wood click
     capture: "https://assets.mixkit.co/active_storage/sfx/2072/2072-preview.mp3", // Capture/Hit
-    start: "https://raw.githubusercontent.com/JimLynchCodes/Game-Sound-Effects/refs/heads/master/Sounds/Splash_Small.wav", // Game start (replaced to avoid 403)
+    start: "https://cdn.jsdelivr.net/gh/JimLynchCodes/Game-Sound-Effects/Sounds/Splash_Small.wav", // Game start (CDN to avoid 403)
     win: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3", // Success/Win
     loss: "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3", // Fail/Loss
     notify: "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3", // Notification bell

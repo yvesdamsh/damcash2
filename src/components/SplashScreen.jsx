@@ -7,10 +7,10 @@ import { soundManager } from '@/components/SoundManager';
 
 export default function SplashScreen({ onPlayAsGuest }) {
     const handleLogin = () => {
-        // Explicitly set the redirect URL to the home page
-        // Use window.location.origin to ensure absolute URL
-        // If we are already on a "login" path (which shouldn't exist as a page), ensure we go to Home first
-        base44.auth.redirectToLogin(window.location.origin + '/Home');
+        try { soundManager.play('splash'); } catch (_) {}
+        setTimeout(() => {
+            base44.auth.redirectToLogin(window.location.origin + '/Home');
+        }, 80);
     };
 
     React.useEffect(() => {
@@ -100,7 +100,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
                         </div>
 
                         <Button 
-                            onClick={onPlayAsGuest}
+                            onClick={() => { try { soundManager.play('splash'); } catch (_) {} ; onPlayAsGuest && onPlayAsGuest(); }}
                             variant="outline"
                             className="w-full h-12 border-2 border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6] hover:text-[#4a3728] font-bold"
                         >
