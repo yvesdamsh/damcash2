@@ -12,6 +12,7 @@ import { Eraser, Save, Crown } from "lucide-react";
 
 export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
   const { t } = useLanguage();
+  const tf = (key, fallback) => (t(key) === key ? fallback : t(key));
 
   // Board state (start from initial game setup so it "reverts" to initial after 24h)
   const [chessBoard, setChessBoard] = React.useState(gameType === 'chess' ? initChess() : null);
@@ -21,6 +22,8 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
   const [selected, setSelected] = React.useState(gameType === 'chess' ? 'Q' : 1); // null = erase
   const [difficulty, setDifficulty] = React.useState('medium');
   const [title, setTitle] = React.useState(t('home.daily_puzzle') === 'home.daily_puzzle' ? 'Daily Puzzle' : t('home.daily_puzzle'));
+  const [fenText, setFenText] = React.useState('');
+  const [fenError, setFenError] = React.useState('');
 
   React.useEffect(() => {
     if (gameType === 'chess') {
@@ -83,7 +86,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
     <Card className="bg-white/90 dark:bg-[#1e1814]/90 border border-dashed border-[#d4c5b0] dark:border-[#3d2b1f]">
       <CardHeader>
         <CardTitle className="text-[#4a3728] dark:text-[#e8dcc5]">
-          {t('home.propose_puzzle') || 'Proposer un puzzle (24h)'}
+          {tf('home.propose_puzzle', 'Proposer un puzzle (24h)')
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -96,9 +99,9 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
           />
 
           <div className="space-y-3">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('home.puzzle_title') || 'Titre du puzzle'} />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tf('home.puzzle_title', 'Titre du puzzle')} />
             <div>
-              <label className="text-xs text-gray-500">{t('home.difficulty') || 'Difficulté'}</label>
+              <label className="text-xs text-gray-500">{tf('home.difficulty', 'Difficulté')}</label>
               <Select value={difficulty} onValueChange={setDifficulty}>
                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -109,9 +112,73 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => {
+                  if (gameType==='chess') {
+                    setChessBoard(Array.from({length:8},()=>Array(8).fill(null)));
+                  } else {
+                    setCheckersBoard(Array.from({length:8},()=>Array(8).fill(0)));
+                  }
+                }}>
+                  {tf('home.clear_board','Vider le plateau')}
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  if (gameType==='chess') {
+                    setChessBoard(initChess());
+                  } else {
+                    setCheckersBoard(initCheckers());
+                  }
+                }}>
+                  {tf('home.start_position','Position de départ')}
+                </Button>
+              </div>
+
+              {gameType === 'chess' && (
+                <div className="space-y-2">
+                  <Input
+                    value={fenText || ''}
+                    onChange={(e) => { setFenText(e.target.value); setFenError(''); }}
+                    placeholder={tf('home.paste_fen','Coller FEN (ex: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR)')}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const part = (fenText || '').trim().split(' ')[0];
+                      const ranks = part.split('/');
+                      if (ranks.length !== 8) { setFenError(tf('home.fen_invalid','FEN invalide')); return; }
+                      const board = [];
+                      for (let r=0;r<8;r++) {
+                        const row = [];
+                        let count = 0;
+                        for (const ch of ranks[r]) {
+                          if (/[1-8]/.test(ch)) {
+                            const n = parseInt(ch,10);
+                            for (let i=0;i<n;i++){ row.push(null); count++; }
+                          } else if (/[prnbqkPRNBQK]/.test(ch)) {
+                            row.push(ch);
+                            count++;
+                          } else {
+                            setFenError(tf('home.fen_invalid','FEN invalide')); return;
+                          }
+                        }
+                        if (count !== 8) { setFenError(tf('home.fen_invalid','FEN invalide')); return; }
+                        board.push(row);
+                      }
+                      setChessBoard(board);
+                      setFenError('');
+                    }}
+                  >
+                    {tf('home.apply_fen','Appliquer FEN')}
+                  </Button>
+                  {fenError && <p className="text-xs text-red-600">{fenError}</p>}
+                </div>
+              )}
+            </div>
+
             {gameType === 'chess' ? (
               <div className="space-y-1">
-                <div className="text-xs text-gray-500">{t('home.piece_palette') || 'Palette de pièces'}</div>
+                <div className="text-xs text-gray-500">{tf('home.piece_palette', 'Palette de pièces')}</div>
                 <div className="grid grid-cols-7 gap-1">
                   {['K','Q','R','B','N','P','k','q','r','b','n','p'].map((p) => (
                     <button
@@ -129,7 +196,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
               </div>
             ) : (
               <div className="space-y-1">
-                <div className="text-xs text-gray-500">{t('home.piece_palette') || 'Palette de pions'}</div>
+                <div className="text-xs text-gray-500">{tf('home.piece_palette', 'Palette de pions')}</div>
                 <div className="grid grid-cols-5 gap-1">
                   {[{v:1,label:'W'},{v:3,label:'W👑'},{v:2,label:'B'},{v:4,label:'B👑'}].map(({v,label}) => (
                     <button key={v} onClick={() => setSelected(v)} className={`h-9 rounded border flex items-center justify-center ${selected===v?'bg-amber-100 border-amber-300':'bg-white border-gray-300'}`}>
@@ -145,9 +212,9 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
             )}
 
             <Button onClick={savePuzzle} className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">
-              <Save className="w-4 h-4 mr-2" /> {t('home.save_public') || 'Sauvegarder pour le public (24h)'}
+              <Save className="w-4 h-4 mr-2" /> {tf('home.save_public', 'Publier (24h)')}
             </Button>
-            <p className="text-[11px] text-gray-500">{t('home.save_notice') || 'Une fois sauvegardé, ce puzzle restera visible 24h puis le plateau se réinitialisera.'}</p>
+            <p className="text-[11px] text-gray-500">{tf('home.save_notice', 'Une fois sauvegardé, ce puzzle restera visible 24h puis le plateau se réinitialisera.')}</p>
           </div>
         </div>
       </CardContent>
