@@ -24,7 +24,7 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               const sym = map[piece];
               if (!sym) return null;
               const isWhite = typeof piece === 'string' && piece === piece.toUpperCase();
-              return <span className={`text-xl md:text-2xl ${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
+              return <span className={`${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
             } else {
               // checkers: 1 W man, 2 B man, 3 W king, 4 B king
               const isWhite = piece === 1 || piece === 3;
