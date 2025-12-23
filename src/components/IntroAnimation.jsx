@@ -4,20 +4,31 @@ import { soundManager } from '@/components/SoundManager';
 
 export default function IntroAnimation() {
     useEffect(() => {
-        // Try playing the start sound; also unlock on first user interaction if autoplay is blocked
-        const tryPlay = () => soundManager.play('start');
-        tryPlay();
-        const unlock = () => {
-            tryPlay();
-            window.removeEventListener('pointerdown', unlock);
-            window.removeEventListener('keydown', unlock);
-        };
-        window.addEventListener('pointerdown', unlock, { once: true });
-        window.addEventListener('keydown', unlock, { once: true });
-        return () => {
-            window.removeEventListener('pointerdown', unlock);
-            window.removeEventListener('keydown', unlock);
-        };
+        // Respect user preference and browser autoplay policies
+        if (typeof window !== 'undefined') {
+            const enabled = localStorage.getItem('soundEnabled') !== 'false';
+            if (enabled) {
+                const tryPlay = () => soundManager.play('start');
+                tryPlay();
+                const unlock = () => {
+                    tryPlay();
+                    window.removeEventListener('pointerdown', unlock);
+                    window.removeEventListener('keydown', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                    window.removeEventListener('click', unlock);
+                };
+                window.addEventListener('pointerdown', unlock, { once: true });
+                window.addEventListener('keydown', unlock, { once: true });
+                window.addEventListener('touchstart', unlock, { once: true });
+                window.addEventListener('click', unlock, { once: true });
+                return () => {
+                    window.removeEventListener('pointerdown', unlock);
+                    window.removeEventListener('keydown', unlock);
+                    window.removeEventListener('touchstart', unlock);
+                    window.removeEventListener('click', unlock);
+                };
+            }
+        }
     }, []);
 
     return (
