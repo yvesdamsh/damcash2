@@ -265,7 +265,7 @@ function LayoutContent({ children }) {
     const activeNavTheme = gameMode === 'chess'
         ? (isDark 
             ? "bg-[#0f3d1a] text-[#e8f5e9] border-[#166534]" 
-            : "bg-[#1f4d2e] text-[#0b2e16] border-[#14532d] text-[#e8dcc5]")
+            : "bg-[#1f4d2e] text-[#e8f5e9] border-[#14532d]")
         : (isDark 
             ? "bg-[#1a120b] text-[#e8dcc5] border-[#3d2b1f]" 
             : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
