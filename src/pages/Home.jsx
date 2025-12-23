@@ -420,24 +420,7 @@ export default function Home() {
 
         try {
             // Wager Check
-            if (gameConfig.stake > 0) {
-                try {
-                    const payRes = await base44.functions.invoke('walletManager', { 
-                        action: 'pay_entry_fee', 
-                        amount: gameConfig.stake,
-                        gameId: 'temp_check' // Just check balance first, or use separate action?
-                        // Actually we should deduct AFTER creation or during creation transactionally.
-                        // But here we do client side optimistic or two-step.
-                        // Better: create game then pay. If pay fails, delete game.
-                        // Or simpler: check balance locally via get_balance first.
-                    });
-                     // Ideally, server creates game AND deducts.
-                     // For now, let's just assume user has funds if we checked earlier, or handle error.
-                     // Let's stick to: Create Game -> Pay.
-                } catch(e) {
-                    // alert("Solde insuffisant"); return;
-                }
-            }
+            // Note: stake payment happens AFTER the game is created (with the real gameId). Pre-check removed to avoid server errors.
 
             const initialBoard = gameType === 'chess' 
                 ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
