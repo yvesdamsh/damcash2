@@ -2,8 +2,9 @@ import React from "react";
 
 export default function MiniBoard({ type = 'chess', className = '', board = null, onSquareClick }) {
   const n = type === 'chess' ? 8 : 10;
-  const darkColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#0f3d1a' : '#1f4d2e') : (document.documentElement.classList.contains('dark') ? '#3d2b1f' : '#8b6a4a');
-  const lightColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#154b26' : '#cfe8cf') : (document.documentElement.classList.contains('dark') ? '#2a201a' : '#e8dcc5');
+  const isDark = document.documentElement.classList.contains('dark');
+  const darkColor = type === 'chess' ? (isDark ? '#0f3d1a' : '#1f4d2e') : (isDark ? '#3d2b1f' : '#8b6a4a');
+  const lightColor = type === 'chess' ? (isDark ? '#cfe8cf' : '#eaf5ea') : (isDark ? '#e8dcc5' : '#f5ead7');
 
   return (
     <div className={`w-full aspect-square rounded-xl shadow-inner overflow-hidden border border-black/10 dark:border-white/10 ${className}`}>
