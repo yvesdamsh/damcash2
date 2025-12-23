@@ -87,16 +87,14 @@ class SoundManager {
                     window.removeEventListener('keydown', unlock);
                     window.removeEventListener('mousedown', unlock);
                 };
-                const msg = (e && e.message) ? e.message.toLowerCase() : '';
-                if (e && (e.name === 'NotAllowedError' || e.name === 'NotSupportedError' || /play\(\) failed|not supported/.test(msg))) {
-                    window.addEventListener('pointerdown', unlock, { once: true });
-                    window.addEventListener('touchstart', unlock, { once: true });
-                    window.addEventListener('click', unlock, { once: true });
-                    window.addEventListener('keydown', unlock, { once: true });
-                    window.addEventListener('mousedown', unlock, { once: true });
-                } else {
-                    console.debug('Sound play failed', e);
-                }
+                // On any error (autoplay, network, unsupported), attach unlock handlers and provide a gentle fallback beep
+                window.addEventListener('pointerdown', unlock, { once: true });
+                window.addEventListener('touchstart', unlock, { once: true });
+                window.addEventListener('click', unlock, { once: true });
+                window.addEventListener('keydown', unlock, { once: true });
+                window.addEventListener('mousedown', unlock, { once: true });
+                // Try a short beep after a moment; if blocked it will be ignored until the next gesture triggers unlock
+                setTimeout(beep, 400);
             });
         } catch (e) {
             console.error("Audio error", e);
