@@ -2,12 +2,11 @@ import React from "react";
 
 export default function MiniBoard({ type = 'chess', className = '', board = null, onSquareClick }) {
   const n = type === 'chess' ? 8 : 10;
-  const isDark = document.documentElement.classList.contains('dark');
-  const darkColor = type === 'chess' ? (isDark ? '#0f3d1a' : '#1f4d2e') : (isDark ? '#3d2b1f' : '#8b6a4a');
-  const lightColor = type === 'chess' ? (isDark ? '#cfe8cf' : '#eaf5ea') : (isDark ? '#e8dcc5' : '#f5ead7');
+  const darkColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#0f3d1a' : '#1f4d2e') : (document.documentElement.classList.contains('dark') ? '#3d2b1f' : '#8b6a4a');
+  const lightColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#154b26' : '#cfe8cf') : (document.documentElement.classList.contains('dark') ? '#2a201a' : '#f0e6d2');
 
   return (
-    <div className={`w-full aspect-square rounded-xl shadow-inner overflow-hidden border border-black/20 dark:border-white/20 ${className}`}>
+    <div className={`w-full aspect-square rounded-xl shadow-inner overflow-hidden border border-black/10 dark:border-white/10 ${className}`}>
       <div
         className="grid w-full h-full"
         style={{ gridTemplateColumns: `repeat(${n}, 1fr)`, gridTemplateRows: `repeat(${n}, 1fr)` }}
@@ -24,15 +23,15 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               const sym = map[piece];
               if (!sym) return null;
               const isWhite = typeof piece === 'string' && piece === piece.toUpperCase();
-              return <span className={`${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
+              return <span className={`text-xl md:text-2xl ${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
             } else {
               // checkers: 1 W man, 2 B man, 3 W king, 4 B king
               const isWhite = piece === 1 || piece === 3;
               const isKing = piece === 3 || piece === 4;
               return (
-                <div className="relative w-[min(2.2vw,22px)] h-[min(2.2vw,22px)] md:w-[min(1.2vw,24px)] md:h-[min(1.2vw,24px)]">
+                <div className="relative w-5 h-5 md:w-6 md:h-6">
                   <div className="absolute inset-0 rounded-full" style={{ backgroundColor: isWhite ? '#f5f5f5' : '#2b2b2b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.4)' }} />
-                  {isKing && <span className="absolute -top-1 -right-1 text-[min(1.8vw,10px)] md:text-[10px]">👑</span>}
+                  {isKing && <span className="absolute -top-1 -right-1 text-[9px] md:text-[10px]">👑</span>}
                 </div>
               );
             }
@@ -43,7 +42,7 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               type="button"
               onClick={onSquareClick ? () => onSquareClick(r, c) : undefined}
               style={{ backgroundColor: dark ? darkColor : lightColor }}
-              className="w-full h-full flex items-center justify-center text-[min(2.3vw,22px)] md:text-[min(1.2vw,24px)]"
+              className="w-full h-full flex items-center justify-center border border-black/5 dark:border-white/10"
             >
               {renderPiece()}
             </button>

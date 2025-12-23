@@ -64,7 +64,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
 
             return valid ? (
               <div className="space-y-3">
-                <MiniBoard type={gameType} board={board} />
+                <MiniBoard type={gameType} board={board} className="w-full max-w-[420px] mx-auto ring-1 ring-[#4a3728]/15" />
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
                     {puzzle.difficulty || 'medium'}
