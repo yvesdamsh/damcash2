@@ -86,7 +86,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
     <Card className="bg-white/90 dark:bg-[#1e1814]/90 border border-dashed border-[#d4c5b0] dark:border-[#3d2b1f]">
       <CardHeader>
         <CardTitle className="text-[#4a3728] dark:text-[#e8dcc5]">
-          {tf('home.propose_puzzle', 'Proposer un puzzle (24h)')
+          {tf('home.propose_puzzle', 'Proposer un puzzle (24h)')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
