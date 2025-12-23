@@ -44,11 +44,11 @@ export function useRobustWebSocket(url, options = {}) {
         const host = window.location.host;
         const path = url.startsWith('http') || url.startsWith('ws') ? url : `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
 
-        console.log(`Connecting to ${path}...`);
+        console.log('[WS][CONNECT]', new Date().toISOString(), path);
         const ws = new WebSocket(path);
 
         ws.onopen = (event) => {
-            console.log(`Connected to ${path}`);
+            console.log('[WS][OPEN]', new Date().toISOString(), path);
             setReadyState(WebSocket.OPEN);
             reconnectCountRef.current = 0;
             
@@ -80,7 +80,7 @@ export function useRobustWebSocket(url, options = {}) {
 
             if (shouldReconnectRef.current && reconnectCountRef.current < reconnectAttempts) {
                 const timeout = reconnectInterval * Math.pow(1.5, reconnectCountRef.current);
-                console.log(`Disconnected. Reconnecting in ${timeout}ms...`);
+                console.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms`);
                 reconnectTimerRef.current = setTimeout(() => {
                     reconnectCountRef.current++;
                     connect();
@@ -89,7 +89,7 @@ export function useRobustWebSocket(url, options = {}) {
         };
 
         ws.onerror = (event) => {
-            console.error("WebSocket error:", event);
+            console.error('[WS][ERROR]', new Date().toISOString(), event);
             if (onErrorRef.current) onErrorRef.current(event);
         };
 

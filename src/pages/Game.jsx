@@ -164,6 +164,7 @@ export default function Game() {
     }, [location.search, currentUser]);
 
     const prevGameRef = useRef();
+    const moveTimingsRef = useRef(new Map());
 
     // Handle Game State Updates (Parsing & Sounds)
     useEffect(() => {
@@ -451,8 +452,20 @@ export default function Game() {
             if (!data) return;
             
             if (data.type === 'GAME_UPDATE') {
-                if (data.payload) {
-                    setGame(prev => {
+                 if (data.payload) {
+                     // Fast path: apply immediately for instant UI feedback
+                     setGame(prev => ({ ...prev, ...data.payload }));
+                     // Timing: compute roundtrip if matching last_move_at
+                     try {
+                         const k = data.payload.last_move_at;
+                         if (k && moveTimingsRef.current.has(k)) {
+                             const t0 = moveTimingsRef.current.get(k);
+                             const dt = Math.round(performance.now() - t0);
+                             console.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
+                             moveTimingsRef.current.delete(k);
+                         }
+                     } catch (_) {}
+                     setGame(prev => {
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
 
@@ -1743,9 +1756,15 @@ export default function Game() {
                                 <span>Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}</span>
                                 <div className="h-4 w-px bg-[#6b5138]/20"></div>
                                 {socket && socket.readyState === 1 ? (
-                                    <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="Connecté" />
+                                        <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
+                                    </div>
                                 ) : (
-                                    <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
+                                    <div className="flex items-center gap-1">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Déconnecté" />
+                                        <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
+                                    </div>
                                 )}
                             </div>
                             {!isAiGame && (
