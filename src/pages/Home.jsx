@@ -19,6 +19,8 @@ import RejoinGameDialog from '@/components/RejoinGameDialog';
 import HomeOnlineUsers from '@/components/home/HomeOnlineUsers.jsx';
 import NextTournamentBanner from '@/components/NextTournamentBanner';
 import LiveGameEmbed from '@/components/home/LiveGameEmbed';
+import DailyPuzzle from '@/components/home/DailyPuzzle';
+import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 
 export default function Home() {
     const { t } = useLanguage();
@@ -986,6 +988,12 @@ export default function Home() {
 
                             <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> {t('home.learn_play')}</Button>
                         </div>
+                    </div>
+
+                    {/* Extras: Daily Puzzle + Upcoming Tournaments */}
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <DailyPuzzle gameType={gameType} />
+                        <UpcomingTournaments />
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8">
