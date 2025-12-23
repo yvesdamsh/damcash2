@@ -43,7 +43,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
           <Puzzle className="w-5 h-5" /> {tf('home.daily_puzzle', 'Puzzle du jour')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 overflow-visible">
+      <CardContent className="space-y-4">
         <style>{`.mini-board-square{outline:1px solid rgba(0,0,0,0.08)} .dark .mini-board-square{outline-color:rgba(255,255,255,0.1)}`}</style>
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-gray-500">

@@ -10,7 +10,7 @@ export default function DraughtsBoard({ board, className = "", size = 520 }) {
     <div className={`relative mx-auto pb-6 pr-6 ${className}`} style={{ width: '100%', maxWidth: size, minWidth: 260 }}>
       <MiniBoard type="checkers" board={board} className="w-full" />
       {/* Bottom file letters */}
-      <div className="absolute -bottom-6 left-0 right-0 grid" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
+      <div className="absolute bottom-0 left-0 right-0 grid pointer-events-none" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
         {files.map((f, idx) => (
           <div key={idx} className="text-[10px] md:text-xs text-center text-[#6b5138] dark:text-[#b09a85] font-semibold">
             {f}
@@ -18,7 +18,7 @@ export default function DraughtsBoard({ board, className = "", size = 520 }) {
         ))}
       </div>
       {/* Right rank numbers */}
-      <div className="absolute top-0 -right-6 grid" style={{ gridTemplateRows: `repeat(${n}, 1fr)`, height: "100%" }}>
+      <div className="absolute top-0 right-0 grid pointer-events-none" style={{ gridTemplateRows: `repeat(${n}, 1fr)`, height: "100%" }}>
         {ranks.map((r, idx) => (
           <div key={idx} className="text-[10px] md:text-xs flex items-center text-[#6b5138] dark:text-[#b09a85] font-semibold h-full">
             {r}
