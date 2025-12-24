@@ -6,7 +6,7 @@ import { Loader2, Puzzle, Brain } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";
-import MiniBoard from "@/components/home/MiniBoard";
+import ChessBoard from "@/components/ChessBoard";
 import PuzzleEditor from "@/components/home/PuzzleEditor";
 import DailyCheckersPuzzle from "@/components/puzzle/DailyCheckersPuzzle";
 
@@ -70,7 +70,16 @@ export default function DailyPuzzle({ gameType: propGameType }) {
               ) : (
                 valid ? (
                   <div className="space-y-3">
-                    <MiniBoard type={gameType} board={board} className="w-full max-w-[520px] mx-auto ring-1 ring-[#4a3728]/15" />
+                    <div className="w-full max-w-[520px] mx-auto">
+                      <ChessBoard 
+                        board={board} 
+                        onSquareClick={() => {}} 
+                        validMoves={[]} 
+                        currentTurn="white" 
+                        orientation="white" 
+                        pieceSet="standard"
+                      />
+                    </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
                         {puzzle.difficulty || 'medium'}
