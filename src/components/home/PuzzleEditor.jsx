@@ -92,12 +92,29 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 items-start xl:grid-cols-[1fr_360px]">
-          <MiniBoard
-            type={gameType}
-            board={gameType === 'chess' ? chessBoard : checkersBoard}
-            onSquareClick={handleSquareClick}
-            className="bg-white/60 ring-1 ring-[#4a3728]/15 min-h-[300px] sm:min-h-[360px] md:min-h-[420px] max-w-[520px] mx-auto"
-          />
+          <div className="bg-white/60 ring-1 ring-[#4a3728]/15 max-w-[520px] mx-auto">
+            {gameType === 'chess' ? (
+              <ChessBoard 
+                board={chessBoard}
+                onSquareClick={handleSquareClick}
+                validMoves={[]}
+                currentTurn="white"
+                orientation="white"
+                pieceSet="standard"
+                isSoloMode
+              />
+            ) : (
+              <CheckerBoard 
+                board={checkersBoard}
+                onSquareClick={handleSquareClick}
+                validMoves={[]}
+                currentTurn="white"
+                playerColor="white"
+                orientation="white"
+                isSoloMode
+              />
+            )}
+          </div>
 
           <div className="space-y-3">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tf('home.puzzle_title', 'Titre du puzzle')} />
