@@ -741,7 +741,7 @@ export default function Game() {
                     if (isActive) setIsAiThinking(false);
                 }
             };
-            timer = setTimeout(makeAiMove, 1000);
+            timer = setTimeout(makeAiMove, 150);
         }
 
         return () => {

@@ -727,7 +727,7 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.05 * 1000, 200), 10000) : 5000;
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.02 * 1000, 100), 2000) : 800;
         const deadline = startTime + timeBudget;
 
         if (!board || !turn) {
@@ -750,6 +750,12 @@ Deno.serve(async (req) => {
             });
         }
 
+        // Fast path: if only one legal move, play it immediately
+        const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights || { wK: true, wQ: true, bK: true, bQ: true });
+        if (rootMoves.length === 1) {
+            return Response.json({ move: rootMoves[0], score: 0, source: 'forced' });
+        }
+
         // 2. Difficulty & Adaptation
         let maxDepth = 3;
         let randomness = 0; // 0-100 probability of picking suboptimal move
@@ -764,11 +770,11 @@ Deno.serve(async (req) => {
         } else {
             switch (difficulty) {
                 case 'easy': maxDepth = 1; randomness = 50; break;
-                case 'medium': maxDepth = 3; randomness = 20; break;
-                case 'hard': maxDepth = 4; randomness = 5; break;
-                case 'expert': maxDepth = 5; randomness = 0; break;
-                case 'grandmaster': maxDepth = 6; randomness = 0; break;
-                default: maxDepth = 4;
+                case 'medium': maxDepth = 2; randomness = 25; break;
+                case 'hard': maxDepth = 3; randomness = 10; break;
+                case 'expert': maxDepth = 4; randomness = 5; break;
+                case 'grandmaster': maxDepth = 5; randomness = 0; break;
+                default: maxDepth = 3;
             }
         }
 

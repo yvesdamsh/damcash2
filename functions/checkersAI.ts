@@ -508,11 +508,31 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.05 * 1000, 200), 10000) : 5000;
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.02 * 1000, 100), 2000) : 800;
         const deadline = startTime + timeBudget;
 
         if (!board || !turn) {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
+        }
+
+        // Fast paths to speed up move selection
+        // 1) If only one legal move, play it immediately
+        const rootMoves = getAllPlayableMoves(board, turn, activePiece || null);
+        if (rootMoves.length === 1) {
+            const only = rootMoves[0];
+            return Response.json({ move: only.steps[0], score: 0, fullSequence: only.steps });
+        }
+        // 2) If a multi-capture continuation is enforced, pick the longest chain without deep search
+        if (activePiece) {
+            const pieceAt = (board[activePiece.r] || [])[activePiece.c];
+            if (pieceAt) {
+                const chains = getFullCaptureChains(board, activePiece.r, activePiece.c, pieceAt);
+                if (chains.length > 0) {
+                    chains.sort((a,b) => b.score - a.score);
+                    const best = chains[0];
+                    return Response.json({ move: best.steps[0], score: best.score * 100, fullSequence: best.steps });
+                }
+            }
         }
 
         // Depth & Randomness Configuration
@@ -521,18 +541,18 @@ Deno.serve(async (req) => {
 
         if (difficulty === 'adaptive') {
              if (userElo < 800) { maxDepth = 2; randomness = 30; }
-             else if (userElo < 1200) { maxDepth = 4; randomness = 15; }
-             else if (userElo < 1600) { maxDepth = 6; randomness = 5; }
-             else if (userElo < 2000) { maxDepth = 8; randomness = 0; }
-             else { maxDepth = 10; randomness = 0; }
+             else if (userElo < 1200) { maxDepth = 3; randomness = 20; }
+             else if (userElo < 1600) { maxDepth = 4; randomness = 10; }
+             else if (userElo < 2000) { maxDepth = 5; randomness = 5; }
+             else { maxDepth = 6; randomness = 0; }
         } else {
             switch (difficulty) {
                 case 'easy': maxDepth = 2; randomness = 40; break;
-                case 'medium': maxDepth = 4; randomness = 10; break;
-                case 'hard': maxDepth = 6; randomness = 0; break;
-                case 'expert': maxDepth = 8; randomness = 0; break;
-                case 'grandmaster': maxDepth = 10; randomness = 0; break;
-                default: maxDepth = 6;
+                case 'medium': maxDepth = 3; randomness = 15; break;
+                case 'hard': maxDepth = 4; randomness = 5; break;
+                case 'expert': maxDepth = 5; randomness = 0; break;
+                case 'grandmaster': maxDepth = 6; randomness = 0; break;
+                default: maxDepth = 4;
             }
         }
         
@@ -545,7 +565,7 @@ Deno.serve(async (req) => {
         let currentDepth = 2; 
         
         // If activePiece (multi-jump in progress), force high depth (fast calculation)
-        if (activePiece) { maxDepth = 12; randomness = 0; }
+        if (activePiece) { maxDepth = 6; randomness = 0; }
 
         while (currentDepth <= maxDepth) {
             if (!activePiece && Date.now() > deadline - 50) break;
