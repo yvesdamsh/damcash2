@@ -639,8 +639,8 @@ export default function Game() {
         
         if (isAiTurn && !isAiThinking) {
             const makeAiMove = async () => {
-                // Guard: ensure it's truly AI's turn for local-ai games
-                if (!game || game.id !== 'local-ai') return;
+                // Guard: ensure it's truly AI's turn
+                if (!game) return;
                 const aiTurnCheck = (game.current_turn === 'white' && game.white_player_id === 'ai') || (game.current_turn === 'black' && game.black_player_id === 'ai');
                 if (!aiTurnCheck) return;
                 if (!isActive) return;
@@ -665,15 +665,10 @@ export default function Game() {
                     });
 
                     let res = null;
-                    if (game.id === 'local-ai') {
-                        // For local AI games, skip network call entirely to guarantee instant moves
-                        res = null; // force local fallback path below
-                    } else {
-                        try {
-                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
-                        } catch (_) {
-                            res = null; // fall back to local move
-                        }
+                    try {
+                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
+                    } catch (_) {
+                        res = null; // fall back to local move
                     }
                     
                     if (!isActive) return;
