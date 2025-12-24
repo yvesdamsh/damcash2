@@ -665,10 +665,15 @@ export default function Game() {
                     });
 
                     let res = null;
-                    try {
-                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
-                    } catch (_) {
-                        res = null; // fall back to local move
+                    if (game.id === 'local-ai') {
+                        // For local AI games, skip network call entirely to guarantee instant moves
+                        res = null; // force local fallback path below
+                    } else {
+                        try {
+                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
+                        } catch (_) {
+                            res = null; // fall back to local move
+                        }
                     }
                     
                     if (!isActive) return;
