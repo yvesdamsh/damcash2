@@ -639,6 +639,10 @@ export default function Game() {
         
         if (isAiTurn && !isAiThinking) {
             const makeAiMove = async () => {
+                // Guard: ensure it's truly AI's turn for local-ai games
+                if (!game || game.id !== 'local-ai') return;
+                const aiTurnCheck = (game.current_turn === 'white' && game.white_player_id === 'ai') || (game.current_turn === 'black' && game.black_player_id === 'ai');
+                if (!aiTurnCheck) return;
                 if (!isActive) return;
                 setIsAiThinking(true);
                 try {
