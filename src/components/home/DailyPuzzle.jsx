@@ -96,7 +96,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
                   <div className="space-y-3">
                     <div className="w-full max-w-[520px] mx-auto">
                       <ChessBoard 
-                        board={board} 
+                        board={(Array.isArray(board) && board.length===8 && board.every(r=>Array.isArray(r)&&r.length===8)) ? board : Array.from({length:8},()=>Array(8).fill(null))} 
                         onSquareClick={() => {}} 
                         validMoves={[]} 
                         currentTurn="white" 
