@@ -655,11 +655,21 @@ export default function Game() {
                         timeLeft: getTimeLeft(aiColor)
                     };
 
-                    const res = await base44.functions.invoke(aiFunctionName, payload);
+                    const callWithTimeout = (promise, ms = 1200) => new Promise((resolve, reject) => {
+                        const id = setTimeout(() => reject(new Error('AI_TIMEOUT')), ms);
+                        promise.then((v) => { clearTimeout(id); resolve(v); }).catch((e) => { clearTimeout(id); reject(e); });
+                    });
+
+                    let res = null;
+                    try {
+                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
+                    } catch (_) {
+                        res = null; // fall back to local move
+                    }
                     
                     if (!isActive) return;
 
-                    if (res.data && res.data.move) {
+                    if (res?.data?.move) {
                         const move = res.data.move;
                         
                         if (game.game_type === 'chess') {
@@ -733,6 +743,74 @@ export default function Game() {
                                 white_seconds_left: whiteTime,
                                 black_seconds_left: blackTime
                             }));
+                        }
+                    } else {
+                        // Local fallback to guarantee instant move
+                        if (game.game_type === 'chess') {
+                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                            if (moves.length > 0) {
+                                await executeChessMoveFinal(moves[0]);
+                            }
+                        } else {
+                            const all = getCheckersValidMoves(board, aiColor);
+                            if (all.length > 0) {
+                                const pick = all.find(m => !!m.captured) || all[0];
+                                // Reuse same execution path as above
+                                const move = { from: pick.from, to: pick.to, captured: pick.captured };
+                                const formattedMove = {
+                                    from: {r: move.from.r, c: move.from.c},
+                                    to: {r: move.to.r, c: move.to.c},
+                                    captured: move.captured ? {r: move.captured.r, c: move.captured.c} : null
+                                };
+                                const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
+                                let mustContinue = false;
+                                if (formattedMove.captured && !promoted) {
+                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
+                                    const { captures } = getMovesForPiece(newBoard, formattedMove.to.r, formattedMove.to.c, newBoard[formattedMove.to.r][formattedMove.to.c], true);
+                                    if (captures.length > 0) mustContinue = true;
+                                }
+                                const movesList = game.moves ? JSON.parse(game.moves) : [];
+                                const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
+                                const newMoveEntry = { 
+                                    type: 'checkers', from: move.from, to: move.to, 
+                                    captured: !!move.captured, board: JSON.stringify(newBoard),
+                                    color: game.current_turn,
+                                    notation: `${getNum(move.from.r, move.from.c)}${move.captured ? 'x' : '-'}${getNum(move.to.r, move.to.c)}`
+                                };
+                                const now = new Date().toISOString();
+                                let whiteTime = Number(game.white_seconds_left || 600);
+                                let blackTime = Number(game.black_seconds_left || 600);
+                                if (game.last_move_at) {
+                                    const elapsed = (new Date(now).getTime() - new Date(game.last_move_at).getTime()) / 1000;
+                                    if (game.current_turn === 'white') whiteTime = Math.max(0, whiteTime - elapsed);
+                                    else blackTime = Math.max(0, blackTime - elapsed);
+                                }
+                                const nextTurn = mustContinue ? aiColor : (aiColor === 'white' ? 'black' : 'white');
+                                let status = game.status;
+                                let winnerId = game.winner_id;
+                                if (!mustContinue) {
+                                    const { checkWinner } = await import('@/components/checkersLogic');
+                                    const winnerColor = checkWinner(newBoard);
+                                    if (winnerColor) {
+                                        status = 'finished';
+                                        winnerId = winnerColor === aiColor ? 'ai' : currentUser?.id;
+                                    }
+                                }
+                                if (mustContinue) setMustContinueWith({ r: formattedMove.to.r, c: formattedMove.to.c });
+                                else setMustContinueWith(null);
+                                setBoard(newBoard);
+                                setGame(prev => ({
+                                    ...prev,
+                                    current_turn: nextTurn,
+                                    status,
+                                    winner_id: winnerId,
+                                    board_state: JSON.stringify(newBoard),
+                                    moves: JSON.stringify([...movesList, newMoveEntry]),
+                                    last_move_at: now,
+                                    white_seconds_left: whiteTime,
+                                    black_seconds_left: blackTime
+                                }));
+                            }
                         }
                     }
                 } catch (err) {
