@@ -33,7 +33,7 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center w-full">
-        <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square">
+        <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full max-w-[600px] aspect-square mx-auto">
           <CheckerBoard 
             board={(Array.isArray(board) && board.length===10 && board.every(r=>Array.isArray(r)&&r.length===10)) ? board : initCheckers()}
             onSquareClick={() => {}}
