@@ -136,7 +136,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
                   if (gameType==='chess') {
                     setChessBoard(Array.from({length:8},()=>Array(8).fill(null)));
                   } else {
-                    setCheckersBoard(Array.from({length:8},()=>Array(8).fill(0)));
+                    setCheckersBoard(Array.from({length:10},()=>Array(10).fill(0)));
                   }
                 }}>
                   {tf('home.clear_board','Vider le plateau')}

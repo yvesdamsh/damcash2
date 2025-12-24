@@ -18,7 +18,7 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
       <div className="flex items-center justify-center flex-1 min-w-[260px]">
         <div className="w-full max-w-[520px]">
           <CheckerBoard 
-            board={board || initCheckers()}
+            board={(Array.isArray(board) && board.length===10 && board.every(r=>Array.isArray(r)&&r.length===10)) ? board : initCheckers()}
             onSquareClick={() => {}}
             validMoves={[]}
             currentTurn="white"
