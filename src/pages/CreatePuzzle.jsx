@@ -197,7 +197,7 @@ export default function CreatePuzzle() {
                     </Card>
                     {gameType === 'checkers' && step === 'setup' && (
                         <div className="w-full grid grid-cols-2 gap-2 mt-3">
-                            <Button variant="outline" onClick={() => setCheckersBoard(Array.from({length:10},()=>Array(10).fill(0)))}>
+                            <Button variant="outline" onClick={() => setCheckersBoard(prev => Array.isArray(prev) && prev.length===10 ? prev.map(row => row.map(()=>0)) : Array.from({length:10},()=>Array(10).fill(0)))}>
                                 Vider le plateau
                             </Button>
                             <Button variant="outline" onClick={() => setCheckersBoard(initializeBoard())}>
