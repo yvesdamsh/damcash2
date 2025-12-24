@@ -90,12 +90,12 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-4 items-start lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-4 items-start xl:grid-cols-[1fr_360px]">
           <MiniBoard
             type={gameType}
             board={gameType === 'chess' ? chessBoard : checkersBoard}
             onSquareClick={handleSquareClick}
-            className="bg-white/60 ring-1 ring-[#4a3728]/15 min-h-[300px] sm:min-h-[360px] md:min-h-[420px]"
+            className="bg-white/60 ring-1 ring-[#4a3728]/15 min-h-[300px] sm:min-h-[360px] md:min-h-[420px] max-w-[520px] mx-auto"
           />
 
           <div className="space-y-3">
