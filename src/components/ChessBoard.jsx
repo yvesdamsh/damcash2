@@ -132,13 +132,16 @@ const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMo
 
     const currentTheme = themes[theme] || themes.standard;
 
+    const safeBoard = Array.isArray(board) && board.length === 8 && board.every(r => Array.isArray(r) && r.length === 8)
+        ? board
+        : Array.from({ length: 8 }, () => Array(8).fill(null));
+
     const { isWhiteCheck, isBlackCheck } = useMemo(() => {
-        if (!board || board.length !== 8) return { isWhiteCheck: false, isBlackCheck: false };
         return {
-            isWhiteCheck: isInCheck(board, 'white'),
-            isBlackCheck: isInCheck(board, 'black')
+            isWhiteCheck: isInCheck(safeBoard, 'white'),
+            isBlackCheck: isInCheck(safeBoard, 'black')
         };
-    }, [board]);
+    }, [safeBoard]);
 
     const rows = isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
     const cols = isFlipped ? [7,6,5,4,3,2,1,0] : [0,1,2,3,4,5,6,7];
