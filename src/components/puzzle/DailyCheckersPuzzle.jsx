@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CheckerBoard from "@/components/CheckerBoard";
+import { initializeBoard as initCheckers } from "@/components/checkersLogic";
 import { useLanguage } from "@/components/LanguageContext";
 import { Brain, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -17,7 +18,7 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
       <div className="flex items-center justify-center flex-1 min-w-[260px]">
         <div className="w-full max-w-[520px]">
           <CheckerBoard 
-            board={board || Array.from({length:10},()=>Array(10).fill(0))}
+            board={board || initCheckers()}
             onSquareClick={() => {}}
             validMoves={[]}
             currentTurn="white"
