@@ -820,7 +820,8 @@ export default function Game() {
                 } catch (err) {
                     console.error("AI Error:", err);
                 } finally {
-                    if (isActive) setIsAiThinking(false);
+                    // Always reset thinking flag to avoid getting stuck after state changes
+                    setIsAiThinking(false);
                 }
             };
             timer = setTimeout(makeAiMove, 0);
