@@ -21,8 +21,8 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
             board={(Array.isArray(board) && board.length===10 && board.every(r=>Array.isArray(r)&&r.length===10)) ? board : initCheckers()}
             onSquareClick={() => {}}
             validMoves={[]}
-            currentTurn="white"
-            playerColor="black"
+            currentTurn={null}
+            playerColor={null}
             orientation="white"
           />
         </div>
