@@ -727,28 +727,13 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.01 * 1000, 100), 1000) : 300;
-        const deadline = startTime + timeBudget;
+        const deadline = null;
 
         if (!board || !turn) {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
         }
 
-        // 1. Opening Book Lookup
-        const fen = boardToFen(board, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove);
-        if (OPENING_BOOK[fen]) {
-            const moves = OPENING_BOOK[fen];
-            const rM = moves[Math.floor(Math.random() * moves.length)];
-            // Decode Algebraic (e.g. e2e4)
-            const cols = {a:0,b:1,c:2,d:3,e:4,f:5,g:6,h:7};
-            const fC = cols[rM[0]], fR = 8 - parseInt(rM[1]);
-            const tC = cols[rM[2]], tR = 8 - parseInt(rM[3]);
-            return Response.json({
-                move: { from: {r:fR, c:fC}, to: {r:tR, c:tC}, captured: null },
-                score: 0,
-                source: 'book'
-            });
-        }
+        // Opening book disabled to always analyze 3 plies
 
         // Fast path: if only one legal move, play it immediately
         const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights || { wK: true, wQ: true, bK: true, bQ: true });
@@ -756,30 +741,11 @@ Deno.serve(async (req) => {
             return Response.json({ move: rootMoves[0], score: 0, source: 'forced' });
         }
 
-        // 2. Difficulty & Adaptation
-        let maxDepth = 3;
-        let randomness = 0; // 0-100 probability of picking suboptimal move
+        // Fixed depth of 3 plies, no randomness
+        const maxDepth = 3;
+        const randomness = 0;
 
-        if (difficulty === 'adaptive') {
-            // Scale based on Elo
-            if (userElo < 800) { maxDepth = 1; randomness = 40; }
-            else if (userElo < 1200) { maxDepth = 2; randomness = 25; }
-            else if (userElo < 1600) { maxDepth = 3; randomness = 10; }
-            else if (userElo < 2000) { maxDepth = 3; randomness = 0; }
-            else { maxDepth = 4; randomness = 0; }
-        } else {
-            switch (difficulty) {
-                case 'easy': maxDepth = 1; randomness = 50; break;
-                case 'medium': maxDepth = 2; randomness = 25; break;
-                case 'hard': maxDepth = 3; randomness = 10; break;
-                case 'expert': maxDepth = 4; randomness = 5; break;
-                case 'grandmaster': maxDepth = 5; randomness = 0; break;
-                default: maxDepth = 3;
-            }
-        }
-
-        // Panic Mode
-        if (timeLeft && timeLeft < 5) maxDepth = Math.min(maxDepth, 2);
+        // Panic Mode disabled to enforce fixed-depth analysis
 
         // 3. Search (Root)
         // To allow "randomness" (choosing suboptimal moves), we need to score the top moves.
@@ -793,26 +759,8 @@ Deno.serve(async (req) => {
         // Or just picking the best move from full search and applying "noise" to its score? No.
         // Better: Run full search for best move. If randomness, collect root moves, sort by shallow score, pick one, then play it.
         
-        // Standard Search first to get the "Best" move (for high levels)
-        let bestMoveSoFar = null;
-        let currentDepth = 1;
-        
-        // Iterative Deepening
-        while (currentDepth <= maxDepth) {
-            if (Date.now() > deadline - 100) break;
-
-            try {
-                const result = minimax(board, currentDepth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove, deadline);
-                if (result && result.move) {
-                    bestMoveSoFar = result;
-                }
-                if (Math.abs(result.score) > 90000) break;
-            } catch (e) {
-                if (e.message === 'TIMEOUT') break;
-                throw e;
-            }
-            currentDepth++;
-        }
+        // Fixed-depth search
+        let bestMoveSoFar = minimax(board, maxDepth, -Infinity, Infinity, true, turn, turn, castlingRights || { wK: true, wQ: true, bK: true, bQ: true }, lastMove, deadline);
         
         // If we want randomness, we might override 'bestMoveSoFar'
         if (randomness > 0 && bestMoveSoFar && bestMoveSoFar.move) {

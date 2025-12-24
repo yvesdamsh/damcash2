@@ -659,14 +659,14 @@ export default function Game() {
                         timeLeft: getTimeLeft(aiColor)
                     };
 
-                    const callWithTimeout = (promise, ms = 1200) => new Promise((resolve, reject) => {
+                    const callWithTimeout = (promise, ms = 3000) => new Promise((resolve, reject) => {
                         const id = setTimeout(() => reject(new Error('AI_TIMEOUT')), ms);
                         promise.then((v) => { clearTimeout(id); resolve(v); }).catch((e) => { clearTimeout(id); reject(e); });
                     });
 
                     let res = null;
                     try {
-                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 1200);
+                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 3000);
                     } catch (_) {
                         res = null; // fall back to local move
                     }

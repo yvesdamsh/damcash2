@@ -509,8 +509,7 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.01 * 1000, 100), 1000) : 300;
-        const deadline = startTime + timeBudget;
+        const deadline = null;
 
         if (!board || !turn) {
             return Response.json({ error: 'Missing board or turn' }, { status: 400 });
@@ -536,53 +535,14 @@ Deno.serve(async (req) => {
             }
         }
 
-        // Depth & Randomness Configuration
-        let maxDepth = 4; 
-        let randomness = 0; // 0-100
-
-        if (difficulty === 'adaptive') {
-             if (userElo < 800) { maxDepth = 2; randomness = 30; }
-             else if (userElo < 1200) { maxDepth = 3; randomness = 20; }
-             else if (userElo < 1600) { maxDepth = 4; randomness = 10; }
-             else if (userElo < 2000) { maxDepth = 5; randomness = 5; }
-             else { maxDepth = 6; randomness = 0; }
-        } else {
-            switch (difficulty) {
-                case 'easy': maxDepth = 2; randomness = 40; break;
-                case 'medium': maxDepth = 3; randomness = 15; break;
-                case 'hard': maxDepth = 4; randomness = 5; break;
-                case 'expert': maxDepth = 5; randomness = 0; break;
-                case 'grandmaster': maxDepth = 6; randomness = 0; break;
-                default: maxDepth = 4;
-            }
-        }
+        // Depth fixed to 3 plies, no randomness
+        const maxDepth = 3;
+        const randomness = 0;
         
-        // Panic Mode
-        if (timeLeft && timeLeft < 10) maxDepth = Math.min(maxDepth, 4);
-        if (timeLeft && timeLeft < 5) maxDepth = 2;
+        // Panic Mode disabled to enforce fixed-depth analysis
 
-        // Iterative Deepening
-        let bestMoveSoFar = null;
-        let currentDepth = 1; 
-        
-        // If activePiece (multi-jump in progress), force high depth (fast calculation)
-        if (activePiece) { maxDepth = 6; randomness = 0; }
-
-        while (currentDepth <= maxDepth) {
-            if (!activePiece && Date.now() > deadline - 50) break;
-
-            try {
-                const result = minimax(board, currentDepth, -Infinity, Infinity, true, turn, turn, activePiece, deadline);
-                if (result && result.move) {
-                    bestMoveSoFar = result;
-                }
-                if (Math.abs(result.score) > 90000) break; 
-            } catch (e) {
-                if (e.message === 'TIMEOUT') break;
-                throw e;
-            }
-            currentDepth += 1; 
-        }
+        // Fixed-depth search
+        let bestMoveSoFar = minimax(board, maxDepth, -Infinity, Infinity, true, turn, turn, activePiece, deadline);
 
         // Randomness Logic
         // Checkers moves are objects { finalBoard, steps, score }
