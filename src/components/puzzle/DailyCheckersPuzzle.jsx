@@ -6,17 +6,34 @@ import { initializeBoard as initCheckers } from "@/components/checkersLogic";
 import { useLanguage } from "@/components/LanguageContext";
 import { Brain, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
 
 export default function DailyCheckersPuzzle({ puzzle, board }) {
   const { t, formatDate } = useLanguage();
   const tf = (k, f) => (t(k) === k ? f : t(k));
   const created = puzzle?.created_date ? new Date(puzzle.created_date) : null;
 
+  const [checkersTheme, setCheckersTheme] = React.useState(undefined);
+  const [checkersPieces, setCheckersPieces] = React.useState(undefined);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const me = await base44.auth.me().catch(() => null);
+        const prefs = me?.preferences;
+        if (prefs) {
+          setCheckersTheme(prefs.checkers_theme);
+          setCheckersPieces(prefs.checkers_pieces);
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
   const noPuzzle = !puzzle;
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-center flex-1 min-w-[260px]">
-        <div className="w-full max-w-[520px]">
+        <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square">
           <CheckerBoard 
             board={(Array.isArray(board) && board.length===10 && board.every(r=>Array.isArray(r)&&r.length===10)) ? board : initCheckers()}
             onSquareClick={() => {}}
@@ -24,6 +41,8 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
             currentTurn={null}
             playerColor={null}
             orientation="white"
+            theme={checkersTheme}
+            pieceDesign={checkersPieces}
           />
         </div>
       </div>
