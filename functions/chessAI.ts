@@ -662,8 +662,8 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, cas
     // Time Check in Recursion
     if (deadline && Date.now() > deadline) throw new Error('TIMEOUT');
     if (depth === 0) {
-        // Use Quiescence at leaf nodes
-        return { score: quiescence(board, alpha, beta, turn, aiColor, castlingRights, lastMove) };
+        // Fast static evaluation at leaves for speed
+        return { score: evaluateBoard(board, aiColor) };
     }
 
     const moves = getValidChessMoves(board, turn, lastMove, castlingRights);
@@ -727,7 +727,7 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.02 * 1000, 100), 2000) : 800;
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.01 * 1000, 100), 1000) : 300;
         const deadline = startTime + timeBudget;
 
         if (!board || !turn) {
@@ -835,12 +835,12 @@ Deno.serve(async (req) => {
              }
         }
 
-        const result = bestMoveSoFar || { move: null, score: 0 };
-        
+        let result = bestMoveSoFar || { move: null, score: 0 };
+
         if (!result.move) {
             const rootMoves = getValidChessMoves(board, turn, lastMove, castlingRights);
-            if (rootMoves.length > 0) return Response.json({ move: rootMoves[0], score: 0 });
-            return Response.json({ error: 'No moves available' }, { status: 200 });
+            if (rootMoves.length > 0) result = { move: rootMoves[0], score: 0 };
+            else return Response.json({ error: 'No moves available' }, { status: 200 });
         }
 
         return Response.json({

@@ -452,8 +452,9 @@ const minimax = (board, depth, alpha, beta, maximizingPlayer, turn, aiColor, act
     
     // Depth 0 -> Quiescence Search instead of Evaluate
     if (depth === 0) {
-        return { score: quiescence(board, alpha, beta, maximizingPlayer, turn, aiColor) };
-    }
+           // Use fast static eval at leaves for speed
+           return { score: evaluate(board, aiColor, turn) };
+       }
 
     // 3. Search
     let bestMove = moves[0];
@@ -508,7 +509,7 @@ Deno.serve(async (req) => {
 
         // Time Management
         const startTime = Date.now();
-        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.02 * 1000, 100), 2000) : 800;
+        const timeBudget = timeLeft ? Math.min(Math.max(timeLeft * 0.01 * 1000, 100), 1000) : 300;
         const deadline = startTime + timeBudget;
 
         if (!board || !turn) {
@@ -562,7 +563,7 @@ Deno.serve(async (req) => {
 
         // Iterative Deepening
         let bestMoveSoFar = null;
-        let currentDepth = 2; 
+        let currentDepth = 1; 
         
         // If activePiece (multi-jump in progress), force high depth (fast calculation)
         if (activePiece) { maxDepth = 6; randomness = 0; }
@@ -580,7 +581,7 @@ Deno.serve(async (req) => {
                 if (e.message === 'TIMEOUT') break;
                 throw e;
             }
-            currentDepth += 2; 
+            currentDepth += 1; 
         }
 
         // Randomness Logic
@@ -605,10 +606,16 @@ Deno.serve(async (req) => {
             }
         }
 
-        const result = bestMoveSoFar || { move: null, score: 0 };
-        
+        let result = bestMoveSoFar || { move: null, score: 0 };
+
         if (!result.move) {
-            return Response.json({ error: 'No moves available' }, { status: 200 });
+            // Fallback: play first legal move immediately
+            const fallbackMoves = getAllPlayableMoves(board, turn);
+            if (fallbackMoves.length > 0) {
+                result = { move: fallbackMoves[0], score: 0 };
+            } else {
+                return Response.json({ error: 'No moves available' }, { status: 200 });
+            }
         }
 
         const firstStep = result.move.steps[0];
