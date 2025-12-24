@@ -11,6 +11,12 @@ export default function UpcomingTournaments() {
   const { t, formatDate, formatCurrency } = useLanguage();
   const [loading, setLoading] = React.useState(true);
   const [items, setItems] = React.useState([]);
+  const [now, setNow] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const tt = (key, fallback) => {
     const v = t(key);
@@ -35,6 +41,27 @@ export default function UpcomingTournaments() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Hourly tournaments schedule helpers
+  const nextStart = React.useMemo(() => {
+    const d = new Date(now);
+    d.setSeconds(0, 0);
+    if (d.getMinutes() === 0 && d.getSeconds() === 0) {
+      // already on the hour, start is now
+      return d;
+    }
+    d.setMinutes(0);
+    d.setHours(d.getHours() + 1);
+    return d;
+  }, [now]);
+
+  const joinOpens = new Date(nextStart.getTime() - 3 * 60 * 1000);
+  const diffMs = Math.max(0, nextStart.getTime() - now.getTime());
+  const hours = Math.floor(diffMs / 3600000);
+  const minutes = Math.floor((diffMs % 3600000) / 60000);
+  const seconds = Math.floor((diffMs % 60000) / 1000);
+  const countdown = `${hours > 0 ? String(hours).padStart(2,'0') + ':' : ''}${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  const upcomingStarts = Array.from({ length: 5 }, (_, i) => new Date(nextStart.getTime() + i * 60 * 60 * 1000));
 
   return (
     <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#d4c5b0] dark:border-[#3d2b1f] shadow-xl h-full">
@@ -61,6 +88,25 @@ export default function UpcomingTournaments() {
               <Button size="sm" className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">{tt('home.join_now', 'Join now')}</Button>
             </Link>
           </div>
+        </div>
+        {/* Live countdown to next start */}
+        <div className="p-3 rounded-lg border bg-white/70 dark:bg-[#2a201a] border-[#e8dcc5] dark:border-[#3d2b1f]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-[#4a3728] dark:text-[#e8dcc5] font-semibold">
+              <Clock className="w-4 h-4" /> {tt('home.next_starts_in','Next tournament starts in')}
+            </div>
+            <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{countdown}</div>
+          </div>
+          <div className="text-xs text-[#6b5138] dark:text-[#b09a85] mt-1">{tt('home.join_opens_at','Join opens at')} {formatDate(joinOpens, 'p')}</div>
+        </div>
+        {/* Upcoming hourly list (5 items) */}
+        <div className="p-3 rounded-lg border bg-[#fdfbf7] dark:bg-[#2c241b] border-[#e8dcc5] dark:border-[#3d2b1f]">
+          <div className="text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mb-2">{tt('home.upcoming_hourly','Upcoming hourly tournaments')}</div>
+          <ul className="text-sm text-[#6b5138] dark:text-[#b09a85] space-y-1">
+            {upcomingStarts.map((d,i) => (
+              <li key={i}>• 5+0 {tt('home.at','at')} {formatDate(d, 'p')}</li>
+            ))}
+          </ul>
         </div>
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="w-4 h-4 animate-spin" /> {tt('common.loading', 'Chargement...')}</div>
