@@ -26,6 +26,22 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
   const [fenText, setFenText] = React.useState('');
   const [fenError, setFenError] = React.useState('');
 
+  // Appliquer le même thème/pièces que les game rooms
+  const [checkersTheme, setCheckersTheme] = React.useState(undefined);
+  const [checkersPieces, setCheckersPieces] = React.useState(undefined);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const me = await base44.auth.me().catch(() => null);
+        const prefs = me?.preferences;
+        if (prefs) {
+          setCheckersTheme(prefs.checkers_theme);
+          setCheckersPieces(prefs.checkers_pieces);
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
   React.useEffect(() => {
     if (gameType === 'chess') {
       setChessBoard(initChess());
@@ -92,7 +108,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 items-start xl:grid-cols-[1fr_360px]">
-          <div className="bg-white/60 ring-1 ring-[#4a3728]/15 max-w-[520px] mx-auto">
+          <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square mx-auto">
             {gameType === 'chess' ? (
               <ChessBoard 
                 board={chessBoard}
@@ -112,6 +128,8 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
                 playerColor="white"
                 orientation="white"
                 isSoloMode
+                theme={checkersTheme}
+                pieceDesign={checkersPieces}
               />
             )}
           </div>
