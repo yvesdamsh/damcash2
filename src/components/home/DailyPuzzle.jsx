@@ -55,13 +55,33 @@ export default function DailyPuzzle({ gameType: propGameType }) {
             const created = puzzle?.created_date ? new Date(puzzle.created_date).getTime() : 0;
             const valid = puzzle && (now - created <= 24*60*60*1000);
 
-            // Parse board for display
+            // Parse board for display (supports JSON board or FEN for chess)
             let board = null;
             if (valid && puzzle?.board_state) {
               try {
                 const parsed = JSON.parse(puzzle.board_state);
                 board = gameType === 'chess' ? (parsed?.board || null) : (Array.isArray(parsed) ? parsed : null);
-              } catch (_) {}
+              } catch (_) {
+                // If chess and board_state is FEN, convert to 2D array
+                if (gameType === 'chess' && typeof puzzle.board_state === 'string') {
+                  const fenPart = puzzle.board_state.split(' ')[0];
+                  if (fenPart && fenPart.includes('/')) {
+                    const rows = fenPart.split('/');
+                    const arr = rows.map((row) => {
+                      const r = [];
+                      for (const ch of row) {
+                        if (/[1-8]/.test(ch)) {
+                          for (let i = 0; i < parseInt(ch); i++) r.push(null);
+                        } else {
+                          r.push(ch);
+                        }
+                      }
+                      return r;
+                    });
+                    if (arr.length === 8 && arr.every((r) => r.length === 8)) board = arr;
+                  }
+                }
+              }
             }
 
             return (
