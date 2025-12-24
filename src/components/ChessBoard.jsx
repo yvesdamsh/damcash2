@@ -161,7 +161,7 @@ const ChessBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, validMo
                 >
                     {rows.map((r) => (
                         cols.map((c) => {
-                            const piece = board[r]?.[c];
+                            const piece = board?.[r]?.[c] ?? null;
                             const isDark = (r + c) % 2 !== 0;
                             const isSelected = selectedSquare && selectedSquare[0] === r && selectedSquare[1] === c;
                             const isTarget = targetMap.has(`${r},${c}`);
