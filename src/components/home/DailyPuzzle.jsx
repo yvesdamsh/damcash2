@@ -66,7 +66,11 @@ export default function DailyPuzzle({ gameType: propGameType }) {
 
             return (
               gameType === 'checkers' ? (
-                <DailyCheckersPuzzle puzzle={valid ? puzzle : null} board={valid ? board : null} />
+                valid ? (
+                  <DailyCheckersPuzzle puzzle={puzzle} board={board} />
+                ) : (
+                  <PuzzleEditor gameType="checkers" onSaved={(p) => setPuzzle(p)} />
+                )
               ) : (
                 valid ? (
                   <div className="space-y-3">
