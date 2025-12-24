@@ -98,10 +98,10 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
                 board={chessBoard}
                 onSquareClick={handleSquareClick}
                 validMoves={[]}
-                currentTurn="white"
+                currentTurn="black"
+                playerColor="white"
                 orientation="white"
                 pieceSet="standard"
-                isSoloMode
               />
             ) : (
               <CheckerBoard 
