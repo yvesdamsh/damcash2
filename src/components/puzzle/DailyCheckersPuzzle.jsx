@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import DraughtsBoard from "@/components/puzzle/DraughtsBoard";
+import CheckerBoard from "@/components/CheckerBoard";
 import { useLanguage } from "@/components/LanguageContext";
 import { Brain, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -15,7 +15,16 @@ export default function DailyCheckersPuzzle({ puzzle, board }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-center flex-1 min-w-[260px]">
-        <DraughtsBoard board={board} />
+        <div className="w-full max-w-[520px]">
+          <CheckerBoard 
+            board={board || Array.from({length:10},()=>Array(10).fill(0))}
+            onSquareClick={() => {}}
+            validMoves={[]}
+            currentTurn="white"
+            playerColor="black"
+            orientation="white"
+          />
+        </div>
       </div>
       <aside className="w-full bg-white/80 dark:bg-[#2a201a] border rounded-xl p-4 h-fit border-[#e8dcc5] dark:border-[#3d2b1f]">
         <div className="flex items-start justify-between mb-3">
