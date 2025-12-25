@@ -108,6 +108,9 @@ export default function Game() {
         }
 
         if (gameId === 'local-ai') {
+            // Ensure AI is black in local mode so you move first, then AI responds
+            // Keep IDs stable to simplify turn checks
+            
             const difficulty = searchParams.get('difficulty') || 'medium';
             const type = searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers';
             
