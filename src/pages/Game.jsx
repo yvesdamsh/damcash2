@@ -640,9 +640,9 @@ export default function Game() {
         let timer = null;
 
         // Robust check: Is it AI's turn?
-        // In local-ai, the AI player ID is always 'ai'
-        const isAiTurn = (game.current_turn === 'white' && game.white_player_id === 'ai') || 
-                         (game.current_turn === 'black' && game.black_player_id === 'ai');
+        // In local-ai, assume AI is Black if no explicit AI id
+        const aiIsBlack = (game?.black_player_id === 'ai') || (id === 'local-ai');
+        const isAiTurn = (aiIsBlack && game.current_turn === 'black') || (!aiIsBlack && game.current_turn === 'white');
         
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
         
@@ -668,7 +668,7 @@ export default function Game() {
                         timeLeft: getTimeLeft(aiColor)
                     };
 
-                    const callWithTimeout = (promise, ms = 3000) => new Promise((resolve, reject) => {
+                    const callWithTimeout = (promise, ms = 6000) => new Promise((resolve, reject) => {
                         const id = setTimeout(() => reject(new Error('AI_TIMEOUT')), ms);
                         promise.then((v) => { clearTimeout(id); resolve(v); }).catch((e) => { clearTimeout(id); reject(e); });
                     });
