@@ -317,9 +317,19 @@ export default function Game() {
             }
         };
         checkAuth();
-    }, []);
+        }, []);
 
-    // Fetch Players Info (ELO) - Refetch on game status change (for dynamic Elo updates)
+        // Preview: if unauthenticated, auto-switch to local AI to avoid login/404 loops
+        useEffect(() => {
+            if (isPreview && !isAuthed && id !== 'local-ai') {
+                const type = localStorage.getItem('gameMode') || 'checkers';
+                const diff = aiDifficulty || 'medium';
+                const muteParam = forceMuteMedia ? '1' : '0';
+                navigate(`/Game?id=local-ai&difficulty=${diff}&type=${type}&preview=1&mute=${muteParam}`, { replace: true });
+            }
+        }, [isPreview, isAuthed, id]);
+
+         // Fetch Players Info (ELO) - Refetch on game status change (for dynamic Elo updates)
     useEffect(() => {
         if (game) {
             const fetchPlayers = async () => {
@@ -400,7 +410,7 @@ export default function Game() {
 
         syncState();
         
-        const intervalMs = (game?.status === 'playing') ? 200 : 500;
+        const intervalMs = isPreview ? 800 : ((game?.status === 'playing') ? 300 : 800);
         const interval = setInterval(syncState, intervalMs);
 
         const onFocus = () => syncState();

@@ -80,14 +80,19 @@ function LayoutContent({ children }) {
 
     // Prevent login redirect loops: if from_url contains '/login', go Home
     React.useEffect(() => {
-        try {
-            const params = new URLSearchParams(location.search || '');
-            const from = (params.get('from_url') || params.get('from') || '').toLowerCase();
-            if (from.includes('/login')) {
-                navigate('/Home', { replace: true });
-            }
-        } catch (_) {}
-    }, [location.search]);
+                  try {
+                      const params = new URLSearchParams(location.search || '');
+                      const from = (params.get('from_url') || params.get('from') || '').toLowerCase();
+                      if (from.includes('/login')) {
+                          navigate('/Home', { replace: true });
+                          return;
+                      }
+                      const path = (location.pathname || '').toLowerCase();
+                      if (path.includes('/login')) {
+                          navigate('/Home', { replace: true });
+                      }
+                  } catch (_) {}
+              }, [location.search, location.pathname]);
 
     // Sound is handled inside IntroAnimation with strict single-play guard
     React.useEffect(() => {}, [showIntro]);
