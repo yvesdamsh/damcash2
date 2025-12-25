@@ -155,7 +155,7 @@ export default function Game() {
                     black_player_name: `AI (${difficulty})`,
                     white_player_id: currentUser?.id || 'guest',
                     black_player_id: 'ai',
-                    current_turn: 'white',
+                    current_turn: 'white', // user starts
                     board_state: boardStr,
                     moves: JSON.stringify([]),
                     white_seconds_left: 600,
