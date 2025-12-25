@@ -25,7 +25,10 @@ export default function SplashScreen({ onPlayAsGuest }) {
     const handleLogin = () => {
         playOnce();
         setTimeout(() => {
-            base44.auth.redirectToLogin(window.location.origin + '/Home');
+            const href = window.location.href;
+            const isLogin = window.location.pathname.toLowerCase().includes('login');
+            const nextUrl = (isLogin || href.toLowerCase().includes('/login')) ? (window.location.origin + '/Home') : href;
+            base44.auth.redirectToLogin(nextUrl);
         }, 80);
     };
 
