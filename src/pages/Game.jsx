@@ -672,7 +672,6 @@ export default function Game() {
                 const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
                 console.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
                 try {
-                    const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
                     
                     const payload = {
                         board: board,
