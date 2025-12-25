@@ -533,7 +533,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    const bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare });
+    // If forced continuation is present but engine returns null (rare), pick any legal from that square
+    let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare });
+    if (!bestMove) {
+      const legal = engine.getValidMoves(engBoard, aiColor, onlyFromSquare || null);
+      if (legal && legal.length) bestMove = legal[0];
+    }
     if (!bestMove) return Response.json({ error: 'No move' }, { status: 200 });
 
     const moveForApp = damcashAdapter.toAppMove(bestMove, engine);
