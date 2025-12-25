@@ -665,10 +665,11 @@ export default function Game() {
             const makeAiMove = async () => {
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
-                const aiTurnCheck = (game.current_turn === 'white' && game.white_player_id === 'ai') || (game.current_turn === 'black' && game.black_player_id === 'ai');
+                const aiTurnCheck = (id === 'local-ai') || (game.current_turn === 'white' && game.white_player_id === 'ai') || (game.current_turn === 'black' && game.black_player_id === 'ai');
                 if (!aiTurnCheck) return;
                 if (!isActive) return;
                 setIsAiThinking(true);
+                console.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
                 try {
                     const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
                     
@@ -682,6 +683,15 @@ export default function Game() {
                         activePiece: mustContinueWith,
                         timeLeft: getTimeLeft(aiColor)
                     };
+                    console.log('[AI] Payload', {
+                      turn: payload.turn,
+                      difficulty: payload.difficulty,
+                      activePiece: payload.activePiece,
+                      timeLeft: payload.timeLeft,
+                      boardSize: Array.isArray(payload.board) ? payload.board.length : null,
+                      castling: !!payload.castlingRights,
+                      lastMove: payload.lastMove
+                    });
 
                     const callWithTimeout = (promise, ms = 6000) => new Promise((resolve, reject) => {
                         const id = setTimeout(() => reject(new Error('AI_TIMEOUT')), ms);
@@ -692,11 +702,14 @@ export default function Game() {
                     try {
                         // Always try stronger backend AI first (even in local-ai)
                         res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 6000);
-                    } catch (_) {
+                    } catch (e) {
+                        console.error('[AI] invoke error', e);
                         res = null;
                     }
+                    console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure local fallback in local-ai
                     if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || game.white_player_id === 'ai' || game.black_player_id === 'ai')) {
+                        console.warn('[AI] No backend move, using local fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         // Fallback to local instant move if backend unavailable
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
@@ -728,6 +741,7 @@ export default function Game() {
                     if (!isActive) return;
 
                     if (res?.data?.move) {
+                        console.log('[AI] Using backend move', res.data.move);
                         const move = res.data.move;
                         
                         if (game.game_type === 'chess') {
