@@ -695,7 +695,8 @@ export default function Game() {
                     } catch (_) {
                         res = null;
                     }
-                    if (!res && id === 'local-ai') {
+                    // If the backend returns no move or fails, ensure local fallback in local-ai
+                    if ((!res || !res.data || !res.data.move) && id === 'local-ai') {
                         // Fallback to local instant move if backend unavailable
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
