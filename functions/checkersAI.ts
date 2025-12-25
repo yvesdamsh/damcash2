@@ -415,6 +415,76 @@ const damcashAdapter = {
   }
 };
 
+// --- Opening Book (from FMJD classical courses) ---
+function createStartingBoard(engine) {
+  const b = new Int8Array(51);
+  for (let s = 1; s <= 50; s++) b[s] = engine.EMPTY;
+  for (let s = 1; s <= 20; s++) b[s] = engine.BLACK_MAN;
+  for (let s = 31; s <= 50; s++) b[s] = engine.WHITE_MAN;
+  return b;
+}
+
+function boardSignature(b) {
+  const w = [], wk = [], bl = [], bk = [];
+  for (let s = 1; s <= 50; s++) {
+    const p = b[s];
+    if (!p) continue;
+    if (p === 1) w.push(s);
+    else if (p === 2) wk.push(s);
+    else if (p === 3) bl.push(s);
+    else if (p === 4) bk.push(s);
+  }
+  return `W:${w.join(',')}|WK:${wk.join(',')}|B:${bl.join(',')}|BK:${bk.join(',')}`;
+}
+
+function findBookMove(engine, currentBoard, aiColor) {
+  // Skip book if kings or captures forced likely
+  // 1) First move as White from initial position
+  const start = createStartingBoard(engine);
+  const sigNow = boardSignature(currentBoard);
+  const sigStart = boardSignature(start);
+  const isStart = sigNow === sigStart;
+
+  const whiteFirst = [
+    { from: 32, to: 28 },
+    { from: 31, to: 27 },
+    { from: 33, to: 29 },
+    { from: 34, to: 30 },
+  ];
+
+  const blackReplies = {
+    '32-28': [ { from: 19, to: 23 }, { from: 17, to: 22 } ],
+    '31-27': [ { from: 20, to: 24 }, { from: 19, to: 23 } ],
+    '33-29': [ { from: 19, to: 23 }, { from: 18, to: 22 } ],
+    '34-30': [ { from: 19, to: 23 } ],
+  };
+
+  const legal = engine.getValidMoves(currentBoard, aiColor);
+
+  if (isStart && aiColor === engine.WHITE) {
+    for (const cand of whiteFirst) {
+      const mv = legal.find(m => m.from === cand.from && m.to === cand.to && !m.isCapture);
+      if (mv) return mv;
+    }
+  }
+
+  if (aiColor === engine.BLACK) {
+    // Detect if we are after one of the white first moves by simulating it from start
+    for (const wf of whiteFirst) {
+      const sim = engine.applyMove(start, { from: wf.from, to: wf.to, captured: [], isCapture: false });
+      if (boardSignature(sim) === sigNow) {
+        const key = `${wf.from}-${wf.to}`;
+        const replies = blackReplies[key] || [];
+        for (const rep of replies) {
+          const mv = legal.find(m => m.from === rep.from && m.to === rep.to && !m.isCapture);
+          if (mv) return mv;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 Deno.serve(async (req) => {
   try {
     // Not enforcing auth to allow local/guest play, consistent with chessAI
@@ -428,6 +498,15 @@ Deno.serve(async (req) => {
     const engine = new DraughtsEngine();
     const engBoard = damcashAdapter.fromBoard(board, engine);
     const aiColor = (turn === 'white') ? engine.WHITE : engine.BLACK;
+
+    // Opening book (FMJD classical) shortcut when applicable
+    if (!activePiece) {
+      const book = findBookMove(engine, engBoard, aiColor);
+      if (book) {
+        const moveForApp = damcashAdapter.toAppMove(book, engine);
+        return Response.json({ move: moveForApp, score: 0, source: 'book' });
+      }
+    }
 
     // Difficulty -> depth/time mapping (+ dynamic time management)
     let maxDepth = 5;
