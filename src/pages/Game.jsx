@@ -264,10 +264,11 @@ export default function Game() {
 
         // Enable AI mode automatically when a player is 'ai' (not just local-ai)
         useEffect(() => {
-           if (!game) return;
-           const aiPresent = game.white_player_id === 'ai' || game.black_player_id === 'ai' || id === 'local-ai';
-           setIsAiGame(aiPresent);
-        }, [game?.white_player_id, game?.black_player_id, id]);
+               if (!game) return;
+               const aiPresent = game.white_player_id === 'ai' || game.black_player_id === 'ai' || id === 'local-ai';
+               setIsAiGame(aiPresent);
+               console.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, id });
+            }, [game?.white_player_id, game?.black_player_id, id]);
 
         // Mute all media elements in preview if requested
         useEffect(() => {
@@ -647,10 +648,16 @@ export default function Game() {
     // AI Logic
     // -----------------------------------------------------------------------
     useEffect(() => {
-        if (!isAiGame || !game || game.status !== 'playing') return;
+        if (!isAiGame || !game || game.status !== 'playing') {
+            console.log('[AI] Skip: conditions not met', { isAiGame, hasGame: !!game, status: game?.status });
+            return;
+        }
         // Avoid concurrent AI jobs
-        if (isAiThinking) return;
-        
+        if (isAiThinking) {
+            console.log('[AI] Skip: already thinking');
+            return;
+        }
+
         let isActive = true;
         let timer = null;
 
@@ -658,9 +665,10 @@ export default function Game() {
         // In local-ai, assume AI is Black if no explicit AI id
         const aiIsBlack = (game?.black_player_id === 'ai') || (id === 'local-ai');
         const isAiTurn = (aiIsBlack && game.current_turn === 'black') || (!aiIsBlack && game.current_turn === 'white');
-        
+        console.log('[AI] Turn check', { aiIsBlack, current_turn: game.current_turn, isAiTurn });
+
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
-        
+
         if (isAiTurn && !isAiThinking) {
             const makeAiMove = async () => {
                 // Guard: ensure it's truly AI's turn
