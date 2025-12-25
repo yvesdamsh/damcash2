@@ -65,11 +65,9 @@ function LayoutContent({ children }) {
             window.hasShownIntro = true;
             
             const path = location.pathname.toLowerCase();
-            // If landing on Profile or Login initially, FORCE redirect to Home
-            if (path.includes('profile') || path.includes('login')) {
-                // Use window.location for hard redirect if needed, but navigate should work
+            // If landing on Profile initially, FORCE redirect to Home
+            if (path.includes('profile')) {
                 navigate('/Home', { replace: true });
-                // We keep showIntro true so it shows on Home
             }
 
             const timer = setTimeout(() => setShowIntro(false), 7000);
@@ -77,9 +75,6 @@ function LayoutContent({ children }) {
         } else {
              // Subsequent navigations
              const path = location.pathname.toLowerCase();
-             if (path.includes('login')) {
-                 navigate('/Home', { replace: true });
-             }
         }
     }, []); // Run once on mount to handle initial load state correctly
 
