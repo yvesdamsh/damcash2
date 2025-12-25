@@ -376,16 +376,24 @@ const damcashAdapter = {
         return julesBoard;
     },
 
-    // Convertit un mouvement de Jules en format Damcash
+    // Convertit un mouvement de Jules en format Damcash (compat: un seul pas + liste complète)
     toDamcashMove: (julesMove, engine) => {
         const fromRC = engine.getRC(julesMove.from);
-        const toRC = engine.getRC(julesMove.to);
-        const capturesRC = julesMove.captured.map(s => engine.getRC(s));
+        const fullCaptures = Array.isArray(julesMove.captured) ? julesMove.captured : [];
+        const fullPath = Array.isArray(julesMove.path) ? julesMove.path : [];
+        // Un seul pas (premier atterrissage et première prise)
+        const firstTo = fullPath.length ? fullPath[0] : julesMove.to;
+        const firstCaptured = fullCaptures.length ? fullCaptures[0] : null;
+        const toRC = engine.getRC(firstTo);
+        const capturesRC = fullCaptures.map(s => engine.getRC(s));
+        const firstCapturedRC = firstCaptured ? engine.getRC(firstCaptured) : null;
         
         return {
             from: { r: fromRC.r, c: fromRC.c },
             to: { r: toRC.r, c: toRC.c },
-            captures: capturesRC.map(rc => ({ r: rc.r, c: rc.c }))
+            captured: firstCapturedRC ? { r: firstCapturedRC.r, c: firstCapturedRC.c } : null,
+            captures: capturesRC.map(rc => ({ r: rc.r, c: rc.c })),
+            path: fullPath.map(s => engine.getRC(s)).map(rc => ({ r: rc.r, c: rc.c }))
         };
     }
 };

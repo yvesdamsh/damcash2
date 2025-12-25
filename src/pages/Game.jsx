@@ -690,39 +690,38 @@ export default function Game() {
 
                     let res = null;
                     try {
-                        if (id === 'local-ai') {
-                            // Local, zero-latency AI to guarantee full offline games
-                            if (game.game_type === 'chess') {
-                                const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
-                                if (moves.length > 0) {
-                                    res = { data: { move: moves[0] } };
-                                }
-                            } else {
-                                // Checkers
-                                let step = null;
-                                if (mustContinueWith) {
-                                    const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
-                                    if (piece) {
-                                        const { getMovesForPiece } = await import('@/components/checkersLogic');
-                                        const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
-                                        if (captures.length > 0) step = captures[0];
-                                    }
-                                }
-                                if (!step) {
-                                    const all = getCheckersValidMoves(board, aiColor);
-                                    if (all.length > 0) {
-                                        const pick = all.find(m => !!m.captured) || all[0];
-                                        step = { from: pick.from, to: pick.to, captured: pick.captured || null };
-                                    }
-                                }
-                                if (step) res = { data: { move: step } };
-                            }
-                            if (!res) throw new Error('LOCAL_AI_NO_MOVE');
-                        } else {
-                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 6000);
-                        }
+                        // Always try stronger backend AI first (even in local-ai)
+                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 6000);
                     } catch (_) {
-                        res = null; // fall back to local move
+                        res = null;
+                    }
+                    if (!res && id === 'local-ai') {
+                        // Fallback to local instant move if backend unavailable
+                        if (game.game_type === 'chess') {
+                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                            if (moves.length > 0) {
+                                res = { data: { move: moves[0] } };
+                            }
+                        } else {
+                            // Checkers
+                            let step = null;
+                            if (mustContinueWith) {
+                                const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
+                                if (piece) {
+                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
+                                    const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
+                                    if (captures.length > 0) step = captures[0];
+                                }
+                            }
+                            if (!step) {
+                                const all = getCheckersValidMoves(board, aiColor);
+                                if (all.length > 0) {
+                                    const pick = all.find(m => !!m.captured) || all[0];
+                                    step = { from: pick.from, to: pick.to, captured: pick.captured || null };
+                                }
+                            }
+                            if (step) res = { data: { move: step } };
+                        }
                     }
                     
                     if (!isActive) return;
