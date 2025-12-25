@@ -868,7 +868,8 @@ export default function Game() {
                     setIsAiThinking(false);
                 }
             };
-            timer = setTimeout(makeAiMove, 350);
+            // Small think time to keep UX natural
+            timer = setTimeout(makeAiMove, 250);
         }
 
         return () => {
