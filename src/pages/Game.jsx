@@ -638,6 +638,8 @@ export default function Game() {
     // -----------------------------------------------------------------------
     useEffect(() => {
         if (!isAiGame || !game || game.status !== 'playing') return;
+        // Avoid concurrent AI jobs
+        if (isAiThinking) return;
         
         let isActive = true;
         let timer = null;
