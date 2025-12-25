@@ -1313,7 +1313,7 @@ export default function Game() {
          const authed = await base44.auth.isAuthenticated().catch(() => false);
          if (!authed) {
              try {
-                 base44.auth.redirectToLogin(window.location.href);
+                 (function(){ const href = window.location.href; const isLogin = window.location.pathname.toLowerCase().includes('login') || href.toLowerCase().includes('/login'); const nextUrl = isLogin ? (window.location.origin + '/Home') : href; base44.auth.redirectToLogin(nextUrl); })();
              } finally {
                  try { window.top.location.href = window.location.href; } catch (e) {}
              }
@@ -1724,7 +1724,7 @@ export default function Game() {
                 <div className="bg-yellow-50 border border-yellow-200 text-[#6b5138] rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-2">
                   <div className="text-sm font-medium">Connexion requise pour rejoindre la table et activer la vidéo.</div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => { try { base44.auth.redirectToLogin(window.location.href); } finally { try { window.top.location.href = window.location.href; } catch (e) {} } }}>
+                    <Button size="sm" variant="outline" onClick={() => { try { const href = window.location.href; const isLogin = window.location.pathname.toLowerCase().includes('login') || href.toLowerCase().includes('/login'); const nextUrl = isLogin ? (window.location.origin + '/Home') : href; base44.auth.redirectToLogin(nextUrl); } finally { try { window.top.location.href = window.location.href; } catch (e) {} } }}>
                       Se connecter
                     </Button>
                     <Button size="sm" onClick={() => { try { window.top.location.href = window.location.href; } catch (e) { window.location.href = window.location.href; } }}>
