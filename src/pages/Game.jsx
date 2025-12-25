@@ -259,6 +259,13 @@ export default function Game() {
         prevGameRef.current = game;
         }, [game]);
 
+        // Enable AI mode automatically when a player is 'ai' (not just local-ai)
+        useEffect(() => {
+           if (!game) return;
+           const aiPresent = game.white_player_id === 'ai' || game.black_player_id === 'ai' || id === 'local-ai';
+           setIsAiGame(aiPresent);
+        }, [game?.white_player_id, game?.black_player_id, id]);
+
         // Mute all media elements in preview if requested
         useEffect(() => {
             if (!forceMuteMedia) return;
