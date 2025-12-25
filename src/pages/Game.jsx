@@ -722,7 +722,7 @@ export default function Game() {
                     }
                     console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure local fallback in local-ai
-                    if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || game.white_player_id === 'ai' || game.black_player_id === 'ai')) {
+                    if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
                         console.warn('[AI] No backend move, using local fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         // Fallback to local instant move if backend unavailable
                         if (game.game_type === 'chess') {
@@ -817,6 +817,14 @@ export default function Game() {
                                 setMustContinueWith(null);
                             }
 
+                            if (game.id !== 'local-ai') {
+                                try {
+                                    await updateGameOnMove(newBoard, nextTurn, status, winnerId, newMoveEntry);
+                                } catch (e) {
+                                    console.error('[AI] Persist error (backend)', e);
+                                }
+                            }
+
                             setBoard(newBoard);
                             setGame(prev => ({
                                 ...prev,
@@ -884,6 +892,15 @@ export default function Game() {
                                 }
                                 if (mustContinue) setMustContinueWith({ r: formattedMove.to.r, c: formattedMove.to.c });
                                 else setMustContinueWith(null);
+
+                                if (game.id !== 'local-ai') {
+                                    try {
+                                        await updateGameOnMove(newBoard, nextTurn, status, winnerId, newMoveEntry);
+                                    } catch (e) {
+                                        console.error('[AI] Persist error (fallback)', e);
+                                    }
+                                }
+
                                 setBoard(newBoard);
                                 setGame(prev => ({
                                     ...prev,
