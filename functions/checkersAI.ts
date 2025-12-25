@@ -516,10 +516,21 @@ Deno.serve(async (req) => {
     const dynTime = (typeof timeLeft === 'number') ? Math.max(200, Math.min(2000, Math.floor(timeLeft * 1000 * 0.03))) : baseTime;
     const timeMs = Math.max(baseTime, dynTime);
 
-    // Forced continuation square if provided
+    // Forced continuation square if provided (only if AI piece and legal)
     let onlyFromSquare = null;
     if (activePiece && typeof activePiece.r === 'number' && typeof activePiece.c === 'number') {
-      onlyFromSquare = engine.getSquare(activePiece.r, activePiece.c) || null;
+      const sq = engine.getSquare(activePiece.r, activePiece.c) || null;
+      if (sq) {
+        const p = engBoard[sq];
+        const pColor = (p === engine.WHITE_MAN || p === engine.WHITE_KING) ? engine.WHITE
+                    : (p === engine.BLACK_MAN || p === engine.BLACK_KING) ? engine.BLACK : 0;
+        if (p && pColor === aiColor) {
+          const cont = engine.getValidMoves(engBoard, aiColor, sq);
+          if (cont && cont.length) {
+            onlyFromSquare = sq;
+          }
+        }
+      }
     }
 
     const bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare });
