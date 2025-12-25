@@ -83,6 +83,17 @@ function LayoutContent({ children }) {
         }
     }, []); // Run once on mount to handle initial load state correctly
 
+    // Prevent login redirect loops: if from_url contains '/login', go Home
+    React.useEffect(() => {
+        try {
+            const params = new URLSearchParams(location.search || '');
+            const from = (params.get('from_url') || params.get('from') || '').toLowerCase();
+            if (from.includes('/login')) {
+                navigate('/Home', { replace: true });
+            }
+        } catch (_) {}
+    }, [location.search]);
+
     // Sound is handled inside IntroAnimation with strict single-play guard
     React.useEffect(() => {}, [showIntro]);
 
@@ -573,7 +584,12 @@ function LayoutContent({ children }) {
                                 Ouvrir en plein écran
                             </a>
                             <button
-                                onClick={() => base44.auth.redirectToLogin(typeof window !== 'undefined' ? window.location.href : '/Home')}
+                                onClick={() => {
+                                    const href = typeof window !== 'undefined' ? window.location.href : '/Home';
+                                    const isLogin = typeof window !== 'undefined' && window.location.pathname.toLowerCase().includes('login');
+                                    const nextUrl = (isLogin || href.toLowerCase().includes('/login')) ? (window.location.origin + '/Home') : href;
+                                    base44.auth.redirectToLogin(nextUrl);
+                                  }}
                                 className="px-3 py-1.5 rounded-md border text-sm font-bold bg-white hover:bg-[#f5f0e6]"
                             >
                                 Se connecter

@@ -425,7 +425,9 @@ export default function Game() {
                 if (!authed) {
                     if (!window.__damcash_login_prompted) {
                         window.__damcash_login_prompted = true;
-                        base44.auth.redirectToLogin(window.location.href);
+                        const isLogin = window.location.pathname.toLowerCase().includes('login');
+                        const nextUrl = (isLogin || window.location.href.toLowerCase().includes('/login')) ? (window.location.origin + '/Home') : window.location.href;
+                        base44.auth.redirectToLogin(nextUrl);
                     }
                     return;
                 }
