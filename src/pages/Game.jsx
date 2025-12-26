@@ -680,6 +680,12 @@ export default function Game() {
         // In local-ai, assume AI is Black if no explicit AI id
         const whiteIsAI = game.white_player_id === 'ai';
         const blackIsAI = game.black_player_id === 'ai';
+        // If both sides are AI (misconfigured), do not let AI auto-play both in non-local games
+        const aiCount = (whiteIsAI ? 1 : 0) + (blackIsAI ? 1 : 0);
+        if (id !== 'local-ai' && aiCount !== 1) {
+          if (window.__debug_ai) console.log('[AI] Skip: invalid aiCount', { aiCount, whiteIsAI, blackIsAI });
+          return;
+        }
         const aiIsBlack = blackIsAI || (id === 'local-ai');
         const isAiTurn = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
         console.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
