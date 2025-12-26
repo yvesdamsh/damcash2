@@ -535,8 +535,8 @@ class DraughtsEngine {
   }
 
   // --- Search with heuristics and time ---
-  getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null }) {
-    const { maxDepth, timeMs, onlyFromSquare } = options || {};
+  getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null, varietyDelta: 0 }) {
+    const { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
     const deadline = Date.now() + Math.max(100, Math.min(4000, timeMs || 800));
