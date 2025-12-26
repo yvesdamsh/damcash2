@@ -656,10 +656,17 @@ export default function Game() {
     // AI Logic
     // -----------------------------------------------------------------------
     useEffect(() => {
-        if (!isAiGame || !game || game.status !== 'playing') {
-            console.log('[AI] Skip: conditions not met', { isAiGame, hasGame: !!game, status: game?.status });
+        // Determine AI presence even before game object is fully ready
+        const aiPresentNow = (id === 'local-ai') || (!!game && (
+            game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '') ||
+            game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '')
+        ));
+        if (!aiPresentNow || !game || game.status !== 'playing') {
+            console.log('[AI] Skip: conditions not met', { isAiGame, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
             return;
         }
+        // Keep state in sync
+        if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
         // Avoid concurrent AI jobs
         if (isAiThinking) {
             console.log('[AI] Skip: already thinking');
