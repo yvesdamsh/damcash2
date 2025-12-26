@@ -845,6 +845,8 @@ Deno.serve(async (req) => {
     if (difficulty === 'easy') maxDepth = 3;
     else if (difficulty === 'hard') maxDepth = 10;
     else if (difficulty === 'expert') maxDepth = 12;
+    // Variety: introduce small randomness window based on difficulty
+    const varietyDelta = (difficulty === 'easy') ? 80 : (difficulty === 'hard' ? 25 : 15);
     
     const baseTime = (difficulty === 'easy') ? 220 : 
                     (difficulty === 'hard' ? 1500 : 
