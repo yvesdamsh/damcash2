@@ -210,7 +210,10 @@ function LayoutContent({ children }) {
 
     // If the app is embedded (iframe) and user isn't authenticated, force open in top window
     React.useEffect(() => {
-        if (isFramed && !isAuthed) {
+        const canNavigateTop = (() => {
+            try { return window.top && window.top.location && window.top.location.origin === window.location.origin; } catch (_) { return false; }
+        })();
+        if (isFramed && !isAuthed && canNavigateTop) {
             const t = setTimeout(() => {
                 try { window.top.location.href = window.location.href; } catch (_) {}
             }, 800);
