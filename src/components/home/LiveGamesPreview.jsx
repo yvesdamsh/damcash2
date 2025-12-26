@@ -2,12 +2,13 @@ import React from "react";
 import { base44 } from "@/api/base44Client";
 import LiveGameCard from "./LiveGameCard";
 
-export default function LiveGamesPreview({ limit = 5 }) {
+export default function LiveGamesPreview({ limit = 5, gameType = null }) {
   const [games, setGames] = React.useState([]);
 
   const refresh = React.useCallback(async () => {
     try {
-      const list = await base44.entities.Game.filter({ status: "playing", is_private: false }, "-updated_date", limit * 3);
+      const query = gameType ? { status: "playing", is_private: false, game_type: gameType } : { status: "playing", is_private: false };
+      const list = await base44.entities.Game.filter(query, "-updated_date", limit * 3);
       // Deduplicate, keep top by ELO average
       const unique = Array.from(new Map(list.map(g => [g.id, g])).values());
       unique.sort((a, b) => {
@@ -19,7 +20,7 @@ export default function LiveGamesPreview({ limit = 5 }) {
     } catch (e) {
       console.error("LiveGamesPreview refresh error", e);
     }
-  }, [limit]);
+  }, [limit, gameType]);
 
   React.useEffect(() => {
     refresh();

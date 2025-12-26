@@ -1077,7 +1077,7 @@ export default function Home() {
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-1 gap-3">
-                                                    <LiveGamesPreview limit={5} />
+                                                    <LiveGamesPreview limit={5} gameType={gameType} />
                                                 </div>
                                             </div>
                                             {invitations.length > 0 && (

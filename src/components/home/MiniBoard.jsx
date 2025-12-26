@@ -25,13 +25,13 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               const sym = map[piece];
               if (!sym) return null;
               const isWhite = typeof piece === 'string' && piece === piece.toUpperCase();
-              return <span className={`text-xl md:text-2xl transition-transform duration-300 ease-out will-change-transform ${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
+              return <span className={`text-xl md:text-2xl transition-transform duration-300 ease-out will-change-transform ${isLastTo ? 'scale-110' : ''} ${isWhite ? 'text-white drop-shadow' : 'text-black'}`}>{sym}</span>;
             } else {
               // checkers: 1 W man, 2 B man, 3 W king, 4 B king
               const isWhite = piece === 1 || piece === 3;
               const isKing = piece === 3 || piece === 4;
               return (
-                <div className="relative w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 ease-out will-change-transform">
+                <div className={`relative w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 ease-out will-change-transform ${isLastTo ? 'scale-110' : ''}`}>
                   <div className="absolute inset-0 rounded-full" style={{ backgroundColor: isWhite ? '#f5f5f5' : '#2b2b2b', boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.4)' }} />
                   {isKing && <span className="absolute -top-1 -right-1 text-[9px] md:text-[10px]">👑</span>}
                 </div>
