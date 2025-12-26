@@ -451,16 +451,30 @@ class DraughtsEngine {
       const piece = b[mv.to];
       const isWhitePiece = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
       const dirs = [this.DIR_UL, this.DIR_UR, this.DIR_DL, this.DIR_DR];
-      const oppDir = (d) => (d===this.DIR_UL?this.DIR_DR : d===this.DIR_UR?this.DIR_DL : d===this.DIR_DL?this.DIR_UR : this.DIR_UL);
+      const isEnemy = (p) => p && p !== this.EMPTY && ((p === this.WHITE_MAN || p === this.WHITE_KING) !== isWhitePiece);
+      const isKingPiece = (p) => p === this.WHITE_KING || p === this.BLACK_KING;
+      const opp = (d) => (d===this.DIR_UL?this.DIR_DR : d===this.DIR_UR?this.DIR_DL : d===this.DIR_DL?this.DIR_UR : this.DIR_UL);
+
       for (const d of dirs) {
-        const enemySq = this.NEIGHBORS[mv.to][d];
-        if (!enemySq) continue;
-        const ep = b[enemySq];
-        if (!ep || ep === this.EMPTY) continue;
-        const enemyIsWhite = (ep === this.WHITE_MAN || ep === this.WHITE_KING);
-        if (enemyIsWhite === isWhitePiece) continue;
-        const landing = this.NEIGHBORS[mv.to][oppDir(d)];
-        if (landing && b[landing] === this.EMPTY) return true;
+        // Adjacent enemy that can jump over us
+        const adj = this.NEIGHBORS[mv.to][d];
+        if (adj && isEnemy(b[adj])) {
+          const landing = this.NEIGHBORS[mv.to][opp(d)];
+          if (landing && b[landing] === this.EMPTY) return true;
+        }
+        // Enemy king on ray (any distance) with empty squares between and landing square behind us
+        let cur = this.NEIGHBORS[mv.to][d];
+        while (cur && b[cur] === this.EMPTY) cur = this.NEIGHBORS[cur][d];
+        if (cur && isEnemy(b[cur]) && isKingPiece(b[cur])) {
+          const landing = this.NEIGHBORS[mv.to][opp(d)];
+          if (landing && b[landing] === this.EMPTY) return true;
+        }
+        cur = this.NEIGHBORS[mv.to][opp(d)];
+        while (cur && b[cur] === this.EMPTY) cur = this.NEIGHBORS[cur][opp(d)];
+        if (cur && isEnemy(b[cur]) && isKingPiece(b[cur])) {
+          const landing = this.NEIGHBORS[mv.to][d];
+          if (landing && b[landing] === this.EMPTY) return true;
+        }
       }
       return false;
     };
@@ -474,7 +488,7 @@ class DraughtsEngine {
       const km = killers[ply]?.[0];
       if (km && km.from === mv.from && km.to === mv.to) s += 110;
       const nb = this.applyMove(b, mv);
-      if (!mv.isCapture && unsafeLanding(nb, mv)) s -= 150;
+      if (!mv.isCapture && unsafeLanding(nb, mv)) s -= 380;
       const h = history.get(moveKey(mv)) || 0;
       s += h;
       
