@@ -871,7 +871,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare });
+    const varietyDelta = (difficulty === 'easy') ? 80 : (difficulty === 'hard' ? 25 : 15);
+    let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare, varietyDelta });
     if (!bestMove) {
       const legal = engine.getValidMoves(engBoard, aiColor, onlyFromSquare || null);
       if (legal && legal.length) bestMove = legal[0];
