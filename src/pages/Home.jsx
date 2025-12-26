@@ -1077,16 +1077,7 @@ export default function Home() {
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-1 gap-3">
-                                                    {(() => {
-                                                        const list = [
-                                                            ...(testerGames || []),
-                                                            ...((featuredGames || []).filter(g => g.game_type === gameType))
-                                                        ];
-                                                        const unique = Array.from(new Map(list.map(g => [g.id, g])).values()).slice(0, 5);
-                                                        return unique.map(g => (
-                                                            <LiveGameEmbed key={g.id} game={g} />
-                                                        ));
-                                                    })()}
+                                                    <LiveGamesPreview limit={5} />
                                                 </div>
                                             </div>
                                             {invitations.length > 0 && (
