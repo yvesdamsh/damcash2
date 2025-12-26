@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function MiniBoard({ type = 'chess', className = '', board = null, onSquareClick }) {
+export default function MiniBoard({ type = 'chess', className = '', board = null, onSquareClick, lastMove = null }) {
   const n = Array.isArray(board) && board.length ? board.length : (type === 'chess' ? 8 : 10);
   const darkColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#0f3d1a' : '#1f4d2e') : (document.documentElement.classList.contains('dark') ? '#3d2b1f' : '#8b6a4a');
   const lightColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#154b26' : '#cfe8cf') : (document.documentElement.classList.contains('dark') ? '#2a201a' : '#f0e6d2');
