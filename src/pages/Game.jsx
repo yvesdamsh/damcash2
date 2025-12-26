@@ -730,38 +730,46 @@ export default function Game() {
 
                     let res = null;
                     const useBackend = id !== 'local-ai' || (id === 'local-ai' && (aiDifficulty && aiDifficulty !== 'easy'));
-                    if (useBackend) {
-                        try {
-                            const toMs = (id === 'local-ai' ? 4500 : 3500);
-                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), toMs);
-                        } catch (e) {
-                            console.error('[AI] invoke error', e);
-                            res = null;
+
+                    // Run backend and local fallback in parallel; take whichever returns first
+                    const backendPromise = useBackend
+                      ? callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 2500).catch(() => null)
+                      : Promise.resolve(null);
+
+                    const localPromise = (async () => {
+                      if (game.game_type === 'chess') {
+                        const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                        return moves.length ? { data: { move: moves[0] } } : null;
+                      }
+                      // Checkers safe fallback
+                      if (mustContinueWith) {
+                        const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
+                        if (piece) {
+                          const { getMovesForPiece } = await import('@/components/checkersLogic');
+                          const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
+                          if (captures.length > 0) return { data: { move: captures[0] } };
                         }
-                    } else {
-                        // Offline/local AI (easy only)
-                        if (game.game_type === 'chess') {
-                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
-                            if (moves.length > 0) res = { data: { move: moves[0] } };
-                        } else {
-                            let step = null;
-                            if (mustContinueWith) {
-                                const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
-                                if (piece) {
-                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
-                                    const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
-                                    if (captures.length > 0) step = captures[0];
-                                }
-                            }
-                            if (!step) {
-                                const all = getCheckersValidMoves(board, aiColor);
-                                if (all.length > 0) {
-                                    const pick = all.find(m => !!m.captured) || all[0];
-                                    step = { from: pick.from, to: pick.to, captured: pick.captured || null };
-                                }
-                            }
-                            if (step) res = { data: { move: step } };
-                        }
+                      }
+                      const all = getCheckersValidMoves(board, aiColor);
+                      if (!all.length) return null;
+                      const caps = all.filter(m => !!m.captured);
+                      if (caps.length) return { data: { move: caps[0] } };
+                      const enemyColor = aiColor === 'white' ? 'black' : 'white';
+                      for (const m of all) {
+                        const sim = JSON.parse(JSON.stringify(board));
+                        sim[m.from.r][m.from.c] = 0;
+                        sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
+                        const enemyMoves = getCheckersValidMoves(sim, enemyColor);
+                        const threatened = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
+                        if (!threatened) return { data: { move: m } };
+                      }
+                      return { data: { move: all[0] } };
+                    })();
+
+                    res = await Promise.race([backendPromise, localPromise]);
+                    if (!res || !res.data || res?.data?.error || !res.data.move) {
+                      // Fallback to slower result if the first race loser resolves later
+                      res = (await backendPromise) || (await localPromise);
                     }
                     console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure fallback
