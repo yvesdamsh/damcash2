@@ -680,6 +680,7 @@ export default function Game() {
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
 
         if (isAiTurn && !isAiThinking) {
+            const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
             const makeAiMove = async () => {
                     // Debounce if a new turn arrives too fast
                     if (isAiThinking) return;
