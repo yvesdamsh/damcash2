@@ -420,7 +420,7 @@ export default function Game() {
 
         syncState();
         
-        const intervalMs = isPreview ? 2000 : ((game?.status === 'playing') ? 1500 : 4000);
+        const intervalMs = isPreview ? 5000 : ((game?.status === 'playing') ? 5000 : 10000);
         const interval = setInterval(syncState, intervalMs);
 
         const onFocus = () => syncState();
