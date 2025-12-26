@@ -602,10 +602,29 @@ class DraughtsEngine {
       return s;
     };
 
-    const orderMoves = (b, list, ply) => list
-      .map(m => ({ m, sc: scoreMove(b, m, ply) }))
-      .sort((a, b) => b.sc - a.sc)
-      .map(x => x.m);
+    const orderMoves = (b, list, ply) => {
+      const scored = list.map(m => ({ m, sc: scoreMove(b, m, ply) }));
+      scored.sort((a, b) => b.sc - a.sc);
+      // Inject small randomness at root to avoid deterministic play when scores are close
+      if (ply === 0 && varietyDelta > 0 && scored.length > 1) {
+        // Find clusters of similar scores and shuffle inside cluster
+        const clustered = [];
+        let group = [scored[0]];
+        for (let i = 1; i < scored.length; i++) {
+          if (Math.abs(scored[i].sc - group[group.length - 1].sc) <= varietyDelta) {
+            group.push(scored[i]);
+          } else {
+            if (group.length > 1) group.sort(() => Math.random() - 0.5);
+            clustered.push(...group);
+            group = [scored[i]];
+          }
+        }
+        if (group.length > 1) group.sort(() => Math.random() - 0.5);
+        clustered.push(...group);
+        return clustered.map(x => x.m);
+      }
+      return scored.map(x => x.m);
+    };
 
     let bestRoot = null;
 
