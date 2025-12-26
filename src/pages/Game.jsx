@@ -729,8 +729,16 @@ export default function Game() {
                     });
 
                     let res = null;
-                    if (id === 'local-ai') {
-                        // Offline/local AI for instant response and zero rate usage
+                    const useBackend = id !== 'local-ai' || (id === 'local-ai' && (aiDifficulty && aiDifficulty !== 'easy'));
+                    if (useBackend) {
+                        try {
+                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 3500);
+                        } catch (e) {
+                            console.error('[AI] invoke error', e);
+                            res = null;
+                        }
+                    } else {
+                        // Offline/local AI (easy only)
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
                             if (moves.length > 0) res = { data: { move: moves[0] } };
@@ -752,13 +760,6 @@ export default function Game() {
                                 }
                             }
                             if (step) res = { data: { move: step } };
-                        }
-                    } else {
-                        try {
-                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 3500);
-                        } catch (e) {
-                            console.error('[AI] invoke error', e);
-                            res = null;
                         }
                     }
                     console.log('[AI] Response from backend', res?.data || res);
