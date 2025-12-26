@@ -17,11 +17,13 @@ export default function SplashScreen({ onPlayAsGuest }) {
     }, []);
     const playOnce = () => {
         try {
-            if (sessionStorage.getItem('splash_sound_played') === 'true') return;
-            const unlocked = sessionStorage.getItem('audio_unlocked') === 'true';
-            soundManager.play('splash');
-            if (unlocked) sessionStorage.setItem('splash_sound_played', 'true');
-        } catch (_) {}
+            if (hasPlayed.current) return;
+            hasPlayed.current = true;
+            soundManager?.play?.('splash');
+        } catch (e) {
+            console.warn('Sound play failed:', e);
+            // Ne pas bloquer l'app si le son échoue
+        }
     };
     const handleLogin = () => {
         playOnce();
