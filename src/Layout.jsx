@@ -69,21 +69,25 @@ function LayoutContent({ children }) {
     const [isAuthed, setIsAuthed] = React.useState(false);
 
     React.useEffect(() => {
+        const hide = () => setShowIntro(false);
+        window.addEventListener('intro:hide', hide);
         // Initial app load logic
         if (!window.hasShownIntro) {
             window.hasShownIntro = true;
-            
+
             const path = location.pathname.toLowerCase();
             // If landing on Profile initially, FORCE redirect to Home
             if (path.includes('profile')) {
                 navigate('/Home', { replace: true });
             }
 
-            const timer = setTimeout(() => setShowIntro(false), 7000);
-            return () => clearTimeout(timer);
+            const timeout = /android/i.test(navigator.userAgent || '') ? 1800 : 7000;
+            const timer = setTimeout(() => setShowIntro(false), timeout);
+            return () => { clearTimeout(timer); window.removeEventListener('intro:hide', hide); };
         } else {
              // Subsequent navigations
              const path = location.pathname.toLowerCase();
+             return () => window.removeEventListener('intro:hide', hide);
         }
     }, []); // Run once on mount to handle initial load state correctly
 
