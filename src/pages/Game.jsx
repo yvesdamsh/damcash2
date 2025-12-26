@@ -663,7 +663,7 @@ export default function Game() {
         ));
         // Proactively set AI flag to avoid early false negatives
         if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
-        if (!aiPresentNow || !game || game.status !== 'playing') {
+        if (!game || game.status !== 'playing') {
             if (window.__debug_ai) console.log('[AI] Skip: conditions not met', { isAiGame: aiPresentNow, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
             return;
         }
