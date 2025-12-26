@@ -55,7 +55,16 @@ function LayoutContent({ children }) {
     const location = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = React.useState(null);
-    const [showIntro, setShowIntro] = React.useState(!window.hasShownIntro);
+    const [showIntro, setShowIntro] = React.useState(() => {
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            const safe = params.get('safe') === '1';
+            const isAndroid = /android/i.test(navigator.userAgent || '');
+            return !window.hasShownIntro && !safe && !isAndroid;
+        } catch (_) {
+            return !window.hasShownIntro;
+        }
+    });
     const [isFramed, setIsFramed] = React.useState(false);
     const [isAuthed, setIsAuthed] = React.useState(false);
 
