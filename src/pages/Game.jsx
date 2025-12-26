@@ -732,7 +732,8 @@ export default function Game() {
                     const useBackend = id !== 'local-ai' || (id === 'local-ai' && (aiDifficulty && aiDifficulty !== 'easy'));
                     if (useBackend) {
                         try {
-                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 3500);
+                            const toMs = (id === 'local-ai' ? (aiDifficulty === 'easy' ? 700 : 1200) : 3500);
+                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), toMs);
                         } catch (e) {
                             console.error('[AI] invoke error', e);
                             res = null;
@@ -764,7 +765,7 @@ export default function Game() {
                     }
                     console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure fallback
-                    if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
+                    if ((!res || !res.data || res?.data?.error || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
                         console.warn('[AI] No backend move, using local safe fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);

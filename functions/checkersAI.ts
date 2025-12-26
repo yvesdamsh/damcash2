@@ -491,10 +491,12 @@ class DraughtsEngine {
       // Immediate unsafe landing (incl. king long jump)
       if (!mv.isCapture && unsafeLanding(nb, mv)) s -= 380;
       // Never hang a piece: if opponent can capture our moved piece right away, punish heavily
-      const moverIsWhite = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
-      const oppColor = moverIsWhite ? this.BLACK : this.WHITE;
-      const oppCaps = this.getValidMoves(nb, oppColor).filter(m=>m.isCapture && Array.isArray(m.captured) && m.captured.includes(mv.to));
-      if (oppCaps.length) s -= 6000;
+      if (!mv.isCapture) {
+        const moverIsWhite = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
+        const oppColor = moverIsWhite ? this.BLACK : this.WHITE;
+        const oppCaps = this.getValidMoves(nb, oppColor).filter(m=>m.isCapture && Array.isArray(m.captured) && m.captured.includes(mv.to));
+        if (oppCaps.length) s -= 6000;
+      }
       const h = history.get(moveKey(mv)) || 0;
       s += h;
 
