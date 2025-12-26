@@ -281,6 +281,9 @@ class DraughtsEngine {
       
       // === BASE EVALUATION ===
       let val = isKing ? 340 : 100; // Material
+
+      // 1) SECURITY FIRST: heavy penalty if the piece is capturable (FMJD priority)
+      if (capturable(board, i, isWhite)) val -= isKing ? 400 : 200;
       
       // Advancement bonus
       if (!isKing) val += (isWhite ? (9 - r) : r) * 3.5;
@@ -300,114 +303,93 @@ class DraughtsEngine {
       // Mobility
       val += mobility(board, i, p) * 2;
       
-      // Hanging piece penalty
-      if (capturable(board, i, isWhite)) val -= isKing ? 160 : 95;
+      // === FMJD STRATEGIC BONUSES (moderate) ===
       
-      // === FMJD STRATEGIC BONUSES ===
-      
-      // 1. Long Diagonal Control (Grande Diagonale)
+      // 1. Long Diagonal Control (Grande Diagonale) +8
       if (this.LONG_DIAGONAL.includes(i)) {
-        val += 15;
+        val += 8;
       }
       
-      // 2. Central Star Control (Étoile Centrale)
+      // 2. Central Star Control (Étoile Centrale) +6
       if (this.CENTRAL_STAR.includes(i)) {
-        val += 12;
+        val += 6;
       }
       
-      // 3. Hanging Pawn Penalty (Pions Suspendus)
+      // 3. Hanging Pawn Penalty (Pions Suspendus) -10
       if (!isKing) {
         const isAdvanced = isWhite ? (r < 5) : (r > 4);
         if (isAdvanced && !isSupported(board, i, isWhite)) {
+          val -= 10;
+        }
+      }
+      
+      // 4. Triangle Formation Bonus +8
+      if (!isKing && hasTriangle(board, i, isWhite)) {
+        val += 8;
+      }
+      
+      // 5. Dog Hole (pion piégé) -15
+      if (isWhite && i === this.WHITE_DOG_HOLE) {
+        const blocker = board[41];
+        if (blocker === this.BLACK_MAN || blocker === this.BLACK_KING) {
           val -= 15;
         }
       }
-      
-      // 4. Triangle Formation Bonus
-      if (!isKing && hasTriangle(board, i, isWhite)) {
-        val += 15;
-      }
-      
-      // 5. Dog Hole Detection
-      if (isWhite && i === this.WHITE_DOG_HOLE) {
-        // Check if blocked by enemy at 41
-        const blocker = board[41];
-        if (blocker === this.BLACK_MAN || blocker === this.BLACK_KING) {
-          val -= 20; // Trapped in dog hole
-        }
-      }
       if (!isWhite && i === this.BLACK_DOG_HOLE) {
-        // Check if blocked by enemy at 10
         const blocker = board[10];
         if (blocker === this.WHITE_MAN || blocker === this.WHITE_KING) {
-          val -= 20; // Trapped in dog hole
+          val -= 15;
         }
       }
       
       if (isWhite) w += val; else bl += val;
     }
     
-    // === WING CONTROL (Chizhov Strategy) ===
+    // === WING CONTROL (presence on both flanks) +5 ===
     // Left wing: columns 0-2 (squares with c <= 2)
     // Right wing: columns 7-9 (squares with c >= 7)
-    
     const whiteLeftWing = whitePieces.filter(p => p.c <= 2).length;
     const whiteRightWing = whitePieces.filter(p => p.c >= 7).length;
     const blackLeftWing = blackPieces.filter(p => p.c >= 7).length; // Inverted for black
     const blackRightWing = blackPieces.filter(p => p.c <= 2).length;
-    
-    // Bonus for presence on both wings
+
     if (whiteLeftWing > 0 && whiteRightWing > 0) {
-      w += 10;
-    } else if (whiteLeftWing === 0 || whiteRightWing === 0) {
-      w -= 10; // Weakness penalty
+      w += 5;
     }
-    
     if (blackLeftWing > 0 && blackRightWing > 0) {
-      bl += 10;
-    } else if (blackLeftWing === 0 || blackRightWing === 0) {
-      bl -= 10;
+      bl += 5;
     }
     
+    // Keep other heuristics as-is (optional extras not specified by user)
     // === FORMATION 45-40 (Olympic Formation) ===
-    // White: pieces at 45 and 40 create strong attacking formation
     if (board[45] === this.WHITE_MAN && board[40] === this.WHITE_MAN) {
       w += 18;
     }
-    // Black: pieces at 6 and 11 (mirror)
     if (board[6] === this.BLACK_MAN && board[11] === this.BLACK_MAN) {
       bl += 18;
     }
     
     // === PASSED PAWN BONUS ===
-    // A pawn with no enemy pawns in front on adjacent columns
     for (const piece of whitePieces) {
       if (!piece.isKing && piece.r <= 4) {
         let isPassed = true;
         for (let checkRow = piece.r - 1; checkRow >= 0; checkRow--) {
           for (let dc = -1; dc <= 1; dc++) {
             const checkSq = this.getSquare(checkRow, piece.c + dc);
-            if (checkSq && board[checkSq] === this.BLACK_MAN) {
-              isPassed = false;
-              break;
-            }
+            if (checkSq && board[checkSq] === this.BLACK_MAN) { isPassed = false; break; }
           }
           if (!isPassed) break;
         }
         if (isPassed) w += 20;
       }
     }
-    
     for (const piece of blackPieces) {
       if (!piece.isKing && piece.r >= 5) {
         let isPassed = true;
         for (let checkRow = piece.r + 1; checkRow <= 9; checkRow++) {
           for (let dc = -1; dc <= 1; dc++) {
             const checkSq = this.getSquare(checkRow, piece.c + dc);
-            if (checkSq && board[checkSq] === this.WHITE_MAN) {
-              isPassed = false;
-              break;
-            }
+            if (checkSq && board[checkSq] === this.WHITE_MAN) { isPassed = false; break; }
           }
           if (!isPassed) break;
         }
@@ -692,7 +674,7 @@ Deno.serve(async (req) => {
     // Difficulty -> depth/time mapping
     let maxDepth = 5;
     if (difficulty === 'easy') maxDepth = 3;
-    else if (difficulty === 'hard') maxDepth = 8;
+    else if (difficulty === 'hard') maxDepth = 10;
     else if (difficulty === 'expert') maxDepth = 10;
     
     const baseTime = (difficulty === 'easy') ? 220 : 
