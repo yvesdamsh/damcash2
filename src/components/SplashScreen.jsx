@@ -7,6 +7,7 @@ import { soundManager } from '@/components/SoundManager';
 
 export default function SplashScreen({ onPlayAsGuest }) {
     const [mobileSafe, setMobileSafe] = React.useState(false);
+    const hasPlayed = React.useRef(false);
     React.useEffect(() => {
         try {
             const small = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
