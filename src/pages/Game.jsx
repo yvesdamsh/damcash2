@@ -732,7 +732,7 @@ export default function Game() {
                     const useBackend = id !== 'local-ai' || (id === 'local-ai' && (aiDifficulty && aiDifficulty !== 'easy'));
                     if (useBackend) {
                         try {
-                            const toMs = (id === 'local-ai' ? (aiDifficulty === 'easy' ? 700 : 1200) : 3500);
+                            const toMs = (id === 'local-ai' ? 4500 : 3500);
                             res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), toMs);
                         } catch (e) {
                             console.error('[AI] invoke error', e);
