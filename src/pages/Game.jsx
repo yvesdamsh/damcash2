@@ -820,8 +820,13 @@ export default function Game() {
 
                     if (res?.data?.move) {
                         console.log('[AI] Using backend move', res.data.move);
-                        const move = res.data.move;
-                        
+                        const m = res.data.move;
+                        const move = {
+                            from: m.from,
+                            to: m.to,
+                            captured: Array.isArray(m.captured) ? (m.captured[0] || null) : (m.captured || null)
+                        };
+
                         if (game.game_type === 'chess') {
                             if (!move.promotion && move.piece && move.piece.toLowerCase() === 'p' && (move.to.r === 0 || move.to.r === 7)) {
                                 move.promotion = 'q';
