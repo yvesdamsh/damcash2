@@ -3,6 +3,20 @@ import { motion } from 'framer-motion';
 import { soundManager } from '@/components/SoundManager';
 
 export default function IntroAnimation() {
+  React.useEffect(() => {
+    try {
+      // Auto-hide as a failsafe on Android to prevent stuck white screen
+      const isAndroid = /android/i.test(navigator.userAgent || '');
+      if (isAndroid) {
+        const t = setTimeout(() => {
+          try { window.hasShownIntro = true; } catch (_) {}
+          const ev = new Event('intro:hide');
+          window.dispatchEvent(ev);
+        }, 1500);
+        return () => clearTimeout(t);
+      }
+    } catch (_) {}
+  }, []);
     useEffect(() => {
         // Respect user preference and browser autoplay policies
         if (typeof window !== 'undefined') {
