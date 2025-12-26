@@ -729,7 +729,7 @@ export default function Game() {
                     });
 
                     let res = null;
-                    const useBackend = id !== 'local-ai' || (id === 'local-ai' && (aiDifficulty && aiDifficulty !== 'easy'));
+                    const useBackend = id !== 'local-ai';
 
                     // Run backend and local fallback in parallel; take whichever returns first
                     const backendPromise = useBackend
