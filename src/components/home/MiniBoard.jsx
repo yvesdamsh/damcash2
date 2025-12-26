@@ -6,7 +6,7 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
   const lightColor = type === 'chess' ? (document.documentElement.classList.contains('dark') ? '#154b26' : '#cfe8cf') : (document.documentElement.classList.contains('dark') ? '#2a201a' : '#f0e6d2');
 
   return (
-    <div className={`w-full aspect-square rounded-xl shadow-inner overflow-hidden border border-black/10 dark:border-white/10 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.6),transparent_60%)] ${className}`} style={{maxHeight: 520}}>
+    <div className={`w-full aspect-square rounded-xl overflow-hidden border border-black/10 dark:border-white/10 ${className}`} style={{maxHeight: 520}}>
       <div
         className="grid w-full h-full"
         style={{ gridTemplateColumns: `repeat(${n}, 1fr)`, gridTemplateRows: `repeat(${n}, 1fr)` }}
