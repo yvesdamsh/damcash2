@@ -744,7 +744,9 @@ export default function Game() {
                       // Checkers safe fallback
                       if (mustContinueWith) {
                         const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
-                        if (piece) {
+                        const aiIsWhite = aiColor === 'white';
+                        const pieceIsWhite = piece === 1 || piece === 3;
+                        if (piece && ((aiIsWhite && pieceIsWhite) || (!aiIsWhite && !pieceIsWhite))) {
                           const { getMovesForPiece } = await import('@/components/checkersLogic');
                           const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
                           if (captures.length > 0) return { data: { move: captures[0] } };
