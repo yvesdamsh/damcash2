@@ -84,7 +84,7 @@ export function useRobustWebSocket(url, options = {}) {
             if (onCloseRef.current) onCloseRef.current(event);
 
             if (shouldReconnectRef.current && reconnectCountRef.current < reconnectAttempts) {
-                const timeout = reconnectInterval * Math.pow(1.5, reconnectCountRef.current);
+                const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 15000);
                 console.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms`);
                 reconnectTimerRef.current = setTimeout(() => {
                     reconnectCountRef.current++;

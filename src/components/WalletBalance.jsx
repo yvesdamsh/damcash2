@@ -3,22 +3,62 @@ import { base44 } from '@/api/base44Client';
 import { Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export default function WalletBalance() {
+// Simple in-memory cache to avoid hammering backend
+let __balanceCache = { value: null, ts: 0, pending: null };
+
+ export default function WalletBalance() {
     const [balance, setBalance] = useState(null);
 
     useEffect(() => {
-        const fetch = async () => {
+        const loadBalance = async (force = false) => {
             try {
+                // Skip when tab not visible unless forced
+                if (document.hidden && !force) return;
+
                 const user = await base44.auth.me();
                 if (!user) return;
-                const res = await base44.functions.invoke('walletManager', { action: 'get_balance' });
-                setBalance(res.data.balance);
-            } catch (e) {}
+
+                const now = Date.now();
+                // Serve cached value if fresh (<60s)
+                if (__balanceCache.value !== null && now - __balanceCache.ts < 60000 && !force) {
+                    setBalance(__balanceCache.value);
+                    return;
+                }
+
+                // If a request is in-flight, await it
+                if (__balanceCache.pending) {
+                    const result = await __balanceCache.pending;
+                    setBalance(result.balance);
+                    return;
+                }
+
+                // Issue a single request and share the promise
+                const p = (async () => {
+                    const res = await base44.functions.invoke('walletManager', { action: 'get_balance' });
+                    return { balance: res.data.balance, ts: Date.now() };
+                })();
+                __balanceCache.pending = p;
+                const { balance: b, ts } = await p;
+                __balanceCache = { value: b, ts, pending: null };
+                setBalance(b);
+            } catch (e) {
+                __balanceCache.pending = null;
+            }
         };
-        fetch();
-        // Poll balance
-        const interval = setInterval(fetch, 30000);
-        return () => clearInterval(interval);
+
+        // Initial load (force even if hidden to warm cache)
+        loadBalance(true);
+
+        // Poll every 60s when visible
+        const interval = setInterval(() => loadBalance(false), 60000);
+
+        const onVisibility = () => { if (!document.hidden) loadBalance(false); };
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, []);
 
     if (balance === null) return null;
