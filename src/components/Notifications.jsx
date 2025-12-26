@@ -53,7 +53,7 @@ export default function Notifications() {
             }
 
             const p = (async () => {
-                const res = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 50);
+                const res = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 30);
                 res.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
                 return res;
             })();
@@ -77,20 +77,22 @@ export default function Notifications() {
         // Initial warm (force even if hidden)
         fetchNotifications(true);
 
-        const tick = () => fetchNotifications(false);
-        const interval = setInterval(tick, 60000); // Poll every 60s
-
         const onVisibility = () => { if (!document.hidden) fetchNotifications(false); };
         window.addEventListener('visibilitychange', onVisibility);
 
         // Realtime updates handled via global event from RealTimeContext
-        const handleUpdate = () => fetchNotifications(true);
+        let debounceT;
+        const handleUpdate = () => {
+            // Debounce bursts from socket
+            clearTimeout(debounceT);
+            debounceT = setTimeout(() => fetchNotifications(true), 400);
+        };
         window.addEventListener('notification-update', handleUpdate);
 
         return () => {
-            clearInterval(interval);
             window.removeEventListener('visibilitychange', onVisibility);
             window.removeEventListener('notification-update', handleUpdate);
+            clearTimeout(debounceT);
         };
     }, []);
 
