@@ -18,7 +18,8 @@ import SplashScreen from '@/components/SplashScreen';
 import RejoinGameDialog from '@/components/RejoinGameDialog';
 import HomeOnlineUsers from '@/components/home/HomeOnlineUsers.jsx';
 import NextTournamentBanner from '@/components/NextTournamentBanner';
-import LiveGameEmbed from '@/components/home/LiveGameEmbed';
+// import LiveGameEmbed from '@/components/home/LiveGameEmbed';
+import LiveGamesPreview from '@/components/home/LiveGamesPreview.jsx';
 import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 
