@@ -317,7 +317,7 @@ export default function Home() {
                 setInterval(async () => {
                     const u = await base44.auth.me().catch(()=>null);
                     if (u) fetchData(u, false);
-                }, 30000);
+                }, 60000);
 
                 } catch (e) {
                     console.error("Home init error:", e);
