@@ -783,7 +783,7 @@ Deno.serve(async (req) => {
     let maxDepth = 5;
     if (difficulty === 'easy') maxDepth = 3;
     else if (difficulty === 'hard') maxDepth = 10;
-    else if (difficulty === 'expert') maxDepth = 10;
+    else if (difficulty === 'expert') maxDepth = 12;
     
     const baseTime = (difficulty === 'easy') ? 220 : 
                      (difficulty === 'hard' ? 1500 : 
