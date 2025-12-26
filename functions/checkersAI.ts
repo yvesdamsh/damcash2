@@ -439,6 +439,52 @@ class DraughtsEngine {
     return alpha;
   }
 
+  // --- Tactical combination detector (sacrifice -> forced recapture -> combo) ---
+  findTacticalShot(board, heroColor, maxReplies = 6) {
+    const opp = (heroColor === this.WHITE) ? this.BLACK : this.WHITE;
+    const legal = this.getValidMoves(board, heroColor);
+    if (!legal.length) return null;
+
+    // Helper: piece value (king more valuable)
+    const pVal = (p) => (p === this.WHITE_KING || p === this.BLACK_KING) ? 2 : 1;
+    const capsValue = (b, caps) => Array.isArray(caps) ? caps.reduce((s, sq) => s + pVal(b[sq] || 0), 0) : 0;
+
+    let best = null;
+    let bestScore = -Infinity;
+
+    // Consider both captures and quiet moves (many motifs start by a sacrifice/quiet move)
+    for (const mv of legal) {
+      const b1 = this.applyMove(board, mv);
+      const oppMoves = this.getValidMoves(b1, opp)
+        .sort((a, b) => (b.isCapture? (b.captured?.length||0) : 0) - (a.isCapture? (a.captured?.length||0) : 0))
+        .slice(0, maxReplies);
+
+      for (const omv of oppMoves) {
+        const b2 = this.applyMove(b1, omv);
+        const hero2 = this.getValidMoves(b2, heroColor).filter(m => m.isCapture)
+          .sort((a, b) => (b.captured?.length || 0) - (a.captured?.length || 0));
+        if (!hero2.length) continue;
+
+        const follow = hero2[0];
+        const gainNow = capsValue(board, mv.captured);
+        const lossOpp = capsValue(b1, omv.captured);
+        const gainNext = capsValue(b2, follow.captured);
+        const net = (gainNow + gainNext) - lossOpp; // positive if combo wins material
+        const chainLen = (mv.isCapture ? (mv.captured?.length || 0) : 0) + (follow.captured?.length || 0);
+
+        // Heuristic score: reward net material and chain length (motif-like sequences)
+        const score = net * 120 + chainLen * 15 + (mv.isCapture ? 10 : 0);
+
+        if (net >= 1 && chainLen >= 2 && score > bestScore) {
+          bestScore = score;
+          best = mv;
+        }
+      }
+    }
+
+    return best;
+  }
+
   // --- Search with heuristics and time ---
   getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null }) {
     const { maxDepth, timeMs, onlyFromSquare } = options || {};
@@ -513,6 +559,12 @@ class DraughtsEngine {
       .map(x => x.m);
 
     let bestRoot = null;
+
+    // Play thematic combinations when available (before normal search)
+    if (!onlyFromSquare) {
+      const shot = this.findTacticalShot(board, heroColor, 6);
+      if (shot) return shot;
+    }
 
     const search = (b, depth, alpha, beta, turnColor, ply, fromSqLimit) => {
       if (Date.now() > deadline) throw new Error('TIMEOUT');
