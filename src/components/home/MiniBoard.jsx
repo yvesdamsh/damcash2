@@ -44,8 +44,11 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
               type="button"
               onClick={onSquareClick ? () => onSquareClick(r, c) : undefined}
               style={{ backgroundColor: dark ? darkColor : lightColor }}
-              className="w-full h-full flex items-center justify-center border border-black/5 dark:border-white/10 mini-board-square"
+              className={`w-full h-full flex items-center justify-center border border-black/5 dark:border-white/10 mini-board-square relative ${isLastFrom ? 'ring-2 ring-yellow-300' : ''} ${isLastTo ? 'ring-2 ring-yellow-500' : ''}`}
             >
+              {isLastTo && (
+                <span className="absolute inset-0 bg-yellow-300/20 animate-pulse pointer-events-none" />
+              )}
               {renderPiece()}
             </button>
           );
