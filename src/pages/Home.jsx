@@ -999,7 +999,7 @@ export default function Home() {
                         <UpcomingTournaments />
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-3 gap-8 items-start">
                         <div className="md:col-span-2">
                             {/* Legends Carousel Section */}
                             <div className="relative mb-8 group">
