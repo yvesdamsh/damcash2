@@ -170,6 +170,7 @@ export default function Game() {
 
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
+    const isPollingRef = useRef(false);
 
     // Handle Game State Updates (Parsing & Sounds)
     useEffect(() => {
@@ -356,6 +357,10 @@ export default function Game() {
         if (!id || id === 'local-ai') return;
         
         const syncState = async () => {
+            // Skip polling when WebSocket is healthy or a poll is already running
+            if (socket && socket.readyState === WebSocket.OPEN) return;
+            if (isPollingRef.current) return;
+            isPollingRef.current = true;
             try {
                 const res = await base44.functions.invoke('pollGameUpdates', { gameId: id });
                 if (res.data) {
@@ -408,26 +413,27 @@ export default function Game() {
             } catch (e) {
                 console.error("Sync error", e);
                 setLoading(false);
+            } finally {
+                isPollingRef.current = false;
             }
-        };
+            };
 
         syncState();
         
-        const intervalMs = isPreview ? 800 : ((game?.status === 'playing') ? 300 : 800);
+        const intervalMs = isPreview ? 2000 : ((game?.status === 'playing') ? 1500 : 4000);
         const interval = setInterval(syncState, intervalMs);
 
         const onFocus = () => syncState();
         window.addEventListener('focus', onFocus);
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') syncState();
-        });
+        const onVisibility = () => { if (document.visibilityState === 'visible') syncState(); };
+        document.addEventListener('visibilitychange', onVisibility);
 
         return () => {
             clearInterval(interval);
             window.removeEventListener('focus', onFocus);
-            document.removeEventListener('visibilitychange', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [id, game?.status]);
+    }, [id, game?.status, socket]);
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
