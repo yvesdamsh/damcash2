@@ -17,7 +17,7 @@ export default function WalletBalance() {
         };
         fetch();
         // Poll balance
-        const interval = setInterval(fetch, 10000);
+        const interval = setInterval(fetch, 30000);
         return () => clearInterval(interval);
     }, []);
 

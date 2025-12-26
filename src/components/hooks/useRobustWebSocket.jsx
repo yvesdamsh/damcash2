@@ -42,6 +42,11 @@ export function useRobustWebSocket(url, options = {}) {
         
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
+        const isFramed = (()=>{ try { return window.self !== window.top; } catch(_) { return true; }})();
+        if (isFramed && host.includes('preview-sandbox')) {
+            console.warn('[WS] Skipping WebSocket in preview sandbox iframe');
+            return;
+        }
         const path = url.startsWith('http') || url.startsWith('ws') ? url : `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
 
         console.log('[WS][CONNECT]', new Date().toISOString(), path);

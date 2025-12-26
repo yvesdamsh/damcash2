@@ -2,13 +2,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { z } from 'npm:zod@^3.24.2';
 
 const RATE_LIMITS = new Map();
-const checkRateLimit = (userId) => {
+const checkRateLimit = (userId, action) => {
     const now = Date.now();
-    const userLimit = RATE_LIMITS.get(userId) || { count: 0, start: now };
-    if (now - userLimit.start > 60000) { userLimit.count = 0; userLimit.start = now; }
-    if (userLimit.count >= 10) return false;
-    userLimit.count++;
-    RATE_LIMITS.set(userId, userLimit);
+    const key = `${userId}:${action || 'general'}`;
+    const limitWindow = 60000; // 1 minute
+    const limit = action === 'get_balance' ? 60 : 10;
+    const entry = RATE_LIMITS.get(key) || { count: 0, start: now };
+    if (now - entry.start > limitWindow) { entry.count = 0; entry.start = now; }
+    if (entry.count >= limit) return false;
+    entry.count++;
+    RATE_LIMITS.set(key, entry);
     return true;
 };
 
@@ -60,7 +63,7 @@ export default async function handler(req) {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!checkRateLimit(user.id)) {
+    if (!checkRateLimit(user.id, action)) {
         return Response.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
