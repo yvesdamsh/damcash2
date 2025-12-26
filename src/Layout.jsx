@@ -50,8 +50,8 @@ function LayoutContent({ children }) {
     const { t, language } = useLanguage();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
-    const [appTheme, setAppTheme] = React.useState(localStorage.getItem('appTheme') || 'light');
-    const [gameMode, setGameMode] = React.useState(localStorage.getItem('gameMode') || 'checkers');
+    const [appTheme, setAppTheme] = React.useState(() => { try { return localStorage.getItem('appTheme') || 'light'; } catch (_) { return 'light'; } });
+    const [gameMode, setGameMode] = React.useState(() => { try { return localStorage.getItem('gameMode') || 'checkers'; } catch (_) { return 'checkers'; } });
     const location = useLocation();
     const navigate = useNavigate();
     const [user, setUser] = React.useState(null);
@@ -103,14 +103,16 @@ function LayoutContent({ children }) {
         // If we are on Profile, DO NOT save it.
         // If we are on Home, Lobby, etc., save it.
         if (location.pathname !== '/' && !path.includes('login') && !path.includes('profile')) {
-             localStorage.setItem('damcash_last_path', location.pathname);
+             try { localStorage.setItem('damcash_last_path', location.pathname); } catch (_) {}
         } else if (path.includes('profile')) {
              // If user navigates to profile, do not update the last path (keep the previous one, e.g. Home)
              // Or forcingly set it to Home to be safe?
              // Let's leave it as is (keeping previous safe path), or if null, set Home.
-             if (!localStorage.getItem('damcash_last_path')) {
-                 localStorage.setItem('damcash_last_path', '/Home');
-             }
+             try {
+                 if (!localStorage.getItem('damcash_last_path')) {
+                     localStorage.setItem('damcash_last_path', '/Home');
+                 }
+             } catch (_) {}
         }
     }, [location]);
 
@@ -118,14 +120,14 @@ function LayoutContent({ children }) {
     const toggleGameMode = () => {
         const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
         setGameMode(newMode);
-        localStorage.setItem('gameMode', newMode);
+        try { localStorage.setItem('gameMode', newMode); } catch (_) {}
         window.dispatchEvent(new Event('gameModeChanged'));
     };
 
     // Listen for external changes to game mode
     React.useEffect(() => {
         const handleStorageChange = () => {
-            const mode = localStorage.getItem('gameMode');
+            let mode = null; try { mode = localStorage.getItem('gameMode'); } catch (_) {}
             if (mode && mode !== gameMode) setGameMode(mode);
         };
         window.addEventListener('gameModeChanged', handleStorageChange);
@@ -155,14 +157,14 @@ function LayoutContent({ children }) {
     React.useEffect(() => {
         // Import dynamically or assume global if we could, but better to use the file logic
         // For now we just init state from localStorage logic which SoundManager uses
-        const saved = localStorage.getItem('soundEnabled');
+        let saved = null; try { saved = localStorage.getItem('soundEnabled'); } catch (_) {}
         setSoundEnabled(saved !== 'false');
     }, []);
 
     // Theme Management
     const handleThemeChange = (newTheme) => {
         setAppTheme(newTheme);
-        localStorage.setItem('appTheme', newTheme);
+        try { localStorage.setItem('appTheme', newTheme); } catch (_) {}
     };
 
     // Apply global theme class
