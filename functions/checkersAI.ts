@@ -214,18 +214,35 @@ class DraughtsEngine {
       return m;
     };
     
-    // Helper: Check if piece is capturable
+    // Helper: Check if piece is capturable (men adjacent, kings from distance)
     const capturable = (b, s, isWhitePiece) => {
       const dirs = [this.DIR_UL, this.DIR_UR, this.DIR_DL, this.DIR_DR];
+      const isEnemy = (p) => p && p !== this.EMPTY && ((p === this.WHITE_MAN || p === this.WHITE_KING) !== isWhitePiece);
+      const isKingPiece = (p) => p === this.WHITE_KING || p === this.BLACK_KING;
+
       for (const d of dirs) {
-        const enemySq = this.NEIGHBORS[s][d];
-        if (!enemySq) continue;
-        const ep = b[enemySq];
-        if (!ep || ep === this.EMPTY) continue;
-        const enemyIsWhite = (ep === this.WHITE_MAN || ep === this.WHITE_KING);
-        if (enemyIsWhite === isWhitePiece) continue;
-        const landing = this.NEIGHBORS[s][oppDir(d)];
-        if (landing && b[landing] === this.EMPTY) return true;
+        // 1) Enemy man (or king) adjacent that can jump over us
+        const adj = this.NEIGHBORS[s][d];
+        if (adj && isEnemy(b[adj])) {
+          const landing = this.NEIGHBORS[s][oppDir(d)];
+          if (landing && b[landing] === this.EMPTY) return true;
+        }
+
+        // 2) Enemy king on same diagonal at distance with empty squares between
+        //    King before us on the ray 'd'
+        let cur = this.NEIGHBORS[s][d];
+        while (cur && b[cur] === this.EMPTY) cur = this.NEIGHBORS[cur][d];
+        if (cur && isEnemy(b[cur]) && isKingPiece(b[cur])) {
+          const firstBeyond = this.NEIGHBORS[s][oppDir(d)];
+          if (firstBeyond && b[firstBeyond] === this.EMPTY) return true; // at least one landing square beyond
+        }
+        //    King behind us on the opposite ray
+        cur = this.NEIGHBORS[s][oppDir(d)];
+        while (cur && b[cur] === this.EMPTY) cur = this.NEIGHBORS[cur][oppDir(d)];
+        if (cur && isEnemy(b[cur]) && isKingPiece(b[cur])) {
+          const firstBeyond = this.NEIGHBORS[s][d];
+          if (firstBeyond && b[firstBeyond] === this.EMPTY) return true;
+        }
       }
       return false;
     };
