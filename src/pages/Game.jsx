@@ -719,15 +719,40 @@ export default function Game() {
                     });
 
                     let res = null;
-                    try {
-                        // Always try stronger backend AI first (even in local-ai)
-                        res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 6000);
-                    } catch (e) {
-                        console.error('[AI] invoke error', e);
-                        res = null;
+                    if (id === 'local-ai') {
+                        // Offline/local AI for instant response and zero rate usage
+                        if (game.game_type === 'chess') {
+                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                            if (moves.length > 0) res = { data: { move: moves[0] } };
+                        } else {
+                            let step = null;
+                            if (mustContinueWith) {
+                                const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
+                                if (piece) {
+                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
+                                    const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
+                                    if (captures.length > 0) step = captures[0];
+                                }
+                            }
+                            if (!step) {
+                                const all = getCheckersValidMoves(board, aiColor);
+                                if (all.length > 0) {
+                                    const pick = all.find(m => !!m.captured) || all[0];
+                                    step = { from: pick.from, to: pick.to, captured: pick.captured || null };
+                                }
+                            }
+                            if (step) res = { data: { move: step } };
+                        }
+                    } else {
+                        try {
+                            res = await callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 3500);
+                        } catch (e) {
+                            console.error('[AI] invoke error', e);
+                            res = null;
+                        }
                     }
                     console.log('[AI] Response from backend', res?.data || res);
-                    // If the backend returns no move or fails, ensure local fallback in local-ai
+                    // If the backend returns no move or fails, ensure fallback
                     if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
                         console.warn('[AI] No backend move, using local fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         // Fallback to local instant move if backend unavailable
