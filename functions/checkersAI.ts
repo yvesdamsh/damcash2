@@ -539,7 +539,7 @@ class DraughtsEngine {
     const { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
-    const deadline = Date.now() + Math.max(100, Math.min(4000, timeMs || 800));
+    const deadline = Date.now() + Math.max(150, Math.min(4500, timeMs || 800));
 
     const moveKey = (m) => `${m.from}-${m.to}-${m.captured?.join('.') || ''}`;
     const unsafeLanding = (b, mv) => {
