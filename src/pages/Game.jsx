@@ -737,6 +737,10 @@ export default function Game() {
                       : Promise.resolve(null);
 
                     const localPromise = (async () => {
+                      const normalize = (m) => ({
+                        ...m,
+                        captured: Array.isArray(m.captured) ? (m.captured[0] || null) : (m.captured || null)
+                      });
                       if (game.game_type === 'chess') {
                         const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
                         return moves.length ? { data: { move: moves[0] } } : null;
