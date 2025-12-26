@@ -267,13 +267,16 @@ function LayoutContent({ children }) {
 
     // Mobile Viewport Optimization
     React.useEffect(() => {
-        let meta = document.querySelector('meta[name="viewport"]');
-        if (!meta) {
-            meta = document.createElement('meta');
-            meta.name = "viewport";
-            document.head.appendChild(meta);
-        }
-        meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+        try {
+            let meta = document.querySelector('meta[name="viewport"]');
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.name = "viewport";
+                document.head.appendChild(meta);
+            }
+            // Avoid zoom-locks that crash some older Android WebViews
+            meta.content = "width=device-width, initial-scale=1, viewport-fit=cover";
+        } catch (_) {}
     }, []);
 
     // Elegant dark mode palette
