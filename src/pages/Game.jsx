@@ -695,7 +695,7 @@ export default function Game() {
                 if (!game) return;
                 const whiteIsAI = game.white_player_id === 'ai';
                 const blackIsAI = game.black_player_id === 'ai';
-                const aiTurnCheck = (id === 'local-ai') || (game.current_turn === 'white' ? whiteIsAI : blackIsAI);
+                const aiTurnCheck = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
                 if (!aiTurnCheck) { console.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); return; }
                 if (!isActive) return;
                 setIsAiThinking(true);
