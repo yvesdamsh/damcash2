@@ -56,6 +56,8 @@ class SoundManager {
             audio.volume = 0.5;
             audio.currentTime = 0;
             audio.play().catch(e => {
+                // On some Android browsers (Samsung Internet/Chrome), autoplay errors can permanently break audio contexts if thrown; swallow gracefully
+                console.warn('Audio play blocked or failed, will unlock on first user gesture');
                 // Autoplay blocked or format/network issue: wait for first user interaction then retry once
                 const beep = () => {
                     try {
