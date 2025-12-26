@@ -488,14 +488,20 @@ class DraughtsEngine {
       const km = killers[ply]?.[0];
       if (km && km.from === mv.from && km.to === mv.to) s += 110;
       const nb = this.applyMove(b, mv);
+      // Immediate unsafe landing (incl. king long jump)
       if (!mv.isCapture && unsafeLanding(nb, mv)) s -= 380;
+      // Never hang a piece: if opponent can capture our moved piece right away, punish heavily
+      const moverIsWhite = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
+      const oppColor = moverIsWhite ? this.BLACK : this.WHITE;
+      const oppCaps = this.getValidMoves(nb, oppColor).filter(m=>m.isCapture && Array.isArray(m.captured) && m.captured.includes(mv.to));
+      if (oppCaps.length) s -= 6000;
       const h = history.get(moveKey(mv)) || 0;
       s += h;
-      
+
       // FMJD bonus: prefer moves to strategic squares
       if (this.LONG_DIAGONAL.includes(mv.to)) s += 25;
       if (this.CENTRAL_STAR.includes(mv.to)) s += 20;
-      
+
       return s;
     };
 
@@ -654,11 +660,16 @@ function findBookMove(engine, currentBoard, aiColor) {
   const legal = engine.getValidMoves(currentBoard, aiColor);
 
   if (isStart && aiColor === engine.WHITE) {
-    // Randomly select from good openings for variety
+    // Randomly select from good openings for variety, but avoid immediate recapture blunders
     const shuffled = whiteFirst.sort(() => Math.random() - 0.5);
     for (const cand of shuffled) {
       const mv = legal.find(m => m.from === cand.from && m.to === cand.to && !m.isCapture);
-      if (mv) return mv;
+      if (mv) {
+        const nb = engine.applyMove(currentBoard, mv);
+        const opp = engine.BLACK;
+        const replyCaps = engine.getValidMoves(nb, opp).filter(m=>m.isCapture && m.captured?.includes(mv.to));
+        if (replyCaps.length === 0) return mv;
+      }
     }
   }
 
@@ -668,11 +679,16 @@ function findBookMove(engine, currentBoard, aiColor) {
       if (boardSignature(sim) === sigNow) {
         const key = `${wf.from}-${wf.to}`;
         const replies = blackReplies[key] || [];
-        // Randomly select from good responses
+        // Randomly select from good responses, but avoid immediate recapture traps (e.g., 16-21 vs 31-27)
         const shuffled = replies.sort(() => Math.random() - 0.5);
         for (const rep of shuffled) {
           const mv = legal.find(m => m.from === rep.from && m.to === rep.to && !m.isCapture);
-          if (mv) return mv;
+          if (mv) {
+            const nb = engine.applyMove(currentBoard, mv);
+            const opp = engine.WHITE;
+            const replyCaps = engine.getValidMoves(nb, opp).filter(m=>m.isCapture && m.captured?.includes(mv.to));
+            if (replyCaps.length === 0) return mv;
+          }
         }
       }
     }

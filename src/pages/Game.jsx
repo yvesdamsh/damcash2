@@ -765,31 +765,34 @@ export default function Game() {
                     console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure fallback
                     if ((!res || !res.data || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
-                        console.warn('[AI] No backend move, using local fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
-                        // Fallback to local instant move if backend unavailable
+                        console.warn('[AI] No backend move, using local safe fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
                             if (moves.length > 0) {
                                 res = { data: { move: moves[0] } };
                             }
                         } else {
-                            // Checkers
-                            let step = null;
-                            if (mustContinueWith) {
-                                const piece = board?.[mustContinueWith.r]?.[mustContinueWith.c];
-                                if (piece) {
-                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
-                                    const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
-                                    if (captures.length > 0) step = captures[0];
+                            // Checkers: prefer captures; otherwise, avoid any move that is immediately capturable
+                            const all = getCheckersValidMoves(board, aiColor);
+                            const enemyColor = aiColor === 'white' ? 'black' : 'white';
+                            const safeFirst = async () => {
+                                // Try captures first
+                                const caps = all.filter(m => !!m.captured);
+                                if (caps.length) return caps[0];
+                                // Otherwise filter out immediately capturable landings
+                                const { getValidMoves } = await import('@/components/checkersLogic');
+                                for (const m of all) {
+                                    // simulate
+                                    const sim = JSON.parse(JSON.stringify(board));
+                                    sim[m.from.r][m.from.c] = 0;
+                                    sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
+                                    const enemyMoves = getCheckersValidMoves(sim, enemyColor);
+                                    const threatens = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
+                                    if (!threatens) return m;
                                 }
-                            }
-                            if (!step) {
-                                const all = getCheckersValidMoves(board, aiColor);
-                                if (all.length > 0) {
-                                    const pick = all.find(m => !!m.captured) || all[0];
-                                    step = { from: pick.from, to: pick.to, captured: pick.captured || null };
-                                }
-                            }
+                                return all[0] || null;
+                            };
+                            const step = await safeFirst();
                             if (step) res = { data: { move: step } };
                         }
                     }
