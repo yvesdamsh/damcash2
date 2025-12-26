@@ -421,6 +421,13 @@ class DraughtsEngine {
 
   // --- Quiescence (captures only) ---
   quiescence(board, alpha, beta, turnColor, heroColor) {
+    // If a big tactical shot exists for the side to move, prune towards it
+    const shot = this.findTacticalShot(board, turnColor, 4);
+    if (shot) {
+      const nb = this.applyMove(board, shot);
+      const nt = (turnColor === this.WHITE) ? this.BLACK : this.WHITE;
+      return Math.max(alpha, -this.quiescence(nb, -beta, -alpha, nt, heroColor));
+    }
     const stand = this.evaluate(board, heroColor);
     if (stand >= beta) return beta;
     if (alpha < stand) alpha = stand;
