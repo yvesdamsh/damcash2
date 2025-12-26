@@ -958,7 +958,7 @@ export default function Game() {
                 }
             };
             // Small think time to keep UX natural
-            makeAiMove();
+            setTimeout(makeAiMove, delay);
         }
 
         return () => {
