@@ -749,7 +749,7 @@ export default function Game() {
                         if (piece && ((aiIsWhite && pieceIsWhite) || (!aiIsWhite && !pieceIsWhite))) {
                           const { getMovesForPiece } = await import('@/components/checkersLogic');
                           const { captures } = getMovesForPiece(board, mustContinueWith.r, mustContinueWith.c, piece, true);
-                          if (captures.length > 0) return { data: { move: captures[0] } };
+                          if (captures.length > 0) return { data: { move: normalize(captures[0]) } };
                         }
                       }
                       const all = getCheckersValidMoves(board, aiColor);
