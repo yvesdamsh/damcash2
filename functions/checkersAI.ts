@@ -446,50 +446,92 @@ class DraughtsEngine {
     return alpha;
   }
 
-  // --- Tactical combination detector (sacrifice -> forced recapture -> combo) ---
+  // --- Tactical combination detector (FMJD motifs: Ghestem, Kerkhof, Weiss, Turc, Bombe, etc.) ---
+  // Looks for sacrificial quiet/capture that forces an opponent reply followed by a winning multi-capture.
+  // Uses worst-case (min over opponent replies) so shots are robust, not hope-chess.
   findTacticalShot(board, heroColor, maxReplies = 6) {
     const opp = (heroColor === this.WHITE) ? this.BLACK : this.WHITE;
     const legal = this.getValidMoves(board, heroColor);
     if (!legal.length) return null;
 
-    // Helper: piece value (king more valuable)
-    const pVal = (p) => (p === this.WHITE_KING || p === this.BLACK_KING) ? 2 : 1;
+    const isKingPiece = (p) => p === this.WHITE_KING || p === this.BLACK_KING;
+    const isManPiece = (p) => p === this.WHITE_MAN || p === this.BLACK_MAN;
+    const pVal = (p) => isKingPiece(p) ? 2 : 1; // simple material unit for tactical swings
     const capsValue = (b, caps) => Array.isArray(caps) ? caps.reduce((s, sq) => s + pVal(b[sq] || 0), 0) : 0;
 
-    let best = null;
+    const scoreFollow = (bAfterOpp, cand) => {
+      if (!cand) return { val: 0, len: 0, promo: 0 };
+      const gain = capsValue(bAfterOpp, cand.captured);
+      const length = cand.captured?.length || 0;
+      // Promotion bonus if our moving man will crown after this capture
+      const mover = bAfterOpp[cand.from];
+      const isWhite = (mover === this.WHITE_MAN || mover === this.WHITE_KING);
+      const wasMan = isManPiece(mover);
+      const promo = (wasMan && ((isWhite && cand.to <= 5) || (!isWhite && cand.to >= 46))) ? 2 : 0;
+      return { val: gain + promo, len: length, promo };
+    };
+
+    let bestMove = null;
     let bestScore = -Infinity;
 
-    // Consider both captures and quiet moves (many motifs start by a sacrifice/quiet move)
-    for (const mv of legal) {
+    // Order hero candidates: prioritize moves that either capture already or move towards long diag / star
+    const orderHero = (mv) => {
+      let s = 0;
+      if (mv.isCapture) s += (mv.captured?.length || 1) * 50;
+      if (this.LONG_DIAGONAL.includes(mv.to)) s += 8;
+      if (this.CENTRAL_STAR.includes(mv.to)) s += 6;
+      return -s; // lower first in sort()
+    };
+
+    const heroCandidates = [...legal].sort((a, b) => orderHero(a) - orderHero(b));
+
+    for (const mv of heroCandidates) {
       const b1 = this.applyMove(board, mv);
-      const oppMoves = this.getValidMoves(b1, opp)
-        .sort((a, b) => (b.isCapture? (b.captured?.length||0) : 0) - (a.isCapture? (a.captured?.length||0) : 0))
-        .slice(0, maxReplies);
+      const heroGainNow = capsValue(board, mv.captured);
 
-      for (const omv of oppMoves) {
+      const allOpp = this.getValidMoves(b1, opp);
+      if (!allOpp.length) {
+        // Tactical shot that leaves opponent with no moves (or only bad moves)
+        const chainNow = mv.captured?.length || 0;
+        const sc = heroGainNow * 120 + chainNow * 15 + (isManPiece(board[mv.from]) ? ((heroColor===this.WHITE && mv.to<=5) || (heroColor===this.BLACK && mv.to>=46) ? 260 : 0) : 0);
+        if (sc > bestScore) { bestScore = sc; bestMove = mv; }
+        continue;
+      }
+
+      // Opp replies: prioritize captures and keep top-N
+      const oppCandidates = [...allOpp]
+        .sort((a, b) => ((b.isCapture? (b.captured?.length||0) : 0) - (a.isCapture? (a.captured?.length||0) : 0)))
+        .slice(0, Math.max(1, maxReplies));
+
+      // Compute worst-case net gain across opponent plausible replies
+      let worstNet = Infinity;
+      let worstChain = 0;
+      for (const omv of oppCandidates) {
         const b2 = this.applyMove(b1, omv);
-        const hero2 = this.getValidMoves(b2, heroColor).filter(m => m.isCapture)
-          .sort((a, b) => (b.captured?.length || 0) - (a.captured?.length || 0));
-        if (!hero2.length) continue;
-
-        const follow = hero2[0];
-        const gainNow = capsValue(board, mv.captured);
-        const lossOpp = capsValue(b1, omv.captured);
-        const gainNext = capsValue(b2, follow.captured);
-        const net = (gainNow + gainNext) - lossOpp; // positive if combo wins material
-        const chainLen = (mv.isCapture ? (mv.captured?.length || 0) : 0) + (follow.captured?.length || 0);
-
-        // Heuristic score: reward net material and chain length (motif-like sequences)
-        const score = net * 120 + chainLen * 15 + (mv.isCapture ? 10 : 0);
-
-        if (net >= 1 && chainLen >= 2 && score > bestScore) {
-          bestScore = score;
-          best = mv;
+        const followCaps = this.getValidMoves(b2, heroColor).filter(m => m.isCapture);
+        // Choose our best follow-up capture sequence (longest / most valuable)
+        let bestFollow = null, bestFollowScore = -Infinity;
+        for (const fm of followCaps) {
+          const f = scoreFollow(b2, fm);
+          const val = f.val * 120 + f.len * 15 + (this.LONG_DIAGONAL.includes(fm.to) ? 8 : 0);
+          if (val > bestFollowScore) { bestFollowScore = val; bestFollow = fm; }
         }
+        const heroGainNext = bestFollow ? capsValue(b2, bestFollow.captured) : 0;
+        const promoBonus = (bestFollow && scoreFollow(b2, bestFollow).promo) ? 2 : 0;
+        const oppGain = capsValue(b1, omv.captured);
+        const chainLen = (mv.isCapture ? (mv.captured?.length || 0) : 0) + (bestFollow?.captured?.length || 0);
+        const net = (heroGainNow + heroGainNext + promoBonus) - oppGain;
+        if (net < worstNet) { worstNet = net; worstChain = chainLen; }
+      }
+
+      // Require a real shot: material advantage at worst and at least 2 captures total
+      if (worstNet >= 1 && worstChain >= 2) {
+        const mvScore = worstNet * 120 + worstChain * 15 + (mv.isCapture ? 10 : 0);
+        if (mvScore > bestScore) { bestScore = mvScore; bestMove = mv; }
       }
     }
 
-    return best;
+    return bestMove;
   }
 
   // --- Search with heuristics and time ---
