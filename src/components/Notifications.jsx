@@ -37,7 +37,15 @@ export default function Notifications() {
             if (!userId) return;
 
             const now = Date.now();
-            if (!force && (document.hidden || now < __notifCache.cooldownUntil)) return;
+            if (document.hidden) return;
+            if (now < __notifCache.cooldownUntil) {
+                // Serve cache during cooldown
+                if (__notifCache.items.length) {
+                    setNotifications(__notifCache.items);
+                    setUnreadCount(__notifCache.items.filter(n => !n.read).length);
+                }
+                return;
+            }
 
             if (!force && __notifCache.items.length && now - __notifCache.ts < 60000) {
                 setNotifications(__notifCache.items);
