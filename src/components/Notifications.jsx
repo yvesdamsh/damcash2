@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 
 // Basic cache to reduce API hits
-let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0 };
+let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0, cooldownUntil: 0 };
 
 export default function Notifications() {
     const { t, formatRelative } = useLanguage();
@@ -36,9 +36,9 @@ export default function Notifications() {
         try {
             if (!userId) return;
 
-            if (document.hidden && !force) return;
-
             const now = Date.now();
+            if (!force && (document.hidden || now < __notifCache.cooldownUntil)) return;
+
             if (!force && __notifCache.items.length && now - __notifCache.ts < 60000) {
                 setNotifications(__notifCache.items);
                 setUnreadCount(__notifCache.items.filter(n => !n.read).length);
@@ -59,13 +59,18 @@ export default function Notifications() {
             })();
             __notifCache.pending = p;
             const items = await p;
-            __notifCache = { items, ts: Date.now(), pending: null, lastErrorTs: 0 };
+            __notifCache = { ...__notifCache, items, ts: Date.now(), pending: null, lastErrorTs: 0 };
 
             setNotifications(items);
             setUnreadCount(items.filter(n => !n.read).length);
         } catch (e) {
             __notifCache.pending = null;
             const now = Date.now();
+            const status = e?.response?.status || e?.status;
+            if (status === 429) {
+                // Back off 45s to respect server throttling
+                __notifCache.cooldownUntil = now + 45000;
+            }
             if (now - (__notifCache.lastErrorTs || 0) > 10000) {
                 console.warn('Error fetching notifications (suppressed):', e?.response?.data?.error || e?.message || e);
                 __notifCache.lastErrorTs = now;

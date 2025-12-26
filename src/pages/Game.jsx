@@ -661,12 +661,12 @@ export default function Game() {
             game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '') ||
             game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '')
         ));
+        // Proactively set AI flag to avoid early false negatives
+        if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
         if (!aiPresentNow || !game || game.status !== 'playing') {
-            if (window.__debug_ai) console.log('[AI] Skip: conditions not met', { isAiGame, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
+            if (window.__debug_ai) console.log('[AI] Skip: conditions not met', { isAiGame: aiPresentNow, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
             return;
         }
-        // Keep state in sync
-        if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
         // Avoid concurrent AI jobs
         if (isAiThinking) {
             console.log('[AI] Skip: already thinking');
