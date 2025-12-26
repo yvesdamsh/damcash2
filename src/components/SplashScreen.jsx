@@ -40,8 +40,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
         const enabled = localStorage.getItem('soundEnabled') !== 'false';
         if (!enabled) return;
 
-        let t1, t2;
-        const play = () => { t1 = setTimeout(() => playOnce(), 200); };
+        let t1;
         const cleanup = () => {
             window.removeEventListener('pointerdown', unlock);
             window.removeEventListener('keydown', unlock);
@@ -50,20 +49,18 @@ export default function SplashScreen({ onPlayAsGuest }) {
         };
         const unlock = () => {
             try { sessionStorage.setItem('audio_unlocked', 'true'); } catch(_) {}
-            play();
+            // Play only after explicit interaction
+            t1 = setTimeout(() => playOnce(), 120);
             cleanup();
         };
-
-        const hasGesture = sessionStorage.getItem('audio_unlocked') === 'true';
-        if (hasGesture) play();
 
         window.addEventListener('pointerdown', unlock, { once: true });
         window.addEventListener('keydown', unlock, { once: true });
         window.addEventListener('touchstart', unlock, { once: true });
         window.addEventListener('click', unlock, { once: true });
-        // Try to play once immediately; if blocked, unlock will replay
-        t2 = setTimeout(() => playOnce(), 250);
-        return () => { cleanup(); if (t1) clearTimeout(t1); if (t2) clearTimeout(t2); };
+
+        // IMPORTANT: no auto-play attempt on mount (Android crash fix)
+        return () => { cleanup(); if (t1) clearTimeout(t1); };
     }, []);
 
     return (
