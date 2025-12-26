@@ -662,7 +662,7 @@ export default function Game() {
             game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '')
         ));
         if (!aiPresentNow || !game || game.status !== 'playing') {
-            console.log('[AI] Skip: conditions not met', { isAiGame, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
+            if (window.__debug_ai) console.log('[AI] Skip: conditions not met', { isAiGame, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
             return;
         }
         // Keep state in sync

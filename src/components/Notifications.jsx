@@ -20,6 +20,7 @@ export default function Notifications() {
     const [pushEnabled, setPushEnabled] = useState(
         typeof Notification !== 'undefined' && Notification.permission === 'granted'
     );
+    const [userId, setUserId] = useState(null);
     const navigate = useNavigate();
 
     const requestPushPermission = async () => {
@@ -33,8 +34,7 @@ export default function Notifications() {
 
     const fetchNotifications = async (force = false) => {
         try {
-            const user = await base44.auth.me().catch(() => null);
-            if (!user) return;
+            if (!userId) return;
 
             if (document.hidden && !force) return;
 
@@ -53,7 +53,7 @@ export default function Notifications() {
             }
 
             const p = (async () => {
-                const res = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 30);
+                const res = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 30);
                 res.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
                 return res;
             })();
@@ -74,6 +74,12 @@ export default function Notifications() {
     };
 
     useEffect(() => {
+        // Get userId once
+        base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
+    }, []);
+
+    useEffect(() => {
+        if (!userId) return;
         // Initial warm (force even if hidden)
         fetchNotifications(true);
 
@@ -82,10 +88,13 @@ export default function Notifications() {
 
         // Realtime updates handled via global event from RealTimeContext
         let debounceT;
+        let nextRefreshAt = 0;
         const handleUpdate = () => {
-            // Debounce bursts from socket
+            const now = Date.now();
+            if (now < nextRefreshAt) return; // cooldown 15s
+            nextRefreshAt = now + 15000;
             clearTimeout(debounceT);
-            debounceT = setTimeout(() => fetchNotifications(true), 400);
+            debounceT = setTimeout(() => fetchNotifications(true), 300);
         };
         window.addEventListener('notification-update', handleUpdate);
 
@@ -94,7 +103,7 @@ export default function Notifications() {
             window.removeEventListener('notification-update', handleUpdate);
             clearTimeout(debounceT);
         };
-    }, []);
+    }, [userId]);
 
     const markAsRead = async (id) => {
         try {
