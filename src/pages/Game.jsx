@@ -681,6 +681,8 @@ export default function Game() {
 
         if (isAiTurn && !isAiThinking) {
             const makeAiMove = async () => {
+                    // Debounce if a new turn arrives too fast
+                    if (isAiThinking) return;
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
                 const whiteIsAI = game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '');
