@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 
+// Basic cache to reduce API hits
+let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0 };
+
 export default function Notifications() {
     const { t, formatRelative } = useLanguage();
     const [notifications, setNotifications] = useState([]);
@@ -28,37 +31,65 @@ export default function Notifications() {
         }
     };
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = async (force = false) => {
         try {
-            const user = await base44.auth.me();
+            const user = await base44.auth.me().catch(() => null);
             if (!user) return;
 
-            // Fetch notifications with explicit limit and sort
-            const notifs = await base44.entities.Notification.filter({ 
-                recipient_id: user.id
-                // Fetch all types
-            }, '-created_date', 50);
-            
-            // Client-side sort fallback just in case
-            notifs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-            
-            setNotifications(notifs);
-            setUnreadCount(notifs.filter(n => !n.read).length);
+            if (document.hidden && !force) return;
+
+            const now = Date.now();
+            if (!force && __notifCache.items.length && now - __notifCache.ts < 60000) {
+                setNotifications(__notifCache.items);
+                setUnreadCount(__notifCache.items.filter(n => !n.read).length);
+                return;
+            }
+
+            if (__notifCache.pending) {
+                const items = await __notifCache.pending;
+                setNotifications(items);
+                setUnreadCount(items.filter(n => !n.read).length);
+                return;
+            }
+
+            const p = (async () => {
+                const res = await base44.entities.Notification.filter({ recipient_id: user.id }, '-created_date', 50);
+                res.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+                return res;
+            })();
+            __notifCache.pending = p;
+            const items = await p;
+            __notifCache = { items, ts: Date.now(), pending: null, lastErrorTs: 0 };
+
+            setNotifications(items);
+            setUnreadCount(items.filter(n => !n.read).length);
         } catch (e) {
-            console.error("Error fetching notifications", e);
+            __notifCache.pending = null;
+            const now = Date.now();
+            if (now - (__notifCache.lastErrorTs || 0) > 10000) {
+                console.warn('Error fetching notifications (suppressed):', e?.response?.data?.error || e?.message || e);
+                __notifCache.lastErrorTs = now;
+            }
         }
     };
 
     useEffect(() => {
-        fetchNotifications();
-        const interval = setInterval(fetchNotifications, 5000); // Poll every 5s for snappier updates
+        // Initial warm (force even if hidden)
+        fetchNotifications(true);
+
+        const tick = () => fetchNotifications(false);
+        const interval = setInterval(tick, 60000); // Poll every 60s
+
+        const onVisibility = () => { if (!document.hidden) fetchNotifications(false); };
+        window.addEventListener('visibilitychange', onVisibility);
 
         // Realtime updates handled via global event from RealTimeContext
-        const handleUpdate = () => fetchNotifications();
+        const handleUpdate = () => fetchNotifications(true);
         window.addEventListener('notification-update', handleUpdate);
 
         return () => {
             clearInterval(interval);
+            window.removeEventListener('visibilitychange', onVisibility);
             window.removeEventListener('notification-update', handleUpdate);
         };
     }, []);
@@ -157,7 +188,7 @@ export default function Notifications() {
     return (
         <Popover open={isOpen} onOpenChange={(open) => {
             setIsOpen(open);
-            if (open) fetchNotifications();
+            if (open) fetchNotifications(true);
         }}>
             <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
                 <Bell className="w-5 h-5" />
