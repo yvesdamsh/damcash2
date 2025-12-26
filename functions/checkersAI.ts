@@ -1,8 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
-// Strong Checkers (10x10 draughts) AI with: iterative deepening, alpha-beta, quiescence,
-// killer/history heuristics, mobility/safety evaluation, mandatory max-capture rule, and
-// support for forced continuation (activePiece).
+// Enhanced Checkers (10x10 draughts) AI with FMJD strategic concepts:
+// - Iterative deepening, alpha-beta, quiescence
+// - Killer/history heuristics
+// - FMJD strategic evaluation: Long Diagonal, Wing Control (Chizhov), 
+//   Hanging Pawns, Triangle Formations, Dog Hole, Central Star
+// - Mandatory max-capture rule
+// - Support for forced continuation (activePiece)
 
 class DraughtsEngine {
   constructor() {
@@ -22,6 +26,13 @@ class DraughtsEngine {
 
     this.board = new Int8Array(51);
     this.NEIGHBORS = new Array(51).fill(0).map(() => [0, 0, 0, 0]);
+    
+    // FMJD Strategic Constants
+    this.LONG_DIAGONAL = [5, 14, 23, 32, 41, 46]; // Grande Diagonale
+    this.CENTRAL_STAR = [22, 23, 27, 28, 29]; // Étoile Centrale (cases stratégiques)
+    this.WHITE_DOG_HOLE = 46; // Trou de chien blanc
+    this.BLACK_DOG_HOLE = 5;  // Trou de chien noir
+    
     this.initTables();
   }
 
@@ -142,13 +153,10 @@ class DraughtsEngine {
           const cell = board[nxt];
           if (cell === this.EMPTY) {
             if (seenEnemySq) {
-              if (taken.includes(seenEnemySq)) break; // cannot recapture same piece
-              // landing after a capture
+              if (taken.includes(seenEnemySq)) break;
               extended = true;
-              // simulate landing by adding to path and continue
               const newPath = [...path, nxt];
               const newTaken = [...taken, seenEnemySq];
-              // Temporarily remove enemy to allow multi-capture exploration
               const saved = board[seenEnemySq];
               const savedFrom = board[curSq];
               board[seenEnemySq] = this.EMPTY;
@@ -156,24 +164,21 @@ class DraughtsEngine {
               const tmpPiece = savedFrom;
               board[nxt] = tmpPiece;
               dfs(nxt, newTaken, newPath);
-              // Undo temp
               board[nxt] = this.EMPTY;
               board[curSq] = savedFrom;
               board[seenEnemySq] = saved;
 
-              if (!isKing) break; // men jump only one square landing choice per dir
+              if (!isKing) break;
             } else {
-              if (!isKing) break; // men cannot slide before capture
-              // keep sliding searching for enemy
+              if (!isKing) break;
               travel = nxt;
             }
           } else if (cell === enemyMan || cell === enemyKing) {
-            if (seenEnemySq) break; // cannot have two in a row
+            if (seenEnemySq) break;
             seenEnemySq = nxt;
-            // continue to look for empty landing squares after enemy
             travel = nxt;
           } else {
-            break; // own piece blocking
+            break;
           }
         }
       }
@@ -186,9 +191,11 @@ class DraughtsEngine {
     return captures;
   }
 
-  // --- Evaluation ---
+  // --- FMJD Enhanced Evaluation ---
   evaluate(board, turnColor) {
     const oppDir = (d) => (d===this.DIR_UL?this.DIR_DR : d===this.DIR_UR?this.DIR_DL : d===this.DIR_DL?this.DIR_UR : this.DIR_UL);
+    
+    // Helper: Calculate mobility
     const mobility = (b, s, p) => {
       let m = 0;
       const isKing = (p === this.WHITE_KING || p === this.BLACK_KING);
@@ -201,11 +208,13 @@ class DraughtsEngine {
           if (!nxt) break;
           if (b[nxt] !== this.EMPTY) break;
           m++; steps++; cur = nxt;
-          if (!isKing || steps >= 3) break; // limit look-ahead
+          if (!isKing || steps >= 3) break;
         }
       }
       return m;
     };
+    
+    // Helper: Check if piece is capturable
     const capturable = (b, s, isWhitePiece) => {
       const dirs = [this.DIR_UL, this.DIR_UR, this.DIR_DL, this.DIR_DR];
       for (const d of dirs) {
@@ -221,26 +230,191 @@ class DraughtsEngine {
       return false;
     };
 
+    // Helper: Check if pawn is supported (has friendly pawn behind)
+    const isSupported = (b, s, isWhite) => {
+      const { r, c } = this.getRC(s);
+      const behindRow = isWhite ? r + 1 : r - 1;
+      if (behindRow < 0 || behindRow > 9) return false;
+      
+      const leftBehind = this.getSquare(behindRow, c - 1);
+      const rightBehind = this.getSquare(behindRow, c + 1);
+      const friendlyMan = isWhite ? this.WHITE_MAN : this.BLACK_MAN;
+      
+      if (leftBehind && b[leftBehind] === friendlyMan) return true;
+      if (rightBehind && b[rightBehind] === friendlyMan) return true;
+      return false;
+    };
+
+    // Helper: Check for triangle formation
+    const hasTriangle = (b, s, isWhite) => {
+      const { r, c } = this.getRC(s);
+      const behindRow = isWhite ? r + 1 : r - 1;
+      if (behindRow < 0 || behindRow > 9) return false;
+      
+      const leftBehind = this.getSquare(behindRow, c - 1);
+      const rightBehind = this.getSquare(behindRow, c + 1);
+      const friendlyMan = isWhite ? this.WHITE_MAN : this.BLACK_MAN;
+      
+      return leftBehind && rightBehind && 
+             b[leftBehind] === friendlyMan && 
+             b[rightBehind] === friendlyMan;
+    };
+
     let w = 0, bl = 0;
     const centerRows = new Set([4, 5]);
+    
+    // Track pieces for wing control
+    const whitePieces = [];
+    const blackPieces = [];
+
     for (let i = 1; i <= 50; i++) {
       const p = board[i];
       if (p === this.EMPTY) continue;
-      const r = Math.floor((i - 1) / 5);
+      
+      const { r, c } = this.getRC(i);
       const isWhite = (p === this.WHITE_MAN || p === this.WHITE_KING);
       const isKing = (p === this.WHITE_KING || p === this.BLACK_KING);
-      let val = isKing ? 340 : 100; // material
-      if (!isKing) val += (isWhite ? (9 - r) : r) * 3.5; // advancement
-      if (centerRows.has(r)) val += 5; // center
-      if (!isKing && ((isWhite && i >= 46) || (!isWhite && i <= 5))) val += 6; // back rank guard
-      if (!isKing) { // near promotion
+      
+      // Track pieces
+      if (isWhite) whitePieces.push({ sq: i, r, c, isKing });
+      else blackPieces.push({ sq: i, r, c, isKing });
+      
+      // === BASE EVALUATION ===
+      let val = isKing ? 340 : 100; // Material
+      
+      // Advancement bonus
+      if (!isKing) val += (isWhite ? (9 - r) : r) * 3.5;
+      
+      // Center control
+      if (centerRows.has(r)) val += 5;
+      
+      // Back rank guard
+      if (!isKing && ((isWhite && i >= 46) || (!isWhite && i <= 5))) val += 6;
+      
+      // Near promotion bonus
+      if (!isKing) {
         const dist = isWhite ? r : (9 - r);
         if (dist <= 2) val += (3 - dist) * 14;
       }
-      val += mobility(board, i, p) * 2; // mobility
-      if (capturable(board, i, isWhite)) val -= isKing ? 160 : 95; // hanging
+      
+      // Mobility
+      val += mobility(board, i, p) * 2;
+      
+      // Hanging piece penalty
+      if (capturable(board, i, isWhite)) val -= isKing ? 160 : 95;
+      
+      // === FMJD STRATEGIC BONUSES ===
+      
+      // 1. Long Diagonal Control (Grande Diagonale)
+      if (this.LONG_DIAGONAL.includes(i)) {
+        val += 15;
+      }
+      
+      // 2. Central Star Control (Étoile Centrale)
+      if (this.CENTRAL_STAR.includes(i)) {
+        val += 12;
+      }
+      
+      // 3. Hanging Pawn Penalty (Pions Suspendus)
+      if (!isKing) {
+        const isAdvanced = isWhite ? (r < 5) : (r > 4);
+        if (isAdvanced && !isSupported(board, i, isWhite)) {
+          val -= 15;
+        }
+      }
+      
+      // 4. Triangle Formation Bonus
+      if (!isKing && hasTriangle(board, i, isWhite)) {
+        val += 15;
+      }
+      
+      // 5. Dog Hole Detection
+      if (isWhite && i === this.WHITE_DOG_HOLE) {
+        // Check if blocked by enemy at 41
+        const blocker = board[41];
+        if (blocker === this.BLACK_MAN || blocker === this.BLACK_KING) {
+          val -= 20; // Trapped in dog hole
+        }
+      }
+      if (!isWhite && i === this.BLACK_DOG_HOLE) {
+        // Check if blocked by enemy at 10
+        const blocker = board[10];
+        if (blocker === this.WHITE_MAN || blocker === this.WHITE_KING) {
+          val -= 20; // Trapped in dog hole
+        }
+      }
+      
       if (isWhite) w += val; else bl += val;
     }
+    
+    // === WING CONTROL (Chizhov Strategy) ===
+    // Left wing: columns 0-2 (squares with c <= 2)
+    // Right wing: columns 7-9 (squares with c >= 7)
+    
+    const whiteLeftWing = whitePieces.filter(p => p.c <= 2).length;
+    const whiteRightWing = whitePieces.filter(p => p.c >= 7).length;
+    const blackLeftWing = blackPieces.filter(p => p.c >= 7).length; // Inverted for black
+    const blackRightWing = blackPieces.filter(p => p.c <= 2).length;
+    
+    // Bonus for presence on both wings
+    if (whiteLeftWing > 0 && whiteRightWing > 0) {
+      w += 10;
+    } else if (whiteLeftWing === 0 || whiteRightWing === 0) {
+      w -= 10; // Weakness penalty
+    }
+    
+    if (blackLeftWing > 0 && blackRightWing > 0) {
+      bl += 10;
+    } else if (blackLeftWing === 0 || blackRightWing === 0) {
+      bl -= 10;
+    }
+    
+    // === FORMATION 45-40 (Olympic Formation) ===
+    // White: pieces at 45 and 40 create strong attacking formation
+    if (board[45] === this.WHITE_MAN && board[40] === this.WHITE_MAN) {
+      w += 18;
+    }
+    // Black: pieces at 6 and 11 (mirror)
+    if (board[6] === this.BLACK_MAN && board[11] === this.BLACK_MAN) {
+      bl += 18;
+    }
+    
+    // === PASSED PAWN BONUS ===
+    // A pawn with no enemy pawns in front on adjacent columns
+    for (const piece of whitePieces) {
+      if (!piece.isKing && piece.r <= 4) {
+        let isPassed = true;
+        for (let checkRow = piece.r - 1; checkRow >= 0; checkRow--) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const checkSq = this.getSquare(checkRow, piece.c + dc);
+            if (checkSq && board[checkSq] === this.BLACK_MAN) {
+              isPassed = false;
+              break;
+            }
+          }
+          if (!isPassed) break;
+        }
+        if (isPassed) w += 20;
+      }
+    }
+    
+    for (const piece of blackPieces) {
+      if (!piece.isKing && piece.r >= 5) {
+        let isPassed = true;
+        for (let checkRow = piece.r + 1; checkRow <= 9; checkRow++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const checkSq = this.getSquare(checkRow, piece.c + dc);
+            if (checkSq && board[checkSq] === this.WHITE_MAN) {
+              isPassed = false;
+              break;
+            }
+          }
+          if (!isPassed) break;
+        }
+        if (isPassed) bl += 20;
+      }
+    }
+
     const tempo = 10;
     const base = (w - bl) + (turnColor === this.WHITE ? tempo : -tempo);
     return (turnColor === this.WHITE) ? base : -base;
@@ -255,7 +429,6 @@ class DraughtsEngine {
     const moves = this.getValidMoves(board, turnColor).filter(m => m.isCapture);
     if (!moves.length) return stand;
 
-    // Simple MVV/LVA proxy: sort by captured length desc
     moves.sort((a, b) => (b.captured?.length || 0) - (a.captured?.length || 0));
     for (const mv of moves) {
       const nb = this.applyMove(board, mv);
@@ -305,6 +478,11 @@ class DraughtsEngine {
       if (!mv.isCapture && unsafeLanding(nb, mv)) s -= 150;
       const h = history.get(moveKey(mv)) || 0;
       s += h;
+      
+      // FMJD bonus: prefer moves to strategic squares
+      if (this.LONG_DIAGONAL.includes(mv.to)) s += 25;
+      if (this.CENTRAL_STAR.includes(mv.to)) s += 20;
+      
       return s;
     };
 
@@ -386,7 +564,7 @@ const damcashAdapter = {
         if (!dark) continue;
         const s = engine.getSquare(r, c);
         if (!s) continue;
-        const piece = damcashBoard[r]?.[c] || 0; // app: 0 empty, 1 WM, 2 BM, 3 WK, 4 BK
+        const piece = damcashBoard[r]?.[c] || 0;
         let mapped = 0;
         if (piece === 1) mapped = engine.WHITE_MAN;
         else if (piece === 2) mapped = engine.BLACK_MAN;
@@ -398,7 +576,6 @@ const damcashAdapter = {
     return b;
   },
   toAppMove: (engineMove, engine) => {
-    // Provide single-step fields for current UI plus full sequence for future
     const fromRC = engine.getRC(engineMove.from);
     const fullPath = Array.isArray(engineMove.path) ? engineMove.path : [];
     const firstTo = fullPath.length ? fullPath[0] : engineMove.to;
@@ -415,7 +592,7 @@ const damcashAdapter = {
   }
 };
 
-// --- Opening Book (from FMJD classical courses) ---
+// --- Enhanced Opening Book (FMJD classical + modern variations) ---
 function createStartingBoard(engine) {
   const b = new Int8Array(51);
   for (let s = 1; s <= 50; s++) b[s] = engine.EMPTY;
@@ -438,44 +615,49 @@ function boardSignature(b) {
 }
 
 function findBookMove(engine, currentBoard, aiColor) {
-  // Skip book if kings or captures forced likely
-  // 1) First move as White from initial position
   const start = createStartingBoard(engine);
   const sigNow = boardSignature(currentBoard);
   const sigStart = boardSignature(start);
   const isStart = sigNow === sigStart;
 
+  // Classical FMJD opening moves for White
   const whiteFirst = [
-    { from: 32, to: 28 },
-    { from: 31, to: 27 },
-    { from: 33, to: 29 },
-    { from: 34, to: 30 },
+    { from: 32, to: 28 }, // Classical: 32-28
+    { from: 31, to: 27 }, // Roozenburg
+    { from: 33, to: 29 }, // Springer
+    { from: 34, to: 30 }, // Keller
+    { from: 35, to: 30 }, // Alternative
   ];
 
+  // Black responses based on White's opening
   const blackReplies = {
-    '32-28': [ { from: 19, to: 23 }, { from: 17, to: 22 } ],
-    '31-27': [ { from: 20, to: 24 }, { from: 19, to: 23 } ],
-    '33-29': [ { from: 19, to: 23 }, { from: 18, to: 22 } ],
-    '34-30': [ { from: 19, to: 23 } ],
+    '32-28': [ { from: 19, to: 23 }, { from: 17, to: 22 }, { from: 18, to: 22 } ],
+    '31-27': [ { from: 20, to: 24 }, { from: 19, to: 23 }, { from: 17, to: 21 } ],
+    '33-29': [ { from: 19, to: 23 }, { from: 18, to: 22 }, { from: 19, to: 24 } ],
+    '34-30': [ { from: 19, to: 23 }, { from: 20, to: 25 } ],
+    '35-30': [ { from: 20, to: 25 }, { from: 19, to: 24 } ],
   };
 
   const legal = engine.getValidMoves(currentBoard, aiColor);
 
   if (isStart && aiColor === engine.WHITE) {
-    for (const cand of whiteFirst) {
+    // Randomly select from good openings for variety
+    const shuffled = whiteFirst.sort(() => Math.random() - 0.5);
+    for (const cand of shuffled) {
       const mv = legal.find(m => m.from === cand.from && m.to === cand.to && !m.isCapture);
       if (mv) return mv;
     }
   }
 
   if (aiColor === engine.BLACK) {
-    // Detect if we are after one of the white first moves by simulating it from start
     for (const wf of whiteFirst) {
       const sim = engine.applyMove(start, { from: wf.from, to: wf.to, captured: [], isCapture: false });
       if (boardSignature(sim) === sigNow) {
         const key = `${wf.from}-${wf.to}`;
         const replies = blackReplies[key] || [];
-        for (const rep of replies) {
+        // Randomly select from good responses
+        const shuffled = replies.sort(() => Math.random() - 0.5);
+        for (const rep of shuffled) {
           const mv = legal.find(m => m.from === rep.from && m.to === rep.to && !m.isCapture);
           if (mv) return mv;
         }
@@ -487,7 +669,6 @@ function findBookMove(engine, currentBoard, aiColor) {
 
 Deno.serve(async (req) => {
   try {
-    // Not enforcing auth to allow local/guest play, consistent with chessAI
     const _base44 = createClientFromRequest(req);
     const { board, turn, difficulty = 'medium', timeLeft, activePiece } = await req.json();
 
@@ -499,7 +680,7 @@ Deno.serve(async (req) => {
     const engBoard = damcashAdapter.fromBoard(board, engine);
     const aiColor = (turn === 'white') ? engine.WHITE : engine.BLACK;
 
-    // Opening book (FMJD classical) shortcut when applicable
+    // Opening book shortcut
     if (!activePiece) {
       const book = findBookMove(engine, engBoard, aiColor);
       if (book) {
@@ -508,15 +689,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Difficulty -> depth/time mapping (+ dynamic time management)
+    // Difficulty -> depth/time mapping
     let maxDepth = 5;
     if (difficulty === 'easy') maxDepth = 3;
     else if (difficulty === 'hard') maxDepth = 8;
-    const baseTime = (difficulty === 'easy') ? 220 : (difficulty === 'hard' ? 1500 : 800);
+    else if (difficulty === 'expert') maxDepth = 10;
+    
+    const baseTime = (difficulty === 'easy') ? 220 : 
+                     (difficulty === 'hard' ? 1500 : 
+                     (difficulty === 'expert' ? 2500 : 800));
     const dynTime = (typeof timeLeft === 'number') ? Math.max(200, Math.min(2000, Math.floor(timeLeft * 1000 * 0.03))) : baseTime;
     const timeMs = Math.max(baseTime, dynTime);
 
-    // Forced continuation square if provided (only if AI piece and legal)
+    // Forced continuation
     let onlyFromSquare = null;
     if (activePiece && typeof activePiece.r === 'number' && typeof activePiece.c === 'number') {
       const sq = engine.getSquare(activePiece.r, activePiece.c) || null;
@@ -533,7 +718,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // If forced continuation is present but engine returns null (rare), pick any legal from that square
     let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare });
     if (!bestMove) {
       const legal = engine.getValidMoves(engBoard, aiColor, onlyFromSquare || null);
