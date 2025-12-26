@@ -16,6 +16,8 @@ export default function MiniBoard({ type = 'chess', className = '', board = null
           const c = i % n;
           const dark = (r + c) % 2 === 1;
           const piece = board ? (board[r] ? board[r][c] : null) : null;
+          const isLastFrom = lastMove && lastMove.from && lastMove.from.r === r && lastMove.from.c === c;
+          const isLastTo = lastMove && lastMove.to && lastMove.to.r === r && lastMove.to.c === c;
           const renderPiece = () => {
             if (!piece) return null;
             if (type === 'chess') {
