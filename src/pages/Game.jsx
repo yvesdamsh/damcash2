@@ -755,7 +755,7 @@ export default function Game() {
                       const all = getCheckersValidMoves(board, aiColor);
                       if (!all.length) return null;
                       const caps = all.filter(m => !!m.captured);
-                      if (caps.length) return { data: { move: caps[0] } };
+                      if (caps.length) return { data: { move: normalize(caps[0]) } };
                       const enemyColor = aiColor === 'white' ? 'black' : 'white';
                       for (const m of all) {
                         const sim = JSON.parse(JSON.stringify(board));
@@ -763,15 +763,19 @@ export default function Game() {
                         sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                         const enemyMoves = getCheckersValidMoves(sim, enemyColor);
                         const threatened = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
-                        if (!threatened) return { data: { move: m } };
+                        if (!threatened) return { data: { move: normalize(m) } };
                       }
-                      return { data: { move: all[0] } };
+                      return { data: { move: normalize(all[0]) } };
                     })();
 
                     res = await Promise.race([backendPromise, localPromise]);
                     if (!res || !res.data || res?.data?.error || !res.data.move) {
                       // Fallback to slower result if the first race loser resolves later
                       res = (await backendPromise) || (await localPromise);
+                    }
+                    if ((!res || !res.data || !res.data.move) && game.game_type === 'checkers') {
+                      const all = getCheckersValidMoves(board, aiColor);
+                      if (all.length) res = { data: { move: { ...all[0], captured: Array.isArray(all[0].captured) ? all[0].captured[0] : (all[0].captured || null) } } };
                     }
                     console.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure fallback
