@@ -266,8 +266,8 @@ export default function Game() {
         // Enable AI mode automatically when a player is 'ai' (not just local-ai)
         useEffect(() => {
                if (!game) return;
-               const whiteIsAI = game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '');
-               const blackIsAI = game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '');
+               const whiteIsAI = game.white_player_id === 'ai';
+               const blackIsAI = game.black_player_id === 'ai';
                const aiPresent = whiteIsAI || blackIsAI || id === 'local-ai';
                setIsAiGame(aiPresent);
                console.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
@@ -658,8 +658,8 @@ export default function Game() {
     useEffect(() => {
         // Determine AI presence even before game object is fully ready
         const aiPresentNow = (id === 'local-ai') || (!!game && (
-            game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '') ||
-            game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '')
+            game.white_player_id === 'ai' ||
+            game.black_player_id === 'ai'
         ));
         // Proactively set AI flag to avoid early false negatives
         if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
@@ -678,8 +678,8 @@ export default function Game() {
 
         // Robust check: Is it AI's turn?
         // In local-ai, assume AI is Black if no explicit AI id
-        const whiteIsAI = game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '');
-        const blackIsAI = game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '');
+        const whiteIsAI = game.white_player_id === 'ai';
+        const blackIsAI = game.black_player_id === 'ai';
         const aiIsBlack = blackIsAI || (id === 'local-ai');
         const isAiTurn = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
         console.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
@@ -693,8 +693,8 @@ export default function Game() {
                     if (isAiThinking) return;
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
-                const whiteIsAI = game.white_player_id === 'ai' || /ai/i.test(game.white_player_name || '');
-                const blackIsAI = game.black_player_id === 'ai' || /ai/i.test(game.black_player_name || '');
+                const whiteIsAI = game.white_player_id === 'ai';
+                const blackIsAI = game.black_player_id === 'ai';
                 const aiTurnCheck = (id === 'local-ai') || (game.current_turn === 'white' ? whiteIsAI : blackIsAI);
                 if (!aiTurnCheck) { console.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); return; }
                 if (!isActive) return;
