@@ -1185,16 +1185,18 @@ export default function Game() {
 
              setBoard(newBoard);
              setGame(prev => ({ 
-                ...prev, 
-                current_turn: nextTurn, 
-                status, 
-                winner_id: winnerId,
-                board_state: JSON.stringify(newBoard),
-                moves: JSON.stringify([...currentMoves, newMoveEntry]),
-                last_move_at: now,
-                white_seconds_left: whiteTime,
-                black_seconds_left: blackTime
-            }));
+                 ...prev, 
+                 current_turn: nextTurn, 
+                 status, 
+                 winner_id: winnerId,
+                 board_state: JSON.stringify(newBoard),
+                 moves: JSON.stringify([...currentMoves, newMoveEntry]),
+                 last_move_at: now,
+                 white_seconds_left: whiteTime,
+                 black_seconds_left: blackTime,
+                 // Ensure AI stays Black in local-ai mode to avoid self-play issues
+                 ...(id === 'local-ai' ? { white_player_id: (prev.white_player_id === 'ai' ? prev.black_player_id : prev.white_player_id), black_player_id: 'ai' } : {})
+             }));
         } else {
             // Normal Online Game
             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
