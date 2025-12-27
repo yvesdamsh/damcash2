@@ -714,7 +714,7 @@ export default function Game() {
             const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
             const makeAiMove = async () => {
                     // Debounce if a new turn arrives too fast
-                    if (isAiThinking) return;
+                    // proceed even if isAiThinking is true here to avoid stale-flag deadlocks
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
                 const whiteIsAI = game.white_player_id === 'ai';
@@ -889,6 +889,13 @@ export default function Game() {
                               ? legalMoves.reduce((best, x) => (capLen(x) > capLen(best) ? x : best), legalMoves.find(x => capLen(x) > 0) || legalMoves[0])
                               : (legalMoves[0] || m);
                             const chosen = legal || replacement || m;
+
+                            // Fast path for local AI: execute via standard move pipeline
+                            if (id === 'local-ai') {
+                              await executeCheckersMove(chosen);
+                              // move applied; let finally reset thinking flag
+                              return;
+                            }
 
                             let seqBoard = board;
                             let steps = [];
