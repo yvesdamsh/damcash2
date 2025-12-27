@@ -913,8 +913,8 @@ const damcashAdapter = {
   toAppMove: (engineMove, engine) => {
     const fromRC = engine.getRC(engineMove.from);
     const fullPath = Array.isArray(engineMove.path) ? engineMove.path : [];
-    const firstTo = fullPath.length ? fullPath[0] : engineMove.to;
-    const toRC = engine.getRC(firstTo);
+    const finalTo = fullPath.length ? fullPath[fullPath.length - 1] : engineMove.to;
+    const toRC = engine.getRC(finalTo);
     const caps = Array.isArray(engineMove.captured) ? engineMove.captured : [];
     const firstCap = caps.length ? engine.getRC(caps[0]) : null;
     return {
