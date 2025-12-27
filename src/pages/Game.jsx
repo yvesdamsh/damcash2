@@ -761,7 +761,7 @@ export default function Game() {
 
                     // Run backend and local fallback in parallel; take whichever returns first
                     const backendPromise = useBackend
-                      ? callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 2500).catch(() => null)
+                      ? callWithTimeout(base44.functions.invoke(aiFunctionName, payload), 6000).catch(() => null)
                       : Promise.resolve(null);
 
                     const localPromise = (async () => {
@@ -795,21 +795,25 @@ export default function Game() {
                         return { data: { move: best } };
                       }
                       const enemyColor = aiColor === 'white' ? 'black' : 'white';
+                      const safe = [];
                       for (const m of all) {
                         const sim = JSON.parse(JSON.stringify(board));
                         sim[m.from.r][m.from.c] = 0;
                         sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                         const enemyMoves = getCheckersValidMoves(sim, enemyColor);
                         const threatened = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
-                        if (!threatened) return { data: { move: m } };
+                        if (!threatened) safe.push(m);
+                      }
+                      if (safe.length) {
+                        const pick = safe[Math.floor(Math.random() * safe.length)];
+                        return { data: { move: pick } };
                       }
                       return { data: { move: all[0] } };
                     })();
 
-                    res = await Promise.race([backendPromise, localPromise]);
+                    res = await backendPromise;
                     if (!res || !res.data || res?.data?.error || !res.data.move) {
-                      // Fallback to slower result if the first race loser resolves later
-                      res = (await backendPromise) || (await localPromise);
+                      res = await localPromise;
                     }
                     if ((!res || !res.data || !res.data.move) && game.game_type === 'checkers') {
                       const all = getCheckersValidMoves(board, aiColor);
@@ -839,6 +843,7 @@ export default function Game() {
                                 }
                                 // Otherwise filter out immediately capturable landings
                                 const { getValidMoves } = await import('@/components/checkersLogic');
+                                const safe = [];
                                 for (const m of all) {
                                     // simulate
                                     const sim = JSON.parse(JSON.stringify(board));
@@ -846,8 +851,9 @@ export default function Game() {
                                     sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                                     const enemyMoves = getCheckersValidMoves(sim, enemyColor);
                                     const threatens = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
-                                    if (!threatens) return m;
+                                    if (!threatens) safe.push(m);
                                 }
+                                if (safe.length) return safe[Math.floor(Math.random() * safe.length)];
                                 return all[0] || null;
                             };
                             const step = await safeFirst();
