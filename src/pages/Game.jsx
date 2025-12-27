@@ -703,8 +703,9 @@ export default function Game() {
         // Only let the human opponent's client trigger AI moves (avoid spectators or empty seats driving AI)
         const nonAiPlayerId = whiteIsAI ? game.black_player_id : (blackIsAI ? game.white_player_id : null);
         const iAmHumanOpponent = !!currentUser && !!nonAiPlayerId && currentUser.id === nonAiPlayerId;
-        if (id !== 'local-ai' && !iAmHumanOpponent) {
-          if (window.__debug_ai) console.log('[AI] Skip: not human opponent on this client', { nonAiPlayerId, currentUserId: currentUser?.id });
+        // Allow driving AI if local-ai OR I am the human opponent OR no human opponent assigned yet
+        if (id !== 'local-ai' && !(iAmHumanOpponent || !nonAiPlayerId)) {
+          if (window.__debug_ai) console.log('[AI] Skip: not authorized to drive AI', { nonAiPlayerId, currentUserId: currentUser?.id });
           return;
         }
         const aiIsBlack = (id === 'local-ai') ? true : blackIsAI;
@@ -1093,7 +1094,7 @@ export default function Game() {
                 }
             };
             // Small think time to keep UX natural
-            setTimeout(makeAiMove, delay);
+            timer = setTimeout(makeAiMove, delay);
         }
 
         return () => {
