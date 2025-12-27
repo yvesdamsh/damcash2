@@ -1084,6 +1084,33 @@ export default function Game() {
                     }
                 } catch (err) {
                     console.error("AI Error:", err);
+                    // Fallback: ensure the AI still plays a legal move locally
+                    try {
+                        if (game.game_type === 'chess') {
+                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                            if (moves.length > 0) {
+                                await executeChessMoveFinal(moves[0]);
+                            }
+                        } else {
+                            const all = getCheckersValidMoves(board, aiColor);
+                            if (all.length > 0) {
+                                const enemyColor = aiColor === 'white' ? 'black' : 'white';
+                                const safe = [];
+                                for (const m of all) {
+                                    const sim = JSON.parse(JSON.stringify(board));
+                                    sim[m.from.r][m.from.c] = 0;
+                                    sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
+                                    const enemyMoves = getCheckersValidMoves(sim, enemyColor);
+                                    const threatens = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
+                                    if (!threatens) safe.push(m);
+                                }
+                                const pick = safe.length ? safe[Math.floor(Math.random() * safe.length)] : all[0];
+                                if (pick) await executeCheckersMove(pick);
+                            }
+                        }
+                    } catch (e2) {
+                        console.error('[AI] Local fallback failed:', e2);
+                    }
                 } finally {
                     // Always reset thinking flag to avoid getting stuck after state changes
                     setIsAiThinking(false);
