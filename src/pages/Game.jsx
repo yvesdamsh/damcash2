@@ -888,6 +888,20 @@ export default function Game() {
                             let capsSeq = [];
                             let curFrom = { r: chosen.from.r, c: chosen.from.c };
 
+                            const { getMovesForPiece } = await import('@/components/checkersLogic');
+                            const ensureStep = (bstate, fromRC, wantTo, wantCap) => {
+                                const pieceNow = bstate[fromRC.r][fromRC.c];
+                                const { moves: mvz, captures: capz } = getMovesForPiece(bstate, fromRC.r, fromRC.c, pieceNow, false);
+                                if (capz && capz.length) {
+                                    let m = capz.find(x => x.to.r===wantTo.r && x.to.c===wantTo.c && (!wantCap || (x.captured && x.captured.r===wantCap.r && x.captured.c===wantCap.c)));
+                                    if (!m) m = capz[0];
+                                    return m ? { to: m.to, cap: m.captured } : null;
+                                } else {
+                                    let m = mvz.find(x => x.to.r===wantTo.r && x.to.c===wantTo.c);
+                                    if (!m) m = mvz[0];
+                                    return m ? { to: m.to, cap: null } : null;
+                                }
+                            };
                             const hasSeq = (Array.isArray(chosen.path) && chosen.path.length) || (Array.isArray(chosen.captures) && chosen.captures.length);
                             if (hasSeq) {
                                 const preSteps = Array.isArray(chosen.path) && chosen.path.length ? chosen.path : [chosen.to];
@@ -895,11 +909,13 @@ export default function Game() {
                                 for (let i = 0; i < preSteps.length; i++) {
                                     const toStep = preSteps[i];
                                     const cap = preCaps[i] || null;
-                                    const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [toStep.r, toStep.c], cap ? { r: cap.r, c: cap.c } : null);
+                                    const sel = ensureStep(seqBoard, curFrom, toStep, cap);
+                                    if (!sel) break;
+                                    const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [sel.to.r, sel.to.c], sel.cap ? { r: sel.cap.r, c: sel.cap.c } : null);
                                     seqBoard = newBoard;
-                                    steps.push(toStep);
-                                    if (cap) capsSeq.push(cap);
-                                    curFrom = { r: toStep.r, c: toStep.c };
+                                    steps.push(sel.to);
+                                    if (sel.cap) capsSeq.push(sel.cap);
+                                    curFrom = { r: sel.to.r, c: sel.to.c };
                                 }
                             } else {
                                 // Apply first step then continue forced captures until none (or promotion)
@@ -911,7 +927,6 @@ export default function Game() {
                                 curFrom = { r: chosen.to.r, c: chosen.to.c };
 
                                 if (!promoted) {
-                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
                                     while (true) {
                                         const pieceNow = seqBoard[curFrom.r][curFrom.c];
                                         const { captures: nextCaps } = getMovesForPiece(seqBoard, curFrom.r, curFrom.c, pieceNow, true);
