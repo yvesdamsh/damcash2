@@ -1074,7 +1074,21 @@ Deno.serve(async (req) => {
     if (!bestMove) return Response.json({ error: 'No move' }, { status: 200 });
 
     const moveForApp = damcashAdapter.toAppMove(bestMove, engine);
-    return Response.json({ move: moveForApp, score: 0, fullSequence: [moveForApp] });
+    // Build a short PV (up to 4 plies) for debugging/measurement
+    const pvMoves = engine.getPV(engBoard, aiColor, 4).map(m => damcashAdapter.toAppMove(m, engine));
+    return Response.json({ 
+      move: moveForApp, 
+      score: 0, 
+      fullSequence: [moveForApp],
+      debug: {
+        depthReached: engine._lastDepth,
+        nodes: engine.nodes,
+        ttProbes: engine.ttProbes,
+        ttHits: engine.ttHits,
+        timeUsedMs: engine._lastTimeMs,
+        pv: pvMoves
+      }
+    });
   } catch (e) {
     console.error('checkersAI error:', e);
     return Response.json({ error: e.message || 'Internal error' }, { status: 500 });
