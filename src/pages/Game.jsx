@@ -920,25 +920,23 @@ export default function Game() {
                             } else {
                                 // Apply first step then continue forced captures until none (or promotion)
                                 const firstCap = Array.isArray(chosen.captured) ? chosen.captured[0] : (chosen.captured || null);
-                                const { newBoard, promoted } = executeMove(seqBoard, [curFrom.r, curFrom.c], [chosen.to.r, chosen.to.c], firstCap ? { r: firstCap.r, c: firstCap.c } : null);
+                                const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [chosen.to.r, chosen.to.c], firstCap ? { r: firstCap.r, c: firstCap.c } : null);
                                 seqBoard = newBoard;
                                 steps.push(chosen.to);
                                 if (firstCap) capsSeq.push(firstCap);
                                 curFrom = { r: chosen.to.r, c: chosen.to.c };
 
-                                if (!promoted) {
-                                    while (true) {
-                                        const pieceNow = seqBoard[curFrom.r][curFrom.c];
-                                        const { captures: nextCaps } = getMovesForPiece(seqBoard, curFrom.r, curFrom.c, pieceNow, true);
-                                        if (!nextCaps || nextCaps.length === 0) break;
-                                        const nx = nextCaps[0];
-                                        const { newBoard: nb2, promoted: p2 } = executeMove(seqBoard, [curFrom.r, curFrom.c], [nx.to.r, nx.to.c], nx.captured ? { r: nx.captured.r, c: nx.captured.c } : null);
-                                        seqBoard = nb2;
-                                        steps.push(nx.to);
-                                        if (nx.captured) capsSeq.push(nx.captured);
-                                        curFrom = { r: nx.to.r, c: nx.to.c };
-                                        if (p2) break;
-                                    }
+                                // International rules: continue capture sequence even after promotion (as king)
+                                while (true) {
+                                    const pieceNow = seqBoard[curFrom.r][curFrom.c];
+                                    const { captures: nextCaps } = getMovesForPiece(seqBoard, curFrom.r, curFrom.c, pieceNow, true);
+                                    if (!nextCaps || nextCaps.length === 0) break;
+                                    const nx = nextCaps[0];
+                                    const { newBoard: nb2 } = executeMove(seqBoard, [curFrom.r, curFrom.c], [nx.to.r, nx.to.c], nx.captured ? { r: nx.captured.r, c: nx.captured.c } : null);
+                                    seqBoard = nb2;
+                                    steps.push(nx.to);
+                                    if (nx.captured) capsSeq.push(nx.captured);
+                                    curFrom = { r: nx.to.r, c: nx.to.c };
                                 }
                             }
 
@@ -1219,7 +1217,7 @@ export default function Game() {
         const { newBoard, promoted } = executeMove(board, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
         
         let mustContinue = false;
-        if (move.captured && !promoted) {
+        if (move.captured) {
             const { captures } = (await import('@/components/checkersLogic')).getMovesForPiece(newBoard, move.to.r, move.to.c, newBoard[move.to.r][move.to.c], true);
             if (captures.length > 0) mustContinue = true;
         }

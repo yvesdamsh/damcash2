@@ -44,11 +44,10 @@ const getMaxChainLength = (board, r, c, piece) => {
     
     let max = 0;
     for (const cap of captures) {
-        const { newBoard, promoted } = executeMove(board, [r,c], [cap.to.r, cap.to.c], cap.captured);
+        const { newBoard } = executeMove(board, [r,c], [cap.to.r, cap.to.c], cap.captured);
         let len = 1;
-        if (!promoted) {
-             len += getMaxChainLength(newBoard, cap.to.r, cap.to.c, newBoard[cap.to.r][cap.to.c]);
-        }
+        // International rules: a man that reaches the king row during a capture continues the sequence as a king
+        len += getMaxChainLength(newBoard, cap.to.r, cap.to.c, newBoard[cap.to.r][cap.to.c]);
         if (len > max) max = len;
     }
     return max;

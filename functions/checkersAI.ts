@@ -261,13 +261,14 @@ class DraughtsEngine {
 
   findCaptures(board, square, piece) {
     const captures = [];
-    const isKing = (piece === this.WHITE_KING || piece === this.BLACK_KING);
     const isWhite = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
     const enemyMan = isWhite ? this.BLACK_MAN : this.WHITE_MAN;
     const enemyKing = isWhite ? this.BLACK_KING : this.WHITE_KING;
     const dirs = [this.DIR_UL, this.DIR_UR, this.DIR_DL, this.DIR_DR];
 
     const dfs = (curSq, taken, path) => {
+      const curPiece = board[curSq];
+      const isKingNow = (curPiece === this.WHITE_KING || curPiece === this.BLACK_KING);
       let extended = false;
       for (const d of dirs) {
         let seenEnemySq = 0;
@@ -282,20 +283,23 @@ class DraughtsEngine {
               extended = true;
               const newPath = [...path, nxt];
               const newTaken = [...taken, seenEnemySq];
-              const saved = board[seenEnemySq];
+              const savedEnemy = board[seenEnemySq];
               const savedFrom = board[curSq];
               board[seenEnemySq] = this.EMPTY;
               board[curSq] = this.EMPTY;
-              const tmpPiece = savedFrom;
-              board[nxt] = tmpPiece;
+              let moved = savedFrom;
+              // Promotion mid-sequence: continue as king
+              if (moved === this.WHITE_MAN && nxt <= 5) moved = this.WHITE_KING;
+              else if (moved === this.BLACK_MAN && nxt >= 46) moved = this.BLACK_KING;
+              board[nxt] = moved;
               dfs(nxt, newTaken, newPath);
               board[nxt] = this.EMPTY;
               board[curSq] = savedFrom;
-              board[seenEnemySq] = saved;
+              board[seenEnemySq] = savedEnemy;
 
-              if (!isKing) break;
+              if (!isKingNow) break; // men only land on immediate square behind
             } else {
-              if (!isKing) break;
+              if (!isKingNow) break; // men cannot glide before a jump
               travel = nxt;
             }
           } else if (cell === enemyMan || cell === enemyKing) {
