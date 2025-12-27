@@ -872,16 +872,26 @@ export default function Game() {
                             }
                             await executeChessMoveFinal(move);
                         } else {
-                            // Checkers: honor mandatory captures; if no full sequence provided, compute forced continuation
+                            // Checkers: validate AI move and honor mandatory captures; if no full sequence provided, compute forced continuation
+                            const legalMoves = getCheckersValidMoves(board, aiColor);
+                            const capLen = (mv) => Array.isArray(mv.captures) ? mv.captures.length : (Array.isArray(mv.captured) ? mv.captured.length : (mv.captured ? 1 : 0));
+                            const sameMove = (mv, mm) => mv.from?.r === mm.from?.r && mv.from?.c === mm.from?.c && mv.to?.r === mm.to?.r && mv.to?.c === mm.to?.c;
+                            const anyCaps = legalMoves.some(x => capLen(x) > 0);
+                            const legal = legalMoves.find(x => sameMove(x, m));
+                            const replacement = anyCaps
+                              ? legalMoves.reduce((best, x) => (capLen(x) > capLen(best) ? x : best), legalMoves.find(x => capLen(x) > 0) || legalMoves[0])
+                              : (legalMoves[0] || m);
+                            const chosen = legal || replacement || m;
+
                             let seqBoard = board;
                             let steps = [];
                             let capsSeq = [];
-                            let curFrom = { r: m.from.r, c: m.from.c };
+                            let curFrom = { r: chosen.from.r, c: chosen.from.c };
 
-                            const hasSeq = (Array.isArray(m.path) && m.path.length) || (Array.isArray(m.captures) && m.captures.length);
+                            const hasSeq = (Array.isArray(chosen.path) && chosen.path.length) || (Array.isArray(chosen.captures) && chosen.captures.length);
                             if (hasSeq) {
-                                const preSteps = Array.isArray(m.path) && m.path.length ? m.path : [m.to];
-                                const preCaps = Array.isArray(m.captures) ? m.captures : (Array.isArray(m.captured) ? m.captured : (m.captured ? [m.captured] : []));
+                                const preSteps = Array.isArray(chosen.path) && chosen.path.length ? chosen.path : [chosen.to];
+                                const preCaps = Array.isArray(chosen.captures) ? chosen.captures : (Array.isArray(chosen.captured) ? chosen.captured : (chosen.captured ? [chosen.captured] : []));
                                 for (let i = 0; i < preSteps.length; i++) {
                                     const toStep = preSteps[i];
                                     const cap = preCaps[i] || null;
@@ -893,12 +903,12 @@ export default function Game() {
                                 }
                             } else {
                                 // Apply first step then continue forced captures until none (or promotion)
-                                const firstCap = Array.isArray(m.captured) ? m.captured[0] : (m.captured || null);
-                                const { newBoard, promoted } = executeMove(seqBoard, [curFrom.r, curFrom.c], [m.to.r, m.to.c], firstCap ? { r: firstCap.r, c: firstCap.c } : null);
+                                const firstCap = Array.isArray(chosen.captured) ? chosen.captured[0] : (chosen.captured || null);
+                                const { newBoard, promoted } = executeMove(seqBoard, [curFrom.r, curFrom.c], [chosen.to.r, chosen.to.c], firstCap ? { r: firstCap.r, c: firstCap.c } : null);
                                 seqBoard = newBoard;
-                                steps.push(m.to);
+                                steps.push(chosen.to);
                                 if (firstCap) capsSeq.push(firstCap);
-                                curFrom = { r: m.to.r, c: m.to.c };
+                                curFrom = { r: chosen.to.r, c: chosen.to.c };
 
                                 if (!promoted) {
                                     const { getMovesForPiece } = await import('@/components/checkersLogic');
@@ -919,7 +929,7 @@ export default function Game() {
 
                             const movesList = game.moves ? JSON.parse(game.moves) : [];
                             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
-                            const notation = `${getNum(m.from.r, m.from.c)}${capsSeq.length ? 'x' : '-'}${getNum(curFrom.r, curFrom.c)}`;
+                            const notation = `${getNum(chosen.from.r, chosen.from.c)}${capsSeq.length ? 'x' : '-'}${getNum(curFrom.r, curFrom.c)}`;
                             const newMoveEntry = {
                                 type: 'checkers',
                                 from: m.from,
