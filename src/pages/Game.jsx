@@ -554,7 +554,7 @@ export default function Game() {
                     });
                 }
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(setGame);
+                if (id !== 'local-ai') base44.entities.Game.get(id).then(setGame);
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
@@ -1872,6 +1872,31 @@ export default function Game() {
                 variant="outline"
                 onClick={async () => {
                     try {
+                        if (id === 'local-ai') {
+                            const type = (searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers');
+                            const difficulty = searchParams.get('difficulty') || 'medium';
+                            const initialBoard = type === 'chess' ? initializeChessBoard() : initializeBoard();
+                            if (type === 'chess') {
+                                setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+                            }
+                            setBoard(initialBoard);
+                            setGame({
+                                id: 'local-ai',
+                                status: 'playing',
+                                game_type: type,
+                                white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
+                                black_player_name: `AI (${difficulty})`,
+                                white_player_id: currentUser?.id || 'guest',
+                                black_player_id: 'ai',
+                                current_turn: 'white',
+                                board_state: type === 'chess' ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initialBoard),
+                                moves: JSON.stringify([]),
+                                white_seconds_left: 600,
+                                black_seconds_left: 600,
+                                last_move_at: null,
+                            });
+                            return;
+                        }
                         const g = await base44.entities.Game.get(id);
                         if (g) setGame(g);
                     } catch (e) {}
