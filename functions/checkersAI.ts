@@ -109,14 +109,28 @@ class DraughtsEngine {
     this.sideHi = this.rnd32();
   }
   initTT() {
-    this.ttKeyLo = new Uint32Array(this.TT_SIZE);
-    this.ttKeyHi = new Uint32Array(this.TT_SIZE);
-    this.ttDepth = new Int16Array(this.TT_SIZE);
-    this.ttScore = new Int32Array(this.TT_SIZE);
-    this.ttFlag = new Int8Array(this.TT_SIZE);
-    this.ttBestFrom = new Uint8Array(this.TT_SIZE);
-    this.ttBestTo = new Uint8Array(this.TT_SIZE);
-    this.ttBestCapLen = new Uint8Array(this.TT_SIZE);
+    let sz = this.TT_SIZE | 0;
+    try {
+      this.ttKeyLo = new Uint32Array(sz);
+      this.ttKeyHi = new Uint32Array(sz);
+      this.ttDepth = new Int16Array(sz);
+      this.ttScore = new Int32Array(sz);
+      this.ttFlag = new Int8Array(sz);
+      this.ttBestFrom = new Uint8Array(sz);
+      this.ttBestTo = new Uint8Array(sz);
+      this.ttBestCapLen = new Uint8Array(sz);
+    } catch (_) {
+      sz = 65536;
+      this.TT_SIZE = sz; this.TT_MASK = sz - 1;
+      this.ttKeyLo = new Uint32Array(sz);
+      this.ttKeyHi = new Uint32Array(sz);
+      this.ttDepth = new Int16Array(sz);
+      this.ttScore = new Int32Array(sz);
+      this.ttFlag = new Int8Array(sz);
+      this.ttBestFrom = new Uint8Array(sz);
+      this.ttBestTo = new Uint8Array(sz);
+      this.ttBestCapLen = new Uint8Array(sz);
+    }
   }
   computeHash(board, turnColor) {
     let lo = 0 >>> 0, hi = 0 >>> 0;
@@ -621,14 +635,12 @@ class DraughtsEngine {
     let { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
-    const history = new Map();
     // Endgame boost: if few pieces, search deeper/longer
     let pieceCount = 0; for (let i = 1; i <= 50; i++) if (board[i] !== this.EMPTY) pieceCount++;
     if (pieceCount <= 10) { maxDepth = Math.max(1, (maxDepth || 5) + 2); timeMs = Math.floor((timeMs || 800) * 1.4); }
     const deadline = Date.now() + Math.max(150, Math.min(6500, timeMs || 800));
 
     const moveKey = (m) => `${m.from}-${m.to}-${m.captured?.join('.') || ''}`;
-    const rootHash = this.computeHash(board, heroColor);
     const unsafeLanding = (b, mv) => {
       const piece = b[mv.to];
       const isWhitePiece = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
@@ -703,35 +715,16 @@ class DraughtsEngine {
 
     const orderMoves = (b, list, ply, ttBest) => {
       if (!list || list.length <= 1) return list || [];
-      const scored = list.map(m => ({ m, sc: scoreMove(b, m, ply, ttBest) }));
+      const scored = new Array(list.length);
+      for (let i = 0; i < list.length; i++) {
+        const m = list[i];
+        scored[i] = { m, sc: scoreMove(b, m, ply, ttBest) };
+      }
       if (ttBest) {
-        // move TT best to front if present
         const idx = scored.findIndex(x => x.m.from === ttBest.from && x.m.to === ttBest.to);
-        if (idx > 0) {
-          const [item] = scored.splice(idx, 1);
-          scored.unshift(item);
-        }
+        if (idx > 0) { const [item] = scored.splice(idx, 1); scored.unshift(item); }
       }
       if (scored.length > 6) scored.sort((a, b) => b.sc - a.sc);
-      return scored.map(x => x.m);
-      // Inject small randomness at root to avoid deterministic play when scores are close
-      if (ply === 0 && varietyDelta > 0 && scored.length > 1) {
-        // Find clusters of similar scores and shuffle inside cluster
-        const clustered = [];
-        let group = [scored[0]];
-        for (let i = 1; i < scored.length; i++) {
-          if (Math.abs(scored[i].sc - group[group.length - 1].sc) <= varietyDelta) {
-            group.push(scored[i]);
-          } else {
-            if (group.length > 1) group.sort(() => Math.random() - 0.5);
-            clustered.push(...group);
-            group = [scored[i]];
-          }
-        }
-        if (group.length > 1) group.sort(() => Math.random() - 0.5);
-        clustered.push(...group);
-        return clustered.map(x => x.m);
-      }
       return scored.map(x => x.m);
     };
 
@@ -772,10 +765,23 @@ class DraughtsEngine {
 
       if (turnColor === heroColor) {
         let val = -Infinity;
-        for (const mv of ordered) {
+        for (let i = 0; i < ordered.length; i++) {
+          const mv = ordered[i];
           const nb = this.applyMove(b, mv);
           const nt = (turnColor === this.WHITE) ? this.BLACK : this.WHITE;
-          const sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          // LMR
+          const piece = b[mv.from];
+          const isCapture = !!mv.isCapture;
+          const willPromote = (piece===this.WHITE_MAN && mv.to <= 5) || (piece===this.BLACK_MAN && mv.to >= 46);
+          let reduce = (!isCapture && !willPromote && depth >= 3 && i >= 4) ? 1 : 0;
+          if (!isCapture && !willPromote && depth >= 6 && i >= 10) reduce = 2;
+          let sc;
+          if (i === 0) {
+            sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          } else {
+            sc = search(nb, depth - 1 - reduce, alpha, alpha + 1, nt, ply + 1, null);
+            if (sc > alpha) sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          }
           if (sc > val) { val = sc; bestLocal = mv; }
           if (val > alpha) alpha = val;
           if (alpha >= beta) {
@@ -787,13 +793,22 @@ class DraughtsEngine {
           }
         }
         if (ply === 0 && bestLocal) bestRoot = bestLocal;
+        const flag = (val <= alphaOrig) ? this.TT_UPPER : (val >= betaOrig ? this.TT_LOWER : this.TT_EXACT);
+        this.ttStore(h.lo, h.hi, depth, val, flag, bestLocal);
         return val;
       } else {
         let val = Infinity;
-        for (const mv of ordered) {
+        for (let i = 0; i < ordered.length; i++) {
+          const mv = ordered[i];
           const nb = this.applyMove(b, mv);
           const nt = (turnColor === this.WHITE) ? this.BLACK : this.WHITE;
-          const sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          let sc;
+          if (i === 0) {
+            sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          } else {
+            sc = search(nb, depth - 1, alpha, alpha + 1, nt, ply + 1, null);
+            if (sc > alpha && sc < beta) sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
+          }
           if (sc < val) { val = sc; bestLocal = mv; }
           if (val < beta) beta = val;
           if (alpha >= beta) {
@@ -805,6 +820,8 @@ class DraughtsEngine {
           }
         }
         if (ply === 0 && bestLocal) bestRoot = bestLocal;
+        const flag = (val <= alphaOrig) ? this.TT_UPPER : (val >= betaOrig ? this.TT_LOWER : this.TT_EXACT);
+        this.ttStore(h.lo, h.hi, depth, val, flag, bestLocal);
         return val;
       }
     };
@@ -826,11 +843,6 @@ class DraughtsEngine {
         if (Date.now() > deadline) break;
       }
       if (typeof val === 'number') prevScore = val;
-      try {
-        search(board, d, -Infinity, Infinity, heroColor, 0, onlyFromSquare || null);
-      } catch (e) {
-        break; // time's up
-      }
     }
     return bestRoot || (this.getValidMoves(board, heroColor, onlyFromSquare || null)[0] || null);
   }
