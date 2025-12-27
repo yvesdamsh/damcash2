@@ -1496,20 +1496,40 @@ export default function Game() {
             const currentRound = currentWhiteScore + currentBlackScore + 1;
             if (currentRound > newSeriesLength) newSeriesLength = currentRound;
 
-            // Swap Players for Rematch (Alternating Colors)
-            // White becomes Black, Black becomes White
-            // We must swap IDs, Names, Elos, AND Scores to maintain correct attribution
-            const newWhiteId = game.black_player_id;
-            const newBlackId = game.white_player_id;
-            const newWhiteName = game.black_player_name;
-            const newBlackName = game.white_player_name;
-            const newWhiteElo = game.black_player_elo;
-            const newBlackElo = game.white_player_elo;
-            
-            // Scores must swap too because "series_score_white" tracks the score of the person playing white.
-            // If User A was White (score 1) and becomes Black, User A's score (1) should now be in series_score_black.
-            const newSeriesScoreWhite = currentBlackScore;
-            const newSeriesScoreBlack = currentWhiteScore;
+            // In online games, alternate colors each round. In local-ai mode, KEEP AI as Black always.
+            let newWhiteId, newBlackId, newWhiteName, newBlackName, newWhiteElo, newBlackElo;
+            let newSeriesScoreWhite, newSeriesScoreBlack;
+
+            if (game.id === 'local-ai') {
+                // Ensure White is the human, Black is the AI
+                const humanId = (game.white_player_id === 'ai') ? game.black_player_id : game.white_player_id;
+                const humanName = (game.white_player_id === 'ai') ? game.black_player_name : game.white_player_name;
+                const humanElo = (game.white_player_id === 'ai') ? game.black_player_elo : game.white_player_elo;
+
+                newWhiteId = humanId;
+                newWhiteName = humanName;
+                newWhiteElo = humanElo;
+
+                newBlackId = 'ai';
+                newBlackName = game.black_player_name?.includes('AI') ? game.black_player_name : `AI (${aiDifficulty || 'medium'})`;
+                newBlackElo = game.black_player_elo;
+
+                // Do NOT swap series scores in local-ai: keep scores tied to board colors
+                newSeriesScoreWhite = currentWhiteScore;
+                newSeriesScoreBlack = currentBlackScore;
+            } else {
+                // Alternate colors for online games
+                newWhiteId = game.black_player_id;
+                newBlackId = game.white_player_id;
+                newWhiteName = game.black_player_name;
+                newBlackName = game.white_player_name;
+                newWhiteElo = game.black_player_elo;
+                newBlackElo = game.white_player_elo;
+
+                // Swap series scores (they track the color, not the player)
+                newSeriesScoreWhite = currentBlackScore;
+                newSeriesScoreBlack = currentWhiteScore;
+            }
 
             // Reset Game State
             const updateData = {
