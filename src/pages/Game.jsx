@@ -268,6 +268,20 @@ export default function Game() {
                if (!game) return;
                const whiteIsAI = game.white_player_id === 'ai';
                const blackIsAI = game.black_player_id === 'ai';
+
+               // SAFETY: In local-ai mode, AI must ALWAYS be Black. If detected as White, fix immediately.
+               if (id === 'local-ai' && whiteIsAI && !blackIsAI) {
+                 setGame(prev => ({
+                   ...prev,
+                   white_player_id: prev.black_player_id,
+                   white_player_name: prev.black_player_name,
+                   white_player_elo: prev.black_player_elo,
+                   black_player_id: 'ai',
+                   black_player_name: (prev.black_player_name && prev.black_player_name.includes('AI')) ? prev.black_player_name : `AI (${aiDifficulty || 'medium'})`
+                 }));
+                 return;
+               }
+
                const aiPresent = whiteIsAI || blackIsAI || id === 'local-ai';
                setIsAiGame(aiPresent);
                console.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
