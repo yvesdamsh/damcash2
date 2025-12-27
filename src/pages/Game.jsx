@@ -686,6 +686,13 @@ export default function Game() {
           if (window.__debug_ai) console.log('[AI] Skip: invalid aiCount', { aiCount, whiteIsAI, blackIsAI });
           return;
         }
+        // Only let the human opponent's client trigger AI moves (avoid spectators or empty seats driving AI)
+        const nonAiPlayerId = whiteIsAI ? game.black_player_id : (blackIsAI ? game.white_player_id : null);
+        const iAmHumanOpponent = !!currentUser && !!nonAiPlayerId && currentUser.id === nonAiPlayerId;
+        if (id !== 'local-ai' && !iAmHumanOpponent) {
+          if (window.__debug_ai) console.log('[AI] Skip: not human opponent on this client', { nonAiPlayerId, currentUserId: currentUser?.id });
+          return;
+        }
         const aiIsBlack = blackIsAI || (id === 'local-ai');
         const isAiTurn = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
         console.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
