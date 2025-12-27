@@ -34,6 +34,13 @@ class DraughtsEngine {
     this.BLACK_DOG_HOLE = 5;  // Trou de chien noir
     
     this.initTables();
+    // TT & Zobrist init
+    this.TT_SIZE = 131072; // fallback possible to 65536 if needed
+    this.TT_MASK = this.TT_SIZE - 1;
+    this.TT_EXACT = 0; this.TT_LOWER = 1; this.TT_UPPER = 2;
+    this._seed = 0x9e3779b9 >>> 0;
+    this.initZobrist();
+    this.initTT();
   }
 
   initTables() {
@@ -77,6 +84,81 @@ class DraughtsEngine {
     if (piece === this.WHITE_MAN && move.to <= 5) nb[move.to] = this.WHITE_KING;
     else if (piece === this.BLACK_MAN && move.to >= 46) nb[move.to] = this.BLACK_KING;
     return nb;
+  }
+
+  // --- Zobrist & Transposition Table ---
+  rnd32() {
+    // xorshift32
+    let x = this._seed >>> 0;
+    x ^= x << 13; x >>>= 0;
+    x ^= x >>> 17; x >>>= 0;
+    x ^= x << 5; x >>>= 0;
+    this._seed = x >>> 0;
+    return x >>> 0;
+  }
+  initZobrist() {
+    this.zLo = Array.from({ length: 51 }, () => new Uint32Array(5));
+    this.zHi = Array.from({ length: 51 }, () => new Uint32Array(5));
+    for (let s = 1; s <= 50; s++) {
+      for (let st = 0; st < 5; st++) {
+        this.zLo[s][st] = this.rnd32();
+        this.zHi[s][st] = this.rnd32();
+      }
+    }
+    this.sideLo = this.rnd32();
+    this.sideHi = this.rnd32();
+  }
+  initTT() {
+    this.ttKeyLo = new Uint32Array(this.TT_SIZE);
+    this.ttKeyHi = new Uint32Array(this.TT_SIZE);
+    this.ttDepth = new Int16Array(this.TT_SIZE);
+    this.ttScore = new Int32Array(this.TT_SIZE);
+    this.ttFlag = new Int8Array(this.TT_SIZE);
+    this.ttBestFrom = new Uint8Array(this.TT_SIZE);
+    this.ttBestTo = new Uint8Array(this.TT_SIZE);
+    this.ttBestCapLen = new Uint8Array(this.TT_SIZE);
+  }
+  computeHash(board, turnColor) {
+    let lo = 0 >>> 0, hi = 0 >>> 0;
+    for (let s = 1; s <= 50; s++) {
+      const p = board[s];
+      if (p !== this.EMPTY) { lo ^= this.zLo[s][p]; hi ^= this.zHi[s][p]; }
+    }
+    // include side to move (WHITE)
+    if (turnColor === this.WHITE) { lo ^= this.sideLo; hi ^= this.sideHi; }
+    return { lo: lo >>> 0, hi: hi >>> 0 };
+  }
+  ttProbe(lo, hi, depth) {
+    const idx = (lo & this.TT_MASK) >>> 0;
+    if (this.ttKeyLo[idx] === lo && this.ttKeyHi[idx] === hi) {
+      if ((this.ttDepth[idx] | 0) >= (depth | 0)) {
+        return {
+          score: this.ttScore[idx] | 0,
+          flag: this.ttFlag[idx] | 0,
+          bestFrom: this.ttBestFrom[idx] | 0,
+          bestTo: this.ttBestTo[idx] | 0,
+          bestCapLen: this.ttBestCapLen[idx] | 0
+        };
+      }
+    }
+    return null;
+  }
+  ttStore(lo, hi, depth, score, flag, bestMove) {
+    const idx = (lo & this.TT_MASK) >>> 0;
+    const sameKey = (this.ttKeyLo[idx] === lo && this.ttKeyHi[idx] === hi);
+    if (!sameKey || (depth | 0) >= (this.ttDepth[idx] | 0)) {
+      this.ttKeyLo[idx] = lo >>> 0;
+      this.ttKeyHi[idx] = hi >>> 0;
+      this.ttDepth[idx] = depth | 0;
+      this.ttScore[idx] = score | 0;
+      this.ttFlag[idx] = flag | 0;
+      if (bestMove) {
+        this.ttBestFrom[idx] = (bestMove.from | 0);
+        this.ttBestTo[idx] = (bestMove.to | 0);
+        const capLen = Array.isArray(bestMove.captured) ? bestMove.captured.length : (bestMove.captured ? 1 : 0);
+        this.ttBestCapLen[idx] = capLen | 0;
+      }
+    }
   }
 
   // --- Move Generation ---
@@ -536,12 +618,17 @@ class DraughtsEngine {
 
   // --- Search with heuristics and time ---
   getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null, varietyDelta: 0 }) {
-    const { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
+    let { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
+    const history = new Map();
+    // Endgame boost: if few pieces, search deeper/longer
+    let pieceCount = 0; for (let i = 1; i <= 50; i++) if (board[i] !== this.EMPTY) pieceCount++;
+    if (pieceCount <= 10) { maxDepth = Math.max(1, (maxDepth || 5) + 2); timeMs = Math.floor((timeMs || 800) * 1.4); }
     const deadline = Date.now() + Math.max(150, Math.min(6500, timeMs || 800));
 
     const moveKey = (m) => `${m.from}-${m.to}-${m.captured?.join('.') || ''}`;
+    const rootHash = this.computeHash(board, heroColor);
     const unsafeLanding = (b, mv) => {
       const piece = b[mv.to];
       const isWhitePiece = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
@@ -574,7 +661,7 @@ class DraughtsEngine {
       return false;
     };
 
-    const scoreMove = (b, mv, ply) => {
+    const scoreMove = (b, mv, ply, ttBest) => {
       let s = 0;
       if (mv.isCapture) s += 1000 + ((mv.captured?.length || 1) * 140);
       const piece = b[mv.from];
@@ -603,6 +690,8 @@ class DraughtsEngine {
         }
       }
       const h = history.get(moveKey(mv)) || 0;
+      // TT best move bonus
+      if (ttBest && mv.from === ttBest.from && mv.to === ttBest.to) s += 220;
       s += h;
 
       // FMJD bonus: prefer moves to strategic squares
@@ -612,9 +701,19 @@ class DraughtsEngine {
       return s;
     };
 
-    const orderMoves = (b, list, ply) => {
-      const scored = list.map(m => ({ m, sc: scoreMove(b, m, ply) }));
-      scored.sort((a, b) => b.sc - a.sc);
+    const orderMoves = (b, list, ply, ttBest) => {
+      if (!list || list.length <= 1) return list || [];
+      const scored = list.map(m => ({ m, sc: scoreMove(b, m, ply, ttBest) }));
+      if (ttBest) {
+        // move TT best to front if present
+        const idx = scored.findIndex(x => x.m.from === ttBest.from && x.m.to === ttBest.to);
+        if (idx > 0) {
+          const [item] = scored.splice(idx, 1);
+          scored.unshift(item);
+        }
+      }
+      if (scored.length > 6) scored.sort((a, b) => b.sc - a.sc);
+      return scored.map(x => x.m);
       // Inject small randomness at root to avoid deterministic play when scores are close
       if (ply === 0 && varietyDelta > 0 && scored.length > 1) {
         // Find clusters of similar scores and shuffle inside cluster
@@ -637,6 +736,7 @@ class DraughtsEngine {
     };
 
     let bestRoot = null;
+    let prevScore = 0;
 
     // Play thematic combinations when available (before normal search)
     if (!onlyFromSquare) {
@@ -645,13 +745,29 @@ class DraughtsEngine {
     }
 
     const search = (b, depth, alpha, beta, turnColor, ply, fromSqLimit) => {
+      const alphaOrig = alpha, betaOrig = beta;
+      // TT probe
+      const h = this.computeHash(b, turnColor);
+      let ttBest = null;
+      if (depth > 0) {
+        const probe = this.ttProbe(h.lo, h.hi, depth);
+        if (probe) {
+          // bounds
+          if (probe.flag === this.TT_EXACT) return probe.score;
+          if (probe.flag === this.TT_LOWER) { if (probe.score > alpha) alpha = probe.score; }
+          else if (probe.flag === this.TT_UPPER) { if (probe.score < beta) beta = probe.score; }
+          if (alpha >= beta) return probe.score;
+          // Move ordering hint
+          if (probe.bestFrom && probe.bestTo) ttBest = { from: probe.bestFrom, to: probe.bestTo };
+        }
+      }
       if (Date.now() > deadline) throw new Error('TIMEOUT');
       if (depth === 0) return this.quiescence(b, alpha, beta, turnColor, heroColor);
 
       const moves = this.getValidMoves(b, turnColor, fromSqLimit);
       if (!moves.length) return (turnColor === heroColor) ? -100000 + ply : 100000 - ply;
 
-      const ordered = orderMoves(b, moves, ply);
+      const ordered = orderMoves(b, moves, ply, ttBest);
       let bestLocal = null;
 
       if (turnColor === heroColor) {
@@ -695,6 +811,21 @@ class DraughtsEngine {
 
     // Iterative deepening
     for (let d = 1; d <= Math.max(1, maxDepth || 5); d++) {
+      // Aspiration window around previous score (boss mode)
+      let window = 60; let a = prevScore - window; let b = prevScore + window; let val;
+      while (true) {
+        try {
+          val = search(board, d, a, b, heroColor, 0, onlyFromSquare || null);
+        } catch (e) {
+          break; // timeout
+        }
+        if (val <= a) { a -= window * 2; }
+        else if (val >= b) { b += window * 2; }
+        else break;
+        window *= 2; if (window > 2000) { a = -Infinity; b = Infinity; }
+        if (Date.now() > deadline) break;
+      }
+      if (typeof val === 'number') prevScore = val;
       try {
         search(board, d, -Infinity, Infinity, heroColor, 0, onlyFromSquare || null);
       } catch (e) {
