@@ -41,6 +41,11 @@ class DraughtsEngine {
     this._seed = 0x9e3779b9 >>> 0;
     this.initZobrist();
     this.initTT();
+    // Debug counters
+    this.nodes = 0;
+    this.ttProbes = 0;
+    this.ttHits = 0;
+    this._lastDepth = 0;
   }
 
   initTables() {
@@ -143,9 +148,11 @@ class DraughtsEngine {
     return { lo: lo >>> 0, hi: hi >>> 0 };
   }
   ttProbe(lo, hi, depth) {
+    this.ttProbes++;
     const idx = (lo & this.TT_MASK) >>> 0;
     if (this.ttKeyLo[idx] === lo && this.ttKeyHi[idx] === hi) {
       if ((this.ttDepth[idx] | 0) >= (depth | 0)) {
+        this.ttHits++;
         return {
           score: this.ttScore[idx] | 0,
           flag: this.ttFlag[idx] | 0,
@@ -173,6 +180,28 @@ class DraughtsEngine {
         this.ttBestCapLen[idx] = capLen | 0;
       }
     }
+  }
+
+  // Build Principal Variation from TT
+  getPV(board, heroColor, maxPlies = 8) {
+    const pv = [];
+    let b = this.cloneBoard(board);
+    let turn = heroColor;
+    for (let i = 0; i < maxPlies; i++) {
+      const h = this.computeHash(b, turn);
+      const idx = (h.lo & this.TT_MASK) >>> 0;
+      if (this.ttKeyLo[idx] !== h.lo || this.ttKeyHi[idx] !== h.hi) break;
+      const from = this.ttBestFrom[idx] | 0;
+      const to = this.ttBestTo[idx] | 0;
+      if (!from || !to) break;
+      const legal = this.getValidMoves(b, turn);
+      const mv = legal.find(m => m.from === from && m.to === to);
+      if (!mv) break;
+      pv.push(mv);
+      b = this.applyMove(b, mv);
+      turn = (turn === this.WHITE) ? this.BLACK : this.WHITE;
+    }
+    return pv;
   }
 
   // --- Move Generation ---
@@ -633,6 +662,9 @@ class DraughtsEngine {
   // --- Search with heuristics and time ---
   getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null, varietyDelta: 0 }) {
     let { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
+    // Reset debug counters
+    this.nodes = 0; this.ttProbes = 0; this.ttHits = 0; this._lastDepth = 0;
+    const startTime = Date.now();
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
     // Endgame boost: if few pieces, search deeper/longer
@@ -738,6 +770,7 @@ class DraughtsEngine {
     }
 
     const search = (b, depth, alpha, beta, turnColor, ply, fromSqLimit) => {
+      this.nodes++;
       const alphaOrig = alpha, betaOrig = beta;
       // TT probe
       const h = this.computeHash(b, turnColor);
@@ -769,12 +802,18 @@ class DraughtsEngine {
           const mv = ordered[i];
           const nb = this.applyMove(b, mv);
           const nt = (turnColor === this.WHITE) ? this.BLACK : this.WHITE;
-          // LMR
+          // LMR (conservateur en tactique):
           const piece = b[mv.from];
           const isCapture = !!mv.isCapture;
           const willPromote = (piece===this.WHITE_MAN && mv.to <= 5) || (piece===this.BLACK_MAN && mv.to >= 46);
           let reduce = (!isCapture && !willPromote && depth >= 3 && i >= 4) ? 1 : 0;
           if (!isCapture && !willPromote && depth >= 6 && i >= 10) reduce = 2;
+          if (reduce > 0) {
+            // si l'adversaire a une capture après ce coup, évite la réduction
+            const oppMoves = this.getValidMoves(nb, nt);
+            let oppCap = false; for (let k=0;k<oppMoves.length;k++){ if (oppMoves[k].isCapture) { oppCap = true; break; } }
+            if (oppCap) reduce = 0;
+          }
           let sc;
           if (i === 0) {
             sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
@@ -842,8 +881,10 @@ class DraughtsEngine {
         window *= 2; if (window > 2000) { a = -Infinity; b = Infinity; }
         if (Date.now() > deadline) break;
       }
-      if (typeof val === 'number') prevScore = val;
+      if (typeof val === 'number') { prevScore = val; this._lastDepth = d; }
     }
+    // mark elapsed time (not returned here; used by server)
+    this._lastTimeMs = Date.now() - startTime;
     return bestRoot || (this.getValidMoves(board, heroColor, onlyFromSquare || null)[0] || null);
   }
 }
