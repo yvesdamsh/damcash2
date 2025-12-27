@@ -829,9 +829,14 @@ export default function Game() {
                             const all = getCheckersValidMoves(board, aiColor);
                             const enemyColor = aiColor === 'white' ? 'black' : 'white';
                             const safeFirst = async () => {
-                                // Try captures first
-                                const caps = all.filter(m => !!m.captured);
-                                if (caps.length) return caps[0];
+                                // Try captures first (prefer max-capture length)
+                                const capLen = (mv) => Array.isArray(mv.captures) ? mv.captures.length : (Array.isArray(mv.captured) ? mv.captured.length : (mv.captured ? 1 : 0));
+                                const caps = all.filter(m => capLen(m) > 0);
+                                if (caps.length) {
+                                  let best = caps[0]; let bestL = capLen(best);
+                                  for (let i=1;i<caps.length;i++){ const L = capLen(caps[i]); if (L > bestL){ best = caps[i]; bestL = L; } }
+                                  return best;
+                                }
                                 // Otherwise filter out immediately capturable landings
                                 const { getValidMoves } = await import('@/components/checkersLogic');
                                 for (const m of all) {
