@@ -867,17 +867,49 @@ export default function Game() {
                             }
                             await executeChessMoveFinal(move);
                         } else {
-                            // Apply full multiple-capture sequence if provided by AI
-                            const steps = Array.isArray(m.path) && m.path.length ? m.path : [m.to];
-                            const capsSeq = Array.isArray(m.captures) ? m.captures : (Array.isArray(m.captured) ? m.captured : (m.captured ? [m.captured] : []));
+                            // Checkers: honor mandatory captures; if no full sequence provided, compute forced continuation
                             let seqBoard = board;
+                            let steps = [];
+                            let capsSeq = [];
                             let curFrom = { r: m.from.r, c: m.from.c };
-                            for (let i = 0; i < steps.length; i++) {
-                                const toStep = steps[i];
-                                const cap = capsSeq[i] || null;
-                                const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [toStep.r, toStep.c], cap ? { r: cap.r, c: cap.c } : null);
+
+                            const hasSeq = (Array.isArray(m.path) && m.path.length) || (Array.isArray(m.captures) && m.captures.length);
+                            if (hasSeq) {
+                                const preSteps = Array.isArray(m.path) && m.path.length ? m.path : [m.to];
+                                const preCaps = Array.isArray(m.captures) ? m.captures : (Array.isArray(m.captured) ? m.captured : (m.captured ? [m.captured] : []));
+                                for (let i = 0; i < preSteps.length; i++) {
+                                    const toStep = preSteps[i];
+                                    const cap = preCaps[i] || null;
+                                    const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [toStep.r, toStep.c], cap ? { r: cap.r, c: cap.c } : null);
+                                    seqBoard = newBoard;
+                                    steps.push(toStep);
+                                    if (cap) capsSeq.push(cap);
+                                    curFrom = { r: toStep.r, c: toStep.c };
+                                }
+                            } else {
+                                // Apply first step then continue forced captures until none (or promotion)
+                                const firstCap = Array.isArray(m.captured) ? m.captured[0] : (m.captured || null);
+                                const { newBoard, promoted } = executeMove(seqBoard, [curFrom.r, curFrom.c], [m.to.r, m.to.c], firstCap ? { r: firstCap.r, c: firstCap.c } : null);
                                 seqBoard = newBoard;
-                                curFrom = { r: toStep.r, c: toStep.c };
+                                steps.push(m.to);
+                                if (firstCap) capsSeq.push(firstCap);
+                                curFrom = { r: m.to.r, c: m.to.c };
+
+                                if (!promoted) {
+                                    const { getMovesForPiece } = await import('@/components/checkersLogic');
+                                    while (true) {
+                                        const pieceNow = seqBoard[curFrom.r][curFrom.c];
+                                        const { captures: nextCaps } = getMovesForPiece(seqBoard, curFrom.r, curFrom.c, pieceNow, true);
+                                        if (!nextCaps || nextCaps.length === 0) break;
+                                        const nx = nextCaps[0];
+                                        const { newBoard: nb2, promoted: p2 } = executeMove(seqBoard, [curFrom.r, curFrom.c], [nx.to.r, nx.to.c], nx.captured ? { r: nx.captured.r, c: nx.captured.c } : null);
+                                        seqBoard = nb2;
+                                        steps.push(nx.to);
+                                        if (nx.captured) capsSeq.push(nx.captured);
+                                        curFrom = { r: nx.to.r, c: nx.to.c };
+                                        if (p2) break;
+                                    }
+                                }
                             }
 
                             const movesList = game.moves ? JSON.parse(game.moves) : [];
