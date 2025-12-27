@@ -706,7 +706,7 @@ const damcashAdapter = {
         const s = engine.getSquare(r, c);
         if (!s) continue;
         const piece = damcashBoard[r]?.[c] || 0;
-        let mapped = 0;
+        let mapped = engine.EMPTY;
         if (piece === 1) mapped = engine.WHITE_MAN;
         else if (piece === 2) mapped = engine.BLACK_MAN;
         else if (piece === 3) mapped = engine.WHITE_KING;
@@ -742,23 +742,23 @@ function createStartingBoard(engine) {
   return b;
 }
 
-function boardSignature(b) {
-  const w = [], wk = [], bl = [], bk = [];
+function boardSignature(b, engine) {
+  const wm = [], wk = [], bm = [], bk = [];
   for (let s = 1; s <= 50; s++) {
     const p = b[s];
     if (!p) continue;
-    if (p === 1) w.push(s);
-    else if (p === 2) wk.push(s);
-    else if (p === 3) bl.push(s);
-    else if (p === 4) bk.push(s);
+    if (p === engine.WHITE_MAN) wm.push(s);
+    else if (p === engine.WHITE_KING) wk.push(s);
+    else if (p === engine.BLACK_MAN) bm.push(s);
+    else if (p === engine.BLACK_KING) bk.push(s);
   }
-  return `W:${w.join(',')}|WK:${wk.join(',')}|B:${bl.join(',')}|BK:${bk.join(',')}`;
+  return `WM:${wm.join(',')}|WK:${wk.join(',')}|BM:${bm.join(',')}|BK:${bk.join(',')}`;
 }
 
 function findBookMove(engine, currentBoard, aiColor) {
   const start = createStartingBoard(engine);
-  const sigNow = boardSignature(currentBoard);
-  const sigStart = boardSignature(start);
+  const sigNow = boardSignature(currentBoard, engine);
+  const sigStart = boardSignature(start, engine);
   const isStart = sigNow === sigStart;
 
   // Classical FMJD opening moves for White
@@ -832,7 +832,7 @@ Deno.serve(async (req) => {
     const aiColor = (turn === 'white') ? engine.WHITE : engine.BLACK;
 
     // Opening book shortcut
-    if (!activePiece) {
+    if (!activePiece && difficulty !== 'expert') {
       const book = findBookMove(engine, engBoard, aiColor);
       if (book) {
         const moveForApp = damcashAdapter.toAppMove(book, engine);
@@ -846,12 +846,12 @@ Deno.serve(async (req) => {
     else if (difficulty === 'hard') maxDepth = 10;
     else if (difficulty === 'expert') maxDepth = 12;
     // Variety: introduce small randomness window based on difficulty
-    const varietyDelta = (difficulty === 'easy') ? 80 : (difficulty === 'hard' ? 25 : 15);
+    const varietyDelta = difficulty === 'easy' ? 80 : difficulty === 'hard' ? 25 : difficulty === 'expert' ? 0 : 15;
     
     const baseTime = (difficulty === 'easy') ? 220 : 
                     (difficulty === 'hard' ? 1500 : 
                     (difficulty === 'expert' ? 3200 : 800));
-    const dynTime = (typeof timeLeft === 'number') ? Math.max(200, Math.min(2000, Math.floor(timeLeft * 1000 * 0.03))) : baseTime;
+    const dynTime = (typeof timeLeft === 'number') ? Math.max(300, Math.min(6000, Math.floor(timeLeft * 1000 * 0.05))) : baseTime;
     const timeMs = Math.max(baseTime, dynTime);
 
     // Forced continuation
@@ -871,7 +871,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const varietyDelta = (difficulty === 'easy') ? 80 : (difficulty === 'hard' ? 25 : 15);
+
     let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare, varietyDelta });
     if (!bestMove) {
       const legal = engine.getValidMoves(engBoard, aiColor, onlyFromSquare || null);
