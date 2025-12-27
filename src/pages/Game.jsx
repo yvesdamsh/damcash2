@@ -693,8 +693,8 @@ export default function Game() {
           if (window.__debug_ai) console.log('[AI] Skip: not human opponent on this client', { nonAiPlayerId, currentUserId: currentUser?.id });
           return;
         }
-        const aiIsBlack = blackIsAI || (id === 'local-ai');
-        const isAiTurn = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
+        const aiIsBlack = (id === 'local-ai') ? true : blackIsAI;
+        const isAiTurn = (id === 'local-ai') ? (game.current_turn === 'black') : (game.current_turn === 'white' ? whiteIsAI : blackIsAI);
         console.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
 
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
