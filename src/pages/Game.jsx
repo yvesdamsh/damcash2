@@ -860,30 +860,34 @@ export default function Game() {
                             }
                             await executeChessMoveFinal(move);
                         } else {
-                            const formattedMove = {
-                                from: {r: move.from.r, c: move.from.c},
-                                to: {r: move.to.r, c: move.to.c},
-                                captured: move.captured ? {r: move.captured.r, c: move.captured.c} : null
-                            };
-
-                            const { newBoard, promoted } = executeMove(board, [formattedMove.from.r, formattedMove.from.c], [formattedMove.to.r, formattedMove.to.c], formattedMove.captured);
-                            
-                            let mustContinue = false;
-                            if (formattedMove.captured && !promoted) {
-                                const { getMovesForPiece } = await import('@/components/checkersLogic');
-                                const { captures } = getMovesForPiece(newBoard, formattedMove.to.r, formattedMove.to.c, newBoard[formattedMove.to.r][formattedMove.to.c], true);
-                                if (captures.length > 0) mustContinue = true;
+                            // Apply full multiple-capture sequence if provided by AI
+                            const steps = Array.isArray(m.path) && m.path.length ? m.path : [m.to];
+                            const capsSeq = Array.isArray(m.captures) ? m.captures : (Array.isArray(m.captured) ? m.captured : (m.captured ? [m.captured] : []));
+                            let seqBoard = board;
+                            let curFrom = { r: m.from.r, c: m.from.c };
+                            for (let i = 0; i < steps.length; i++) {
+                                const toStep = steps[i];
+                                const cap = capsSeq[i] || null;
+                                const { newBoard } = executeMove(seqBoard, [curFrom.r, curFrom.c], [toStep.r, toStep.c], cap ? { r: cap.r, c: cap.c } : null);
+                                seqBoard = newBoard;
+                                curFrom = { r: toStep.r, c: toStep.c };
                             }
 
                             const movesList = game.moves ? JSON.parse(game.moves) : [];
                             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
-                            const newMoveEntry = { 
-                                type: 'checkers', from: move.from, to: move.to, 
-                                captured: !!move.captured, board: JSON.stringify(newBoard),
+                            const notation = `${getNum(m.from.r, m.from.c)}${capsSeq.length ? 'x' : '-'}${getNum(curFrom.r, curFrom.c)}`;
+                            const newMoveEntry = {
+                                type: 'checkers',
+                                from: m.from,
+                                to: curFrom,
+                                captured: capsSeq.length > 0,
+                                board: JSON.stringify(seqBoard),
                                 color: game.current_turn,
-                                notation: `${getNum(move.from.r, move.from.c)}${move.captured ? 'x' : '-'}${getNum(move.to.r, move.to.c)}`
+                                notation,
+                                sequence: steps,
+                                captures: capsSeq
                             };
-                            
+
                             const now = new Date().toISOString();
                             let whiteTime = Number(game.white_seconds_left || 600);
                             let blackTime = Number(game.black_seconds_left || 600);
@@ -893,41 +897,33 @@ export default function Game() {
                                 else blackTime = Math.max(0, blackTime - elapsed);
                             }
 
-                            const nextTurn = mustContinue ? aiColor : (aiColor === 'white' ? 'black' : 'white');
+                            // After full sequence, it's opponent's turn
+                            const nextTurn = (aiColor === 'white' ? 'black' : 'white');
                             let status = game.status;
                             let winnerId = game.winner_id;
-
-                            if (!mustContinue) {
-                                const { checkWinner } = await import('@/components/checkersLogic');
-                                const winnerColor = checkWinner(newBoard);
-                                if (winnerColor) {
-                                    status = 'finished';
-                                    // AI is the winner if winnerColor matches AI color
-                                    winnerId = winnerColor === aiColor ? 'ai' : currentUser?.id;
-                                }
+                            const winnerColor = checkWinner(seqBoard);
+                            if (winnerColor) {
+                                status = 'finished';
+                                winnerId = winnerColor === aiColor ? 'ai' : currentUser?.id;
                             }
 
-                            if (mustContinue) {
-                                setMustContinueWith({ r: formattedMove.to.r, c: formattedMove.to.c });
-                            } else {
-                                setMustContinueWith(null);
-                            }
+                            setMustContinueWith(null);
 
                             if (game.id !== 'local-ai') {
                                 try {
-                                    await updateGameOnMove(newBoard, nextTurn, status, winnerId, newMoveEntry);
+                                    await updateGameOnMove(seqBoard, nextTurn, status, winnerId, newMoveEntry);
                                 } catch (e) {
-                                    console.error('[AI] Persist error (backend)', e);
+                                    console.error('[AI] Persist error (backend sequence)', e);
                                 }
                             }
 
-                            setBoard(newBoard);
+                            setBoard(seqBoard);
                             setGame(prev => ({
                                 ...prev,
                                 current_turn: nextTurn,
                                 status,
                                 winner_id: winnerId,
-                                board_state: JSON.stringify(newBoard),
+                                board_state: JSON.stringify(seqBoard),
                                 moves: JSON.stringify([...movesList, newMoveEntry]),
                                 last_move_at: now,
                                 white_seconds_left: whiteTime,
