@@ -660,11 +660,13 @@ class DraughtsEngine {
   }
 
   // --- Search with heuristics and time ---
-  getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null, varietyDelta: 0 }) {
-    let { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0 } = options || {};
+  getBestMove(board, heroColor, options = { maxDepth: 5, timeMs: 800, onlyFromSquare: null, varietyDelta: 0, allowVariety: false, varietyThreshold: 20, topK: 3, rng: null }) {
+    let { maxDepth, timeMs, onlyFromSquare, varietyDelta = 0, allowVariety = false, varietyThreshold = 20, topK = 3, rng = null } = options || {};
     // Reset debug counters
     this.nodes = 0; this.ttProbes = 0; this.ttHits = 0; this._lastDepth = 0;
     const startTime = Date.now();
+    let rootScoresFinal = [];
+    let rootScores = [];
     const killers = Array.from({ length: 64 }, () => []);
     const history = new Map();
     // Endgame boost: if few pieces, search deeper/longer
@@ -821,6 +823,7 @@ class DraughtsEngine {
             sc = search(nb, depth - 1 - reduce, alpha, alpha + 1, nt, ply + 1, null);
             if (sc > alpha) sc = search(nb, depth - 1, alpha, beta, nt, ply + 1, null);
           }
+          if (ply === 0) rootScores.push({ m: mv, sc });
           if (sc > val) { val = sc; bestLocal = mv; }
           if (val > alpha) alpha = val;
           if (alpha >= beta) {
@@ -871,19 +874,30 @@ class DraughtsEngine {
       let window = 60; let a = prevScore - window; let b = prevScore + window; let val;
       while (true) {
         try {
+          rootScores = []; // collect fresh per attempt
           val = search(board, d, a, b, heroColor, 0, onlyFromSquare || null);
         } catch (e) {
           break; // timeout
         }
         if (val <= a) { a -= window * 2; }
         else if (val >= b) { b += window * 2; }
-        else break;
+        else { rootScoresFinal = rootScores.slice(); break; }
         window *= 2; if (window > 2000) { a = -Infinity; b = Infinity; }
         if (Date.now() > deadline) break;
       }
-      if (typeof val === 'number') { prevScore = val; this._lastDepth = d; }
+      if (typeof val === 'number') { prevScore = val; this._lastDepth = d; this._rootScores = rootScoresFinal; }
     }
-    // mark elapsed time (not returned here; used by server)
+    // MultiPV light at root for variety (non-expert)
+    if (allowVariety && Array.isArray(rootScoresFinal) && rootScoresFinal.length > 1 && rng) {
+      const sorted = [...rootScoresFinal].sort((a,b)=>b.sc - a.sc);
+      const best = sorted[0].sc;
+      const top = sorted.slice(0, Math.max(1, topK));
+      const close = top.filter(x => x.sc >= best - varietyThreshold);
+      const pick = close[Math.floor(rng.nextFloat() * close.length)] || top[0];
+      if (pick && pick.m) bestRoot = pick.m;
+      this._rootScores = sorted; // keep for debug
+    }
+    // mark elapsed time
     this._lastTimeMs = Date.now() - startTime;
     return bestRoot || (this.getValidMoves(board, heroColor, onlyFromSquare || null)[0] || null);
   }
@@ -949,7 +963,27 @@ function boardSignature(b, engine) {
   return `WM:${wm.join(',')}|WK:${wk.join(',')}|BM:${bm.join(',')}|BK:${bk.join(',')}`;
 }
 
-function findBookMove(engine, currentBoard, aiColor) {
+// Seeded RNG helpers for stable variety per game
+function seedFromString(s) {
+  let h = 2166136261 >>> 0; // FNV-1a 32-bit
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+class RNG {
+  constructor(seed) { this.s = (seed >>> 0) || 1; }
+  next() { // xorshift32
+    let x = this.s >>> 0; x ^= x << 13; x >>>= 0; x ^= x >>> 17; x >>>= 0; x ^= x << 5; x >>>= 0; this.s = x >>> 0; return this.s; }
+  nextFloat() { return (this.next() >>> 0) / 4294967296; }
+  pickWeighted(items, weights) {
+    let total = 0; for (let w of weights) total += w;
+    if (total <= 0) return items[0];
+    let r = this.nextFloat() * total;
+    for (let i = 0; i < items.length; i++) { r -= weights[i]; if (r <= 0) return items[i]; }
+    return items[items.length - 1];
+  }
+}
+
+function findBookMove(engine, currentBoard, aiColor, difficulty, rng) {
   const start = createStartingBoard(engine);
   const sigNow = boardSignature(currentBoard, engine);
   const sigStart = boardSignature(start, engine);
@@ -975,16 +1009,37 @@ function findBookMove(engine, currentBoard, aiColor) {
 
   const legal = engine.getValidMoves(currentBoard, aiColor);
 
+  // Helper: safety filter (avoid immediate recapture of the landing square)
+  const safeNonCapture = (mv) => {
+    if (!mv) return null;
+    if (mv.isCapture) return null; // book should propose quiet developing moves
+    const nb = engine.applyMove(currentBoard, mv);
+    const opp = (aiColor === engine.WHITE) ? engine.BLACK : engine.WHITE;
+    const replyCaps = engine.getValidMoves(nb, opp).filter(m=>m.isCapture && Array.isArray(m.captured) && m.captured.includes(mv.to));
+    return replyCaps.length === 0 ? mv : null;
+  };
+
   if (isStart && aiColor === engine.WHITE) {
-    // Randomly select from good openings for variety, but avoid immediate recapture blunders
-    const shuffled = whiteFirst.sort(() => Math.random() - 0.5);
-    for (const cand of shuffled) {
-      const mv = legal.find(m => m.from === cand.from && m.to === cand.to && !m.isCapture);
-      if (mv) {
-        const nb = engine.applyMove(currentBoard, mv);
-        const opp = engine.BLACK;
-        const replyCaps = engine.getValidMoves(nb, opp).filter(m=>m.isCapture && m.captured?.includes(mv.to));
-        if (replyCaps.length === 0) return mv;
+    if (difficulty === 'expert') {
+      // Deterministic best line: first safe candidate in declared order
+      for (const cand of whiteFirst) {
+        const mv = legal.find(m => m.from === cand.from && m.to === cand.to && !m.isCapture);
+        const ok = safeNonCapture(mv);
+        if (ok) return ok;
+      }
+    } else {
+      // Weighted random (stable seed): prefer first lines slightly more
+      const weights = [3,2,2,1,1].slice(0, whiteFirst.length);
+      const pool = whiteFirst.slice();
+      const w = weights.slice();
+      for (let step = 0; step < pool.length; step++) {
+        const pick = rng.pickWeighted(pool, w);
+        const idx = pool.indexOf(pick);
+        const mv = legal.find(m => m.from === pick.from && m.to === pick.to && !m.isCapture);
+        const ok = safeNonCapture(mv);
+        if (ok) return ok;
+        // remove and try next
+        pool.splice(idx, 1); w.splice(idx, 1);
       }
     }
   }
@@ -995,15 +1050,24 @@ function findBookMove(engine, currentBoard, aiColor) {
       if (boardSignature(sim, engine) === sigNow) {
         const key = `${wf.from}-${wf.to}`;
         const replies = blackReplies[key] || [];
-        // Randomly select from good responses, but avoid immediate recapture traps (e.g., 16-21 vs 31-27)
-        const shuffled = replies.sort(() => Math.random() - 0.5);
-        for (const rep of shuffled) {
-          const mv = legal.find(m => m.from === rep.from && m.to === rep.to && !m.isCapture);
-          if (mv) {
-            const nb = engine.applyMove(currentBoard, mv);
-            const opp = engine.WHITE;
-            const replyCaps = engine.getValidMoves(nb, opp).filter(m=>m.isCapture && m.captured?.includes(mv.to));
-            if (replyCaps.length === 0) return mv;
+        if (!replies.length) break;
+        if (difficulty === 'expert') {
+          for (const rep of replies) {
+            const mv = legal.find(m => m.from === rep.from && m.to === rep.to && !m.isCapture);
+            const ok = safeNonCapture(mv);
+            if (ok) return ok;
+          }
+        } else {
+          const weights = [3,2,1].slice(0, replies.length);
+          const pool = replies.slice();
+          const w = weights.slice();
+          while (pool.length) {
+            const pick = rng.pickWeighted(pool, w);
+            const idx = pool.indexOf(pick);
+            const mv = legal.find(m => m.from === pick.from && m.to === pick.to && !m.isCapture);
+            const ok = safeNonCapture(mv);
+            if (ok) return ok;
+            pool.splice(idx, 1); w.splice(idx, 1);
           }
         }
       }
@@ -1015,7 +1079,9 @@ function findBookMove(engine, currentBoard, aiColor) {
 Deno.serve(async (req) => {
   try {
     const _base44 = createClientFromRequest(req);
-    const { board, turn, difficulty = 'medium', timeLeft, activePiece } = await req.json();
+    const { board, turn, difficulty = 'medium', timeLeft, activePiece, gameId } = await req.json();
+
+    const rng = new RNG(seedFromString(String(gameId || 'default')));
 
     if (!Array.isArray(board) || board.length !== 10 || !turn) {
       return Response.json({ error: 'Invalid payload' }, { status: 400 });
@@ -1027,7 +1093,7 @@ Deno.serve(async (req) => {
 
     // Opening book shortcut
     if (!activePiece && difficulty !== 'expert') {
-      const book = findBookMove(engine, engBoard, aiColor);
+      const book = findBookMove(engine, engBoard, aiColor, difficulty, rng);
       if (book) {
         const moveForApp = damcashAdapter.toAppMove(book, engine);
         return Response.json({ move: moveForApp, score: 0, source: 'book' });
@@ -1066,7 +1132,13 @@ Deno.serve(async (req) => {
     }
 
 
-    let bestMove = engine.getBestMove(engBoard, aiColor, { maxDepth, timeMs, onlyFromSquare, varietyDelta });
+    let bestMove = engine.getBestMove(engBoard, aiColor, { 
+      maxDepth, timeMs, onlyFromSquare, varietyDelta,
+      allowVariety: difficulty !== 'expert',
+      varietyThreshold: (difficulty === 'hard' ? 20 : (difficulty === 'medium' ? 30 : 40)),
+      topK: 3,
+      rng
+    });
     if (!bestMove) {
       const legal = engine.getValidMoves(engBoard, aiColor, onlyFromSquare || null);
       if (legal && legal.length) bestMove = legal[0];
@@ -1076,6 +1148,8 @@ Deno.serve(async (req) => {
     const moveForApp = damcashAdapter.toAppMove(bestMove, engine);
     // Build a short PV (up to 4 plies) for debugging/measurement
     const pvMoves = engine.getPV(engBoard, aiColor, 4).map(m => damcashAdapter.toAppMove(m, engine));
+    const h = engine.computeHash(engBoard, aiColor);
+    const rootMovesDbg = Array.isArray(engine._rootScores) ? engine._rootScores.slice(0,3).map(x=>({ move: damcashAdapter.toAppMove(x.m, engine), score: x.sc })) : [];
     return Response.json({ 
       move: moveForApp, 
       score: 0, 
@@ -1086,7 +1160,10 @@ Deno.serve(async (req) => {
         ttProbes: engine.ttProbes,
         ttHits: engine.ttHits,
         timeUsedMs: engine._lastTimeMs,
-        pv: pvMoves
+        pv: pvMoves,
+        hashLo: h.lo,
+        hashHi: h.hi,
+        rootMoves: rootMovesDbg
       }
     });
   } catch (e) {

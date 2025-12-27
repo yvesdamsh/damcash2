@@ -734,6 +734,7 @@ export default function Game() {
                         board: board,
                         turn: aiColor,
                         difficulty: aiDifficulty,
+                        gameId: id,
                         userElo: currentUser?.elo_chess || currentUser?.elo_checkers || 1200,
                         castlingRights: chessState.castlingRights,
                         lastMove: chessState.lastMove,
