@@ -592,6 +592,16 @@ class DraughtsEngine {
         const oppCaps = this.getValidMoves(nb, oppColor).filter(m=>m.isCapture && Array.isArray(m.captured) && m.captured.includes(mv.to));
         if (oppCaps.length) s -= 6000;
       }
+      // Root-level trap avoidance: if our move allows a tactical shot for opponent, penalize heavily
+      if (ply === 0) {
+        const moverIsWhite = (piece === this.WHITE_MAN || piece === this.WHITE_KING);
+        const oppColor = moverIsWhite ? this.BLACK : this.WHITE;
+        const oppShot = this.findTacticalShot(nb, oppColor, 6);
+        if (oppShot) {
+          const shotLen = Array.isArray(oppShot.captured) ? oppShot.captured.length : 1;
+          s -= (1600 + shotLen * 240);
+        }
+      }
       const h = history.get(moveKey(mv)) || 0;
       s += h;
 
@@ -798,7 +808,7 @@ function findBookMove(engine, currentBoard, aiColor) {
   if (aiColor === engine.BLACK) {
     for (const wf of whiteFirst) {
       const sim = engine.applyMove(start, { from: wf.from, to: wf.to, captured: [], isCapture: false });
-      if (boardSignature(sim) === sigNow) {
+      if (boardSignature(sim, engine) === sigNow) {
         const key = `${wf.from}-${wf.to}`;
         const replies = blackReplies[key] || [];
         // Randomly select from good responses, but avoid immediate recapture traps (e.g., 16-21 vs 31-27)
