@@ -811,7 +811,11 @@ export default function Game() {
                       return { data: { move: all[0] } };
                     })();
 
-                    res = await backendPromise;
+                    const hedged = await Promise.race([
+                      backendPromise.then(r => ({ kind: 'backend', res: r })),
+                      new Promise((resolve) => setTimeout(resolve, 1200)).then(async () => ({ kind: 'local', res: await localPromise }))
+                    ]);
+                    res = hedged?.res;
                     if (!res || !res.data || res?.data?.error || !res.data.move) {
                       res = await localPromise;
                     }
