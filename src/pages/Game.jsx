@@ -171,6 +171,7 @@ export default function Game() {
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
     const isPollingRef = useRef(false);
+    const aiJobRef = useRef(false);
 
     // Handle Game State Updates (Parsing & Sounds)
     useEffect(() => {
@@ -714,7 +715,7 @@ export default function Game() {
             const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
             const makeAiMove = async () => {
                     // Debounce if a new turn arrives too fast
-                    // proceed even if isAiThinking is true here to avoid stale-flag deadlocks
+                    if (isAiThinking) return; // prevent duplicate jobs; aiJobRef ensures scheduling too
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
                 const whiteIsAI = game.white_player_id === 'ai';
@@ -1121,9 +1122,12 @@ export default function Game() {
                 } finally {
                     // Always reset thinking flag to avoid getting stuck after state changes
                     setIsAiThinking(false);
+                    aiJobRef.current = false;
                 }
             };
             // Small think time to keep UX natural
+            if (aiJobRef.current) return;
+            aiJobRef.current = true;
             timer = setTimeout(makeAiMove, delay);
         }
 
