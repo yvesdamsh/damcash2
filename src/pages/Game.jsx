@@ -353,9 +353,13 @@ export default function Game() {
         if (game) {
             const fetchPlayers = async () => {
                 try {
+                    const safeGet = async (uid) => {
+                        if (!uid || uid === 'ai' || (typeof uid === 'string' && uid.startsWith('guest'))) return null;
+                        try { return await base44.entities.User.get(uid); } catch { return null; }
+                    };
                     const [white, black] = await Promise.all([
-                        game.white_player_id ? base44.entities.User.get(game.white_player_id).catch(() => null) : null,
-                        game.black_player_id ? base44.entities.User.get(game.black_player_id).catch(() => null) : null
+                        safeGet(game.white_player_id),
+                        safeGet(game.black_player_id)
                     ]);
                     setPlayersInfo({ white, black });
                 } catch (e) {
@@ -727,29 +731,37 @@ export default function Game() {
                 console.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
                 try {
                     // Local-AI fast path (fully deterministic, no backend/no hedging)
-                    if (id === 'local-ai' && game.game_type === 'checkers') {
-                        const all = getCheckersValidMoves(board, aiColor);
-                        if (all && all.length) {
-                            const capLen = (mv) => Array.isArray(mv.captures) ? mv.captures.length : (Array.isArray(mv.captured) ? mv.captured.length : (mv.captured ? 1 : 0));
-                            const caps = all.filter(m => capLen(m) > 0);
-                            let pick = null;
-                            if (caps.length) {
-                                pick = caps.reduce((best, mv) => (capLen(mv) > capLen(best) ? mv : best), caps[0]);
-                            } else {
-                                const enemyColor = aiColor === 'white' ? 'black' : 'white';
-                                const safe = [];
-                                for (const m of all) {
-                                    const sim = JSON.parse(JSON.stringify(board));
-                                    sim[m.from.r][m.from.c] = 0;
-                                    sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
-                                    const enemyMoves = getCheckersValidMoves(sim, enemyColor);
-                                    const threatened = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
-                                    if (!threatened) safe.push(m);
-                                }
-                                pick = safe.length ? safe[Math.floor(Math.random() * safe.length)] : all[0];
+                    if (id === 'local-ai') {
+                        if (game.game_type === 'chess') {
+                            const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
+                            if (moves && moves.length) {
+                                await executeChessMoveFinal(moves[0]);
+                                return;
                             }
-                            await executeCheckersMove(pick);
-                            return;
+                        } else if (game.game_type === 'checkers') {
+                            const all = getCheckersValidMoves(board, aiColor);
+                            if (all && all.length) {
+                                const capLen = (mv) => Array.isArray(mv.captures) ? mv.captures.length : (Array.isArray(mv.captured) ? mv.captured.length : (mv.captured ? 1 : 0));
+                                const caps = all.filter(m => capLen(m) > 0);
+                                let pick = null;
+                                if (caps.length) {
+                                    pick = caps.reduce((best, mv) => (capLen(mv) > capLen(best) ? mv : best), caps[0]);
+                                } else {
+                                    const enemyColor = aiColor === 'white' ? 'black' : 'white';
+                                    const safe = [];
+                                    for (const m of all) {
+                                        const sim = JSON.parse(JSON.stringify(board));
+                                        sim[m.from.r][m.from.c] = 0;
+                                        sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
+                                        const enemyMoves = getCheckersValidMoves(sim, enemyColor);
+                                        const threatened = enemyMoves.some(em => em.captured && ((em.captured.r === m.to.r && em.captured.c === m.to.c) || (em.captured?.some?.((cp)=>cp.r===m.to.r && cp.c===m.to.c))));
+                                        if (!threatened) safe.push(m);
+                                    }
+                                    pick = safe.length ? safe[Math.floor(Math.random() * safe.length)] : all[0];
+                                }
+                                await executeCheckersMove(pick);
+                                return;
+                            }
                         }
                     }
                     
