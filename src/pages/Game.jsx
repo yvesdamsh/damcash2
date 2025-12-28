@@ -683,8 +683,8 @@ export default function Game() {
         }
         // Avoid concurrent AI jobs
         if (isAiThinking) {
-            console.log('[AI] Skip: already thinking');
-            return;
+            console.log('[AI] Busy: already thinking, will not block scheduling');
+            // Do not return here to avoid deadlocks; makeAiMove re-checks turn before acting
         }
 
         let isActive = true;
@@ -754,7 +754,7 @@ export default function Game() {
                     });
 
                     let res = null;
-                    const useBackend = true;
+                    const useBackend = id !== 'local-ai';
 
                     // Run backend and local fallback in parallel; take whichever returns first
                     const backendPromise = useBackend
