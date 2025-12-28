@@ -710,17 +710,17 @@ export default function Game() {
 
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
 
-        if (isAiTurn && !isAiThinking) {
+        if (isAiTurn) {
             const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
             const makeAiMove = async () => {
                     // Debounce if a new turn arrives too fast
                     // allow scheduling even if previous job is thinking; aiJobRef prevents duplicates
                 // Guard: ensure it's truly AI's turn
-                if (!game) return;
+                if (!game) { aiJobRef.current = false; return; }
                 const whiteIsAI = game.white_player_id === 'ai';
                 const blackIsAI = game.black_player_id === 'ai';
                 const aiTurnCheck = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
-                if (!aiTurnCheck) { console.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); return; }
+                if (!aiTurnCheck) { console.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
                 if (!isActive) return;
                 setIsAiThinking(true);
                 const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
