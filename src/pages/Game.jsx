@@ -888,7 +888,7 @@ export default function Game() {
                         }
                     }
                     
-                    if (!isActive) return;
+                    if (!isActive) { aiJobRef.current = false; return; }
 
                     if (res?.data?.move) {
                         console.log('[AI] Using backend move', res.data.move);
