@@ -685,7 +685,6 @@ export default function Game() {
         // Avoid concurrent AI jobs
         if (isAiThinking) {
             console.log('[AI] Busy: already thinking, will not block scheduling');
-            // Do not return here to avoid deadlocks; makeAiMove re-checks turn before acting
         }
 
         let isActive = true;
@@ -715,7 +714,7 @@ export default function Game() {
             const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
             const makeAiMove = async () => {
                     // Debounce if a new turn arrives too fast
-                    if (isAiThinking) return; // prevent duplicate jobs; aiJobRef ensures scheduling too
+                    // allow scheduling even if previous job is thinking; aiJobRef prevents duplicates
                 // Guard: ensure it's truly AI's turn
                 if (!game) return;
                 const whiteIsAI = game.white_player_id === 'ai';
