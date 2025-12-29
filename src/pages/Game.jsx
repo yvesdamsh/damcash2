@@ -765,6 +765,34 @@ export default function Game() {
                         }
                     }
                     
+                    // External AI server: try first when using built-in 'ai' opponent
+                    if (id === 'ai') {
+                        try {
+                            const res = await fetch("https://damcash-server.onrender.com/move", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ board, turn: aiColor, difficulty: "medium" })
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                console.log('[AI] external /move response', data);
+                                if (data && data.move) {
+                                    if (game.game_type === 'checkers') {
+                                        await executeCheckersMove(data.move);
+                                    } else if (game.game_type === 'chess') {
+                                        await executeChessMoveFinal(data.move);
+                                    }
+                                    return;
+                                }
+                            } else {
+                                const text = await res.text();
+                                console.warn('[AI] external /move HTTP error', text);
+                            }
+                        } catch (e) {
+                            console.warn('[AI] external /move failed', e);
+                        }
+                    }
+                    
                     const payload = {
                         board: board,
                         turn: aiColor,
