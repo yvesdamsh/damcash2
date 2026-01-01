@@ -9,14 +9,14 @@ export default function PlayerInfoCard({
     onTimeout,
     getElo 
 }) {
-    const displayName = player?.name || (player?.color === 'white' ? 'Blanc' : 'Noir');
+    const displayName = player?.info?.username || player?.name || (player?.color === 'white' ? 'Blanc' : 'Noir');
     const isWaiting = !player?.id || !player?.name;
     return (
         <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
                     {player.info?.avatar_url ? (
-                        <img src={player.info.avatar_url} className="w-full h-full object-cover" alt={player.name} />
+                        <img src={player.info.avatar_url} className="w-full h-full object-cover" alt={displayName} />
                     ) : (
                         <User className="w-6 h-6" />
                     )}

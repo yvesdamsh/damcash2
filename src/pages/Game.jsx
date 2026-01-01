@@ -1786,7 +1786,7 @@ export default function Game() {
                 recipient_id: opponentId,
                 type: "info",
                 title: t('game.draw_offer_sent_title'),
-                message: t('game.draw_offer_sent_msg', { name: currentUser.full_name || currentUser.username }),
+                message: t('game.draw_offer_sent_msg', { name: currentUser.username || currentUser.full_name }),
                 link: `/Game?id=${game.id}`
             });
         }
@@ -2234,12 +2234,12 @@ export default function Game() {
                             <span className="text-yellow-500">|</span>
                             <span className="flex gap-2 min-w-0">
                                 <span className={cn("truncate max-w-[80px] md:max-w-[150px]", game.series_score_white > game.series_score_black ? "text-green-400" : "text-white")}>
-                                    {game.white_player_name}
+                                    {playersInfo.white?.username || game.white_player_name}
                                 </span>
                                 <span className={game.series_score_white > game.series_score_black ? "text-green-400" : "text-white"}>: {game.series_score_white}</span>
                                 <span>-</span>
                                 <span className={cn("truncate max-w-[80px] md:max-w-[150px]", game.series_score_black > game.series_score_white ? "text-green-400" : "text-white")}>
-                                    {game.black_player_name}
+                                    {playersInfo.black?.username || game.black_player_name}
                                 </span>
                                 <span className={game.series_score_black > game.series_score_white ? "text-green-400" : "text-white"}>: {game.series_score_black}</span>
                             </span>
