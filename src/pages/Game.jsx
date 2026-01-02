@@ -370,6 +370,22 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
+    // One-shot initial load for online games to avoid infinite spinner until first WS message
+    useEffect(() => {
+        if (!id || id === 'local-ai') return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const g = await base44.entities.Game.get(id);
+                if (!cancelled && g) setGame(prev => prev || g);
+            } catch (_) {
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [id]);
+
     // Polling disabled: WebSocket is the single source of truth.
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
