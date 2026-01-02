@@ -74,6 +74,10 @@ export default function Game() {
     const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
     const [id, setId] = useState(searchParams.get('id'));
+    // Prevent infinite spinner when no game id is present (e.g., opening /Game without ?id=...)
+    useEffect(() => {
+        if (!id) setLoading(false);
+    }, [id]);
     const isPreview = (searchParams.get('preview') === '1' || searchParams.get('embed') === '1' || searchParams.get('preview') === 'true');
     const forceMuteMedia = (searchParams.get('mute') === '1' || searchParams.get('mute') === 'true');
 
