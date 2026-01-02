@@ -1,58 +1,64 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
+    const start = Date.now();
     try {
         const base44 = createClientFromRequest(req);
-        
+
         // Parse body safely
         let body = {};
-        try { body = await req.json(); } catch(e) {}
-        const { gameId } = body;
-        
-        if (!gameId) return Response.json({error: "No gameId"}, {status: 400});
+        try { body = await req.json(); } catch (_) {}
+        const gameId = body?.gameId;
+        if (!gameId) return Response.json({ error: 'No gameId' }, { status: 400 });
 
-        // 1. Fetch Game (Always fresh)
-        const gamePromise = base44.entities.Game.get(gameId);
-        
-        // 2. Fetch Chat (Last 50)
-        const messagesPromise = base44.entities.ChatMessage.filter(
-            { game_id: gameId }, 
-            '-created_date', 
-            50
-        );
-
-        // 3. Fetch Signals (If user authenticated)
-        let signalsPromise = Promise.resolve([]);
-        let currentUser = null;
-        
-        try {
-            currentUser = await base44.auth.me();
-            if (currentUser) {
-                signalsPromise = base44.entities.SignalMessage.filter({ 
-                    game_id: gameId, 
-                    recipient_id: currentUser.id 
-                }, '-created_date', 10);
+        // Helper: wrap promises with timeout to avoid hanging -> 502
+        const withTimeout = async (promise, ms, label) => {
+            const result = await Promise.race([
+                promise.then((v) => ({ ok: true, v })).catch((e) => ({ ok: false, e })),
+                new Promise((resolve) => setTimeout(() => resolve({ ok: false, e: new Error('timeout') }), ms))
+            ]);
+            if (!result.ok) {
+                console.error('[pollGameUpdates]', label, 'failed:', result.e?.message || result.e);
+                return null;
             }
-        } catch(e) {
-            // User might be guest or not logged in
-        }
+            return result.v;
+        };
 
-        const [game, messages, signals] = await Promise.all([
+        // Auth is optional
+        let currentUser = null;
+        try { currentUser = await withTimeout(base44.auth.me(), 1000, 'auth.me'); } catch (_) {}
+
+        // Parallel fetches with timeouts
+        const gamePromise = withTimeout(base44.entities.Game.get(gameId), 3000, 'Game.get');
+        const messagesPromise = withTimeout(
+            base44.entities.ChatMessage.filter({ game_id: gameId }, '-created_date', 50),
+            3000,
+            'ChatMessage.filter'
+        );
+        const signalsPromise = currentUser
+            ? withTimeout(
+                base44.entities.SignalMessage.filter({ game_id: gameId, recipient_id: currentUser.id }, '-created_date', 10),
+                3000,
+                'SignalMessage.filter'
+              )
+            : Promise.resolve([]);
+
+        const [game, messagesRaw, signals] = await Promise.all([
             gamePromise,
             messagesPromise,
             signalsPromise
         ]);
 
-        // Process signals: We can't delete them safely here without risking data loss if response fails.
-        // But we can return them and let client handle deletion or just ignore duplicates.
+        const messages = Array.isArray(messagesRaw)
+            ? messagesRaw.sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
+            : [];
 
-        return Response.json({
-            game,
-            messages: messages ? messages.sort((a,b) => new Date(a.created_date) - new Date(b.created_date)) : [],
-            signals: signals || []
-        });
+        const duration = Date.now() - start;
+        console.log('[pollGameUpdates] ok', { gameId, duration, gotGame: !!game, messages: messages.length, signals: Array.isArray(signals) ? signals.length : 0 });
 
+        return Response.json({ game, messages, signals: signals || [] });
     } catch (e) {
-        return Response.json({ error: e.message }, { status: 500 });
+        console.error('[pollGameUpdates] error', e?.message || e);
+        return Response.json({ error: e.message || String(e) }, { status: 500 });
     }
 });

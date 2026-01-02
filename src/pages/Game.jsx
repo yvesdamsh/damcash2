@@ -370,89 +370,39 @@ export default function Game() {
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
-    // Consolidated Polling (Game, Chat, Signals)
-    // Uses backend function to bypass cache and ensure real-time sync
+    // Polling disabled: WebSocket is the single source of truth.
+    // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
         if (!id || id === 'local-ai') return;
-        
-        const syncState = async () => {
-            // Skip polling when WebSocket is healthy or a poll is already running
+        if (!isPreview) return; // only in preview mode
+
+        const fetchOnce = async () => {
             if (socket && socket.readyState === WebSocket.OPEN) return;
-            if (isPollingRef.current) return;
-            isPollingRef.current = true;
             try {
-                const res = await base44.functions.invoke('pollGameUpdates', { gameId: id });
-                if (res.data) {
-                    const { game: fetchedGame, messages, signals } = res.data;
-                    
-                    if (fetchedGame) {
-                        setGame(prev => {
-                            if (!prev) return fetchedGame;
+                const g = await base44.entities.Game.get(id);
+                if (!g) return;
+                setGame(prev => {
+                    if (!prev) return g;
+                    const prevU = prev.updated_date ? new Date(prev.updated_date).getTime() : 0;
+                    const newU = g.updated_date ? new Date(g.updated_date).getTime() : 0;
+                    return newU > prevU ? g : prev;
+                });
+            } catch (_) {}
+        };
 
-                            const localMoves = prev.moves ? JSON.parse(prev.moves) : [];
-                            const fetchedMoves = fetchedGame.moves ? JSON.parse(fetchedGame.moves) : [];
-
-                            const isRematch = (prev.status === 'finished' && fetchedGame.status === 'playing') ||
-                                              (fetchedGame.white_player_id && prev.white_player_id && fetchedGame.white_player_id !== prev.white_player_id) ||
-                                              (fetchedMoves.length === 0 && localMoves.length > 0 && fetchedGame.status === 'playing');
-
-                            const isNewer = fetchedGame.last_move_at && prev.last_move_at && new Date(fetchedGame.last_move_at) > new Date(prev.last_move_at);
-                            const updatedNewer = fetchedGame.updated_date && (!prev.updated_date || new Date(fetchedGame.updated_date) > new Date(prev.updated_date));
-                            const essentialChanged = prev.status !== fetchedGame.status
-                              || prev.white_player_id !== fetchedGame.white_player_id
-                              || prev.black_player_id !== fetchedGame.black_player_id
-                              || prev.white_player_name !== fetchedGame.white_player_name
-                              || prev.black_player_name !== fetchedGame.black_player_name
-                              || prev.current_turn !== fetchedGame.current_turn;
-
-                            if (essentialChanged) {
-                              console.log('[POLL] Essential change detected, updating game state');
-                              return fetchedGame;
-                            }
-                            if (
-                              isRematch ||
-                              fetchedMoves.length > localMoves.length ||
-                              (fetchedMoves.length === localMoves.length && (isNewer || updatedNewer))
-                            ) {
-                              return fetchedGame;
-                            }
-                            return prev;
-                        });
-                    }
-                    
-                    if (messages) {
-                        setSyncedMessages(messages);
-                    }
-                    
-                    if (signals && signals.length > 0) {
-                        setSyncedSignals(signals);
-                    }
-                }
-                setLoading(false);
-            } catch (e) {
-                console.error("Sync error", e);
-                setLoading(false);
-            } finally {
-                isPollingRef.current = false;
-            }
-            };
-
-        syncState();
-        
-        const intervalMs = isPreview ? 5000 : ((game?.status === 'playing') ? 5000 : 10000);
-        const interval = setInterval(syncState, intervalMs);
-
-        const onFocus = () => syncState();
+        fetchOnce();
+        const onFocus = () => fetchOnce();
         window.addEventListener('focus', onFocus);
-        const onVisibility = () => { if (document.visibilityState === 'visible') syncState(); };
+        const onVisibility = () => { if (document.visibilityState === 'visible') fetchOnce(); };
         document.addEventListener('visibilitychange', onVisibility);
+        const iv = setInterval(fetchOnce, 30000); // every 30s max
 
         return () => {
-            clearInterval(interval);
+            clearInterval(iv);
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [id, game?.status, socket]);
+    }, [id, isPreview, socket]);
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
