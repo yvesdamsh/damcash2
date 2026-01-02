@@ -513,14 +513,12 @@ export default function Game() {
     const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
                             autoConnect: !!id && id !== 'local-ai',
                             reconnectInterval: 1000,
-                            heartbeatInterval: 10000,
+                            heartbeatInterval: 30000,
                             onMessage: (event, data) => {
             if (!data) return;
             
             if (data.type === 'GAME_UPDATE') {
                  if (data.payload) {
-                     // Fast path: apply immediately for instant UI feedback
-                     setGame(prev => ({ ...prev, ...data.payload }));
                      // Timing: compute roundtrip if matching last_move_at
                      try {
                          const k = data.payload.last_move_at;
@@ -531,7 +529,10 @@ export default function Game() {
                              moveTimingsRef.current.delete(k);
                          }
                      } catch (_) {}
+
+                     // Single merge pass
                      setGame(prev => {
+                        if (!prev) return data.payload;
                         const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
                         const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
 
@@ -544,18 +545,10 @@ export default function Game() {
                           || (typeof data.payload.black_player_name !== 'undefined' && data.payload.black_player_name !== prev.black_player_name)
                           || (typeof data.payload.current_turn !== 'undefined' && data.payload.current_turn !== prev.current_turn);
 
-                        if (essentialChanged) {
-                          console.log('[SYNC] Essential change detected, applying update:', data.payload);
+                        if (essentialChanged || isNewer || updatedNewer || incomingMoves.length >= localMoves.length) {
                           return { ...prev, ...data.payload };
                         }
-                        if (data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) < new Date(prev.last_move_at) && !essentialChanged && !updatedNewer) {
-                            return prev;
-                        }
-
-                        if (data.payload.moves && incomingMoves.length < localMoves.length && !isNewer && !updatedNewer && !essentialChanged) {
-                            return prev;
-                        }
-                        return { ...prev, ...data.payload };
+                        return prev;
                     });
                 }
             } else if (data.type === 'GAME_REFETCH') {
@@ -876,7 +869,7 @@ export default function Game() {
 
                     const hedged = await Promise.race([
                       backendPromise.then(r => ({ kind: 'backend', res: r })),
-                      new Promise((resolve) => setTimeout(resolve, 1200)).then(async () => ({ kind: 'local', res: await localPromise }))
+                      new Promise((resolve) => setTimeout(resolve, 6000)).then(async () => ({ kind: 'local', res: await localPromise }))
                     ]);
                     res = hedged?.res;
                     if (!res || !res.data || res?.data?.error || !res.data.move) {
@@ -1610,7 +1603,8 @@ export default function Game() {
 
                       // Write to DB (authoritative)
                       try {
-                          await base44.entities.Game.update(game.id, updateData);
+                         // Fire-and-forget DB write to avoid blocking UI
+                         base44.entities.Game.update(game.id, updateData);
                       } catch (e) {
             console.error("Move save error", e);
             // If DB write fails, try socket as backup (which does server-side write)
