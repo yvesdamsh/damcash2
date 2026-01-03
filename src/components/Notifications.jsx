@@ -47,7 +47,7 @@ export default function Notifications() {
                 return;
             }
 
-            if (!force && __notifCache.items.length && now - __notifCache.ts < 60000) {
+            if (!force && __notifCache.items.length && now - __notifCache.ts < 10000) {
                 setNotifications(__notifCache.items);
                 setUnreadCount(__notifCache.items.filter(n => !n.read).length);
                 return;
