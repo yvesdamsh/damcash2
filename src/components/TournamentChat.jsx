@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Send, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { logger } from '@/utils/logger';
+import { logger } from '@/components/utils/logger';
 
 export default function TournamentChat({ tournamentId, currentUser }) {
     const [messages, setMessages] = useState([]);

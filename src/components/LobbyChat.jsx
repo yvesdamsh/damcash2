@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, User, Users, Hash } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
-import { logger } from '@/utils/logger';
+import { logger } from '@/components/utils/logger';
 
 export default function LobbyChat({ channelId, channelName, currentUser, height = "500px" }) {
     const { t, formatDate } = useLanguage();

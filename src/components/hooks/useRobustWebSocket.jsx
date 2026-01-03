@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
+import { logger } from '@/components/utils/logger';
 
 export function useRobustWebSocket(url, options = {}) {
     const {
