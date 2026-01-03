@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
                 if (updateData) {
                     // Override with server timestamp for consistency
                     updateData.last_move_at = new Date().toISOString();
+                    updateData.updated_date = new Date().toISOString();
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
                     // Broadcast first for instant UI
@@ -89,14 +90,19 @@ Deno.serve(async (req) => {
                  gameUpdates.postMessage({ gameId, ...msg });
             } 
             else if (data.type === 'STATE_UPDATE') {
-                 // Broadcast state directly to avoid fetch latency
+                 // Back-compat: accept STATE_UPDATE, stamp server time, persist and broadcast as GAME_UPDATE
                  const { payload } = data;
-                 const msg = { type: 'GAME_UPDATE', payload };
+                 const outPayload = { ...payload, updated_date: new Date().toISOString() };
+                 const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
-                 // Always hint a refetch to guarantee consistency across clients (fix for 2nd-move lag)
                  broadcast(gameId, { type: 'GAME_REFETCH' }, null);
                  gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+                 try {
+                     await base44.asServiceRole.entities.Game.update(gameId, outPayload);
+                 } catch (e) {
+                     console.error('Persist error (STATE_UPDATE):', e);
+                 }
              } 
             else if (data.type === 'CHAT_MESSAGE') {
                 const { sender_id, sender_name, content } = data.payload;
@@ -142,15 +148,15 @@ Deno.serve(async (req) => {
                 socket.send(JSON.stringify({ type: 'PONG' }));
             }
             else if (data.type === 'GAME_UPDATE') {
-                 // Accept direct updates from clients: broadcast and persist
+                 // Accept direct updates from clients: stamp server time, broadcast and persist
                  const { payload } = data;
-                 const msg = { type: 'GAME_UPDATE', payload };
+                 const outPayload = { ...payload, updated_date: new Date().toISOString() };
+                 const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
-                 // Also hint clients to refetch for strict consistency
                  broadcast(gameId, { type: 'GAME_REFETCH' }, null);
                  try {
-                     await base44.asServiceRole.entities.Game.update(gameId, payload);
+                     await base44.asServiceRole.entities.Game.update(gameId, outPayload);
                  } catch (e) {
                      console.error('Persist error (GAME_UPDATE):', e);
                  }

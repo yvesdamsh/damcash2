@@ -528,10 +528,18 @@ export default function Game() {
                      setGame(prev => ({ ...prev, ...(data.payload || {}) }));
                 }
             } else if (data.type === 'STATE_UPDATE') {
-                 // Back-compat: treat STATE_UPDATE same as GAME_UPDATE
+                 // Back-compat: treat STATE_UPDATE same as GAME_UPDATE and nudge refetch
                  if (data.payload) {
                      setGame(prev => ({ ...prev, ...data.payload }));
                  }
+                 (async () => {
+                     try {
+                         if (id !== 'local-ai') {
+                             const gameData = await base44.entities.Game.get(id);
+                             setGame(prev => ({ ...prev, ...(gameData || {}) }));
+                         }
+                     } catch (_) {}
+                 })();
             } else if (data.type === 'GAME_REFETCH') {
                 (async () => {
                     try {
@@ -1658,6 +1666,8 @@ export default function Game() {
         // Notify via socket immediately to reduce perceived latency
                       if (socket && socket.readyState === WebSocket.OPEN) {
                           socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
+                          // Extra nudge to guarantee sync on flaky clients
+                          socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' }));
                       }
 
                       // Write to DB (authoritative) with retry and fallback
