@@ -578,6 +578,24 @@ export default function Game() {
         }
     }, [robustSocket, id]);
 
+    // Fallback polling when WebSocket is closed (keeps board in sync)
+    useEffect(() => {
+        if (!id || id === 'local-ai') return;
+        if (wsReadyState === 1) return; // WS open
+        let iv;
+        iv = setInterval(async () => {
+            try {
+                const fresh = await base44.entities.Game.get(id);
+                setGame(prev => {
+                    if (!prev) return fresh;
+                    const newer = fresh.updated_date && (!prev.updated_date || new Date(fresh.updated_date) > new Date(prev.updated_date));
+                    return newer ? fresh : prev;
+                });
+            } catch (_) {}
+        }, 5000);
+        return () => iv && clearInterval(iv);
+    }, [id, wsReadyState]);
+
     // Effect to handle Premove execution when state updates
     useEffect(() => {
         if (!game || !currentUser || !premove || game.status !== 'playing') return;
