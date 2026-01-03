@@ -24,14 +24,14 @@ const isValidPos = (r, c) => r >= 0 && r < 10 && c >= 0 && c < 10;
 const getPiece = (board, r, c) => isValidPos(r, c) ? board[r][c] : null;
 
 const isOpponent = (piece, currentTurn) => {
-    if (!piece || piece == 0) return false; // Handle 0, null, undefined
-    const isWhite = piece == 1 || piece == 3; // Loose equality for string/number
+    if (!piece || piece === 0) return false;
+    const isWhite = piece === 1 || piece === 3;
     return currentTurn === 'white' ? !isWhite : isWhite;
 };
 
 const isOwnPiece = (piece, currentTurn) => {
-    if (!piece || piece == 0) return false;
-    const isWhite = piece == 1 || piece == 3;
+    if (!piece || piece === 0) return false;
+    const isWhite = piece === 1 || piece === 3;
     return currentTurn === 'white' ? isWhite : !isWhite;
 };
 

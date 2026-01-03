@@ -27,6 +27,8 @@ import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } fro
 import { soundManager } from '@/components/SoundManager';
 import { logger } from '@/components/utils/logger';
 import { safeJSONParse, handleAsyncError } from '@/components/utils/errorHandler';
+import { DEFAULT_ELO } from '@/components/constants/gameConstants';
+import { useLoadingState } from '@/components/hooks/useLoadingState';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import GameResultOverlay from '@/components/game/GameResultOverlay';
 import PromotionDialog from '@/components/game/PromotionDialog';
@@ -42,7 +44,7 @@ export default function Game() {
     const [board, setBoard] = useState([]);
     const [selectedSquare, setSelectedSquare] = useState(null);
     const [validMoves, setValidMoves] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { loading, setLoadingKey } = useLoadingState();
     const [currentUser, setCurrentUser] = useState(null);
     const [mustContinueWith, setMustContinueWith] = useState(null); 
     const [inviteCopied, setInviteCopied] = useState(false);
@@ -79,7 +81,7 @@ export default function Game() {
     // Prevent infinite spinner when no game id is present (e.g., opening /Game without ?id=...)
     useEffect(() => {
         if (!id) {
-            setLoading(false);
+            setLoadingKey('game', false);
             navigate('/Home', { replace: true });
         }
     }, [id, navigate]);
@@ -159,7 +161,7 @@ export default function Game() {
                     : JSON.stringify(initialBoard);
 
                 setBoard(initialBoard);
-                setLoading(false);
+                setLoadingKey('game', false);
 
                 return {
                     id: 'local-ai',
@@ -381,7 +383,7 @@ export default function Game() {
                 if (!cancelled && g) setGame(prev => prev || g);
             } catch (_) {
             } finally {
-                if (!cancelled) setLoading(false);
+                if (!cancelled) setLoadingKey('game', false);
             }
         })();
         return () => { cancelled = true; };
@@ -769,7 +771,7 @@ export default function Game() {
                         turn: aiColor,
                         difficulty: aiDifficulty,
                         gameId: id,
-                        userElo: currentUser?.elo_chess || currentUser?.elo_checkers || 1200,
+                        userElo: currentUser?.elo_chess || currentUser?.elo_checkers || DEFAULT_ELO,
                         castlingRights: chessState.castlingRights,
                         lastMove: chessState.lastMove,
                         activePiece: mustContinueWith,
@@ -1934,7 +1936,7 @@ export default function Game() {
         }
     };
 
-    if (loading) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
+    if (loading.game) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
     // Safe fallback when game failed to load (avoid null property access)
     if (!game) return (
@@ -2027,8 +2029,8 @@ export default function Game() {
     const isSpectator = !currentUser?.id || !game || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id);
 
     const getElo = (info, type) => {
-        if (!info) return 1200;
-        return type === 'chess' ? (info.elo_chess || 1200) : (info.elo_checkers || 1200);
+        if (!info) return DEFAULT_ELO;
+        return type === 'chess' ? (info.elo_chess || DEFAULT_ELO) : (info.elo_checkers || DEFAULT_ELO);
     };
 
     return (
