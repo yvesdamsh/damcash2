@@ -22,6 +22,7 @@ import NextTournamentBanner from '@/components/NextTournamentBanner';
 import LiveGamesPreview from '@/components/home/LiveGamesPreview.jsx';
 import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
+import { throttle } from '@/components/utils/rateLimit';
 
 export default function Home() {
     const { t } = useLanguage();
@@ -317,7 +318,7 @@ export default function Home() {
                 // Start polling only if authenticated
                 intervalId = setInterval(async () => {
                     const u = await base44.auth.me().catch(()=>null);
-                    if (u) fetchData(u, false);
+                    if (u) throttledFetchData(u, false);
                 }, 60000);
 
                 } catch (e) {

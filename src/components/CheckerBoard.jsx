@@ -1,4 +1,5 @@
 import React, { memo, useRef, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import CheckerPiece from './CheckerPiece';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getValidMoves as getCheckersMoves } from '@/components/checkersLogic';
@@ -199,6 +200,42 @@ const CheckerBoard = ({ board, onSquareClick, onPieceDrop, selectedSquare, valid
             </div>
         </div>
     );
+};
+
+CheckerBoard.propTypes = {
+  board: PropTypes.arrayOf(PropTypes.array).isRequired,
+  onSquareClick: PropTypes.func.isRequired,
+  onPieceDrop: PropTypes.func,
+  selectedSquare: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.number),
+    PropTypes.shape({ r: PropTypes.number, c: PropTypes.number })
+  ]),
+  validMoves: PropTypes.arrayOf(PropTypes.object),
+  currentTurn: PropTypes.oneOf(['white', 'black']).isRequired,
+  playerColor: PropTypes.oneOf(['white', 'black']).isRequired,
+  lastMove: PropTypes.object,
+  lastDragMove: PropTypes.object,
+  theme: PropTypes.string,
+  pieceDesign: PropTypes.string,
+  premove: PropTypes.shape({
+    from: PropTypes.shape({ r: PropTypes.number, c: PropTypes.number }),
+    to: PropTypes.shape({ r: PropTypes.number, c: PropTypes.number })
+  }),
+  isSoloMode: PropTypes.bool,
+  orientation: PropTypes.oneOf(['white', 'black'])
+};
+
+CheckerBoard.defaultProps = {
+  onPieceDrop: undefined,
+  selectedSquare: null,
+  validMoves: [],
+  lastMove: null,
+  lastDragMove: null,
+  theme: 'standard',
+  pieceDesign: 'standard',
+  premove: null,
+  isSoloMode: false,
+  orientation: 'white'
 };
 
 export default memo(CheckerBoard);
