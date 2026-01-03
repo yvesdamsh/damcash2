@@ -51,6 +51,18 @@ export default async function handler(req) {
             metadata
         });
 
+        // Additionally, HTTP fanout directly to userSocket to ensure instant delivery
+        try {
+            await base44.asServiceRole.functions.invoke('userSocket', {
+                recipientId: recipient_id,
+                type,
+                title,
+                message,
+                link,
+                metadata
+            });
+        } catch (_) {}
+
         return Response.json(notification);
     } catch (error) {
         return Response.json({ error: error.message }, { status: 500 });
