@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Send, MessageSquare, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
+import { safeJSONParse } from '@/components/utils/errorHandler';
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
@@ -51,8 +52,8 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
 
         const handleMessage = (event) => {
             try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'CHAT_UPDATE') {
+                const data = safeJSONParse(event.data, null);
+                if (data && data.type === 'CHAT_UPDATE') {
                     setMessages(prev => {
                         // Dedup check
                         if (prev.some(m => m.id === data.payload.id)) return prev;

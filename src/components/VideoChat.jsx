@@ -46,16 +46,13 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, ext
         if (!socket) return;
 
         const handleMessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-                if (msg.type === 'SIGNAL') {
-                    const payload = msg.payload;
-                    if (payload.recipient_id === currentUser?.id && payload.sender_id !== currentUser?.id) {
-                        handleSignalMessage(payload);
-                    }
+            const msg = safeJSONParse(event.data, null);
+            if (!msg) return;
+            if (msg.type === 'SIGNAL') {
+                const payload = msg.payload;
+                if (payload.recipient_id === currentUser?.id && payload.sender_id !== currentUser?.id) {
+                    handleSignalMessage(payload);
                 }
-            } catch (e) {
-                console.error("Socket message error", e);
             }
         };
 
