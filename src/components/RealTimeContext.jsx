@@ -25,8 +25,32 @@ export function RealTimeProvider({ children }) {
             // Global Notification Handling
             // Accept all notification types if they have a title and message
             // Invitations: update Home without waiting for manual refresh
-            if (data.type === 'game_invite') {
-                window.dispatchEvent(new CustomEvent('invitation-received', { detail: data.metadata || {} }));
+            // ✅ LOGS POUR DEBUGGING
+            console.log('[REALTIME] Received notification:', {
+                type: data.type,
+                title: data.title,
+                hasMetadata: !!data.metadata,
+                hasPayload: !!data.payload
+            });
+
+            // ✅ DÉTECTER LES INVITATIONS (PLUSIEURS TYPES POSSIBLES)
+            const isInvitation = 
+                data.type === 'game_invite' || 
+                data.type === 'invitation' || 
+                data.type === 'NEW_INVITATION' ||
+                data.type === 'invite' ||
+                (data.title && (
+                    data.title.toLowerCase().includes('invitation') ||
+                    data.title.toLowerCase().includes('invite')
+                ));
+
+            if (isInvitation) {
+                console.log('[REALTIME] Invitation detected, dispatching event');
+                const invitationData = data.metadata || data.payload || data.data || data;
+                window.dispatchEvent(new CustomEvent('invitation-received', { 
+                    detail: invitationData
+                }));
+                console.log('[REALTIME] Event dispatched with data:', invitationData);
             }
 
             if (data.title && data.message) {
