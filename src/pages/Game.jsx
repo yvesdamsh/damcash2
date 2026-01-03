@@ -230,7 +230,7 @@ export default function Game() {
                 // Checkers Logic
                 if (game.game_type === 'checkers') {
                     try {
-                        const moves = game.moves ? JSON.parse(game.moves) : [];
+                        const moves = game.moves ? safeJSONParse(game.moves, []) : [];
                         const lastMove = moves[moves.length - 1];
                         if (lastMove && lastMove.captured) {
                             soundManager.play('capture');
@@ -1080,7 +1080,7 @@ export default function Game() {
                                 }
                             }
 
-                            const movesList = game.moves ? JSON.parse(game.moves) : [];
+                            const movesList = game.moves ? safeJSONParse(game.moves, []) : [];
                             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
                             const notation = `${getNum(chosen.from.r, chosen.from.c)}${capsSeq.length ? 'x' : '-'}${getNum(curFrom.r, curFrom.c)}`;
                             const newMoveEntry = {
@@ -1162,7 +1162,7 @@ export default function Game() {
                                     const { captures } = getMovesForPiece(newBoard, formattedMove.to.r, formattedMove.to.c, newBoard[formattedMove.to.r][formattedMove.to.c], true);
                                     if (captures.length > 0) mustContinue = true;
                                 }
-                                const movesList = game.moves ? JSON.parse(game.moves) : [];
+                                const movesList = game.moves ? safeJSONParse(game.moves, []) : [];
                                 const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
                                 const newMoveEntry = { 
                                     type: 'checkers', from: move.from, to: move.to, 
@@ -1410,7 +1410,7 @@ export default function Game() {
 
         if (isAiGame) {
              // Local update only for AI game
-             const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+             const currentMoves = game.moves ? safeJSONParse(game.moves, []) : [];
              const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
              const newMoveEntry = { 
                  type: 'checkers', from: move.from, to: move.to, 
@@ -1630,7 +1630,7 @@ export default function Game() {
     };
 
     const updateGameOnMove = async (boardStateObj, nextTurn, status, winnerId, moveData) => {
-        const currentMoves = game.moves ? JSON.parse(game.moves) : [];
+        const currentMoves = game.moves ? safeJSONParse(game.moves, []) : [];
         const now = new Date().toISOString();
 
         // Calculate time deduction
@@ -1925,7 +1925,7 @@ export default function Game() {
     const handleRequestTakeback = async () => {
         if (!game || !currentUser) return;
         // Check if moves exist
-        const moves = game.moves ? JSON.parse(game.moves) : [];
+        const moves = game.moves ? safeJSONParse(game.moves, []) : [];
         if (moves.length === 0) return;
 
         await base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id });
@@ -1936,7 +1936,7 @@ export default function Game() {
         if (!game) return;
         setTakebackLoading(true);
         try {
-            const moves = game.moves ? JSON.parse(game.moves) : [];
+            const moves = game.moves ? safeJSONParse(game.moves, []) : [];
             if (moves.length === 0) return;
 
             const newMoves = moves.slice(0, -1);
@@ -2075,7 +2075,7 @@ export default function Game() {
         </div>
     );
 
-    const movesList = game?.moves ? JSON.parse(game.moves) : [];
+    const movesList = safeJSONParse(game?.moves, []);
     let displayBoard = board;
     if (replayIndex !== -1 && movesList[replayIndex]) {
         try {
@@ -2452,7 +2452,7 @@ export default function Game() {
                         {isSaved ? t('game.saved') : t('game.favorite')}
                     </Button>
                 </div>
-                        {game.moves && JSON.parse(game.moves).length > 0 && (
+                        {movesList.length > 0 && (
                             <ReplayControls 
                                 moves={movesList} 
                                 currentIndex={replayIndex} 
