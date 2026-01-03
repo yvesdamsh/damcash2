@@ -405,7 +405,7 @@ export default function Game() {
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         if (!game) return;
-        const waitingForOpponent = game.status === 'waiting' && (!game.white_player_id || !game.black_player_id);
+        const waitingForOpponent = (!game.white_player_id || !game.black_player_id);
         if (!waitingForOpponent) return;
         let iv = setInterval(async () => {
             try {

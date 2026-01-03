@@ -16,15 +16,12 @@ Deno.serve(async (req) => {
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
         if (req.method === 'POST') {
             try {
-                const base44 = createClientFromRequest(req);
-                const user = await base44.auth.me().catch(() => null);
-                if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
+                // Allow server-to-server nudges without user auth
                 const body = await req.json().catch(() => ({}));
                 const gameId = body.gameId;
                 const type = body.type || 'GAME_REFETCH';
                 const payload = body.payload || null;
-                if (!gameId) return Response.json({ error: 'Missing gameId' }, { status: 400 });
+                if (!gameId || !type) return Response.json({ error: 'Missing params' }, { status: 400 });
 
                 // Cross-instance fanout + local broadcast (if any sockets on this instance)
                 if (payload) {
