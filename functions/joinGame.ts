@@ -64,9 +64,9 @@ export default async function handler(req) {
 
         // Determine role
         const updateData = {
-            status: 'playing',
-            current_turn: 'white', // Ensure turn starts correctly
-            last_move_at: new Date().toISOString() // Start clock
+            status: game.status === 'waiting' ? 'playing' : game.status,
+            current_turn: game.current_turn || 'white',
+            last_move_at: game.last_move_at || new Date().toISOString()
         };
 
         if (!game.white_player_id) {
