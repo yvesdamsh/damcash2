@@ -117,26 +117,24 @@ export default async function handler(req) {
         }
 
         // Broadcast start with explicit player fields to avoid stale caches on clients
-        gameUpdates.postMessage({
-            gameId,
-            type: 'GAME_UPDATE',
-            payload: {
-                id: finalGame.id,
-                status: finalGame.status,
-                current_turn: finalGame.current_turn,
-                last_move_at: finalGame.last_move_at || null,
-                white_player_id: finalGame.white_player_id,
-                white_player_name: finalGame.white_player_name,
-                black_player_id: finalGame.black_player_id,
-                black_player_name: finalGame.black_player_name,
-                updated_date: new Date().toISOString()
-            }
-        });
+        const updatePayload = {
+            id: finalGame.id,
+            status: finalGame.status,
+            current_turn: finalGame.current_turn,
+            last_move_at: finalGame.last_move_at || null,
+            white_player_id: finalGame.white_player_id,
+            white_player_name: finalGame.white_player_name,
+            black_player_id: finalGame.black_player_id,
+            black_player_name: finalGame.black_player_name,
+            updated_date: new Date().toISOString()
+        };
+        gameUpdates.postMessage({ gameId, type: 'GAME_UPDATE', payload: updatePayload });
         // Also trigger a refetch signal for clients that rely on it
-        gameUpdates.postMessage({
-            gameId,
-            type: 'GAME_REFETCH'
-        });
+        gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+
+        // Fan-out via HTTP function to reach all WS instances immediately
+        base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updatePayload }).catch(() => {});
+        base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_REFETCH' }).catch(() => {});
 
         // Notify opponent
         const opponentId = finalGame.white_player_id === user.id ? finalGame.black_player_id : finalGame.white_player_id;

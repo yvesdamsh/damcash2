@@ -57,20 +57,21 @@ Deno.serve(async (req) => {
 
     // Broadcast immediate update to both clients
     const latest = await base44.asServiceRole.entities.Game.get(game.id);
-    gameUpdates.postMessage({
-      gameId: latest.id,
-      type: 'GAME_UPDATE',
-      payload: {
-        id: latest.id,
-        status: latest.status,
-        white_player_id: latest.white_player_id,
-        white_player_name: latest.white_player_name,
-        black_player_id: latest.black_player_id,
-        black_player_name: latest.black_player_name,
-        updated_date: new Date().toISOString()
-      }
-    });
+    const updatePayload = {
+      id: latest.id,
+      status: latest.status,
+      white_player_id: latest.white_player_id,
+      white_player_name: latest.white_player_name,
+      black_player_id: latest.black_player_id,
+      black_player_name: latest.black_player_name,
+      updated_date: new Date().toISOString()
+    };
+    gameUpdates.postMessage({ gameId: latest.id, type: 'GAME_UPDATE', payload: updatePayload });
     gameUpdates.postMessage({ gameId: latest.id, type: 'GAME_REFETCH' });
+
+    // Ensure cross-instance fanout with HTTP fallback (immediate)
+    base44.asServiceRole.functions.invoke('gameSocket', { gameId: latest.id, type: 'GAME_UPDATE', payload: updatePayload }).catch(() => {});
+    base44.asServiceRole.functions.invoke('gameSocket', { gameId: latest.id, type: 'GAME_REFETCH' }).catch(() => {});
 
     return Response.json({ gameId: game.id });
   } catch (error) {
