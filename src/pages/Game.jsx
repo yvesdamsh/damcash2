@@ -1668,29 +1668,24 @@ export default function Game() {
         // Notify via socket immediately to reduce perceived latency
                       if (socket && socket.readyState === WebSocket.OPEN) {
                           socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
-                          // Extra nudge to guarantee sync on flaky clients
-                          socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' }));
                       }
 
-                      // Write to DB (authoritative) with retry and fallback
-                      try {
-                         await base44.entities.Game.update(game.id, updateData);
-                      } catch (e) {
-                         console.error("Move save error", e);
-                         // Retry once
-                         try {
-                            await base44.entities.Game.update(game.id, updateData);
-                         } catch (retryError) {
-                            console.error("Move save retry failed", retryError);
-                            // Fallback: force server-side save via socket
-                            if (socket && socket.readyState === WebSocket.OPEN) {
-                                socket.send(JSON.stringify({
-                                    type: 'FORCE_SAVE_MOVE',
-                                    payload: { gameId: game.id, updateData }
-                                }));
-                            }
-                         }
-                      }
+                      // Write to DB (authoritative) in background; retry once, then socket fallback
+                      base44.entities.Game.update(game.id, updateData).catch(async (e) => {
+                          console.error("Move save error", e);
+                          try {
+                              await base44.entities.Game.update(game.id, updateData);
+                              console.log("Move save retry succeeded");
+                          } catch (retryError) {
+                              console.error("Move save retry failed", retryError);
+                              if (socket && socket.readyState === WebSocket.OPEN) {
+                                  socket.send(JSON.stringify({
+                                      type: 'FORCE_SAVE_MOVE',
+                                      payload: { gameId: game.id, updateData }
+                                  }));
+                              }
+                          }
+                      });
                       };
 
         // Manual join helper for spectators
