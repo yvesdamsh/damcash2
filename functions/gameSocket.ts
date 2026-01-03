@@ -94,10 +94,9 @@ Deno.serve(async (req) => {
                  const msg = { type: 'GAME_UPDATE', payload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
-                 // If seat fields changed, also trigger a refetch hint for slow clients
-                 if (payload && (typeof payload.white_player_id !== 'undefined' || typeof payload.black_player_id !== 'undefined')) {
-                     gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
-                 }
+                 // Always hint a refetch to guarantee consistency across clients (fix for 2nd-move lag)
+                 broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                 gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
              } 
             else if (data.type === 'CHAT_MESSAGE') {
                 const { sender_id, sender_name, content } = data.payload;

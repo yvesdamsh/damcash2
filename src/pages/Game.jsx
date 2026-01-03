@@ -604,20 +604,20 @@ export default function Game() {
         if (ts) lastUpdateRef.current = ts;
     }, [game?.updated_date, game?.last_move_at]);
 
-    // Stale-state watchdog: if no updates for >5s while playing, force a lightweight refetch
+    // Stale-state watchdog: if no updates for >3s while playing, force a lightweight refetch (runs every 2s)
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         if (!game || game.status !== 'playing') return;
         let iv = setInterval(async () => {
             try {
-                if (Date.now() - (lastUpdateRef.current || 0) < 5000) return;
+                if (Date.now() - (lastUpdateRef.current || 0) < 3000) return;
                 const { data } = await base44.functions.invoke('pollGameUpdates', { gameId: id });
                 const fresh = data?.game;
                 if (fresh && fresh.updated_date && fresh.updated_date !== game.updated_date) {
                     setGame(fresh);
                 }
             } catch (_) {}
-        }, 5000);
+        }, 2000);
         return () => clearInterval(iv);
     }, [id, game?.status]);
 
