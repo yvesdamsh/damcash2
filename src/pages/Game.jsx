@@ -569,6 +569,22 @@ export default function Game() {
                         return [...prev, data.payload];
                     });
                 }
+            } else if (data.type === 'MOVE_NOTIFY') {
+                (async () => {
+                    try {
+                        if (id !== 'local-ai') {
+                            const gameData = await base44.entities.Game.get(id);
+                            setGame(prev => {
+                                if (!prev) return gameData;
+                                const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
+                                const newLast = gameData.last_move_at ? new Date(gameData.last_move_at).getTime() : 0;
+                                return newLast > prevLast ? gameData : prev;
+                            });
+                        }
+                    } catch (e) {
+                        logger.error('Failed to refetch on MOVE_NOTIFY:', e);
+                    }
+                })();
             }
         }
     });
@@ -579,23 +595,32 @@ export default function Game() {
         }
     }, [robustSocket, id]);
 
-    // Fallback polling when WebSocket is unreliable
+    // Fallback polling when WebSocket is unreliable or stale
     useEffect(() => {
         if (!id || id === 'local-ai') return;
-        const shouldPoll = wsReadyState !== 1 || (latencyMs && latencyMs > 5000);
+        const stale = game?.last_move_at ? (Date.now() - new Date(game.last_move_at).getTime() > 10000) : false;
+        const shouldPoll = wsReadyState !== 1 || (latencyMs && latencyMs > 3000) || stale;
         if (!shouldPoll) return;
         let iv = setInterval(async () => {
             try {
                 const fresh = await base44.entities.Game.get(id);
                 setGame(prev => {
                     if (!prev) return fresh;
+                    const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
+                    const freshLast = fresh.last_move_at ? new Date(fresh.last_move_at).getTime() : 0;
                     const newer = fresh.updated_date && (!prev.updated_date || new Date(fresh.updated_date) > new Date(prev.updated_date));
-                    return newer ? fresh : prev;
+                    if (freshLast > prevLast || newer) {
+                        logger.log('[POLLING] Fallback updated state');
+                        return fresh;
+                    }
+                    return prev;
                 });
-            } catch (_) {}
-        }, 3000);
+            } catch (e) {
+                logger.error('[POLLING] Error', e);
+            }
+        }, 2000);
         return () => clearInterval(iv);
-    }, [id, wsReadyState, latencyMs]);
+    }, [id, wsReadyState, latencyMs, game?.last_move_at]);
 
     // Track last update timestamp to detect staleness
     useEffect(() => {
