@@ -192,6 +192,15 @@ export default function Game() {
     const aiJobRef = useRef(false);
     const lastUpdateRef = useRef(Date.now());
 
+    // Safe deep clone for board structures (handles [], {board: []}, undefined)
+    const deepCloneBoard = (b) => {
+        try {
+            if (Array.isArray(b)) return JSON.parse(JSON.stringify(b));
+            if (b && Array.isArray(b.board)) return JSON.parse(JSON.stringify(b.board));
+        } catch (_) {}
+        return [];
+    };
+
     // Handle Game State Updates (Parsing & Sounds)
     useEffect(() => {
         if (!game) return;
@@ -792,7 +801,7 @@ export default function Game() {
                                     const enemyColor = aiColor === 'white' ? 'black' : 'white';
                                     const safe = [];
                                     for (const m of all) {
-                                        const sim = JSON.parse(JSON.stringify(board));
+                                        const sim = deepCloneBoard(board);
                                         sim[m.from.r][m.from.c] = 0;
                                         sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                                         const enemyMoves = getCheckersValidMoves(sim, enemyColor);
@@ -902,7 +911,7 @@ export default function Game() {
                       const enemyColor = aiColor === 'white' ? 'black' : 'white';
                       const safe = [];
                       for (const m of all) {
-                        const sim = JSON.parse(JSON.stringify(board));
+                        const sim = deepCloneBoard(board);
                         sim[m.from.r][m.from.c] = 0;
                         sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                         const enemyMoves = getCheckersValidMoves(sim, enemyColor);
@@ -955,7 +964,7 @@ export default function Game() {
                                 const safe = [];
                                 for (const m of all) {
                                     // simulate
-                                    const sim = JSON.parse(JSON.stringify(board));
+                                    const sim = deepCloneBoard(board);
                                     sim[m.from.r][m.from.c] = 0;
                                     sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                                     const enemyMoves = getCheckersValidMoves(sim, enemyColor);
@@ -1212,7 +1221,7 @@ export default function Game() {
                                 const enemyColor = aiColor === 'white' ? 'black' : 'white';
                                 const safe = [];
                                 for (const m of all) {
-                                    const sim = JSON.parse(JSON.stringify(board));
+                                    const sim = deepCloneBoard(board);
                                     sim[m.from.r][m.from.c] = 0;
                                     sim[m.to.r][m.to.c] = board[m.from.r][m.from.c];
                                     const enemyMoves = getCheckersValidMoves(sim, enemyColor);
