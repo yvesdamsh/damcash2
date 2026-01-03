@@ -428,10 +428,9 @@ export default function Game() {
         window.addEventListener('focus', onFocus);
         const onVisibility = () => { if (document.visibilityState === 'visible') fetchOnce(); };
         document.addEventListener('visibilitychange', onVisibility);
-        const iv = setInterval(fetchOnce, 30000); // every 30s max
+        // Removed 30s refetch polling - WebSocket is sufficient
 
         return () => {
-            clearInterval(iv);
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
@@ -581,32 +580,7 @@ export default function Game() {
         }
     }, [robustSocket, id]);
 
-    // Fallback polling when WebSocket is unreliable or stale
-    useEffect(() => {
-        if (!id || id === 'local-ai') return;
-        const stale = game?.last_move_at ? (Date.now() - new Date(game.last_move_at).getTime() > 10000) : false;
-        const shouldPoll = wsReadyState !== 1 || (latencyMs && latencyMs > 3000) || stale;
-        if (!shouldPoll) return;
-        let iv = setInterval(async () => {
-            try {
-                const fresh = await base44.entities.Game.get(id);
-                setGame(prev => {
-                    if (!prev) return fresh;
-                    const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
-                    const freshLast = fresh.last_move_at ? new Date(fresh.last_move_at).getTime() : 0;
-                    const newer = fresh.updated_date && (!prev.updated_date || new Date(fresh.updated_date) > new Date(prev.updated_date));
-                    if (freshLast > prevLast || newer) {
-                        logger.log('[POLLING] Fallback updated state');
-                        return fresh;
-                    }
-                    return prev;
-                });
-            } catch (e) {
-                logger.error('[POLLING] Error', e);
-            }
-        }, 2000);
-        return () => clearInterval(iv);
-    }, [id, wsReadyState, latencyMs, game?.last_move_at]);
+    // Removed WebSocket fallback polling - causing 429 rate limit errors
 
     // Track last update timestamp to detect staleness
     useEffect(() => {
@@ -615,22 +589,7 @@ export default function Game() {
         if (ts) lastUpdateRef.current = ts;
     }, [game?.updated_date, game?.last_move_at]);
 
-    // Stale-state watchdog: if no updates for >3s while playing, force a lightweight refetch (runs every 2s)
-    useEffect(() => {
-        if (!id || id === 'local-ai') return;
-        if (!game || game.status !== 'playing') return;
-        let iv = setInterval(async () => {
-            try {
-                if (Date.now() - (lastUpdateRef.current || 0) < 3000) return;
-                const { data } = await base44.functions.invoke('pollGameUpdates', { gameId: id });
-                const fresh = data?.game;
-                if (fresh && fresh.updated_date && fresh.updated_date !== game.updated_date) {
-                    setGame(fresh);
-                }
-            } catch (_) {}
-        }, 2000);
-        return () => clearInterval(iv);
-    }, [id, game?.status]);
+    // Removed stale-state watchdog polling - causing 429 rate limit errors
 
     // Effect to handle Premove execution when state updates
     useEffect(() => {
