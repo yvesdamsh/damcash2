@@ -2004,13 +2004,13 @@ export default function Game() {
 
     const bottomPlayer = (isFlipped) ? { 
         id: game.black_player_id, 
-        name: game.black_player_name, 
+        name: game.black_player_name || playersInfo.black?.username, 
         color: 'black',
         info: playersInfo.black,
         timeLeft: getTimeLeft('black')
     } : { 
         id: game.white_player_id, 
-        name: game.white_player_name, 
+        name: game.white_player_name || playersInfo.white?.username, 
         color: 'white',
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
