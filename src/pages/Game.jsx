@@ -190,6 +190,7 @@ export default function Game() {
     const moveTimingsRef = useRef(new Map());
     const isPollingRef = useRef(false);
     const aiJobRef = useRef(false);
+    const lastUpdateRef = useRef(Date.now());
 
     // Handle Game State Updates (Parsing & Sounds)
     useEffect(() => {
@@ -595,6 +596,30 @@ export default function Game() {
         }, 5000);
         return () => iv && clearInterval(iv);
     }, [id, wsReadyState]);
+
+    // Track last update timestamp to detect staleness
+    useEffect(() => {
+        if (!game) return;
+        const ts = new Date(game.updated_date || game.last_move_at || Date.now()).getTime();
+        if (ts) lastUpdateRef.current = ts;
+    }, [game?.updated_date, game?.last_move_at]);
+
+    // Stale-state watchdog: if no updates for >5s while playing, force a lightweight refetch
+    useEffect(() => {
+        if (!id || id === 'local-ai') return;
+        if (!game || game.status !== 'playing') return;
+        let iv = setInterval(async () => {
+            try {
+                if (Date.now() - (lastUpdateRef.current || 0) < 5000) return;
+                const { data } = await base44.functions.invoke('pollGameUpdates', { gameId: id });
+                const fresh = data?.game;
+                if (fresh && fresh.updated_date && fresh.updated_date !== game.updated_date) {
+                    setGame(fresh);
+                }
+            } catch (_) {}
+        }, 5000);
+        return () => clearInterval(iv);
+    }, [id, game?.status]);
 
     // Effect to handle Premove execution when state updates
     useEffect(() => {

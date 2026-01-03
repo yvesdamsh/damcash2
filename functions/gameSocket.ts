@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
                     // Broadcast first for instant UI
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
+                    // Also hint clients to refetch in case a delta merge is missed
+                    broadcast(gameId, { type: 'GAME_REFETCH' }, null);
 
                     // Then write to DB (authoritative)
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
