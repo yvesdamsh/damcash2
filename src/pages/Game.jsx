@@ -407,7 +407,9 @@ export default function Game() {
                     if (!prev) return g;
                     const prevU = prev.updated_date ? new Date(prev.updated_date).getTime() : 0;
                     const newU = g.updated_date ? new Date(g.updated_date).getTime() : 0;
-                    return newU > prevU ? g : prev;
+                    const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
+                    const newLast = g.last_move_at ? new Date(g.last_move_at).getTime() : 0;
+                    return (newU > prevU || newLast > prevLast) ? g : prev;
                 });
             } catch (_) {}
         };
