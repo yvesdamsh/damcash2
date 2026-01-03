@@ -506,7 +506,7 @@ export default function Game() {
     const { socket: robustSocket, readyState: wsReadyState, latencyMs, isOnline: wsOnline } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
                             autoConnect: !!id && id !== 'local-ai',
                             reconnectInterval: 1000,
-                            heartbeatInterval: 30000,
+                            heartbeatInterval: 10000,
                             onMessage: (event, data) => {
             if (!data) return;
             
@@ -1951,8 +1951,8 @@ export default function Game() {
                     game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') 
                 }),
                 link: `/Game?id=${game.id}`,
-                sender_id: currentUser.id
-            });
+                metadata: { game_id: game.id, kind: 'spectator' }
+                });
             toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
             setInviteOpen(false);
         } catch (e) {
@@ -2178,7 +2178,7 @@ export default function Game() {
                                   onClose={() => setInviteOpen(false)} 
                                   onInviteSpectator={async (userToInvite) => {
                                     try {
-                                      await base44.entities.Notification.create({
+                                      await base44.functions.invoke('sendNotification', {
                                         recipient_id: userToInvite.id,
                                         type: "info",
                                         title: t('game.spectate_invite_title'),

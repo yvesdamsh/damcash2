@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+const gameUpdates = new BroadcastChannel('game_updates');
 
 Deno.serve(async (req) => {
   try {
@@ -53,6 +54,23 @@ Deno.serve(async (req) => {
 
     // Mark invitation accepted
     await base44.asServiceRole.entities.Invitation.update(invitationId, { status: 'accepted' });
+
+    // Broadcast immediate update to both clients
+    const latest = await base44.asServiceRole.entities.Game.get(game.id);
+    gameUpdates.postMessage({
+      gameId: latest.id,
+      type: 'GAME_UPDATE',
+      payload: {
+        id: latest.id,
+        status: latest.status,
+        white_player_id: latest.white_player_id,
+        white_player_name: latest.white_player_name,
+        black_player_id: latest.black_player_id,
+        black_player_name: latest.black_player_name,
+        updated_date: new Date().toISOString()
+      }
+    });
+    gameUpdates.postMessage({ gameId: latest.id, type: 'GAME_REFETCH' });
 
     return Response.json({ gameId: game.id });
   } catch (error) {
