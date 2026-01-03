@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
+import { safeJSONParse } from '@/components/utils/errorHandler';
 
 // Basic cache to reduce API hits
 let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0, cooldownUntil: 0 };
@@ -155,14 +156,14 @@ export default function Notifications() {
     const handleAction = async (e, n, action) => {
         e.stopPropagation();
         if (!n.metadata) return;
-        const meta = typeof n.metadata === 'string' ? JSON.parse(n.metadata) : n.metadata;
+        const meta = typeof n.metadata === 'string' ? safeJSONParse(n.metadata, {}) : (n.metadata || {});
 
         try {
             if (n.type === 'game_invite' || n.type === 'team_challenge') {
                 if (action === 'accept') {
                     // Ensure user joins the game before navigating so names/video appear immediately
                     try {
-                        const meta = typeof n.metadata === 'string' ? JSON.parse(n.metadata) : n.metadata;
+                        const meta = typeof n.metadata === 'string' ? safeJSONParse(n.metadata, {}) : (n.metadata || {});
                         const gameIdFromMeta = meta?.game_id || meta?.gameId;
                         let gameId = gameIdFromMeta;
                         if (!gameId && n.link) {
