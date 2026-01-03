@@ -180,7 +180,7 @@ export default function Game() {
         } else {
             setIsAiGame(false);
         }
-    }, [location.search, currentUser, t, navigate]);
+    }, [location.search, currentUser, t, navigate, searchParams]);
 
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
