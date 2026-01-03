@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export function useRobustWebSocket(url, options = {}) {
     const {
@@ -44,16 +45,16 @@ export function useRobustWebSocket(url, options = {}) {
         const host = window.location.host;
         const isFramed = (()=>{ try { return window.self !== window.top; } catch(_) { return true; }})();
         if (isFramed && host.includes('preview-sandbox')) {
-            console.warn('[WS] Skipping WebSocket in preview sandbox iframe');
+            logger.warn('[WS] Skipping WebSocket in preview sandbox iframe');
             return;
         }
         const path = url.startsWith('http') || url.startsWith('ws') ? url : `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
 
-        console.log('[WS][CONNECT]', new Date().toISOString(), path);
+        logger.log('[WS][CONNECT]', new Date().toISOString(), path);
         const ws = new WebSocket(path);
 
         ws.onopen = (event) => {
-            console.log('[WS][OPEN]', new Date().toISOString(), path);
+            logger.log('[WS][OPEN]', new Date().toISOString(), path);
             setReadyState(WebSocket.OPEN);
             reconnectCountRef.current = 0;
             
@@ -85,7 +86,7 @@ export function useRobustWebSocket(url, options = {}) {
 
             if (shouldReconnectRef.current && reconnectCountRef.current < reconnectAttempts) {
                 const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 15000);
-                console.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms`);
+                logger.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms`);
                 reconnectTimerRef.current = setTimeout(() => {
                     reconnectCountRef.current++;
                     connect();
@@ -94,7 +95,7 @@ export function useRobustWebSocket(url, options = {}) {
         };
 
         ws.onerror = (event) => {
-            console.error('[WS][ERROR]', new Date().toISOString(), event);
+            logger.error('[WS][ERROR]', new Date().toISOString(), event);
             if (onErrorRef.current) onErrorRef.current(event);
         };
 

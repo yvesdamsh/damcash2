@@ -25,6 +25,7 @@ import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager } from '@/components/SoundManager';
+import { logger } from '@/utils/logger';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import GameResultOverlay from '@/components/game/GameResultOverlay';
 import PromotionDialog from '@/components/game/PromotionDialog';
@@ -297,7 +298,7 @@ export default function Game() {
 
                const aiPresent = whiteIsAI || blackIsAI || id === 'local-ai';
                setIsAiGame(aiPresent);
-               console.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
+               logger.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
             }, [game?.white_player_id, game?.black_player_id, game?.white_player_name, game?.black_player_name, id]);
 
         // Mute all media elements in preview if requested
@@ -503,7 +504,7 @@ export default function Game() {
                          if (k && moveTimingsRef.current.has(k)) {
                              const t0 = moveTimingsRef.current.get(k);
                              const dt = Math.round(performance.now() - t0);
-                             console.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
+                             logger.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
                              moveTimingsRef.current.delete(k);
                          }
                      } catch (_) {}
@@ -530,7 +531,18 @@ export default function Game() {
                     });
                 }
             } else if (data.type === 'GAME_REFETCH') {
-                if (id !== 'local-ai') base44.entities.Game.get(id).then(setGame);
+                (async () => {
+                    try {
+                        if (id !== 'local-ai') {
+                            const gameData = await base44.entities.Game.get(id);
+                            setGame(gameData);
+                        }
+                    } catch (e) {
+                        logger.error('Failed to fetch game:', e);
+                        toast.error('Impossible de charger la partie');
+                        navigate('/Home', { replace: true });
+                    }
+                })();
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
@@ -654,12 +666,12 @@ export default function Game() {
         // Proactively set AI flag to avoid early false negatives
         if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
         if (!game || game.status !== 'playing') {
-            if (window.__debug_ai) console.log('[AI] Skip: conditions not met', { isAiGame: aiPresentNow, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
+            if (window.__debug_ai) logger.log('[AI] Skip: conditions not met', { isAiGame: aiPresentNow, aiPresent: aiPresentNow, hasGame: !!game, status: game?.status });
             return;
         }
         // Avoid concurrent AI jobs
         if (isAiThinking) {
-            console.log('[AI] Busy: already thinking, will not block scheduling');
+            logger.log('[AI] Busy: already thinking, will not block scheduling');
         }
 
         let isActive = true;
@@ -672,7 +684,7 @@ export default function Game() {
         // If both sides are AI (misconfigured), do not let AI auto-play both in non-local games
         const aiCount = (whiteIsAI ? 1 : 0) + (blackIsAI ? 1 : 0);
         if (id !== 'local-ai' && aiCount !== 1) {
-          if (window.__debug_ai) console.log('[AI] Skip: invalid aiCount', { aiCount, whiteIsAI, blackIsAI });
+          if (window.__debug_ai) logger.log('[AI] Skip: invalid aiCount', { aiCount, whiteIsAI, blackIsAI });
           return;
         }
         // Only let the human opponent's client trigger AI moves (avoid spectators or empty seats driving AI)
@@ -681,7 +693,7 @@ export default function Game() {
         // Always allow driving AI; server/state will deduplicate moves across clients
         const aiIsBlack = (id === 'local-ai') ? true : blackIsAI;
         const isAiTurn = (id === 'local-ai') ? (game.current_turn === 'black') : (game.current_turn === 'white' ? whiteIsAI : blackIsAI);
-        console.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
+        logger.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
 
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
 
@@ -695,11 +707,11 @@ export default function Game() {
                 const whiteIsAI = game.white_player_id === 'ai';
                 const blackIsAI = game.black_player_id === 'ai';
                 const aiTurnCheck = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
-                if (!aiTurnCheck) { console.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
+                if (!aiTurnCheck) { logger.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
                 if (!isActive) return;
                 setIsAiThinking(true);
                 const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
-                console.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
+                logger.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
                 try {
                     // Local-AI fast path (fully deterministic, no backend/no hedging)
                     if (id === 'local-ai') {
@@ -746,7 +758,7 @@ export default function Game() {
                             });
                             if (res.ok) {
                                 const data = await res.json();
-                                console.log('[AI] external /move response', data);
+                                logger.log('[AI] external /move response', data);
                                 if (data && data.move) {
                                     if (game.game_type === 'checkers') {
                                         await executeCheckersMove(data.move);
@@ -757,10 +769,10 @@ export default function Game() {
                                 }
                             } else {
                                 const text = await res.text();
-                                console.warn('[AI] external /move HTTP error', text);
+                                logger.warn('[AI] external /move HTTP error', text);
                             }
                         } catch (e) {
-                            console.warn('[AI] external /move failed', e);
+                            logger.warn('[AI] external /move failed', e);
                         }
                     }
                     
@@ -775,7 +787,7 @@ export default function Game() {
                         activePiece: mustContinueWith,
                         timeLeft: getTimeLeft(aiColor)
                     };
-                    console.log('[AI] Payload', {
+                    logger.log('[AI] Payload', {
                       turn: payload.turn,
                       difficulty: payload.difficulty,
                       activePiece: payload.activePiece,
@@ -857,10 +869,10 @@ export default function Game() {
                       const all = getCheckersValidMoves(board, aiColor);
                       if (all.length) res = { data: { move: { ...all[0], captured: Array.isArray(all[0].captured) ? all[0].captured[0] : (all[0].captured || null) } } };
                     }
-                    console.log('[AI] Response from backend', res?.data || res);
+                    logger.log('[AI] Response from backend', res?.data || res);
                     // If the backend returns no move or fails, ensure fallback
                     if ((!res || !res.data || res?.data?.error || !res.data.move) && (id === 'local-ai' || whiteIsAI || blackIsAI)) {
-                        console.warn('[AI] No backend move, using local safe fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
+                        logger.warn('[AI] No backend move, using local safe fallback', { isLocal: id === 'local-ai', aiColor, gameType: game.game_type });
                         if (game.game_type === 'chess') {
                             const moves = getValidChessMoves(board, aiColor, chessState.lastMove, chessState.castlingRights);
                             if (moves.length > 0) {
@@ -902,7 +914,7 @@ export default function Game() {
                     if (!isActive) { aiJobRef.current = false; return; }
 
                     if (res?.data?.move) {
-                        console.log('[AI] Using backend move', res.data.move);
+                        logger.log('[AI] Using backend move', res.data.move);
                         const m = res.data.move;
                         const move = {
                             from: m.from,
@@ -978,7 +990,7 @@ export default function Game() {
                                 curFrom = { r: chosen.to.r, c: chosen.to.c };
 
                                 // International rules: continue capture sequence even after promotion (as king)
-                                while (true) {
+                                for (let __safe=0; __safe<100; __safe++) {
                                     const pieceNow = seqBoard[curFrom.r][curFrom.c];
                                     const { captures: nextCaps } = getMovesForPiece(seqBoard, curFrom.r, curFrom.c, pieceNow, true);
                                     if (!nextCaps || nextCaps.length === 0) break;

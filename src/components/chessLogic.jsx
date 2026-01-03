@@ -120,7 +120,7 @@ export const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
         
         directions.forEach(([dr, dc]) => {
             let d = 1;
-            while (true) {
+            for (let __safe=0; __safe<64; __safe++) {
                 const tr = r + dr * d, tc = c + dc * d;
                 if (!isValidPos(tr, tc)) break;
                 const target = board[tr][tc];

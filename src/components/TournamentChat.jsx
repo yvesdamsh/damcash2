@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Send, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { logger } from '@/utils/logger';
 
 export default function TournamentChat({ tournamentId, currentUser }) {
     const [messages, setMessages] = useState([]);
@@ -27,7 +28,7 @@ export default function TournamentChat({ tournamentId, currentUser }) {
                 const msgs = await base44.entities.TournamentMessage.filter({ tournament_id: tournamentId }, '-created_date', 50);
                 setMessages(msgs.reverse()); // Show oldest first in list
             } catch (e) {
-                console.error("Error loading messages", e);
+                logger.error("Error loading messages", e);
             }
         };
         loadMessages();
@@ -37,7 +38,7 @@ export default function TournamentChat({ tournamentId, currentUser }) {
         const wsUrl = `${protocol}//${window.location.host}/functions/tournamentSocket?tournamentId=${tournamentId}`;
         const ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => console.log('Connected to Tournament Chat');
+        ws.onopen = () => logger.log('Connected to Tournament Chat');
         
         ws.onmessage = (event) => {
             try {
@@ -46,7 +47,7 @@ export default function TournamentChat({ tournamentId, currentUser }) {
                     setMessages(prev => [...prev, data.payload]);
                 }
             } catch (e) {
-                console.error(e);
+                logger.error(e);
             }
         };
 
@@ -94,7 +95,7 @@ export default function TournamentChat({ tournamentId, currentUser }) {
             
             setNewMessage('');
         } catch (e) {
-            console.error("Error sending message", e);
+            logger.error("Error sending message", e);
         }
     };
 

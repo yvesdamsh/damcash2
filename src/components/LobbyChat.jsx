@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, User, Users, Hash } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import { logger } from '@/utils/logger';
 
 export default function LobbyChat({ channelId, channelName, currentUser, height = "500px" }) {
     const { t, formatDate } = useLanguage();
@@ -28,7 +29,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
                 const msgs = await base44.entities.ChannelMessage.filter({ channel_id: channelId }, '-created_at', 50);
                 setMessages(msgs.reverse());
             } catch (e) {
-                console.error("Error loading messages", e);
+                logger.error("Error loading messages", e);
             }
         };
         loadMessages();
@@ -37,7 +38,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
         const wsUrl = `${protocol}//${window.location.host}/functions/channelSocket?channelId=${channelId}`;
         const ws = new WebSocket(wsUrl);
 
-        ws.onopen = () => console.log(`Connected to ${channelId} Chat`);
+        ws.onopen = () => logger.log(`Connected to ${channelId} Chat`);
         
         ws.onmessage = (event) => {
             try {
@@ -46,7 +47,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
                     setMessages(prev => [...prev, data.payload]);
                 }
             } catch (e) {
-                console.error(e);
+                logger.error(e);
             }
         };
 
@@ -81,7 +82,7 @@ export default function LobbyChat({ channelId, channelName, currentUser, height 
             }
             setNewMessage('');
         } catch (e) {
-            console.error("Error sending message", e);
+            logger.error("Error sending message", e);
         }
     };
 

@@ -274,6 +274,7 @@ export default function Home() {
     };
 
     useEffect(() => {
+        let intervalId;
         const init = async () => {
             try {
                 // Check authentication state
@@ -314,7 +315,7 @@ export default function Home() {
                 await fetchData(currentUser, true);
 
                 // Start polling only if authenticated
-                setInterval(async () => {
+                intervalId = setInterval(async () => {
                     const u = await base44.auth.me().catch(()=>null);
                     if (u) fetchData(u, false);
                 }, 60000);
@@ -332,6 +333,7 @@ export default function Home() {
 
         // Refresh interval setup (placeholder, actual interval set in init)
         return () => {
+            if (intervalId) clearInterval(intervalId);
             window.removeEventListener('gameModeChanged', handleModeChange);
         };
         }, []);

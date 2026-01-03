@@ -126,7 +126,7 @@ export const getMovesForPiece = (board, r, c, piece, onlyCaptures = false) => {
         // Logique DAME (Flying King)
         else {
             let dist = 1;
-            while (true) {
+            for (let __safe=0; __safe<100; __safe++) {
                 const nr = r + (dr * dist);
                 const nc = c + (dc * dist);
 
@@ -147,7 +147,7 @@ export const getMovesForPiece = (board, r, c, piece, onlyCaptures = false) => {
                         // Ennemi rencontré : vérifier si on peut sauter DERRIÈRE
                         // On doit vérifier les cases après l'ennemi
                         let jumpDist = 1;
-                        while (true) {
+                        for (let __safe=0; __safe<100; __safe++) {
                             const jr = nr + (dr * jumpDist);
                             const jc = nc + (dc * jumpDist);
                             if (!isValidPos(jr, jc) || board[jr][jc] !== 0) break;
