@@ -2506,7 +2506,7 @@ export default function Game() {
                             </PopoverContent>
                         </Popover>
 
-                        {game.status !== 'playing' && game.status !== 'waiting' && (
+                        {game.status && game.status !== 'playing' && game.status !== 'waiting' && (
                             (() => {
                                 // Series Exit Logic for Button
                                 const seriesLength = game.series_length || 1;
