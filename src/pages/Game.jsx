@@ -11,6 +11,7 @@ import { initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
+import GameBoard from '@/components/game/GameBoard';
 import UserSearchDialog from '@/components/UserSearchDialog';
 import GameChat from '@/components/GameChat';
 import VideoChat from '@/components/VideoChat';
@@ -2291,41 +2292,27 @@ export default function Game() {
                         </div>
                     )}
                     <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0">
-                            {game.game_type === 'checkers' 
-                            ? <CheckerBoard 
-                                board={displayBoard} 
-                                onSquareClick={handleSquareClick}
-                                onPieceDrop={handlePieceDrop} 
-                                selectedSquare={selectedSquare} 
-                                validMoves={validMoves} 
-                                currentTurn={game.current_turn} 
-                                playerColor={isFlipped ? 'black' : 'white'} 
-                                lastMove={movesList[movesList.length-1] || null}
-                                lastDragMove={lastDragMove}
-                                theme={currentUser?.preferences?.checkers_theme}
-                                pieceDesign={currentUser?.preferences?.checkers_pieces}
-                                premove={premove}
-                                isSoloMode={isSoloMode}
-                                orientation={orientation}
-                                />
-                            : <ChessBoard 
-                                board={displayBoard} 
-                                onSquareClick={handleChessClick}
-                                onPieceDrop={handlePieceDrop} 
-                                selectedSquare={selectedSquare} 
-                                validMoves={validMoves} 
-                                currentTurn={game.current_turn} 
-                                playerColor={isFlipped ? 'black' : 'white'} 
-                                lastMove={chessState.lastMove}
-                                lastDragMove={lastDragMove}
-                                theme={currentUser?.preferences?.chess_theme}
-                                pieceSet={currentUser?.preferences?.chess_pieces}
-                                premove={premove}
-                                isSoloMode={isSoloMode}
-                                orientation={orientation}
-                                />
-                        }
-                    </div>
+                                                <GameBoard
+                                                  gameType={game.game_type}
+                                                  board={displayBoard}
+                                                  onSquareClickCheckers={handleSquareClick}
+                                                  onSquareClickChess={handleChessClick}
+                                                  onPieceDrop={handlePieceDrop}
+                                                  selectedSquare={selectedSquare}
+                                                  validMoves={validMoves}
+                                                  currentTurn={game.current_turn}
+                                                  playerColor={isFlipped ? 'black' : 'white'}
+                                                  lastMove={game.game_type === 'chess' ? chessState.lastMove : (movesList[movesList.length-1] || null)}
+                                                  lastDragMove={lastDragMove}
+                                                  checkersTheme={currentUser?.preferences?.checkers_theme}
+                                                  checkersPieceDesign={currentUser?.preferences?.checkers_pieces}
+                                                  chessTheme={currentUser?.preferences?.chess_theme}
+                                                  chessPieceSet={currentUser?.preferences?.chess_pieces}
+                                                  premove={premove}
+                                                  isSoloMode={isSoloMode}
+                                                  orientation={orientation}
+                                                />
+                                            </div>
                 </div>
 
                 {/* Quick Actions Bar */}
