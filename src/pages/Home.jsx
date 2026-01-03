@@ -274,8 +274,10 @@ export default function Home() {
         }
     };
 
-    useEffect(() => {
-        let intervalId;
+        const throttledFetchData = React.useMemo(() => throttle(fetchData, 5000), [fetchData]);
+
+        useEffect(() => {
+            let intervalId;
         const init = async () => {
             try {
                 // Check authentication state
