@@ -392,14 +392,20 @@ export default function Home() {
                         if (g && me && (g.white_player_id === me.id || g.black_player_id === me.id)) ok = true;
                     } catch (_) {}
                 }
+                // Try to nudge inviter via socket to refetch
+                try {
+                    await base44.functions.invoke('gameSocket', { gameId: res.data.gameId, action: 'FORCE_REFETCH' });
+                } catch (_) {
+                    console.log('Could not force refetch via socket');
+                }
                 navigate(`/Game?id=${res.data.gameId}`);
-            } else {
+                } else {
                 alert('Invitation expirée ou table complète');
-            }
-        } catch (e) {
-            alert('Invitation expirée ou table complète');
-        }
-    };
+                }
+                } catch (e) {
+                alert('Invitation expirée ou table complète');
+                }
+                };
 
     const handleDeclineInvite = async (invite) => {
         try {
