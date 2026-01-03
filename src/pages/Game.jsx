@@ -406,6 +406,8 @@ export default function Game() {
         if (!id || id === 'local-ai') return;
         if (!game) return;
         const waitingForOpponent = (!game.white_player_id || !game.black_player_id);
+        // Always run a short-lived fast poll just after join to eliminate any eventual consistency
+        // Continue only if still waiting
         if (!waitingForOpponent) return;
         let iv = setInterval(async () => {
             try {
@@ -1663,6 +1665,7 @@ export default function Game() {
                       }
                       // Also nudge via HTTP to reach all instances even if WS missed
                       base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_UPDATE', payload: updateData }).catch(() => {});
+                      base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_REFETCH' }).catch(() => {});
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {

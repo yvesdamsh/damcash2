@@ -102,21 +102,23 @@ export default function Notifications() {
 
         // Realtime updates handled via global event from RealTimeContext
         let debounceT;
-        let nextRefreshAt = 0;
         const handleUpdate = () => {
-            const now = Date.now();
-            if (now < nextRefreshAt) return; // cooldown 15s
-            nextRefreshAt = now + 15000;
             clearTimeout(debounceT);
-            debounceT = setTimeout(() => fetchNotifications(true), 300);
+            debounceT = setTimeout(() => fetchNotifications(true), 100);
         };
         window.addEventListener('notification-update', handleUpdate);
-
-        return () => {
-            window.removeEventListener('visibilitychange', onVisibility);
-            window.removeEventListener('notification-update', handleUpdate);
-            clearTimeout(debounceT);
+        const onInvite = () => {
+            setUnreadCount((c) => c + 1);
+            handleUpdate();
         };
+        window.addEventListener('invitation-received', onInvite);
+
+         return () => {
+             window.removeEventListener('visibilitychange', onVisibility);
+             window.removeEventListener('notification-update', handleUpdate);
+             window.removeEventListener('invitation-received', onInvite);
+             clearTimeout(debounceT);
+         };
     }, [userId]);
 
     const markAsRead = async (id) => {
