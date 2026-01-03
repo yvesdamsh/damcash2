@@ -2079,7 +2079,7 @@ export default function Game() {
     let displayBoard = board;
     if (replayIndex !== -1 && movesList[replayIndex]) {
         try {
-            const parsedMove = JSON.parse(movesList[replayIndex].board);
+            const parsedMove = safeJSONParse(movesList[replayIndex].board, {});
             displayBoard = game.game_type === 'chess' ? (parsedMove.board || []) : parsedMove;
         } catch (e) {
             displayBoard = [];
