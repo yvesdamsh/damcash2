@@ -323,7 +323,7 @@ export default function Game() {
                 if (!user) {
                     const guestStr = localStorage.getItem('damcash_guest');
                     if (guestStr) {
-                        user = JSON.parse(guestStr);
+                        user = safeJSONParse(guestStr, null) || null;
                     } else {
                         // Generate fallback guest if needed
                         user = {
