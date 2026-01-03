@@ -545,6 +545,11 @@ export default function Game() {
                         return prev;
                     });
                 }
+            } else if (data.type === 'STATE_UPDATE') {
+                 // Back-compat: treat STATE_UPDATE same as GAME_UPDATE
+                 if (data.payload) {
+                     setGame(prev => ({ ...prev, ...data.payload }));
+                 }
             } else if (data.type === 'GAME_REFETCH') {
                 (async () => {
                     try {
