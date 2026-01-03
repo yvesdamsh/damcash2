@@ -343,20 +343,15 @@ export default function Home() {
 
     const handleAcceptInvite = async (invite) => {
         try {
-            await base44.entities.Invitation.update(invite.id, { status: 'accepted' });
-            // Optimistic UI removal
-            setInvitations((prev) => prev.filter(i => i.id !== invite.id));
-            const game = await base44.entities.Game.get(invite.game_id);
-            if (game && !game.black_player_id) {
-                await base44.entities.Game.update(game.id, {
-                    black_player_id: user.id,
-                    black_player_name: user.username || 'Invité',
-                    status: 'playing'
-                });
+            const res = await base44.functions.invoke('acceptInvitation', { invitationId: invite.id });
+            if (res.status === 200 && res.data?.gameId) {
+                setInvitations((prev) => prev.filter(i => i.id !== invite.id));
+                navigate(`/Game?id=${res.data.gameId}`);
+            } else {
+                alert('Invitation expirée ou table complète');
             }
-            navigate(`/Game?id=${invite.game_id}`);
         } catch (e) {
-            console.error("Error accepting invite", e);
+            alert('Invitation expirée ou table complète');
         }
     };
 

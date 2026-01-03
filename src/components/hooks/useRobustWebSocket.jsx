@@ -28,10 +28,13 @@ export function useRobustWebSocket(url, options = {}) {
     }, [onOpen, onMessage, onClose, onError]);
 
     const [readyState, setReadyState] = useState(WebSocket.CLOSED);
+    const [latencyMs, setLatencyMs] = useState(null);
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
     const wsRef = useRef(null);
     const reconnectCountRef = useRef(0);
     const reconnectTimerRef = useRef(null);
     const heartbeatTimerRef = useRef(null);
+    const lastPingRef = useRef(0);
     const shouldReconnectRef = useRef(autoConnect);
 
     const connect = useCallback(() => {
@@ -61,6 +64,7 @@ export function useRobustWebSocket(url, options = {}) {
             if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
             heartbeatTimerRef.current = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {
+                    lastPingRef.current = performance.now();
                     ws.send(JSON.stringify({ type: 'PING' }));
                 }
             }, heartbeatInterval);
@@ -71,7 +75,13 @@ export function useRobustWebSocket(url, options = {}) {
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'PONG') return;
+                if (data.type === 'PONG') {
+                    if (lastPingRef.current) {
+                        const dt = Math.round(performance.now() - lastPingRef.current);
+                        setLatencyMs(dt);
+                    }
+                    return;
+                }
                 if (onMessageRef.current) onMessageRef.current(event, data);
             } catch (e) {
                 if (onMessageRef.current) onMessageRef.current(event, null);
@@ -130,11 +140,25 @@ export function useRobustWebSocket(url, options = {}) {
         };
     }, [connect, disconnect, autoConnect]);
 
+    // Browser online/offline awareness
+    useEffect(() => {
+        const onOnline = () => setIsOnline(true);
+        const onOffline = () => setIsOnline(false);
+        window.addEventListener('online', onOnline);
+        window.addEventListener('offline', onOffline);
+        return () => {
+            window.removeEventListener('online', onOnline);
+            window.removeEventListener('offline', onOffline);
+        };
+    }, []);
+
     return {
         sendMessage: send,
         disconnect,
         connect,
         readyState,
+        latencyMs,
+        isOnline,
         socket: wsRef.current
     };
 }

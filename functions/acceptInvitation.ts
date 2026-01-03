@@ -1,0 +1,56 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const body = await req.json().catch(() => ({}));
+    const invitationId = body.invitationId;
+    if (!invitationId) return Response.json({ error: 'Missing invitationId' }, { status: 400 });
+
+    const inv = await base44.asServiceRole.entities.Invitation.get(invitationId);
+    if (!inv || inv.status !== 'pending') {
+      return Response.json({ error: 'Invitation not pending' }, { status: 409 });
+    }
+
+    // Validate recipient (by email) when available
+    if (inv.to_user_email && user.email && inv.to_user_email.toLowerCase() !== user.email.toLowerCase()) {
+      return Response.json({ error: 'Invitation not addressed to you' }, { status: 403 });
+    }
+
+    if (!inv.game_id) return Response.json({ error: 'Invitation without game' }, { status: 400 });
+
+    // Fetch game and ensure seat available
+    const game = await base44.asServiceRole.entities.Game.get(inv.game_id);
+    if (!game) return Response.json({ error: 'Game not found' }, { status: 404 });
+
+    // If already in game, accept harmlessly
+    const alreadyPlayer = (game.white_player_id === user.id) || (game.black_player_id === user.id);
+
+    // Determine target color (if black empty, join as black, else white if empty)
+    let updateData = {};
+    if (!alreadyPlayer) {
+      if (!game.black_player_id) {
+        updateData = { black_player_id: user.id, black_player_name: user.username || user.full_name || 'Player', status: game.status === 'waiting' ? 'playing' : game.status };
+      } else if (!game.white_player_id) {
+        updateData = { white_player_id: user.id, white_player_name: user.username || user.full_name || 'Player', status: game.status === 'waiting' ? 'playing' : game.status };
+      } else {
+        // Race lost
+        await base44.asServiceRole.entities.Invitation.update(invitationId, { status: 'declined' });
+        return Response.json({ error: 'Game is full' }, { status: 409 });
+      }
+
+      // Apply update
+      await base44.asServiceRole.entities.Game.update(game.id, updateData);
+    }
+
+    // Mark invitation accepted
+    await base44.asServiceRole.entities.Invitation.update(invitationId, { status: 'accepted' });
+
+    return Response.json({ gameId: game.id });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});

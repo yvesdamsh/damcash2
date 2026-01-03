@@ -32,6 +32,7 @@ import { DEFAULT_ELO } from '@/components/constants/gameConstants';
 import { useLoadingState } from '@/components/hooks/useLoadingState';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import GameResultOverlay from '@/components/game/GameResultOverlay';
+import LatencyIndicator from '@/components/LatencyIndicator';
 import PromotionDialog from '@/components/game/PromotionDialog';
 import PlayerInfoCard from '@/components/game/PlayerInfoCard';
 import GameControls from '@/components/game/GameControls';
@@ -480,7 +481,7 @@ export default function Game() {
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
 
     // Robust WebSocket Connection
-    const { socket: robustSocket } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
+    const { socket: robustSocket, readyState: wsReadyState, latencyMs, isOnline: wsOnline } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
                             autoConnect: !!id && id !== 'local-ai',
                             reconnectInterval: 1000,
                             heartbeatInterval: 30000,
@@ -2246,14 +2247,16 @@ export default function Game() {
                                 <span>Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}</span>
                                 <div className="h-4 w-px bg-[#6b5138]/20"></div>
                                 {socket && socket.readyState === 1 ? (
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                         <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="Connecté" />
                                         <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
+                                        <LatencyIndicator latencyMs={latencyMs} connected={wsReadyState===1} isOnline={wsOnline} />
                                     </div>
                                 ) : (
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-2">
                                         <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Déconnecté" />
                                         <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
+                                        <LatencyIndicator latencyMs={latencyMs} connected={false} isOnline={wsOnline} />
                                     </div>
                                 )}
                             </div>
