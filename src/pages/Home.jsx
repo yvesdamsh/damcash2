@@ -23,12 +23,13 @@ import LiveGamesPreview from '@/components/home/LiveGamesPreview.jsx';
 import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 import { throttle } from '@/components/utils/rateLimit';
+import { safeJSONParse } from '@/components/utils/errorHandler';
 
 export default function Home() {
     const { t } = useLanguage();
     // Guest User Logic
     const getGuestUser = () => {
-        let guest = JSON.parse(localStorage.getItem('damcash_guest'));
+        let guest = safeJSONParse(localStorage.getItem('damcash_guest'), null);
         if (!guest) {
             guest = {
                 id: 'guest_' + Math.random().toString(36).substr(2, 9),
