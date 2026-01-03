@@ -344,21 +344,38 @@ export default function Home() {
 
         // Real-time invitation updates
         useEffect(() => {
+            if (!user?.email) return;
+
             const refreshInvites = async () => {
-                if (!user) return;
+                console.log('[HOME] Refreshing invitations for:', user.email);
                 try {
-                    const pending = await base44.entities.Invitation.filter({ to_user_email: user.email, status: 'pending' });
+                    const pending = await base44.entities.Invitation.filter({ 
+                        to_user_email: user.email, 
+                        status: 'pending' 
+                    });
+                    console.log('[HOME] Invitations loaded:', pending.length);
                     setInvitations(pending);
-                } catch (_) {}
+                } catch (e) {
+                    console.error('[HOME] Error loading invitations:', e);
+                }
             };
-            const onInv = () => refreshInvites();
+
+            const onInv = (event) => {
+                console.log('[HOME] Invitation event received:', event?.detail);
+                refreshInvites();
+            };
+
             window.addEventListener('invitation-received', onInv);
             window.addEventListener('notification-update', onInv);
+
+            // Initial load
+            refreshInvites();
+
             return () => {
                 window.removeEventListener('invitation-received', onInv);
                 window.removeEventListener('notification-update', onInv);
             };
-        }, [user]);
+        }, [user?.email]);
 
     const handleAcceptInvite = async (invite) => {
         try {

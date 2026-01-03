@@ -483,27 +483,7 @@ export default function Game() {
                 run();
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
 
-    // Lightweight fallback sync while waiting for opponent or before first move
-    useEffect(() => {
-        if (!id || id === 'local-ai') return;
-        if (!game) return;
-        const needSync = (game.status === 'waiting') || (game.status === 'playing' && !game.last_move_at);
-        if (!needSync) return;
-        const iv = setInterval(async () => {
-            try {
-                const fresh = await base44.entities.Game.get(id);
-                setGame(prev => {
-                    if (!prev) return fresh;
-                    const changed = prev.white_player_id !== fresh.white_player_id || prev.black_player_id !== fresh.black_player_id || prev.white_player_name !== fresh.white_player_name || prev.black_player_name !== fresh.black_player_name || prev.updated_date !== fresh.updated_date;
-                    return changed ? fresh : prev;
-                });
-                if (fresh.white_player_id && fresh.black_player_id && fresh.status === 'playing' && fresh.last_move_at) {
-                    clearInterval(iv);
-                }
-            } catch (_) {}
-        }, 2000);
-        return () => clearInterval(iv);
-    }, [id, game?.status, game?.white_player_id, game?.black_player_id, game?.last_move_at]);
+    // Removed fallback polling - it was interfering with WebSocket real-time updates
 
     // Robust WebSocket Connection
     const { socket: robustSocket, readyState: wsReadyState, latencyMs, isOnline: wsOnline } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
@@ -1815,7 +1795,7 @@ export default function Game() {
             };
 
             if (game.id !== 'local-ai') {
-                await base44.entities.Game.update(game.id, updateData);
+                base44.entities.Game.update(game.id, updateData).catch(e => console.error("Rematch update error", e));
                 // Re-fetch to be sure for online games
                 setTimeout(async () => {
                     const refreshed = await base44.entities.Game.get(game.id);
@@ -1843,7 +1823,7 @@ export default function Game() {
 
     const handleOfferDraw = async () => {
         if (!game || !currentUser) return;
-        await base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id });
+        base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch(e => console.error("Draw offer error", e));
         
         const opponentId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
         if (opponentId) {
@@ -1879,7 +1859,7 @@ export default function Game() {
 
     const handleDeclineDraw = async () => {
         if (!game) return;
-        await base44.entities.Game.update(game.id, { draw_offer_by: null });
+        base44.entities.Game.update(game.id, { draw_offer_by: null }).catch(e => console.error("Cancel draw error", e));
         toast.error(t('game.draw_declined'));
     };
 
@@ -1891,7 +1871,7 @@ export default function Game() {
         try {
             if (!isAiGame) {
                 // First mark game finished so both clients stop clocks immediately
-                await base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() });
+                base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => console.error("Finish game error", e));
                 // Broadcast state through socket
                 if (socket && socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
@@ -1925,7 +1905,7 @@ export default function Game() {
         const moves = game.moves ? safeJSONParse(game.moves, []) : [];
         if (moves.length === 0) return;
 
-        await base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id });
+        base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id }).catch(e => console.error("Takeback request error", e));
         toast.success(t('game.takeback_sent'));
     };
 
@@ -1959,7 +1939,7 @@ export default function Game() {
                 prevTurn = 'white'; // Assuming white starts
             }
 
-            await base44.entities.Game.update(game.id, { 
+            base44.entities.Game.update(game.id, { 
                 board_state: prevBoardState,
                 moves: JSON.stringify(newMoves),
                 current_turn: prevTurn,
@@ -1968,7 +1948,7 @@ export default function Game() {
                 // We should probably adjust time too, but that's complex. Let's keep time flowing or running.
                 // Actually time usually reverts too but we don't track time per move history easily here.
                 // We'll leave time as is for simplicity (penalty for mistake).
-            });
+            }).catch(e => console.error("Accept takeback error", e));
             
             toast.success(t('game.takeback_accepted'));
         } catch (e) {
@@ -1981,7 +1961,7 @@ export default function Game() {
 
     const handleDeclineTakeback = async () => {
         if (!game) return;
-        await base44.entities.Game.update(game.id, { takeback_requested_by: null });
+        base44.entities.Game.update(game.id, { takeback_requested_by: null }).catch(e => console.error("Decline takeback error", e));
         toast.error(t('game.takeback_declined'));
     };
 
@@ -2198,11 +2178,11 @@ export default function Game() {
                                         setShowResult(true);
                                         if (!isAiGame) {
                                             // Explicitly update status first to ensure immediate consistency and prevent "zombie" games
-                                            await base44.entities.Game.update(game.id, { 
+                                            base44.entities.Game.update(game.id, { 
                                                 status: 'finished', 
                                                 winner_id: winnerId,
                                                 updated_date: new Date().toISOString()
-                                            });
+                                            }).catch(e => console.error("Finish game error", e));
 
                                             // Then trigger server-side processing (ELO, etc.)
                                             await base44.functions.invoke('processGameResult', { 
