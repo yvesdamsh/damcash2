@@ -45,7 +45,7 @@ export default function PlayerInfoCard({
             <GameTimer 
                 key={`timer-${game.id}-${player.color}`}
                 initialSeconds={player.timeLeft} 
-                isActive={game.status === 'playing' && game.current_turn === player.color && !!game.last_move_at}
+                isActive={game.status === 'playing' && game.current_turn === player.color && !!game.last_move_at && !!game.white_player_id && !!game.black_player_id}
                 onTimeout={() => onTimeout(player.color)}
             />
         </div>

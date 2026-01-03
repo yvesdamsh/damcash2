@@ -33,17 +33,22 @@ Deno.serve(async (req) => {
     let updateData = {};
     if (!alreadyPlayer) {
       if (!game.black_player_id) {
-        updateData = { black_player_id: user.id, black_player_name: user.username || user.full_name || 'Player', status: game.status === 'waiting' ? 'playing' : game.status };
+        updateData = { black_player_id: user.id, black_player_name: user.username || user.full_name || 'Player' };
       } else if (!game.white_player_id) {
-        updateData = { white_player_id: user.id, white_player_name: user.username || user.full_name || 'Player', status: game.status === 'waiting' ? 'playing' : game.status };
+        updateData = { white_player_id: user.id, white_player_name: user.username || user.full_name || 'Player' };
       } else {
         // Race lost
         await base44.asServiceRole.entities.Invitation.update(invitationId, { status: 'declined' });
         return Response.json({ error: 'Game is full' }, { status: 409 });
       }
 
-      // Apply update
+      // Apply update (seat assignment only)
       await base44.asServiceRole.entities.Game.update(game.id, updateData);
+      // Set status to playing only when both players present
+      const fresh = await base44.asServiceRole.entities.Game.get(game.id);
+      if (fresh.white_player_id && fresh.black_player_id && fresh.status === 'waiting') {
+        await base44.asServiceRole.entities.Game.update(game.id, { status: 'playing' });
+      }
     }
 
     // Mark invitation accepted

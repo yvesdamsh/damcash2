@@ -64,9 +64,8 @@ export default async function handler(req) {
 
         // Determine role
         const updateData = {
-            status: game.status === 'waiting' ? 'playing' : game.status,
-            current_turn: game.current_turn || 'white',
-            last_move_at: game.last_move_at || new Date().toISOString()
+            // Do not change status or last_move_at on join; start only after first move
+            current_turn: game.current_turn || 'white'
         };
 
         if (!game.white_player_id) {
@@ -111,19 +110,25 @@ export default async function handler(req) {
         // Perform Update
         const updatedGame = await base44.asServiceRole.entities.Game.update(gameId, updateData);
 
+        // Re-fetch and set playing only when both players present
+        let finalGame = await base44.asServiceRole.entities.Game.get(gameId);
+        if (finalGame.white_player_id && finalGame.black_player_id && finalGame.status === 'waiting') {
+            finalGame = await base44.asServiceRole.entities.Game.update(gameId, { status: 'playing' });
+        }
+
         // Broadcast start with explicit player fields to avoid stale caches on clients
         gameUpdates.postMessage({
             gameId,
             type: 'GAME_UPDATE',
             payload: {
-                id: updatedGame.id,
-                status: updatedGame.status,
-                current_turn: updatedGame.current_turn,
-                last_move_at: updatedGame.last_move_at,
-                white_player_id: updatedGame.white_player_id,
-                white_player_name: updatedGame.white_player_name,
-                black_player_id: updatedGame.black_player_id,
-                black_player_name: updatedGame.black_player_name,
+                id: finalGame.id,
+                status: finalGame.status,
+                current_turn: finalGame.current_turn,
+                last_move_at: finalGame.last_move_at || null,
+                white_player_id: finalGame.white_player_id,
+                white_player_name: finalGame.white_player_name,
+                black_player_id: finalGame.black_player_id,
+                black_player_name: finalGame.black_player_name,
                 updated_date: new Date().toISOString()
             }
         });
@@ -134,7 +139,7 @@ export default async function handler(req) {
         });
 
         // Notify opponent
-        const opponentId = updatedGame.white_player_id === user.id ? updatedGame.black_player_id : updatedGame.white_player_id;
+        const opponentId = finalGame.white_player_id === user.id ? finalGame.black_player_id : finalGame.white_player_id;
         if (opponentId) {
             // We don't await this to avoid blocking response
             base44.asServiceRole.functions.invoke('sendNotification', {
@@ -146,7 +151,7 @@ export default async function handler(req) {
             }).catch(console.error);
         }
 
-        return Response.json({ success: true, game: updatedGame });
+        return Response.json({ success: true, game: finalGame });
 
     } catch (e) {
         console.error("Join error:", e);

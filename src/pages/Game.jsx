@@ -480,6 +480,28 @@ export default function Game() {
                 run();
     }, [game?.id, game?.white_player_id, game?.black_player_id, game?.status, currentUser?.id]);
 
+    // Lightweight fallback sync while waiting for opponent or before first move
+    useEffect(() => {
+        if (!id || id === 'local-ai') return;
+        if (!game) return;
+        const needSync = (game.status === 'waiting') || (game.status === 'playing' && !game.last_move_at);
+        if (!needSync) return;
+        const iv = setInterval(async () => {
+            try {
+                const fresh = await base44.entities.Game.get(id);
+                setGame(prev => {
+                    if (!prev) return fresh;
+                    const changed = prev.white_player_id !== fresh.white_player_id || prev.black_player_id !== fresh.black_player_id || prev.white_player_name !== fresh.white_player_name || prev.black_player_name !== fresh.black_player_name || prev.updated_date !== fresh.updated_date;
+                    return changed ? fresh : prev;
+                });
+                if (fresh.white_player_id && fresh.black_player_id && fresh.status === 'playing' && fresh.last_move_at) {
+                    clearInterval(iv);
+                }
+            } catch (_) {}
+        }, 2000);
+        return () => clearInterval(iv);
+    }, [id, game?.status, game?.white_player_id, game?.black_player_id, game?.last_move_at]);
+
     // Robust WebSocket Connection
     const { socket: robustSocket, readyState: wsReadyState, latencyMs, isOnline: wsOnline } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
                             autoConnect: !!id && id !== 'local-ai',
