@@ -4,6 +4,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Video, VideoOff, Mic, MicOff, Phone, PhoneOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { safeJSONParse } from '@/components/utils/errorHandler';
 
 const ICE_SERVERS = {
     iceServers: [
@@ -181,7 +182,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, ext
     };
 
     const handleSignalMessage = async (msg) => {
-        const data = msg.data ? JSON.parse(msg.data) : {};
+        const data = typeof msg?.data === 'string' ? safeJSONParse(msg.data, {}) : (msg?.data || {});
 
         if (msg.type === 'offer') {
             if (status === 'connected' || status === 'calling') return; 
