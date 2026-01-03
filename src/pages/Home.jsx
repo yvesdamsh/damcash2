@@ -392,9 +392,9 @@ export default function Home() {
                         if (g && me && (g.white_player_id === me.id || g.black_player_id === me.id)) ok = true;
                     } catch (_) {}
                 }
-                // Try to nudge inviter via socket to refetch
+                // Try to nudge inviter via socket to refetch (HTTP fanout)
                 try {
-                    await base44.functions.invoke('gameSocket', { gameId: res.data.gameId, action: 'FORCE_REFETCH' });
+                    await base44.functions.invoke('gameSocket', { gameId: res.data.gameId, type: 'GAME_REFETCH' });
                 } catch (_) {
                     console.log('Could not force refetch via socket');
                 }

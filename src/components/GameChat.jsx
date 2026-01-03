@@ -37,8 +37,8 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
     useEffect(() => {
         if (!gameId) return;
         const initialFetch = async () => {
-             try {
-                const history = await base44.entities.ChatMessage.list({ game_id: gameId }, { created_date: 1 }, 50);
+            try {
+                const history = await base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 50);
                 setMessages(history);
             } catch (e) {}
         };
@@ -94,7 +94,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
                 }
             }));
         } else {
-            // Fallback HTTP
+            // Fallback HTTP + server fanout to reach all clients
             try {
                 const msg = await base44.entities.ChatMessage.create({
                     game_id: gameId,
@@ -103,6 +103,8 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
                     content: textToSend
                 });
                 setMessages(prev => [...prev, msg]);
+                // Nudge sockets on all instances
+                base44.functions.invoke('gameSocket', { gameId, type: 'CHAT_UPDATE', payload: msg }).catch(() => {});
             } catch (e) {
                 console.error("Send error", e);
             }

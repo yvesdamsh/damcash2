@@ -613,6 +613,8 @@ export default function Game() {
     useEffect(() => {
         if (socket && socket.readyState === WebSocket.OPEN && game?.id && game.id !== 'local-ai') {
             try { socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' })); } catch (_) {}
+            // Also issue HTTP refetch signal to minimize join latency across instances
+            base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_REFETCH' }).catch(() => {});
         }
     }, [socket, game?.id]);
 
