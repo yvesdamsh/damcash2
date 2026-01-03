@@ -142,21 +142,42 @@ Deno.serve(async (req) => {
                 socket.send(JSON.stringify({ type: 'PONG' }));
             }
             else if (data.type === 'GAME_UPDATE') {
-                 // Back-compat: rebroadcast direct updates
+                 // Accept direct updates from clients: broadcast and persist
                  const { payload } = data;
                  const msg = { type: 'GAME_UPDATE', payload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
+                 // Also hint clients to refetch for strict consistency
+                 broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                 try {
+                     await base44.asServiceRole.entities.Game.update(gameId, payload);
+                 } catch (e) {
+                     console.error('Persist error (GAME_UPDATE):', e);
+                 }
             }
             else if (data.type === 'SIGNAL') {
                 const payload = data.payload;
                 broadcast(gameId, { type: 'SIGNAL', payload });
                 gameUpdates.postMessage({ gameId, type: 'SIGNAL', payload });
             }
-        } catch (error) {
+            else if (data.type === 'FORCE_SAVE_MOVE') {
+                try {
+                    const gid = data.payload?.gameId || gameId;
+                    const updateData = data.payload?.updateData;
+                    if (gid && updateData) {
+                        await base44.asServiceRole.entities.Game.update(gid, updateData);
+                        const msg = { type: 'GAME_UPDATE', payload: updateData };
+                        broadcast(gid, msg, null);
+                        gameUpdates.postMessage({ gameId: gid, ...msg });
+                    }
+                } catch (e) {
+                    console.error('FORCE_SAVE_MOVE failed:', e);
+                }
+            }
+            } catch (error) {
             console.error("WebSocket Error:", error);
-        }
-    };
+            }
+            };
 
     socket.onclose = () => {
         const gameConns = connections.get(gameId);

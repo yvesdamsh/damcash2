@@ -341,11 +341,39 @@ export default function Home() {
         };
         }, []);
 
+        // Real-time invitation updates
+        useEffect(() => {
+            const refreshInvites = async () => {
+                if (!user) return;
+                try {
+                    const pending = await base44.entities.Invitation.filter({ to_user_email: user.email, status: 'pending' });
+                    setInvitations(pending);
+                } catch (_) {}
+            };
+            const onInv = () => refreshInvites();
+            window.addEventListener('invitation-received', onInv);
+            window.addEventListener('notification-update', onInv);
+            return () => {
+                window.removeEventListener('invitation-received', onInv);
+                window.removeEventListener('notification-update', onInv);
+            };
+        }, [user]);
+
     const handleAcceptInvite = async (invite) => {
         try {
             const res = await base44.functions.invoke('acceptInvitation', { invitationId: invite.id });
             if (res.status === 200 && res.data?.gameId) {
                 setInvitations((prev) => prev.filter(i => i.id !== invite.id));
+                // Wait until assignment is reflected
+                let ok = false;
+                for (let i=0;i<5 && !ok;i++) {
+                    await new Promise(r=>setTimeout(r, 500));
+                    try {
+                        const g = await base44.entities.Game.get(res.data.gameId);
+                        const me = await base44.auth.me().catch(()=>null);
+                        if (g && me && (g.white_player_id === me.id || g.black_player_id === me.id)) ok = true;
+                    } catch (_) {}
+                }
                 navigate(`/Game?id=${res.data.gameId}`);
             } else {
                 alert('Invitation expirée ou table complète');

@@ -24,6 +24,11 @@ export function RealTimeProvider({ children }) {
             
             // Global Notification Handling
             // Accept all notification types if they have a title and message
+            // Invitations: update Home without waiting for manual refresh
+            if (data.type === 'game_invite') {
+                window.dispatchEvent(new CustomEvent('invitation-received', { detail: data.metadata || {} }));
+            }
+
             if (data.title && data.message) {
                 // Avoid spam if in game chat
                 if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {

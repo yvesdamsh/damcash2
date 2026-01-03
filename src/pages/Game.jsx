@@ -579,12 +579,12 @@ export default function Game() {
         }
     }, [robustSocket, id]);
 
-    // Fallback polling when WebSocket is closed (keeps board in sync)
+    // Fallback polling when WebSocket is unreliable
     useEffect(() => {
         if (!id || id === 'local-ai') return;
-        if (wsReadyState === 1) return; // WS open
-        let iv;
-        iv = setInterval(async () => {
+        const shouldPoll = wsReadyState !== 1 || (latencyMs && latencyMs > 5000);
+        if (!shouldPoll) return;
+        let iv = setInterval(async () => {
             try {
                 const fresh = await base44.entities.Game.get(id);
                 setGame(prev => {
@@ -593,9 +593,9 @@ export default function Game() {
                     return newer ? fresh : prev;
                 });
             } catch (_) {}
-        }, 5000);
-        return () => iv && clearInterval(iv);
-    }, [id, wsReadyState]);
+        }, 3000);
+        return () => clearInterval(iv);
+    }, [id, wsReadyState, latencyMs]);
 
     // Track last update timestamp to detect staleness
     useEffect(() => {
@@ -1645,26 +1645,29 @@ export default function Game() {
 
         // Notify via socket immediately to reduce perceived latency
                       if (socket && socket.readyState === WebSocket.OPEN) {
-                          socket.send(JSON.stringify({ type: 'STATE_UPDATE', payload: updateData }));
-                          // Safety net: trigger a refetch on all clients in case an update is missed
-                          socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' }));
+                          socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
                       }
 
-                      // Write to DB (authoritative)
+                      // Write to DB (authoritative) with retry and fallback
                       try {
-                         // Fire-and-forget DB write to avoid blocking UI
-                         base44.entities.Game.update(game.id, updateData);
+                         await base44.entities.Game.update(game.id, updateData);
                       } catch (e) {
-            console.error("Move save error", e);
-            // If DB write fails, try socket as backup (which does server-side write)
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: 'MOVE',
-                    payload: { updateData }
-                }));
-            }
-        }
-        };
+                         console.error("Move save error", e);
+                         // Retry once
+                         try {
+                            await base44.entities.Game.update(game.id, updateData);
+                         } catch (retryError) {
+                            console.error("Move save retry failed", retryError);
+                            // Fallback: force server-side save via socket
+                            if (socket && socket.readyState === WebSocket.OPEN) {
+                                socket.send(JSON.stringify({
+                                    type: 'FORCE_SAVE_MOVE',
+                                    payload: { gameId: game.id, updateData }
+                                }));
+                            }
+                         }
+                      }
+                      };
 
         // Manual join helper for spectators
         const attemptJoin = async () => {

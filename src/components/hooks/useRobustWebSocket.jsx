@@ -35,6 +35,8 @@ export function useRobustWebSocket(url, options = {}) {
     const reconnectTimerRef = useRef(null);
     const heartbeatTimerRef = useRef(null);
     const lastPingRef = useRef(0);
+    const pongTimeoutRef = useRef(null);
+    const missedPongsRef = useRef(0);
     const shouldReconnectRef = useRef(autoConnect);
 
     const connect = useCallback(() => {
@@ -64,8 +66,22 @@ export function useRobustWebSocket(url, options = {}) {
             if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
             heartbeatTimerRef.current = setInterval(() => {
                 if (ws.readyState === WebSocket.OPEN) {
+                    // If previous PONG not cleared, count as missed
+                    if (pongTimeoutRef.current) {
+                        missedPongsRef.current += 1;
+                        logger.warn('[WS][HEARTBEAT] PONG missed', missedPongsRef.current);
+                        if (missedPongsRef.current >= 3) {
+                            logger.error('[WS][HEARTBEAT] Connection unresponsive, forcing reconnect');
+                            try { ws.close(); } catch (_) {}
+                            return;
+                        }
+                    }
                     lastPingRef.current = performance.now();
                     ws.send(JSON.stringify({ type: 'PING' }));
+                    // Set a timeout waiting for PONG
+                    pongTimeoutRef.current = setTimeout(() => {
+                        // If not cleared by PONG handler, next tick will treat as missed
+                    }, Math.max(heartbeatInterval - 1000, 3000));
                 }
             }, heartbeatInterval);
 
@@ -76,6 +92,8 @@ export function useRobustWebSocket(url, options = {}) {
             try {
                 const data = JSON.parse(event.data);
                 if (data.type === 'PONG') {
+                    if (pongTimeoutRef.current) { clearTimeout(pongTimeoutRef.current); pongTimeoutRef.current = null; }
+                    missedPongsRef.current = 0;
                     if (lastPingRef.current) {
                         const dt = Math.round(performance.now() - lastPingRef.current);
                         setLatencyMs(dt);
@@ -94,9 +112,9 @@ export function useRobustWebSocket(url, options = {}) {
             
             if (onCloseRef.current) onCloseRef.current(event);
 
-            if (shouldReconnectRef.current && reconnectCountRef.current < reconnectAttempts) {
-                const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 15000);
-                logger.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms`);
+            if (shouldReconnectRef.current) {
+                const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 30000);
+                logger.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms (attempt ${reconnectCountRef.current + 1})`);
                 reconnectTimerRef.current = setTimeout(() => {
                     reconnectCountRef.current++;
                     connect();
@@ -142,15 +160,26 @@ export function useRobustWebSocket(url, options = {}) {
 
     // Browser online/offline awareness
     useEffect(() => {
-        const onOnline = () => setIsOnline(true);
-        const onOffline = () => setIsOnline(false);
+        const onOnline = () => {
+            setIsOnline(true);
+            logger.log('[WS] Network online, reconnecting...');
+            if (shouldReconnectRef.current && wsRef.current?.readyState !== WebSocket.OPEN) {
+                reconnectCountRef.current = 0;
+                connect();
+            }
+        };
+        const onOffline = () => {
+            setIsOnline(false);
+            logger.warn('[WS] Network offline');
+            toast.warning('Connexion perdue', { description: 'Tentative de reconnexion automatique...' });
+        };
         window.addEventListener('online', onOnline);
         window.addEventListener('offline', onOffline);
         return () => {
             window.removeEventListener('online', onOnline);
             window.removeEventListener('offline', onOffline);
         };
-    }, []);
+    }, [connect]);
 
     return {
         sendMessage: send,
