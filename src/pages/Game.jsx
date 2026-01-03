@@ -524,26 +524,8 @@ export default function Game() {
                          }
                      } catch (_) {}
 
-                     // Single merge pass
-                     setGame(prev => {
-                        if (!prev) return data.payload;
-                        const localMoves = prev?.moves ? JSON.parse(prev.moves) : [];
-                        const incomingMoves = data.payload.moves ? JSON.parse(data.payload.moves) : [];
-
-                        const isNewer = data.payload.last_move_at && prev.last_move_at && new Date(data.payload.last_move_at) > new Date(prev.last_move_at);
-                        const updatedNewer = data.payload.updated_date && (!prev.updated_date || new Date(data.payload.updated_date) > new Date(prev.updated_date));
-                        const essentialChanged = (typeof data.payload.status !== 'undefined' && data.payload.status !== prev.status)
-                          || (typeof data.payload.white_player_id !== 'undefined' && data.payload.white_player_id !== prev.white_player_id)
-                          || (typeof data.payload.black_player_id !== 'undefined' && data.payload.black_player_id !== prev.black_player_id)
-                          || (typeof data.payload.white_player_name !== 'undefined' && data.payload.white_player_name !== prev.white_player_name)
-                          || (typeof data.payload.black_player_name !== 'undefined' && data.payload.black_player_name !== prev.black_player_name)
-                          || (typeof data.payload.current_turn !== 'undefined' && data.payload.current_turn !== prev.current_turn);
-
-                        if (essentialChanged || isNewer || updatedNewer || incomingMoves.length >= localMoves.length) {
-                          return { ...prev, ...data.payload };
-                        }
-                        return prev;
-                    });
+                     // Merge incoming payload unconditionally to avoid missing updates (simplified)
+                     setGame(prev => ({ ...prev, ...(data.payload || {}) }));
                 }
             } else if (data.type === 'STATE_UPDATE') {
                  // Back-compat: treat STATE_UPDATE same as GAME_UPDATE
