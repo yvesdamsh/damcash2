@@ -18,6 +18,23 @@ channel.onmessage = (event) => {
 Deno.serve(async (req) => {
     const upgrade = req.headers.get("upgrade");
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+        // Allow HTTP POST fanout for notifications (e.g., immediate invite badge)
+        if (req.method === 'POST') {
+            try {
+                const body = await req.json().catch(() => ({}));
+                const { recipientId, type, title, message, link, metadata } = body || {};
+                if (!recipientId || !type) return Response.json({ error: 'Missing fields' }, { status: 400 });
+                if (connections.has(recipientId)) {
+                    const payload = JSON.stringify({ type, title, message, link, metadata });
+                    connections.get(recipientId).forEach(socket => {
+                        if (socket.readyState === WebSocket.OPEN) socket.send(payload);
+                    });
+                }
+                return Response.json({ ok: true });
+            } catch (e) {
+                return Response.json({ error: e.message }, { status: 500 });
+            }
+        }
         return new Response("Expected a WebSocket request", { status: 400 });
     }
 
