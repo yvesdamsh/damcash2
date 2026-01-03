@@ -26,6 +26,7 @@ import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLog
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager } from '@/components/SoundManager';
 import { logger } from '@/components/utils/logger';
+import { safeJSONParse, handleAsyncError } from '@/components/utils/errorHandler';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import GameResultOverlay from '@/components/game/GameResultOverlay';
 import PromotionDialog from '@/components/game/PromotionDialog';
@@ -179,7 +180,7 @@ export default function Game() {
         } else {
             setIsAiGame(false);
         }
-    }, [location.search, currentUser]);
+    }, [location.search, currentUser, t, navigate]);
 
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
@@ -196,37 +197,24 @@ export default function Game() {
 
         if (game.game_type === 'chess') {
             try {
-                let parsed = game.board_state;
-                if (typeof parsed === 'string') {
-                    try { parsed = JSON.parse(parsed); } catch (e) {}
-                }
-                if (typeof parsed === 'string') {
-                    try { parsed = JSON.parse(parsed); } catch (e) {}
-                }
-                
-                currentBoard = Array.isArray(parsed.board) ? parsed.board : [];
-                lastChessMove = parsed.lastMove || null;
-                
+                const parsed = safeJSONParse(game.board_state, { board: [], castlingRights: {}, lastMove: null, halfMoveClock: 0, positionHistory: {} });
+                currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
+                lastChessMove = parsed?.lastMove || null;
+
                 setBoard(currentBoard);
                 setChessState({ 
-                    castlingRights: parsed.castlingRights || {}, 
+                    castlingRights: parsed?.castlingRights || {}, 
                     lastMove: lastChessMove,
-                    halfMoveClock: parsed.halfMoveClock || 0,
-                    positionHistory: parsed.positionHistory || {}
+                    halfMoveClock: parsed?.halfMoveClock || 0,
+                    positionHistory: parsed?.positionHistory || {}
                 });
-            } catch (e) { setBoard([]); }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); setBoard([]); }
         } else {
             try {
-                let parsed = game.board_state;
-                if (typeof parsed === 'string') {
-                    try { parsed = JSON.parse(parsed); } catch (e) {}
-                }
-                if (typeof parsed === 'string') {
-                     try { parsed = JSON.parse(parsed); } catch (e) {}
-                }
-                currentBoard = Array.isArray(parsed) ? parsed : [];
+                const parsed = safeJSONParse(game.board_state, []);
+                currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
                 setBoard(currentBoard);
-            } catch (e) { setBoard([]); }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); setBoard([]); }
         }
 
         // Sound & Notification Logic
