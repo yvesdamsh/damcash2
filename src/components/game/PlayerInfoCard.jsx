@@ -10,7 +10,8 @@ export default function PlayerInfoCard({
     getElo 
 }) {
     const displayName = player?.info?.username || player?.name || (player?.color === 'white' ? 'Blanc' : 'Noir');
-    const isWaiting = !player?.id || !player?.name;
+    // Consider seat taken as soon as an id exists; name may be filled later
+    const isWaiting = !player?.id;
     return (
         <div className="flex justify-between items-center p-3 bg-white/90 shadow-sm rounded-xl border border-[#d4c5b0] mx-2 md:mx-0 mt-2 md:mt-0">
             <div className="flex items-center gap-3">
