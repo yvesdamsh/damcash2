@@ -401,6 +401,35 @@ export default function Game() {
         return () => { cancelled = true; };
     }, [id]);
 
+    // Temporary minimal polling only while waiting for opponent to join
+    useEffect(() => {
+        if (!id || id === 'local-ai') return;
+        if (!game) return;
+        const waitingForOpponent = game.status === 'waiting' && (!game.white_player_id || !game.black_player_id);
+        if (!waitingForOpponent) return;
+        let iv = setInterval(async () => {
+            try {
+                const fresh = await base44.entities.Game.get(id);
+                if (!fresh) return;
+                // Stop as soon as both players are present
+                if (fresh.white_player_id && fresh.black_player_id) {
+                    setGame(fresh);
+                    clearInterval(iv);
+                    return;
+                }
+                // Update if seat assignment changed
+                if (
+                    fresh.white_player_id !== game.white_player_id ||
+                    fresh.black_player_id !== game.black_player_id ||
+                    fresh.status !== game.status
+                ) {
+                    setGame(fresh);
+                }
+            } catch (_) {}
+        }, 2000);
+        return () => clearInterval(iv);
+    }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
+
     // Polling disabled: WebSocket is the single source of truth.
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
