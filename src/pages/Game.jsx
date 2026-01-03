@@ -1659,6 +1659,8 @@ export default function Game() {
                       if (socket && socket.readyState === WebSocket.OPEN) {
                           socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
                       }
+                      // Also nudge via HTTP to reach all instances even if WS missed
+                      base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_UPDATE', payload: updateData }).catch(() => {});
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {

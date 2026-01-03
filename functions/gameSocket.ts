@@ -11,7 +11,34 @@ gameUpdates.onmessage = (event) => {
 
 Deno.serve(async (req) => {
     const upgrade = req.headers.get("upgrade");
+
+    // HTTP POST support to broadcast nudges (fallback when clients can't use WS immediately)
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
+        if (req.method === 'POST') {
+            try {
+                const base44 = createClientFromRequest(req);
+                const user = await base44.auth.me().catch(() => null);
+                if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+                const body = await req.json().catch(() => ({}));
+                const gameId = body.gameId;
+                const type = body.type || 'GAME_REFETCH';
+                const payload = body.payload || null;
+                if (!gameId) return Response.json({ error: 'Missing gameId' }, { status: 400 });
+
+                // Cross-instance fanout + local broadcast (if any sockets on this instance)
+                if (payload) {
+                    gameUpdates.postMessage({ gameId, type, payload });
+                    broadcast(gameId, { type, payload }, null);
+                } else {
+                    gameUpdates.postMessage({ gameId, type });
+                    broadcast(gameId, { type }, null);
+                }
+                return Response.json({ ok: true });
+            } catch (e) {
+                return Response.json({ error: e.message }, { status: 500 });
+            }
+        }
         return new Response("Expected a WebSocket request", { status: 400 });
     }
 
