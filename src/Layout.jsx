@@ -76,8 +76,13 @@ function LayoutContent({ children }) {
             window.hasShownIntro = true;
 
             const path = location.pathname.toLowerCase();
+            const search = location.search || '';
             // If landing on Profile initially, FORCE redirect to Home
             if (path.includes('profile')) {
+                navigate('/Home', { replace: true });
+            } else if (path.includes('game') && !search.includes('id=')) {
+                navigate('/Home', { replace: true });
+            } else if (path === '/' || path === '') {
                 navigate('/Home', { replace: true });
             }
 
@@ -115,9 +120,9 @@ function LayoutContent({ children }) {
         const path = location.pathname.toLowerCase();
         // If we are on Profile, DO NOT save it.
         // If we are on Home, Lobby, etc., save it.
-        if (location.pathname !== '/' && !path.includes('login') && !path.includes('profile')) {
+        if (location.pathname !== '/' && !path.includes('login') && !path.includes('profile') && !path.includes('game')) {
              try { localStorage.setItem('damcash_last_path', location.pathname); } catch (_) {}
-        } else if (path.includes('profile')) {
+        } else if (path.includes('profile') || path.includes('game')) {
              // If user navigates to profile, do not update the last path (keep the previous one, e.g. Home)
              // Or forcingly set it to Home to be safe?
              // Let's leave it as is (keeping previous safe path), or if null, set Home.

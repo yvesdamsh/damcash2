@@ -76,8 +76,11 @@ export default function Game() {
     const [id, setId] = useState(searchParams.get('id'));
     // Prevent infinite spinner when no game id is present (e.g., opening /Game without ?id=...)
     useEffect(() => {
-        if (!id) setLoading(false);
-    }, [id]);
+        if (!id) {
+            setLoading(false);
+            navigate('/Home', { replace: true });
+        }
+    }, [id, navigate]);
     const isPreview = (searchParams.get('preview') === '1' || searchParams.get('embed') === '1' || searchParams.get('preview') === 'true');
     const forceMuteMedia = (searchParams.get('mute') === '1' || searchParams.get('mute') === 'true');
 
@@ -99,6 +102,11 @@ export default function Game() {
 
     useEffect(() => {
         const gameId = searchParams.get('id');
+        // If no game ID and currently on /Game, redirect to Home
+        if (!gameId && location.pathname.includes('/Game')) {
+            navigate('/Home', { replace: true });
+            return;
+        }
         
         // Only reset if ID actually changed
         if (gameId !== id) {
