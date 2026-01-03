@@ -609,6 +609,13 @@ export default function Game() {
         }
     }, [robustSocket, id]);
 
+    // Nudge all participants to refetch as soon as socket connects (reduces join latency)
+    useEffect(() => {
+        if (socket && socket.readyState === WebSocket.OPEN && game?.id && game.id !== 'local-ai') {
+            try { socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' })); } catch (_) {}
+        }
+    }, [socket, game?.id]);
+
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
     // Track last update timestamp to detect staleness
@@ -1242,7 +1249,7 @@ export default function Game() {
     }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
-        if (!game || game.status !== 'playing') return;
+        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game.white_player_id && game.black_player_id))) return;
         
         // If drop on same square, treat as click (selection)
         if (fromR === toR && fromC === toC) {
@@ -1309,7 +1316,7 @@ export default function Game() {
     const isSoloMode = game?.white_player_id === game?.black_player_id;
 
     const handleSquareClick = async (r, c) => {
-        if (!game || game.status !== 'playing' || replayIndex !== -1) return;
+        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game.white_player_id && game.black_player_id)) || replayIndex !== -1) return;
         
         const isMyTurn = isSoloMode || (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
                                        (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
@@ -1612,11 +1619,17 @@ export default function Game() {
         const currentMoves = game.moves ? safeJSONParse(game.moves, []) : [];
         const now = new Date().toISOString();
 
+        // Normalize status: if both players seated, start playing
+        let normalizedStatus = status;
+        if (normalizedStatus === 'waiting' && game.white_player_id && game.black_player_id) {
+            normalizedStatus = 'playing';
+        }
+
         // Calculate time deduction
         let updateData = {
             board_state: JSON.stringify(boardStateObj),
             current_turn: nextTurn,
-            status, 
+            status: normalizedStatus,
             winner_id: winnerId,
             moves: JSON.stringify([...currentMoves, moveData]),
             last_move_at: now
