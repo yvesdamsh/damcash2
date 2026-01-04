@@ -272,8 +272,9 @@ export default function Tournaments() {
                             {/* TAB 1: GENERAL */}
                             <TabsContent value="general" className="space-y-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-[#4a3728] font-bold">Nom du Tournoi</Label>
+                                    <Label htmlFor="t_name" className="text-[#4a3728] font-bold">Nom du Tournoi</Label>
                                     <Input 
+                                        id="t_name" name="t_name"
                                         value={newTournament.name} 
                                         onChange={e => setNewTournament({...newTournament, name: e.target.value})}
                                         placeholder="Ex: Grand Tournoi du Samedi"
@@ -292,8 +293,8 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Jeu</Label>
-                                        <Input value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
+                                        <Label htmlFor="t_game">Jeu</Label>
+                                        <Input id="t_game" name="t_game" value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
                                     </div>
                                 </div>
 
@@ -390,8 +391,9 @@ export default function Tournaments() {
                                         </Select>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Rondes / Tours</Label>
+                                        <Label htmlFor="t_rounds">Rondes / Tours</Label>
                                         <Input 
+                                            id="t_rounds" name="t_rounds"
                                             type="number"
                                             min="1"
                                             value={newTournament.rounds} 
@@ -405,16 +407,20 @@ export default function Tournaments() {
                                     <Label>Restrictions ELO (0 = Aucune)</Label>
                                     <div className="flex gap-2 items-center">
                                         <Input 
+                                            id="elo_min" name="elo_min"
                                             type="number" 
                                             placeholder="Min" 
+                                            aria-label="ELO minimum"
                                             value={newTournament.elo_min}
                                             onChange={e => setNewTournament({...newTournament, elo_min: e.target.value})}
                                             className="border-[#d4c5b0]"
                                         />
                                         <span className="text-gray-400">-</span>
                                         <Input 
+                                            id="elo_max" name="elo_max"
                                             type="number" 
                                             placeholder="Max" 
+                                            aria-label="ELO maximum"
                                             value={newTournament.elo_max}
                                             onChange={e => setNewTournament({...newTournament, elo_max: e.target.value})}
                                             className="border-[#d4c5b0]"
@@ -513,8 +519,9 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Cagnotte Garantie ($)</Label>
+                                        <Label htmlFor="t_prize_pool">Cagnotte Garantie ($)</Label>
                                         <Input 
+                                            id="t_prize_pool" name="t_prize_pool"
                                             type="number"
                                             min="0"
                                             value={newTournament.prize_pool} 
@@ -536,8 +543,9 @@ export default function Tournaments() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Badge Vainqueur</Label>
+                                        <Label htmlFor="t_badge_name">Badge Vainqueur</Label>
                                         <Input 
+                                            id="t_badge_name" name="t_badge_name"
                                             value={newTournament.badge_name || ''} 
                                             onChange={e => setNewTournament({...newTournament, badge_name: e.target.value})}
                                             placeholder="Nom du badge"
@@ -653,6 +661,7 @@ export default function Tournaments() {
                         <div className="relative flex-1 max-w-sm">
                             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
                             <Input 
+                                aria-label={t('tournaments.search_placeholder')} 
                                 placeholder={t('tournaments.search_placeholder')} 
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
@@ -687,6 +696,7 @@ export default function Tournaments() {
                     {/* Join Private Code */}
                     <div className="flex gap-2">
                         <Input 
+                            aria-label={t('tournaments.code_placeholder')} 
                             placeholder={t('tournaments.code_placeholder')} 
                             value={accessCodeInput}
                             onChange={e => setAccessCodeInput(e.target.value.toUpperCase())}

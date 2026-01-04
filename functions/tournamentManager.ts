@@ -3,6 +3,17 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 const channel = new BroadcastChannel('notifications');
 
 export default async function handler(req) {
+    // CORS preflight support
+    if (req.method === 'OPTIONS') {
+        return new Response(null, {
+            status: 204,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+            }
+        });
+    }
     const base44 = createClientFromRequest(req);
     const now = new Date();
 
@@ -224,7 +235,10 @@ export default async function handler(req) {
         }
     }
 
-    return Response.json({ status: 'success' });
+    return new Response(JSON.stringify({ status: 'success' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
 }
 
 async function finishTournament(tournament, base44) {

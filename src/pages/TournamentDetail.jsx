@@ -343,7 +343,7 @@ export default function TournamentDetail() {
                 games_played: 0
             });
             toast.success("Inscription confirmée !");
-            // Rafraîchir et diffuser la présence
+            // Rafraîchir et diffuser la présence (HTTP fanout + local refresh)
             const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: tournament.id });
             setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
             base44.functions.invoke('tournamentSocket', { tournamentId: tournament.id, type: 'PARTICIPANT_JOINED', payload: { user_id: user.id, user_name: user.full_name || user.username } }).catch(()=>{});
