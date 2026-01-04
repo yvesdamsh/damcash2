@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const connections = new Map(); // userId -> Set<WebSocket>
 const channel = new BroadcastChannel('notifications');
+const invitesBC = new BroadcastChannel('invites');
 
 channel.onmessage = (event) => {
     const { recipientId, type, title, message, link, senderId, metadata } = event.data;
