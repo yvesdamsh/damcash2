@@ -905,7 +905,7 @@ export default function Tournaments() {
                                         </div>
                                         <div className="space-y-1">
                                             {dayTournaments.map(t => (
-                                                <Link to={`/TournamentDetail?id=${t.id}`} key={t.id}>
+                                                <Link to={`/TournamentDetail?id=${t.id}&join=queue`} key={t.id}>
                                                     <div className={`text-[10px] p-1 rounded truncate cursor-pointer hover:opacity-80 flex items-center gap-1 ${
                                                         t.game_type === 'chess' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'
                                                     }`}>
