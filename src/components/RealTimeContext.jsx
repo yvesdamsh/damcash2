@@ -135,6 +135,7 @@ export function RealTimeProvider({ children }) {
                 if (prevList.some(m => m.id === data.payload.id)) return prev;
                 return { ...prev, [gameId]: [...prevList, data.payload] };
             });
+            try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId, message: data.payload } })); } catch (_) {}
         }
     };
 
