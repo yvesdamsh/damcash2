@@ -84,8 +84,8 @@ export default function UpcomingTournaments() {
                 <Clock className="w-3 h-3" /> {tt('home.starts_every_hour', 'Starts every hour')}
               </div>
             </div>
-            <Link to="/Tournaments" className="flex-shrink-0">
-              <Button size="sm" className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">{tt('home.join_now', 'Join now')}</Button>
+            <Link to={items[0]?.id ? `/TournamentDetail?id=${items[0].id}` : "/Tournaments"} className="flex-shrink-0">
+              <Button size="sm" className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">{tt('tournaments.join_btn', 'Rejoindre')}</Button>
             </Link>
           </div>
         </div>
