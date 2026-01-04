@@ -135,8 +135,8 @@ export default function UpcomingTournaments() {
                 <span>{tt('home.prize_pool', 'Prix')} : {formatCurrency(it.prize_pool || 0)}</span>
               </div>
               <div className="mt-3 flex gap-2">
-                <Link to="/Tournaments" className="flex-1">
-                  <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">{tt('common.view', 'Voir')}</Button>
+                <Link to={`/TournamentDetail?id=${it.id}&join=queue`} className="flex-1">
+                 <Button className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5]">{tt('tournaments.join_btn', 'Rejoindre')}</Button>
                 </Link>
               </div>
             </div>

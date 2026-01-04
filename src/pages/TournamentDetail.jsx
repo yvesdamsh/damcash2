@@ -458,6 +458,19 @@ export default function TournamentDetail() {
         }
     };
 
+    // Auto-join via URL parameter (?join=queue)
+    useEffect(() => {
+        const joinParam = new URLSearchParams(location.search).get('join');
+        if (joinParam === 'queue' && tournament && user) {
+            const already = participants.some(p => p.user_id === user.id);
+            if (already) return;
+            if (tournament.team_mode) { setIsTeamJoinOpen(true); return; }
+            if ((tournament.entry_fee || 0) > 0) { toast.info('Cliquez sur “Rejoindre” pour confirmer le paiement.'); return; }
+            // Safe auto-join (free tournaments only)
+            handleJoin();
+        }
+    }, [location.search, tournament?.id, participants.length, user?.id]);
+
     const handleDelete = async () => {
         if (!confirm("Voulez-vous vraiment SUPPRIMER ce tournoi ? Cette action est irréversible.")) return;
         try {
