@@ -15,8 +15,8 @@ export function RealTimeProvider({ children }) {
     }, []);
 
     // Global User Socket (Notifications)
-    const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket('/functions/userSocket', {
-        autoConnect: !!user,
+    const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}` , {
+        autoConnect: true,
         reconnectAttempts: 5,
         reconnectInterval: 1000,
         onMessage: (event, data) => {

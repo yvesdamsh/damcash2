@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 // Store connected clients: channelId -> Set<WebSocket>
 // Deno Deploy functions can be ephemeral or distributed, but WebSocket usually sticks to one instance for the duration of the connection.
