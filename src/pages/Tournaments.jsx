@@ -638,7 +638,7 @@ export default function Tournaments() {
                                         <span>•</span>
                                         <span>{tournament.time_control}</span>
                                     </div>
-                                    <Link to={`/TournamentDetail?id=${tournament.id}`}>
+                                    <Link to={`/TournamentDetail?id=${tournament.id}&join=queue`}>
                                         <Button size="sm" className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-xs h-8">
                                             {t('tournaments.join_btn')}
                                         </Button>
@@ -710,7 +710,7 @@ export default function Tournaments() {
                                 const res = await base44.entities.Tournament.list(); 
                                 const target = res.find(t => t.access_code === accessCodeInput && t.status !== 'finished');
                                 if (target) {
-                                    window.location.href = `/TournamentDetail?id=${target.id}`;
+                                    window.location.href = `/TournamentDetail?id=${target.id}&join=queue`;
                                 } else {
                                     toast.error(t('tournaments.error_code'));
                                 }
@@ -820,7 +820,7 @@ export default function Tournaments() {
                         <CardFooter className="gap-2">
                             {tournament.status === 'open' && !myTournamentIds.has(tournament.id) ? (
                                 <>
-                                    <Link to={`/TournamentDetail?id=${tournament.id}`} className="flex-1">
+                                    <Link to={`/TournamentDetail?id=${tournament.id}&join=queue`} className="flex-1">
                                         <Button className="w-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white font-bold shadow-sm">
                                             {t('common.join')}
                                         </Button>
