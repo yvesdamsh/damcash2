@@ -9,6 +9,7 @@ const RealTimeContext = createContext(null);
 export function RealTimeProvider({ children }) {
     const [user, setUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
+    const [chatByGame, setChatByGame] = useState({});
     const navigate = useNavigate();
 
     useEffect(() => {
