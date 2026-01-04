@@ -90,6 +90,10 @@ export default function Notifications() {
     useEffect(() => {
         // Get userId once
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
+        // Keep userSocket alive even if not focused
+        try {
+            const ws = new WebSocket(`/functions/userSocket?uid=poll_${Math.random().toString(36).slice(2)}`.replace(/^/,'').replace(/^/,'').replace(/^/,'wss://').replace('wss:///','/functions/userSocket'));
+        } catch (_) {}
     }, []);
 
     useEffect(() => {
