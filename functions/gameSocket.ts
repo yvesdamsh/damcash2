@@ -181,6 +181,22 @@ Deno.serve(async (req) => {
                  broadcast(gameId, { type: 'GAME_REFETCH' }, null);
                  try {
                      await base44.asServiceRole.entities.Game.update(gameId, outPayload);
+                     // If game just finished, notify both players
+                     if (outPayload.status === 'finished' && outPayload.winner_id) {
+                         try {
+                             const g = await base44.asServiceRole.entities.Game.get(gameId);
+                             const white = g.white_player_id;
+                             const black = g.black_player_id;
+                             const winner = outPayload.winner_id;
+                             const loser = (winner === white) ? black : white;
+                             if (winner) {
+                                 channel.postMessage({ recipientId: winner, type: 'game', title: 'Victoire', message: 'Votre adversaire a abandonné', link: `/Game?id=${gameId}` });
+                             }
+                             if (loser) {
+                                 channel.postMessage({ recipientId: loser, type: 'game', title: 'Défaite', message: 'Vous avez abandonné', link: `/Game?id=${gameId}` });
+                             }
+                         } catch (e) { console.error('Notify finish failed', e); }
+                     }
                  } catch (e) {
                      console.error('Persist error (GAME_UPDATE):', e);
                  }

@@ -78,6 +78,18 @@ Deno.serve(async (req) => {
             if (data.type === 'PING') {
                 socket.send(JSON.stringify({ type: 'PONG' }));
             }
+            // Allow clients to register a specific user id explicitly (fallback when auth fails)
+            if (data.type === 'REGISTER' && data.userId) {
+                try {
+                    if (socket.userId && connections.has(socket.userId)) {
+                        const set = connections.get(socket.userId);
+                        set.delete(socket);
+                    }
+                } catch (_) {}
+                socket.userId = data.userId;
+                if (!connections.has(socket.userId)) connections.set(socket.userId, new Set());
+                connections.get(socket.userId).add(socket);
+            }
         } catch (e) {}
     };
 
