@@ -94,7 +94,7 @@ export default function NextTournamentBanner() {
                                 {countdown}
                             </div>
                         </div>
-                        <Link to={`/TournamentDetail?id=${nextTournament.id}`} className="w-full sm:w-auto">
+                        <Link to={`/TournamentDetail?id=${nextTournament.id}&join=queue`} className="w-full sm:w-auto">
                             <Button className="w-full bg-white text-orange-600 hover:bg-orange-50 font-bold shadow-lg transition-transform hover:scale-105">
                                 {t('tournaments.join_btn') || "Rejoindre"} <ArrowRight className="w-4 h-4 ml-2" />
                             </Button>
