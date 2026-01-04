@@ -106,14 +106,13 @@ export default function DirectChat({ friend, onClose, currentUser }) {
                 last_message_preview: msgContent || (msgAttachments.length ? 'Pièce jointe envoyée' : '')
             });
 
-            // Notification logic remains...
-            await base44.entities.Notification.create({
+            // WebSocket-first notification
+            await base44.functions.invoke('sendNotification', {
                 recipient_id: friend.id,
                 type: 'message',
-                sender_id: currentUser.id,
                 title: 'Nouveau message',
                 message: `${currentUser.username || currentUser.full_name}: ${msgContent || 'Pièce jointe'}`,
-                read: false
+                link: '/Messages'
             });
 
             // Optimistic update
