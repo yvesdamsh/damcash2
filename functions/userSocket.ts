@@ -16,6 +16,18 @@ channel.onmessage = (event) => {
     }
 };
 
+invitesBC.onmessage = (event) => {
+    const { recipientId, type, title, message, link, senderId, metadata } = event.data;
+    if (connections.has(recipientId)) {
+        const payload = JSON.stringify({ type, title, message, link, senderId, metadata });
+        connections.get(recipientId).forEach(socket => {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(payload);
+            }
+        });
+    }
+};
+
 Deno.serve(async (req) => {
     const upgrade = req.headers.get("upgrade");
     if (!upgrade || upgrade.toLowerCase() !== "websocket") {
