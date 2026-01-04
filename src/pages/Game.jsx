@@ -77,7 +77,6 @@ export default function Game() {
     const [aiDifficulty, setAiDifficulty] = useState('medium');
     const [isAiThinking, setIsAiThinking] = useState(false);
     const { handleGameMessage } = useRealTime();
-    const { handleGameMessage } = useRealTime();
 
     const location = useLocation();
     const navigate = useNavigate();
