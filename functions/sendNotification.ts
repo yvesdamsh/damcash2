@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 let channel; try { channel = new BroadcastChannel('notifications'); } catch (_) { channel = null; }
+const invitesBC = new BroadcastChannel('invites');
 
 export default async function handler(req) {
     const base44 = createClientFromRequest(req);
