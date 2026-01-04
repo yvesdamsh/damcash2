@@ -531,76 +531,28 @@ export default function Game() {
                             heartbeatInterval: 10000,
                             onMessage: (event, data) => {
             if (!data) return;
-            
             if (data.type === 'GAME_UPDATE') {
-                 if (data.payload) {
-                     // Timing: compute roundtrip if matching last_move_at
-                     try {
-                         const k = data.payload.last_move_at;
-                         if (k && moveTimingsRef.current.has(k)) {
-                             const t0 = moveTimingsRef.current.get(k);
-                             const dt = Math.round(performance.now() - t0);
-                             logger.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
-                             moveTimingsRef.current.delete(k);
-                         }
-                     } catch (_) {}
-
-                     // Merge incoming payload unconditionally to avoid missing updates (simplified)
-                     setGame(prev => ({ ...prev, ...(data.payload || {}) }));
-                }
-            } else if (data.type === 'STATE_UPDATE') {
-                 // Back-compat: treat STATE_UPDATE same as GAME_UPDATE and nudge refetch
-                 if (data.payload) {
-                     setGame(prev => ({ ...prev, ...data.payload }));
-                 }
-                 (async () => {
-                     try {
-                         if (id !== 'local-ai') {
-                             const gameData = await base44.entities.Game.get(id);
-                             setGame(prev => ({ ...prev, ...(gameData || {}) }));
-                         }
-                     } catch (_) {}
-                 })();
-            } else if (data.type === 'GAME_REFETCH') {
-                (async () => {
-                    try {
-                        if (id !== 'local-ai') {
-                            const gameData = await base44.entities.Game.get(id);
-                            setGame(gameData);
-                        }
-                    } catch (e) {
-                        logger.error('Failed to fetch game:', e);
-                        toast.error('Impossible de charger la partie');
-                        navigate('/Home', { replace: true });
+                const payload = data.payload || {};
+                try {
+                    const k = payload.last_move_at;
+                    if (k && moveTimingsRef.current.has(k)) {
+                        const t0 = moveTimingsRef.current.get(k);
+                        const dt = Math.round(performance.now() - t0);
+                        logger.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
+                        moveTimingsRef.current.delete(k);
                     }
-                })();
+                } catch (_) {}
+                setGame(prev => ({ ...prev, ...payload }));
+                if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
+                    toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
+                }
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
-                // Signal handled directly in VideoChat
+                // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
-                if (data.payload) {
-                    setSyncedMessages(prev => {
-                        if (prev.some(m => m.id === data.payload.id)) return prev;
-                        return [...prev, data.payload];
-                    });
-                }
-            } else if (data.type === 'MOVE_NOTIFY') {
-                (async () => {
-                    try {
-                        if (id !== 'local-ai') {
-                            const gameData = await base44.entities.Game.get(id);
-                            setGame(prev => {
-                                if (!prev) return gameData;
-                                const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
-                                const newLast = gameData.last_move_at ? new Date(gameData.last_move_at).getTime() : 0;
-                                return newLast > prevLast ? gameData : prev;
-                            });
-                        }
-                    } catch (e) {
-                        logger.error('Failed to refetch on MOVE_NOTIFY:', e);
-                    }
-                })();
+                // Forward to shared chat store (RealTimeContext will consume via window event if needed)
+                try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (_) {}
             }
         }
     });
@@ -612,13 +564,7 @@ export default function Game() {
     }, [robustSocket, id]);
 
     // Nudge all participants to refetch as soon as socket connects (reduces join latency)
-    useEffect(() => {
-        if (socket && socket.readyState === WebSocket.OPEN && game?.id && game.id !== 'local-ai') {
-            try { socket.send(JSON.stringify({ type: 'MOVE_NOTIFY' })); } catch (_) {}
-            // Also issue HTTP refetch signal to minimize join latency across instances
-            base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_REFETCH' }).catch(() => {});
-        }
-    }, [socket, game?.id]);
+    useEffect(() => {}, [socket, game?.id]);
 
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
@@ -1660,12 +1606,9 @@ export default function Game() {
         if (game.id === 'local-ai') return;
 
         // Notify via socket immediately to reduce perceived latency
-                      if (socket && socket.readyState === WebSocket.OPEN) {
-                          socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
-                      }
-                      // Also nudge via HTTP to reach all instances even if WS missed
-                      base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_UPDATE', payload: updateData }).catch(() => {});
-                      base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_REFETCH' }).catch(() => {});
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
+        }
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {
@@ -2208,7 +2151,7 @@ export default function Game() {
                                             });
                                             // Broadcast via socket so opponent stops immediately
                                             if (socket && socket.readyState === WebSocket.OPEN) {
-                                                socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                                                socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                                             }
                                         }
                                         soundManager.play('loss');

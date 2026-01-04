@@ -25,17 +25,14 @@ export default function DirectChat({ friend, onClose, currentUser }) {
 
     useEffect(() => {
         if (!friend || !currentUser) return;
-        
-        let interval;
+        let cancelled = false;
         const initChat = async () => {
             try {
-                // Find or create conversation
                 const allConvos = await base44.entities.Conversation.list();
                 let conv = allConvos.find(c => 
                     c.participants.includes(currentUser.id) && 
                     c.participants.includes(friend.id)
                 );
-
                 if (!conv) {
                     conv = await base44.entities.Conversation.create({
                         participants: [currentUser.id, friend.id],
@@ -43,32 +40,36 @@ export default function DirectChat({ friend, onClose, currentUser }) {
                         last_message_preview: 'Démarrage de la conversation'
                     });
                 }
+                if (cancelled) return;
                 setConversation(conv);
-
-                // Load messages
                 const msgs = await base44.entities.DirectMessage.filter({ conversation_id: conv.id }, 'created_date', 50);
                 const sortedMsgs = msgs.sort((a,b) => new Date(a.created_date) - new Date(b.created_date));
+                if (cancelled) return;
                 setMessages(sortedMsgs);
                 setPinnedMessages(sortedMsgs.filter(m => m.is_pinned));
-
             } catch (e) {
-                console.error("Chat init error", e);
+                console.error('Chat init error', e);
             }
         };
-
         initChat();
-
-        interval = setInterval(async () => {
-            if (conversation) {
-                const msgs = await base44.entities.DirectMessage.filter({ conversation_id: conversation.id }, 'created_date', 50);
-                const sorted = msgs.sort((a,b) => new Date(a.created_date) - new Date(b.created_date));
-                setMessages(sorted);
-                setPinnedMessages(sorted.filter(m => m.is_pinned));
+        const onDM = (e) => {
+            const d = e.detail || {};
+            if (d.senderId === friend.id) {
+                const msg = {
+                    id: 'live-' + Date.now(),
+                    conversation_id: conversation?.id,
+                    sender_id: d.senderId,
+                    content: d.content || d.message || '',
+                    created_date: new Date().toISOString(),
+                    reactions: [],
+                    is_pinned: false
+                };
+                setMessages(prev => [...prev, msg]);
             }
-        }, 3000);
-
-        return () => clearInterval(interval);
-    }, [friend, currentUser, conversation?.id]);
+        };
+        window.addEventListener('direct-message', onDM);
+        return () => { cancelled = true; window.removeEventListener('direct-message', onDM); };
+    }, [friend?.id, currentUser?.id]);
 
     useEffect(() => {
         if (scrollRef.current && !showPinned) {

@@ -7,6 +7,7 @@ import { Send, MessageSquare, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { safeJSONParse } from '@/components/utils/errorHandler';
+import { useRealTime } from '@/components/RealTimeContext';
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
@@ -14,12 +15,10 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
     const { t } = useLanguage();
     const [messages, setMessages] = useState([]);
     
-    // Sync with external messages (polling source)
+    // Sync with shared chat store
     useEffect(() => {
-        if (externalMessages) {
-            setMessages(externalMessages);
-        }
-    }, [externalMessages]);
+        setMessages(chatByGame[gameId] || []);
+    }, [chatByGame, gameId]);
 
     const quickReplies = [
         t('chat.quick.well_played'),
@@ -46,28 +45,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
         if (messages.length === 0) initialFetch();
     }, [gameId]);
 
-    // Handle Socket Messages
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleMessage = (event) => {
-            try {
-                const data = safeJSONParse(event.data, null);
-                if (data && data.type === 'CHAT_UPDATE') {
-                    setMessages(prev => {
-                        // Dedup check
-                        if (prev.some(m => m.id === data.payload.id)) return prev;
-                        return [...prev, data.payload];
-                    });
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-
-        socket.addEventListener('message', handleMessage);
-        return () => socket.removeEventListener('message', handleMessage);
-    }, [socket]);
+    // Chat updates handled via RealTimeContext
 
     // Auto-scroll
     useEffect(() => {
@@ -84,31 +62,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
 
         if (!contentOverride) setNewMessage('');
 
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
-                type: 'CHAT_MESSAGE',
-                payload: {
-                    sender_id: currentUser.id,
-                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
-                    content: textToSend
-                }
-            }));
-        } else {
-            // Fallback HTTP + server fanout to reach all clients
-            try {
-                const msg = await base44.entities.ChatMessage.create({
-                    game_id: gameId,
-                    sender_id: currentUser.id,
-                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
-                    content: textToSend
-                });
-                setMessages(prev => [...prev, msg]);
-                // Nudge sockets on all instances
-                base44.functions.invoke('gameSocket', { gameId, type: 'CHAT_UPDATE', payload: msg }).catch(() => {});
-            } catch (e) {
-                console.error("Send error", e);
-            }
-        }
+        await sendGameChat({ socket, gameId, currentUser, content: textToSend });
     };
 
     if (!currentUser) return <div className="p-4 text-center text-gray-500 text-sm">{t('chat.login_required')}</div>;

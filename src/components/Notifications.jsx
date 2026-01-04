@@ -93,33 +93,15 @@ export default function Notifications() {
     }, []);
 
     useEffect(() => {
-        if (!userId) return;
-        // Initial warm (force even if hidden)
-        fetchNotifications(true);
-
-        const onVisibility = () => { if (!document.hidden) fetchNotifications(false); };
-        window.addEventListener('visibilitychange', onVisibility);
-
-        // Realtime updates handled via global event from RealTimeContext
-        let debounceT;
-        const handleUpdate = () => {
-            clearTimeout(debounceT);
-            debounceT = setTimeout(() => fetchNotifications(true), 100);
-        };
-        window.addEventListener('notification-update', handleUpdate);
-        const onInvite = () => {
-            setUnreadCount((c) => c + 1);
-            handleUpdate();
-        };
+        const onNotif = () => setUnreadCount(c => c + 1);
+        const onInvite = () => setUnreadCount(c => c + 1);
+        window.addEventListener('notification-update', onNotif);
         window.addEventListener('invitation-received', onInvite);
-
-         return () => {
-             window.removeEventListener('visibilitychange', onVisibility);
-             window.removeEventListener('notification-update', handleUpdate);
-             window.removeEventListener('invitation-received', onInvite);
-             clearTimeout(debounceT);
-         };
-    }, [userId]);
+        return () => {
+            window.removeEventListener('notification-update', onNotif);
+            window.removeEventListener('invitation-received', onInvite);
+        };
+    }, []);
 
     const markAsRead = async (id) => {
         try {

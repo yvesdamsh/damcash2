@@ -97,21 +97,15 @@ Deno.serve(async (req) => {
                     updateData.updated_date = new Date().toISOString();
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
-                    // Broadcast first for instant UI
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
-                    // Also hint clients to refetch in case a delta merge is missed
-                    broadcast(gameId, { type: 'GAME_REFETCH' }, null);
 
                     // Then write to DB (authoritative)
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
                 }
             } 
             else if (data.type === 'MOVE_NOTIFY') {
-                 // Just broadcast the notification to trigger refetch
-                 const msg = { type: 'GAME_REFETCH' };
-                 broadcast(gameId, msg, null);
-                 gameUpdates.postMessage({ gameId, ...msg });
+                 // Ignored in WebSocket-first mode
             } 
             else if (data.type === 'STATE_UPDATE') {
                  // Back-compat: accept STATE_UPDATE, stamp server time, persist and broadcast as GAME_UPDATE
@@ -178,7 +172,6 @@ Deno.serve(async (req) => {
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
-                 broadcast(gameId, { type: 'GAME_REFETCH' }, null);
                  try {
                      await base44.asServiceRole.entities.Game.update(gameId, outPayload);
                      // If game just finished, notify both players

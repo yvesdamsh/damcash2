@@ -56,6 +56,11 @@ export function RealTimeProvider({ children }) {
                 console.log('[REALTIME] Event dispatched with data:', invitationData);
             }
 
+            // Direct messages -> event bus for DirectChat
+            if (data.type === 'message') {
+                try { window.dispatchEvent(new CustomEvent('direct-message', { detail: { senderId: data.senderId, content: data.message, link: data.link } })); } catch (_) {}
+            }
+
             if (data.title && data.message) {
                 // Avoid spam if in game chat
                 if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {
@@ -106,8 +111,46 @@ export function RealTimeProvider({ children }) {
         };
     };
 
+    const handleGameMessage = (gameId, data) => {
+        if (!gameId || !data) return;
+        if (data.type === 'CHAT_UPDATE' && data.payload) {
+            setChatByGame(prev => {
+                const prevList = prev[gameId] || [];
+                if (prevList.some(m => m.id === data.payload.id)) return prev;
+                return { ...prev, [gameId]: [...prevList, data.payload] };
+            });
+        }
+    };
+
+    const sendGameChat = async ({ socket, gameId, currentUser, content }) => {
+        if (!content || !currentUser || !gameId) return;
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            try {
+                socket.send(JSON.stringify({
+                    type: 'CHAT_MESSAGE',
+                    payload: {
+                        sender_id: currentUser.id,
+                        sender_name: currentUser.full_name || currentUser.username || 'Joueur',
+                        content
+                    }
+                }));
+                return;
+            } catch (_) {}
+        }
+        try {
+            const message = await base44.entities.ChatMessage.create({
+                game_id: gameId,
+                sender_id: currentUser.id,
+                sender_name: currentUser.full_name || currentUser.username || 'Joueur',
+                content
+            });
+            setChatByGame(prev => ({ ...prev, [gameId]: [ ...(prev[gameId]||[]), message ] }));
+            base44.functions.invoke('gameSocket', { gameId, type: 'CHAT_UPDATE', payload: message }).catch(() => {});
+        } catch (_) {}
+    };
+
     return (
-        <RealTimeContext.Provider value={{ user, sendUserMessage, connectGame }}>
+        <RealTimeContext.Provider value={{ user, sendUserMessage, connectGame, chatByGame, handleGameMessage, sendGameChat }}>
             {children}
         </RealTimeContext.Provider>
     );
