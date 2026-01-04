@@ -26,6 +26,7 @@ import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
 import { soundManager } from '@/components/SoundManager';
+import { useRealTime } from '@/components/RealTimeContext';
 import { logger } from '@/components/utils/logger';
 import { safeJSONParse, handleAsyncError } from '@/components/utils/errorHandler';
 import { DEFAULT_ELO } from '@/components/constants/gameConstants';
@@ -75,6 +76,7 @@ export default function Game() {
     const [isAiGame, setIsAiGame] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState('medium');
     const [isAiThinking, setIsAiThinking] = useState(false);
+    const { handleGameMessage } = useRealTime();
 
     const location = useLocation();
     const navigate = useNavigate();

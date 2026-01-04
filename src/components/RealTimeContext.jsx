@@ -8,6 +8,7 @@ const RealTimeContext = createContext(null);
 
 export function RealTimeProvider({ children }) {
     const [user, setUser] = useState(null);
+    const [notifications, setNotifications] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -62,7 +63,6 @@ export function RealTimeProvider({ children }) {
             }
 
             if (data.title && data.message) {
-                // Avoid spam if in game chat
                 if (data.type === 'message' && window.location.pathname === '/Game' && window.location.search.includes(data.link?.split('?')[1])) {
                     return;
                 }
@@ -74,6 +74,22 @@ export function RealTimeProvider({ children }) {
                         onClick: () => navigate(data.link)
                     } : undefined,
                 });
+
+                // Push into in-memory notifications store (WS-first)
+                setNotifications(prev => [
+                    {
+                        id: 'live-' + Date.now(),
+                        type: data.type,
+                        title: data.title,
+                        message: data.message,
+                        link: data.link,
+                        sender_id: data.senderId,
+                        created_date: new Date().toISOString(),
+                        read: false,
+                        metadata: data.metadata
+                    },
+                    ...prev
+                ].slice(0, 50));
 
                 if (
                     typeof Notification !== 'undefined' && 
@@ -90,7 +106,6 @@ export function RealTimeProvider({ children }) {
                     };
                 }
                 
-                // Dispatch event for UI updates (e.g. Notifications component)
                 window.dispatchEvent(new CustomEvent('notification-update'));
             }
         }
@@ -150,7 +165,7 @@ export function RealTimeProvider({ children }) {
     };
 
     return (
-        <RealTimeContext.Provider value={{ user, sendUserMessage, connectGame, chatByGame, handleGameMessage, sendGameChat }}>
+        <RealTimeContext.Provider value={{ user, sendUserMessage, connectGame, chatByGame, handleGameMessage, sendGameChat, notifications }}>
             {children}
         </RealTimeContext.Provider>
     );

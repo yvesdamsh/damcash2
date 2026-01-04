@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/components/LanguageContext';
 import { safeJSONParse } from '@/components/utils/errorHandler';
+import { useRealTime } from '@/components/RealTimeContext';
 
 // Basic cache to reduce API hits
 let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0, cooldownUntil: 0 };
@@ -15,6 +16,7 @@ let __notifCache = { items: [], ts: 0, pending: null, lastErrorTs: 0, cooldownUn
 export default function Notifications() {
     const { t, formatRelative } = useLanguage();
     const [notifications, setNotifications] = useState([]);
+    const { notifications: liveNotifications } = useRealTime();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
@@ -88,9 +90,14 @@ export default function Notifications() {
     };
 
     useEffect(() => {
-        // Get userId once
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
     }, []);
+
+    // Sync local list from realtime store
+    useEffect(() => {
+        setNotifications(liveNotifications || []);
+        setUnreadCount((liveNotifications || []).filter(n => !n.read).length);
+    }, [liveNotifications]);
 
     useEffect(() => {
         const onNotif = () => setUnreadCount(c => c + 1);
@@ -104,13 +111,8 @@ export default function Notifications() {
     }, []);
 
     const markAsRead = async (id) => {
-        try {
-            await base44.entities.Notification.update(id, { read: true });
-            setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-            setUnreadCount(prev => Math.max(0, prev - 1));
-        } catch (e) {
-            console.error("Error marking as read", e);
-        }
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+        setUnreadCount(prev => Math.max(0, prev - 1));
     };
 
     const markAllAsRead = async () => {
@@ -126,14 +128,9 @@ export default function Notifications() {
 
     const deleteNotification = async (e, id) => {
         if (e) e.stopPropagation();
-        try {
-            await base44.entities.Notification.delete(id);
-            setNotifications(prev => prev.filter(n => n.id !== id));
-            if (notifications.find(n => n.id === id && !n.read)) {
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            }
-        } catch (e) {
-            console.error("Error deleting notification", e);
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        if (notifications.find(n => n.id === id && !n.read)) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
         }
     };
 
@@ -195,10 +192,7 @@ export default function Notifications() {
     };
 
     return (
-        <Popover open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            if (open) fetchNotifications(true);
-        }}>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 relative text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white">
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
