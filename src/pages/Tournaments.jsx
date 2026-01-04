@@ -284,8 +284,9 @@ export default function Tournaments() {
                                 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Date de début</Label>
+                                        <Label htmlFor="t_start">Date de début</Label>
                                         <Input 
+                                            id="t_start" name="t_start"
                                             type="datetime-local"
                                             value={newTournament.start_date} 
                                             onChange={e => setNewTournament({...newTournament, start_date: e.target.value})}
@@ -313,12 +314,12 @@ export default function Tournaments() {
                                 </div>
                                 
                                 <div className="grid gap-2">
-                                    <Label>Récurrence</Label>
+                                    <Label htmlFor="t_recurrence">Récurrence</Label>
                                     <Select 
                                         value={newTournament.recurrence} 
                                         onValueChange={v => setNewTournament({...newTournament, recurrence: v})}
                                     >
-                                        <SelectTrigger className="border-[#d4c5b0]">
+                                        <SelectTrigger id="t_recurrence" aria-label="Récurrence" className="border-[#d4c5b0]">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -334,12 +335,12 @@ export default function Tournaments() {
                             <TabsContent value="format" className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Format</Label>
+                                        <Label htmlFor="t_format">Format</Label>
                                         <Select 
                                             value={newTournament.format || 'bracket'} 
                                             onValueChange={v => setNewTournament({...newTournament, format: v})}
                                         >
-                                            <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectTrigger id="t_format" aria-label="Format" className="border-[#d4c5b0]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -351,12 +352,12 @@ export default function Tournaments() {
                                         </Select>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Cadence</Label>
+                                        <Label htmlFor="t_time_control">Cadence</Label>
                                         <Select 
                                             value={newTournament.time_control} 
                                             onValueChange={v => setNewTournament({...newTournament, time_control: v})}
                                         >
-                                            <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectTrigger id="t_time_control" aria-label="Cadence" className="border-[#d4c5b0]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -372,12 +373,12 @@ export default function Tournaments() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Joueurs Max</Label>
+                                        <Label htmlFor="t_max_players">Joueurs Max</Label>
                                         <Select 
                                             value={newTournament.max_players.toString()} 
                                             onValueChange={v => setNewTournament({...newTournament, max_players: v})}
                                         >
-                                            <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectTrigger id="t_max_players" aria-label="Joueurs Max" className="border-[#d4c5b0]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -429,12 +430,12 @@ export default function Tournaments() {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label>Départage</Label>
+                                    <Label htmlFor="t_tiebreaker">Départage</Label>
                                     <Select 
                                         value={newTournament.tie_breaker || 'buchholz'} 
                                         onValueChange={v => setNewTournament({...newTournament, tie_breaker: v})}
                                     >
-                                        <SelectTrigger className="border-[#d4c5b0]">
+                                        <SelectTrigger id="t_tiebreaker" aria-label="Départage" className="border-[#d4c5b0]">
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -495,8 +496,9 @@ export default function Tournaments() {
                                 </div>
                                 
                                 <div className="grid gap-2 mt-4">
-                                    <Label>Règles Spéciales (Texte)</Label>
+                                    <Label htmlFor="t_custom_rules">Règles Spéciales (Texte)</Label>
                                     <textarea 
+                                        id="t_custom_rules" name="t_custom_rules"
                                         value={newTournament.custom_rules} 
                                         onChange={e => setNewTournament({...newTournament, custom_rules: e.target.value})}
                                         placeholder="Ex: Berserk autorisé, Pas de nulle avant 30 coups..."
@@ -553,12 +555,12 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label>Icône</Label>
+                                        <Label htmlFor="t_badge_icon">Icône</Label>
                                         <Select 
                                             value={newTournament.badge_icon || 'Trophy'} 
                                             onValueChange={v => setNewTournament({...newTournament, badge_icon: v})}
                                         >
-                                            <SelectTrigger className="border-[#d4c5b0]">
+                                            <SelectTrigger id="t_badge_icon" aria-label="Icône" className="border-[#d4c5b0]">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
