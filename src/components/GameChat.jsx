@@ -13,6 +13,7 @@ const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", 
 
 export default function GameChat({ gameId, currentUser, socket, players, externalMessages }) {
     const { t } = useLanguage();
+    const { chatByGame, sendGameChat } = useRealTime();
     const [messages, setMessages] = useState([]);
     
     // Sync with shared chat store

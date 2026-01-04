@@ -35,59 +35,7 @@ export default function Notifications() {
         }
     };
 
-    const fetchNotifications = async (force = false) => {
-        try {
-            if (!userId) return;
 
-            const now = Date.now();
-            if (document.hidden) return;
-            if (now < __notifCache.cooldownUntil) {
-                // Serve cache during cooldown
-                if (__notifCache.items.length) {
-                    setNotifications(__notifCache.items);
-                    setUnreadCount(__notifCache.items.filter(n => !n.read).length);
-                }
-                return;
-            }
-
-            if (!force && __notifCache.items.length && now - __notifCache.ts < 10000) {
-                setNotifications(__notifCache.items);
-                setUnreadCount(__notifCache.items.filter(n => !n.read).length);
-                return;
-            }
-
-            if (__notifCache.pending) {
-                const items = await __notifCache.pending;
-                setNotifications(items);
-                setUnreadCount(items.filter(n => !n.read).length);
-                return;
-            }
-
-            const p = (async () => {
-                const res = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 30);
-                res.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-                return res;
-            })();
-            __notifCache.pending = p;
-            const items = await p;
-            __notifCache = { ...__notifCache, items, ts: Date.now(), pending: null, lastErrorTs: 0 };
-
-            setNotifications(items);
-            setUnreadCount(items.filter(n => !n.read).length);
-        } catch (e) {
-            __notifCache.pending = null;
-            const now = Date.now();
-            const status = e?.response?.status || e?.status;
-            if (status === 429) {
-                // Back off 45s to respect server throttling
-                __notifCache.cooldownUntil = now + 45000;
-            }
-            if (now - (__notifCache.lastErrorTs || 0) > 10000) {
-                console.warn('Error fetching notifications (suppressed):', e?.response?.data?.error || e?.message || e);
-                __notifCache.lastErrorTs = now;
-            }
-        }
-    };
 
     useEffect(() => {
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
