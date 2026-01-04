@@ -18,6 +18,7 @@ import ChessBoard from '@/components/ChessBoard';
 import TournamentVictoryDialog from '@/components/tournaments/TournamentVictoryDialog';
 import TournamentDefeatDialog from '@/components/tournaments/TournamentDefeatDialog';
 import BettingPanel from '@/components/BettingPanel';
+import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function TournamentDetail() {
     const location = useLocation();
@@ -148,6 +149,19 @@ export default function TournamentDetail() {
         }
         localStorage.setItem(key, 'true');
     }, [tournament?.status, user, standings]);
+
+    // Live presence socket: refresh participants when someone joins/leaves
+    const { readyState: tWsReady } = useRobustWebSocket(`/functions/tournamentSocket?tournamentId=${id}`, {
+        autoConnect: !!id,
+        onMessage: async (event, data) => {
+            if (data && (data.type === 'PARTICIPANT_JOINED' || data.type === 'PARTICIPANT_LEFT')) {
+                try {
+                    const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
+                    setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
+                } catch (_) {}
+            }
+        }
+    });
 
     useEffect(() => {
         if (!id) return;
@@ -329,8 +343,10 @@ export default function TournamentDetail() {
                 games_played: 0
             });
             toast.success("Inscription confirmée !");
-            // Force refresh
-            base44.functions.invoke('tournamentManager', {}); 
+            // Rafraîchir et diffuser la présence
+            const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: tournament.id });
+            setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
+            base44.functions.invoke('tournamentSocket', { tournamentId: tournament.id, type: 'PARTICIPANT_JOINED', payload: { user_id: user.id, user_name: user.full_name || user.username } }).catch(()=>{});
         } catch (e) {
             console.error(e);
             toast.error("Erreur inscription");
@@ -356,8 +372,10 @@ export default function TournamentDetail() {
             });
             toast.success(`Équipe ${team.name} inscrite !`);
             setIsTeamJoinOpen(false);
-            // Force refresh
-            base44.functions.invoke('tournamentManager', {}); 
+            // Rafraîchir & diffuser
+            const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: tournament.id });
+            setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
+            base44.functions.invoke('tournamentSocket', { tournamentId: tournament.id, type: 'PARTICIPANT_JOINED', payload: { team_id: team.id, user_id: user.id, user_name: team.name } }).catch(()=>{});
         } catch (e) {
             console.error(e);
             toast.error("Erreur inscription équipe");
@@ -431,8 +449,8 @@ export default function TournamentDetail() {
                 // Refresh participant list immediately
                 const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
                 setParticipants(pData);
-                // Trigger manager update
-                base44.functions.invoke('tournamentManager', {}); 
+                // Diffuser le retrait
+                base44.functions.invoke('tournamentSocket', { tournamentId: tournament.id, type: 'PARTICIPANT_LEFT', payload: { user_id: user.id } }).catch(()=>{});
             }
         } catch (e) {
             console.error(e);

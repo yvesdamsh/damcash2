@@ -18,8 +18,9 @@ export default async function handler(req) {
     if (req.method === 'POST') {
         try {
             const body = await req.json().catch(() => ({}));
-            const { type, payload } = body || {};
-            const tournamentClients = clients.get(tournamentId);
+            const { type, payload, tournamentId: bodyTid } = body || {};
+            const tid = tournamentId || bodyTid;
+            const tournamentClients = clients.get(tid);
             if (type && tournamentClients) {
                 for (const client of tournamentClients) {
                     if (client.readyState === WebSocket.OPEN) {
