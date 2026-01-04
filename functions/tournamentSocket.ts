@@ -14,6 +14,25 @@ export default async function handler(req) {
         return new Response(null, { status: 400 });
     }
 
+    // Allow simple HTTP POST fanout for presence updates (so lobby sees seats instantly)
+    if (req.method === 'POST') {
+        try {
+            const body = await req.json().catch(() => ({}));
+            const { type, payload } = body || {};
+            const tournamentClients = clients.get(tournamentId);
+            if (type && tournamentClients) {
+                for (const client of tournamentClients) {
+                    if (client.readyState === WebSocket.OPEN) {
+                        client.send(JSON.stringify({ type, payload }));
+                    }
+                }
+            }
+            return Response.json({ ok: true });
+        } catch (e) {
+            return Response.json({ error: e.message }, { status: 500 });
+        }
+    }
+
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     socket.onopen = () => {

@@ -52,6 +52,7 @@ export default function Tournaments() {
     const [filterGameType, setFilterGameType] = useState(localStorage.getItem('gameMode') || 'checkers');
     const [myTournamentIds, setMyTournamentIds] = useState(new Set());
     const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+    const [participantsCounts, setParticipantsCounts] = useState({});
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     // Debounced Search
@@ -71,13 +72,8 @@ export default function Tournaments() {
                 const u = await base44.auth.me();
                 setUser(u);
                 
-                // Trigger manager to clean up old tournaments and create new ones
-                // We call it but don't await blocking the UI for too long, 
-                // but we want to fetch AFTER it runs to see new data.
-                await base44.functions.invoke('tournamentManager', {});
-                
-                // Fetch immediately after manager runs
-                fetchTournaments();
+                // Fetch tournaments (avoid calling manager from client to prevent CORS/errors)
+                await fetchTournaments();
 
                 // Fetch my participations
                 if (u) {
@@ -100,6 +96,17 @@ export default function Tournaments() {
         window.addEventListener('gameModeChanged', handleModeChange);
         handleModeChange(); // Init
         return () => window.removeEventListener('gameModeChanged', handleModeChange);
+    }, []);
+
+    // Refresh when tab becomes visible (so your seat appears instantly after rejoin)
+    useEffect(() => {
+        const onVis = () => {
+            if (document.visibilityState === 'visible') {
+                fetchTournaments();
+            }
+        };
+        document.addEventListener('visibilitychange', onVis);
+        return () => document.removeEventListener('visibilitychange', onVis);
     }, []);
 
     // Real-time updates
@@ -156,6 +163,17 @@ export default function Tournaments() {
             
             const list = await base44.entities.Tournament.filter(query, sort, 50);
             setTournaments(list);
+            // Fetch participants counts for visible tournaments (limit 30)
+            try {
+                const ids = list.slice(0, 30).map(t => t.id);
+                const results = await Promise.all(ids.map(async (id) => {
+                    const parts = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
+                    return [id, parts.length];
+                }));
+                setParticipantsCounts(prev => ({ ...prev, ...Object.fromEntries(results) }));
+            } catch (e) {
+                console.error('Fetch participant counts error', e);
+            }
         } catch (e) {
             console.error("Fetch tournaments error", e);
         }
@@ -784,7 +802,7 @@ export default function Tournaments() {
                                     <Users className="w-4 h-4" />
                                     <span>{t('tournaments.participants')}</span>
                                 </div>
-                                <span className="font-bold">{tournament.current_round || 0} / {tournament.max_players}</span>
+                                <span className="font-bold">{(participantsCounts[tournament.id] ?? 0)} / {tournament.max_players}</span>
                             </div>
                         </CardContent>
                         <CardFooter className="gap-2">
