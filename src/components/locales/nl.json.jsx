@@ -1,3 +1,6 @@
+json
 {
-  "nav.home": "Home"
+  "nav.home": "Home",
+  "file.create": "Create file",
+  "file.edit": "Edit file"
 }
