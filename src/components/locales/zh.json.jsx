@@ -1,3 +1,4 @@
+
 export default {
   "nav.home": "首页",
   "nav.tv": "电视",

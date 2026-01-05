@@ -1,3 +1,4 @@
+
 export default {
   "nav.home": "Главная",
   "nav.tv": "ТВ",
