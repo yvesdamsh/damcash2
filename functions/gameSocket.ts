@@ -168,10 +168,15 @@ Deno.serve(async (req) => {
             else if (data.type === 'GAME_UPDATE') {
                  // Accept direct updates from clients: stamp server time, broadcast and persist
                  const { payload } = data;
-                 const outPayload = { ...payload, updated_date: new Date().toISOString() };
+                 const moveId = payload?.moveId;
+                 const outPayload = { ...payload };
+                 if (moveId) delete outPayload.moveId; // do not persist custom fields
+                 outPayload.updated_date = new Date().toISOString();
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
+                 // Acknowledge move back to sender only
+                 try { if (moveId) socket.send(JSON.stringify({ type: 'MOVE_ACK', moveId })); } catch (_) {}
                  try {
                      await base44.asServiceRole.entities.Game.update(gameId, outPayload);
                      // If game just finished, notify both players

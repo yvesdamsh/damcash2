@@ -63,7 +63,8 @@ export default function Game() {
     const [promotionPending, setPromotionPending] = useState(null);
     const [premove, setPremove] = useState(null);
     const [showResignConfirm, setShowResignConfirm] = useState(false);
-    const [socket, setSocket] = useState(null);
+    const socketRef = useRef(null);
+    const pendingMovesRef = useRef(new Map());
     const [reactions, setReactions] = useState([]);
     // lastSignal removed - VideoChat handles it directly
     const [inviteOpen, setInviteOpen] = useState(false);
@@ -193,6 +194,21 @@ export default function Game() {
     const isPollingRef = useRef(false);
     const aiJobRef = useRef(false);
     const lastUpdateRef = useRef(Date.now());
+
+    // Retry unacknowledged moves (DB fallback)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!game?.id) return;
+            const now = Date.now();
+            for (const [moveId, move] of pendingMovesRef.current) {
+                if (now - move.sentAt > 3000) {
+                    base44.entities.Game.update(game.id, move.data);
+                    pendingMovesRef.current.delete(moveId);
+                }
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [game?.id]);
 
     // Safe deep clone for board structures (handles [], {board: []}, undefined)
     const deepCloneBoard = (b) => {
@@ -434,14 +450,27 @@ export default function Game() {
         return () => clearInterval(iv);
     }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
 
-    // Polling disabled: WebSocket is the single source of truth.
+    // Polling: add fallback for PLAYING games when WS is disconnected
+    useEffect(() => {
+        if (!id || id === 'local-ai' || game?.status !== 'playing') return;
+        const interval = setInterval(async () => {
+            if (wsReadyState !== WebSocket.OPEN) {
+                const fresh = await base44.entities.Game.get(id).catch(() => null);
+                if (fresh && fresh.last_move_at !== game?.last_move_at) {
+                    setGame(fresh);
+                }
+            }
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [id, game?.status, game?.last_move_at, wsReadyState]);
+
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         if (!isPreview) return; // only in preview mode
 
         const fetchOnce = async () => {
-            if (socket && socket.readyState === WebSocket.OPEN) return;
+            if (wsReadyState === WebSocket.OPEN) return;
             try {
                 const g = await base44.entities.Game.get(id);
                 if (!g) return;
@@ -467,7 +496,7 @@ export default function Game() {
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [id, isPreview, socket]);
+    }, [id, isPreview, wsReadyState]);
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
@@ -548,6 +577,8 @@ export default function Game() {
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
                 }
+            } else if (data.type === 'MOVE_ACK' && data.moveId) {
+                pendingMovesRef.current.delete(data.moveId);
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'SIGNAL') {
@@ -560,13 +591,11 @@ export default function Game() {
     });
 
     useEffect(() => {
-        if (id && id !== 'local-ai') {
-            setSocket(robustSocket);
-        }
-    }, [robustSocket, id]);
+        socketRef.current = robustSocket;
+    }, [robustSocket]);
 
     // Nudge all participants to refetch as soon as socket connects (reduces join latency)
-    useEffect(() => {}, [socket, game?.id]);
+    useEffect(() => {}, [wsReadyState, game?.id]);
 
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
@@ -1608,8 +1637,11 @@ export default function Game() {
         if (game.id === 'local-ai') return;
 
         // Notify via socket immediately to reduce perceived latency
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateData }));
+        const moveId = Date.now().toString();
+        const updateDataWithId = { ...updateData, moveId };
+        pendingMovesRef.current.set(moveId, { data: updateData, sentAt: Date.now() });
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateDataWithId }));
         }
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
@@ -1620,8 +1652,8 @@ export default function Game() {
                               console.log("Move save retry succeeded");
                           } catch (retryError) {
                               console.error("Move save retry failed", retryError);
-                              if (socket && socket.readyState === WebSocket.OPEN) {
-                                  socket.send(JSON.stringify({
+                              if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                                  socketRef.current.send(JSON.stringify({
                                       type: 'FORCE_SAVE_MOVE',
                                       payload: { gameId: game.id, updateData }
                                   }));
@@ -1835,8 +1867,8 @@ export default function Game() {
                 // First mark game finished so both clients stop clocks immediately
                 base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => console.error("Finish game error", e));
                 // Broadcast state through socket
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
+                if (wsReadyState === WebSocket.OPEN && socketRef.current) {
+                    socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
                 }
                 // Then trigger server-side processing (elo, payouts, leagues)
                 await base44.functions.invoke('processGameResult', { 
@@ -2152,8 +2184,8 @@ export default function Game() {
                                                 outcome: { winnerId, result: 'resignation' } 
                                             });
                                             // Broadcast via socket so opponent stops immediately
-                                            if (socket && socket.readyState === WebSocket.OPEN) {
-                                                socket.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
+                                            if (wsReadyState === WebSocket.OPEN && socketRef.current) {
+                                                socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                                             }
                                         }
                                         soundManager.play('loss');
@@ -2276,7 +2308,7 @@ export default function Game() {
                             <div className="text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138] flex items-center gap-2">
                                 <span>Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}</span>
                                 <div className="h-4 w-px bg-[#6b5138]/20"></div>
-                                {socket && socket.readyState === 1 ? (
+                                {wsReadyState === 1 ? (
                                     <div className="flex items-center gap-2">
                                         <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="Connecté" />
                                         <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
@@ -2502,7 +2534,7 @@ export default function Game() {
                             <GameChat 
                                 gameId={game.id} 
                                 currentUser={currentUser} 
-                                socket={socket} 
+                                socket={socketRef.current} 
                                 players={{white: game.white_player_id, black: game.black_player_id}} 
                                 externalMessages={syncedMessages}
                             />
