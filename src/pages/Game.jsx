@@ -2234,6 +2234,7 @@ export default function Game() {
                                   }}
                                   onInvitePlayer={async (userToInvite) => {
                                     try {
+                                      // Send notification
                                       await base44.functions.invoke('sendNotification', {
                                         recipient_id: userToInvite.id,
                                         type: 'game_invite',
@@ -2242,6 +2243,17 @@ export default function Game() {
                                         link: `/Game?id=${game.id}&join=player`,
                                         metadata: { kind: 'player', game_id: game.id }
                                       });
+
+                                      // Also create Invitation entity so it appears in Home for the recipient
+                                      base44.entities.Invitation.create({
+                                        from_user_id: currentUser.id,
+                                        from_user_name: currentUser.username || `Joueur ${currentUser.id.substring(0,4)}`,
+                                        to_user_email: userToInvite.email,
+                                        game_type: game.game_type,
+                                        game_id: game.id,
+                                        status: 'pending'
+                                      }).catch((e) => console.warn('[INVITE] entity create failed', e));
+
                                       toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
                                       setInviteOpen(false);
                                     } catch (e) { toast.error(t('game.invite_error')); }
