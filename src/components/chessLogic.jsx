@@ -244,13 +244,13 @@ const isSquareAttacked = (board, r, c, color) => {
     // Actually if I am white, opponent is black. Black pawns attack "down" (+1).
     // If I am checking if square R,C is attacked by Black: check R-1,C-1 and R-1,C+1 for Black Pawn
     const attackDir = color === 'white' ? -1 : 1; 
-    [[attackDir, -1], [attackDir, 1]].forEach(([dr, dc]) => {
+    for (const [dr, dc] of [[attackDir, -1], [attackDir, 1]]) {
         const tr = r + dr, tc = c + dc;
         if (isValidPos(tr, tc)) {
             const p = board[tr][tc];
             if (p && getColor(p) === opponent && p.toLowerCase() === 'p') return true;
         }
-    });
+    }
 
     // Check King
     const kingMoves = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
