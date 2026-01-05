@@ -997,18 +997,7 @@ export default function Home() {
                                                 status: 'pending' 
                                             });
                                             
-                                            try {
-                                                await base44.functions.invoke('sendNotification', {
-                                                    recipient_id: invitedUser.id,
-                                                    type: "game_invite",
-                                                    title: t('home.invite_friend'),
-                                                    message: t('home.invite_from') + ` ${user.username || t('common.anonymous')}`,
-                                                    link: `/Game?id=${newGame.id}`,
-                                                    metadata: { gameId: newGame.id }
-                                                });
-                                            } catch (e) {
-                                                console.warn('[INVITE] Notification failed (continuing):', e?.message || e);
-                                            }
+                                            // notification moved to fire-and-forget above
 
                                             toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
                                             navigate(`/Game?id=${newGame.id}`);

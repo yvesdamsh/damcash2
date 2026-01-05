@@ -6,6 +6,7 @@ import { User, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 export default function HomeOnlineUsers() {
   const { t } = useLanguage();
@@ -115,30 +116,28 @@ export default function HomeOnlineUsers() {
         prize_pool: 0
       });
 
-      await base44.entities.Invitation.create({
+      setConfigOpen(false);
+      toast.success(t('home.invite_sent_waiting') || 'Table créée, en attente de votre ami...');
+      navigate(`/Game?id=${newGame.id}`);
+
+      // Fire-and-forget invitation + notification
+      base44.entities.Invitation.create({
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
         to_user_email: selectedUser.email,
         game_type: cfg.type,
         game_id: newGame.id,
         status: 'pending'
-      });
+      }).catch(e => console.warn('[INVITE] Create invitation failed:', e));
 
-      try {
-        await base44.functions.invoke('sendNotification', {
-          recipient_id: selectedUser.id,
-          type: 'game_invite',
-          title: t('home.invite_friend'),
-          message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
-          link: `/Game?id=${newGame.id}`,
-          metadata: { gameId: newGame.id }
-        });
-      } catch (e) {
-        console.warn('[INVITE] Notification failed (continuing):', e?.message || e);
-      }
-
-      setConfigOpen(false);
-      navigate(`/Game?id=${newGame.id}`);
+      base44.functions.invoke('sendNotification', {
+        recipient_id: selectedUser.id,
+        type: 'game_invite',
+        title: t('home.invite_friend'),
+        message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
+        link: `/Game?id=${newGame.id}`,
+        metadata: { gameId: newGame.id }
+      }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
     } finally {
       setCreating(false);
     }
