@@ -1970,8 +1970,8 @@ export default function Game() {
     };
 
     const sendReaction = (emoji) => {
-        if (!socket || !currentUser) return;
-        socket.send(JSON.stringify({
+        if (!socketRef.current || !currentUser) return;
+        socketRef.current.send(JSON.stringify({
             type: 'GAME_REACTION',
             payload: {
                 sender_id: currentUser.id,
@@ -2107,7 +2107,7 @@ export default function Game() {
                         gameId={game.id} 
                         currentUser={currentUser} 
                         opponentId={currentUser?.id === game.white_player_id ? game.black_player_id : game.white_player_id}
-                        socket={socket}
+                        socket={socketRef.current}
                         externalSignals={syncedSignals}
                         gameStatus={game?.status}
                     />
