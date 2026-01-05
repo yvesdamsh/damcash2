@@ -1,4 +1,3 @@
-
 export default {
   "nav.home": "Startseite",
   "nav.tv": "TV",

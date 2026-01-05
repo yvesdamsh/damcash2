@@ -1,14 +1,13 @@
-// Logique du jeu de dames - Règles Internationales (10x10)
-export const BOARD_SIZE = 10;
+// Utilitaires pour la logique du jeu de dames (Règles Internationales/Brésiliennes sur 8x8)
 // - Pions : Déplacement avant (1 case), Prise avant/arrière.
 // - Dames (Rois) : Déplacement toute distance diagonale, Prise toute distance.
 // - Prise obligatoire.
 // - Prise multiple prioritaire (optionnel, ici on force juste la prise si disponible).
 
 export const initializeBoard = () => {
-    const board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
-    for (let row = 0; row < BOARD_SIZE; row++) {
-        for (let col = 0; col < BOARD_SIZE; col++) {
+    const board = Array(10).fill(null).map(() => Array(10).fill(0));
+    for (let row = 0; row < 10; row++) {
+        for (let col = 0; col < 10; col++) {
             if ((row + col) % 2 !== 0) {
                 if (row < 4) board[row][col] = 2; // Noir (4 rangées)
                 if (row > 5) board[row][col] = 1; // Blanc (4 rangées)
@@ -20,7 +19,7 @@ export const initializeBoard = () => {
 
 // --- Helpers ---
 
-const isValidPos = (r, c) => r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE;
+const isValidPos = (r, c) => r >= 0 && r < 10 && c >= 0 && c < 10;
 
 const getPiece = (board, r, c) => isValidPos(r, c) ? board[r][c] : null;
 
@@ -60,8 +59,8 @@ export const getValidMoves = (board, turn) => {
     let moves = [];
     let captureMoves = [];
 
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
+    for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 10; c++) {
             const piece = board[r][c];
             if (isOwnPiece(piece, turn)) {
                 const pieceMoves = getMovesForPiece(board, r, c, piece);
@@ -211,7 +210,7 @@ export const executeMove = (board, from, to, captured) => {
     if (piece === 1 && toRow === 0) {
         newBoard[toRow][toCol] = 3;
         promoted = true;
-    } else if (piece === 2 && toRow === BOARD_SIZE - 1) {
+    } else if (piece === 2 && toRow === 9) {
         newBoard[toRow][toCol] = 4;
         promoted = true;
     }

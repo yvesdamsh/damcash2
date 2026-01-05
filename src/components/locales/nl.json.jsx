@@ -1,4 +1,3 @@
-
 export default {
   "nav.home": "Home",
   "nav.tv": "TV",
@@ -29,7 +28,7 @@ export default {
   "replay.favorite_hint": "Klik op de ster in een spel om het hier op te slaan.",
   "replay.no_recent": "Geen recente spellen.",
   "history.no_games": "Geen voltooide spellen.",
-  "history.play_now": "Spielen!",
+  "history.play_now": "Spelen!",
   "history.date": "Datum",
   "history.game": "Spel",
   "history.opponent": "Tegenstander",
@@ -128,7 +127,7 @@ export default {
   "common.you": "Jij",
   "common.player_1": "Speler 1",
   "common.player_2": "Speler 2",
-  "common.clone": " (Kloonn)",
+  "common.clone": " (Kloon)",
   "common.host": "Host",
   "common.spectator": "Toeschouwer",
   "home.welcome": "Welkom bij DamCash",
