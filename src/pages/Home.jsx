@@ -989,20 +989,20 @@ export default function Home() {
                                                 const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
                                                 const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.username || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
 
-                                                // Go to the table immediately
-                                                toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
-                                                navigate(`/Game?id=${newGame.id}`);
-
-                                                // Fire-and-forget: create invitation and notify invitee
-                                                base44.entities.Invitation.create({ 
+                                                // Persist invitation BEFORE navigating to ensure delivery
+                                                await base44.entities.Invitation.create({ 
                                                     from_user_id: user.id, 
                                                     from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
                                                     to_user_email: invitedUser.email, 
                                                     game_type: gameType, 
                                                     game_id: newGame.id, 
                                                     status: 'pending' 
-                                                }).catch(e => console.warn('[INVITE] Create invitation failed:', e));
+                                                });
 
+                                                toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
+                                                navigate(`/Game?id=${newGame.id}`);
+
+                                                // Fire-and-forget: notify invitee
                                                 base44.functions.invoke('sendNotification', {
                                                     recipient_id: invitedUser.id,
                                                     type: "game_invite",

@@ -117,19 +117,21 @@ export default function HomeOnlineUsers() {
       });
 
       setConfigOpen(false);
-      toast.success(t('home.invite_sent_waiting') || 'Table créée, en attente de votre ami...');
-      navigate(`/Game?id=${newGame.id}`);
 
-      // Fire-and-forget invitation + notification
-      base44.entities.Invitation.create({
+      // Ensure Invitation is persisted before navigating (prevents lost invites)
+      await base44.entities.Invitation.create({
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
         to_user_email: selectedUser.email,
         game_type: cfg.type,
         game_id: newGame.id,
         status: 'pending'
-      }).catch(e => console.warn('[INVITE] Create invitation failed:', e));
+      });
 
+      toast.success(t('home.invite_sent_waiting') || 'Table créée, en attente de votre ami...');
+      navigate(`/Game?id=${newGame.id}`);
+
+      // Fire-and-forget notification
       base44.functions.invoke('sendNotification', {
         recipient_id: selectedUser.id,
         type: 'game_invite',
