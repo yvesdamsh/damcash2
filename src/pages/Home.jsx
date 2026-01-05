@@ -371,9 +371,13 @@ export default function Home() {
             // Initial load
             refreshInvites();
 
+            // Fallback polling as safety net when WS fails
+            const intervalId = setInterval(refreshInvites, 30000);
+
             return () => {
                 window.removeEventListener('invitation-received', onInv);
                 window.removeEventListener('notification-update', onInv);
+                clearInterval(intervalId);
             };
         }, [user?.email]);
 

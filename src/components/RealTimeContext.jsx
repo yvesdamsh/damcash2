@@ -25,6 +25,7 @@ export function RealTimeProvider({ children }) {
             try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
         },
         onMessage: (event, data) => {
+            console.log('[WS] RAW MESSAGE:', data?.type, data);
             if (!data) return;
             
             // Global Notification Handling
