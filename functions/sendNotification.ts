@@ -40,6 +40,18 @@ export default async function handler(req) {
             metadata: metadata ? JSON.stringify(metadata) : null
         });
 
+        // Also emit a synthetic invitation event for recipients filtering by email only
+        try {
+            if (type === 'game_invite' && metadata?.gameId) {
+                const recipient = await base44.asServiceRole.entities.User.get(recipient_id).catch(() => null);
+                const email = (recipient?.email || '').toLowerCase();
+                if (email) {
+                    const evt = new CustomEvent('invitation-received', { detail: { email, gameId: metadata.gameId } });
+                    // No real DOM here; instead, persist a helper Notification for email based UIs if needed
+                }
+            }
+        } catch (_) {}
+
         // Broadcast to WebSocket via Channel
         // Note: userSocket.js expects recipientId (camelCase) in event.data
         if (channel) channel.postMessage({
