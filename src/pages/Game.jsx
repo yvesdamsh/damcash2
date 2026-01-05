@@ -454,7 +454,7 @@ export default function Game() {
     useEffect(() => {
         if (!id || id === 'local-ai' || game?.status !== 'playing') return;
         const interval = setInterval(async () => {
-            if (wsReadyState !== WebSocket.OPEN) {
+            if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
                 const fresh = await base44.entities.Game.get(id).catch(() => null);
                 if (fresh && fresh.last_move_at !== game?.last_move_at) {
                     setGame(fresh);
@@ -462,7 +462,7 @@ export default function Game() {
             }
         }, 5000);
         return () => clearInterval(interval);
-    }, [id, game?.status, game?.last_move_at, wsReadyState]);
+    }, [id, game?.status, game?.last_move_at]);
 
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
@@ -470,7 +470,7 @@ export default function Game() {
         if (!isPreview) return; // only in preview mode
 
         const fetchOnce = async () => {
-            if (wsReadyState === WebSocket.OPEN) return;
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
             try {
                 const g = await base44.entities.Game.get(id);
                 if (!g) return;
@@ -496,7 +496,7 @@ export default function Game() {
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [id, isPreview, wsReadyState]);
+    }, [id, isPreview]);
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
@@ -595,7 +595,7 @@ export default function Game() {
     }, [robustSocket]);
 
     // Nudge all participants to refetch as soon as socket connects (reduces join latency)
-    useEffect(() => {}, [wsReadyState, game?.id]);
+    useEffect(() => {}, [game?.id]);
 
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
