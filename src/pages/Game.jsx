@@ -2248,7 +2248,7 @@ export default function Game() {
                                       base44.entities.Invitation.create({
                                         from_user_id: currentUser.id,
                                         from_user_name: currentUser.username || `Joueur ${currentUser.id.substring(0,4)}`,
-                                        to_user_email: userToInvite.email,
+                                        to_user_email: (userToInvite.email || '').toLowerCase(),
                                         game_type: game.game_type,
                                         game_id: game.id,
                                         status: 'pending'

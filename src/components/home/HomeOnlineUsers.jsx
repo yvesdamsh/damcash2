@@ -122,7 +122,7 @@ export default function HomeOnlineUsers() {
       await base44.entities.Invitation.create({
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
-        to_user_email: selectedUser.email,
+        to_user_email: (selectedUser.email || '').toLowerCase(),
         game_type: cfg.type,
         game_id: newGame.id,
         status: 'pending'
