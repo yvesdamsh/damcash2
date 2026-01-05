@@ -124,14 +124,18 @@ export default function HomeOnlineUsers() {
         status: 'pending'
       });
 
-      await base44.functions.invoke('sendNotification', {
-        recipient_id: selectedUser.id,
-        type: 'game_invite',
-        title: t('home.invite_friend'),
-        message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
-        link: `/Game?id=${newGame.id}`,
-        metadata: { gameId: newGame.id }
-      });
+      try {
+        await base44.functions.invoke('sendNotification', {
+          recipient_id: selectedUser.id,
+          type: 'game_invite',
+          title: t('home.invite_friend'),
+          message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
+          link: `/Game?id=${newGame.id}`,
+          metadata: { gameId: newGame.id }
+        });
+      } catch (e) {
+        console.warn('[INVITE] Notification failed (continuing):', e?.message || e);
+      }
 
       setConfigOpen(false);
       navigate(`/Game?id=${newGame.id}`);
