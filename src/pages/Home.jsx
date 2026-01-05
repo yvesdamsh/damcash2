@@ -24,6 +24,7 @@ import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 import { throttle } from '@/components/utils/rateLimit';
 import { safeJSONParse } from '@/components/utils/errorHandler';
+import { toast } from 'sonner';
 
 export default function Home() {
     const { t } = useLanguage();
