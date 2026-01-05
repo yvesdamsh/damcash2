@@ -223,11 +223,11 @@ export default function Home() {
                 })
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
-            const minuteAgo = Date.now() - 60*1000;
+            const cutoffMs = Date.now() - 10*60*1000; // show invites from last 10 minutes
             const recentInvites = (myInvites || []).filter(inv => {
                 if (!inv || inv.status !== 'pending') return false;
                 if (!inv.created_date) return false;
-                return new Date(inv.created_date).getTime() >= minuteAgo;
+                return new Date(inv.created_date).getTime() >= cutoffMs;
             });
             setInvitations(recentInvites);
             
@@ -425,7 +425,7 @@ export default function Home() {
     React.useEffect(() => {
         const interval = setInterval(() => {
             setInvitations((prev) => {
-                const cutoff = Date.now() - 60*1000;
+                const cutoff = Date.now() - 10*60*1000; // keep invites for 10 minutes
                 return (prev || []).filter(inv => {
                     if (!inv || inv.status !== 'pending') return false;
                     const created = inv.created_date ? new Date(inv.created_date).getTime() : 0;
