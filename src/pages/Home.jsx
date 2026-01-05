@@ -984,23 +984,37 @@ export default function Home() {
                                         onClose={() => setInviteDialogOpen(false)} 
                                         onInvite={async (invitedUser) => {
                                             if(!user) return;
-                                            setInviteDialogOpen(false);
-                                            const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
-                                            const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.username || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
-                                            
-                                            await base44.entities.Invitation.create({ 
-                                                from_user_id: user.id, 
-                                                from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
-                                                to_user_email: invitedUser.email, 
-                                                game_type: gameType, 
-                                                game_id: newGame.id, 
-                                                status: 'pending' 
-                                            });
-                                            
-                                            // notification moved to fire-and-forget above
+                                            try {
+                                                setInviteDialogOpen(false);
+                                                const initialBoard = gameType === 'chess' ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initializeBoard());
+                                                const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.username || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
 
-                                            toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
-                                            navigate(`/Game?id=${newGame.id}`);
+                                                // Go to the table immediately
+                                                toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
+                                                navigate(`/Game?id=${newGame.id}`);
+
+                                                // Fire-and-forget: create invitation and notify invitee
+                                                base44.entities.Invitation.create({ 
+                                                    from_user_id: user.id, 
+                                                    from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
+                                                    to_user_email: invitedUser.email, 
+                                                    game_type: gameType, 
+                                                    game_id: newGame.id, 
+                                                    status: 'pending' 
+                                                }).catch(e => console.warn('[INVITE] Create invitation failed:', e));
+
+                                                base44.functions.invoke('sendNotification', {
+                                                    recipient_id: invitedUser.id,
+                                                    type: "game_invite",
+                                                    title: t('home.invite_friend'),
+                                                    message: t('home.invite_from') + ` ${user.username || t('common.anonymous')}`,
+                                                    link: `/Game?id=${newGame.id}`,
+                                                    metadata: { gameId: newGame.id }
+                                                }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
+                                            } catch (e) {
+                                                console.error('[INVITE] Failed:', e);
+                                                toast.error('Impossible de créer la table. Réessayez.');
+                                            }
                                         }}
                                     />
                                     <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.or_join')}</span></div></div>
