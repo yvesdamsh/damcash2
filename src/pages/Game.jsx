@@ -2249,6 +2249,7 @@ export default function Game() {
                                         from_user_id: currentUser.id,
                                         from_user_name: currentUser.username || `Joueur ${currentUser.id.substring(0,4)}`,
                                         to_user_email: (userToInvite.email || '').toLowerCase(),
+                                        to_user_id: userToInvite.id,
                                         game_type: game.game_type,
                                         game_id: game.id,
                                         status: 'pending'

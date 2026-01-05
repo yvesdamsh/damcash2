@@ -155,7 +155,7 @@ export default function Home() {
             const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
                 base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
                 base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Invitation.filter({ to_user_email: (currentUser.email || '').toLowerCase(), status: 'pending' }),
+                base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' }),
                 base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
             ]);
 
@@ -351,7 +351,7 @@ export default function Home() {
                 console.log('[HOME] Refreshing invitations for:', user.email);
                 try {
                     const pending = await base44.entities.Invitation.filter({ 
-                        to_user_email: (user.email || '').toLowerCase(), 
+                        to_user_id: user.id, 
                         status: 'pending' 
                     });
                     console.log('[HOME] Invitations loaded:', pending.length);
@@ -993,7 +993,8 @@ export default function Home() {
                                                 await base44.entities.Invitation.create({ 
                                                     from_user_id: user.id, 
                                                     from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
-                                                    to_user_email: (invitedUser.email || '').toLowerCase(), 
+                                                    to_user_email: (invitedUser.email || '').toLowerCase(),
+                                                    to_user_id: invitedUser.id,
                                                     game_type: gameType, 
                                                     game_id: newGame.id, 
                                                     status: 'pending' 

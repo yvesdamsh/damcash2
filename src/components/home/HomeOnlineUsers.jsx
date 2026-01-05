@@ -123,6 +123,7 @@ export default function HomeOnlineUsers() {
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
         to_user_email: (selectedUser.email || '').toLowerCase(),
+        to_user_id: selectedUser.id,
         game_type: cfg.type,
         game_id: newGame.id,
         status: 'pending'
