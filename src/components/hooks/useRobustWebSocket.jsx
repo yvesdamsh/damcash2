@@ -46,6 +46,11 @@ export function useRobustWebSocket(url, options = {}) {
 
         shouldReconnectRef.current = true;
         
+        if (!url) {
+            logger.warn('[WS] No URL provided, skipping connection');
+            return;
+        }
+        
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
         const isFramed = (()=>{ try { return window.self !== window.top; } catch(_) { return true; }})();
@@ -112,14 +117,30 @@ export function useRobustWebSocket(url, options = {}) {
             
             if (onCloseRef.current) onCloseRef.current(event);
 
-            if (shouldReconnectRef.current) {
-                const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 30000);
-                logger.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms (attempt ${reconnectCountRef.current + 1})`);
-                reconnectTimerRef.current = setTimeout(() => {
-                    reconnectCountRef.current++;
-                    connect();
-                }, timeout);
+            if (!shouldReconnectRef.current) return;
+
+            // Enforce reconnect attempts limit
+            if (reconnectCountRef.current >= reconnectAttempts) {
+                shouldReconnectRef.current = false;
+                toast.error('Connection lost', {
+                    action: {
+                        label: 'Reconnect',
+                        onClick: () => {
+                            reconnectCountRef.current = 0;
+                            shouldReconnectRef.current = true;
+                            connect();
+                        }
+                    }
+                });
+                return;
             }
+
+            const timeout = Math.min(reconnectInterval * Math.pow(2, reconnectCountRef.current), 30000);
+            logger.log('[WS][CLOSE]', new Date().toISOString(), `reconnect in ${timeout}ms (attempt ${reconnectCountRef.current + 1})`);
+            reconnectTimerRef.current = setTimeout(() => {
+                reconnectCountRef.current++;
+                connect();
+            }, timeout);
         };
 
         ws.onerror = (event) => {
@@ -150,13 +171,13 @@ export function useRobustWebSocket(url, options = {}) {
     }, []);
 
     useEffect(() => {
-        if (autoConnect) {
+        if (autoConnect && url) {
             connect();
         }
         return () => {
             disconnect();
         };
-    }, [connect, disconnect, autoConnect]);
+    }, [connect, disconnect, autoConnect, url]);
 
     // Browser online/offline awareness
     useEffect(() => {

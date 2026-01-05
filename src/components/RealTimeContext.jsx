@@ -17,10 +17,12 @@ export function RealTimeProvider({ children }) {
     }, []);
 
     // Global User Socket (Notifications)
-    const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
-        autoConnect: true,
-        reconnectAttempts: 5,
-        reconnectInterval: 1000,
+    const { sendMessage: sendUserMessage } = useRobustWebSocket(
+        user ? `/functions/userSocket?uid=${user.id}` : null,
+        {
+            autoConnect: !!user,
+            reconnectAttempts: 5,
+            reconnectInterval: 1000,
         onOpen: () => {
             try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
         },
