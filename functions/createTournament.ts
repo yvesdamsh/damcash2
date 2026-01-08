@@ -8,7 +8,7 @@ const schema = z.object({
   gameType: z.enum(['checkers','chess']),
   format: z.enum(['bracket','arena','swiss','hybrid']).default('bracket'),
   maxParticipants: z.number().int().min(2).max(512),
-  startTime: z.string().datetime().or(z.string()),
+  startTime: z.string().datetime(),
   prizePool: z.number().nonnegative().default(0),
   entryFee: z.number().nonnegative().default(0)
 });
