@@ -163,7 +163,9 @@ function LayoutContent({ children }) {
                 if (me) {
                     await base44.auth.updateMe({ last_seen: new Date().toISOString() });
                 }
-            } catch(e) {}
+            } catch (e) {
+                console.error('Heartbeat update failed', e);
+            }
         };
 
         heartbeat();

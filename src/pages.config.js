@@ -1,4 +1,5 @@
 import Academy from './pages/Academy';
+import ActiveGames from './pages/ActiveGames';
 import AdminDashboard from './pages/AdminDashboard';
 import CreatePuzzle from './pages/CreatePuzzle';
 import Game from './pages/Game';
@@ -10,8 +11,10 @@ import Leagues from './pages/Leagues';
 import Lesson from './pages/Lesson';
 import Lobby from './pages/Lobby';
 import Messages from './pages/Messages';
+import Notifications from './pages/Notifications';
 import Preferences from './pages/Preferences';
 import Profile from './pages/Profile';
+import QAReport from './pages/QAReport';
 import ReplayCenter from './pages/ReplayCenter';
 import Shop from './pages/Shop';
 import Spectate from './pages/Spectate';
@@ -22,14 +25,12 @@ import Tournaments from './pages/Tournaments';
 import Training from './pages/Training';
 import Wallet from './pages/Wallet';
 import index from './pages/index';
-import Notifications from './pages/Notifications';
-import ActiveGames from './pages/ActiveGames';
-import QAReport from './pages/QAReport';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "Academy": Academy,
+    "ActiveGames": ActiveGames,
     "AdminDashboard": AdminDashboard,
     "CreatePuzzle": CreatePuzzle,
     "Game": Game,
@@ -41,8 +42,10 @@ export const PAGES = {
     "Lesson": Lesson,
     "Lobby": Lobby,
     "Messages": Messages,
+    "Notifications": Notifications,
     "Preferences": Preferences,
     "Profile": Profile,
+    "QAReport": QAReport,
     "ReplayCenter": ReplayCenter,
     "Shop": Shop,
     "Spectate": Spectate,
@@ -53,9 +56,6 @@ export const PAGES = {
     "Training": Training,
     "Wallet": Wallet,
     "index": index,
-    "Notifications": Notifications,
-    "ActiveGames": ActiveGames,
-    "QAReport": QAReport,
 }
 
 export const pagesConfig = {
