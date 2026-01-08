@@ -60,11 +60,13 @@ export function LanguageProvider({ children }) {
 
   // Date formatting helpers using the current locale
   const formatDate = (date, formatStr = 'PP') => {
-    return format(new Date(date), formatStr, { locale: dateFnsLocales[language] });
+    const loc = dateFnsLocales[language] || enUS;
+    return format(new Date(date), formatStr, { locale: loc });
   };
 
   const formatRelative = (date) => {
-    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: dateFnsLocales[language] });
+    const loc = dateFnsLocales[language] || enUS;
+    return formatDistanceToNow(new Date(date), { addSuffix: true, locale: loc });
   };
 
   const formatCurrency = (amount, currency = 'USD') => {
