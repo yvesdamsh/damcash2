@@ -48,6 +48,16 @@ Deno.serve(async (req) => {
       is_private: false
     });
 
+    // Pre-create a sample first-round pairing preview game (optional): ensure proper initial board when created later
+    const initialBoardState = gameType === 'chess' ? JSON.stringify({
+      board: initializeChessBoard(),
+      castlingRights: { wK: true, wQ: true, bK: true, bQ: true },
+      lastMove: null,
+      halfMoveClock: 0,
+      positionHistory: {}
+    }) : JSON.stringify(initializeCheckers());
+    // Note: We don't persist a game here, but keep the correct template ready if used.
+
     // Broadcast lightweight update (best effort)
     try {
       await base44.asServiceRole.functions.invoke('tournamentSocket', {
