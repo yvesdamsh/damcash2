@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { z } from 'npm:zod@3.24.2';
+import { initializeChessBoard } from './validation/chess.js';
+import { initializeBoard as initializeCheckers } from './validation/checkers.js';
 
 const schema = z.object({ tournamentId: z.string().min(1), round: z.number().int().min(1) });
 
@@ -55,17 +57,23 @@ Deno.serve(async (req) => {
         continue;
       }
       const game = await base44.asServiceRole.entities.Game.create({
-        status: 'waiting',
-        game_type: t.game_type,
-        white_player_id: p1.user_id,
-        white_player_name: p1.user_name,
-        black_player_id: p2.user_id,
-        black_player_name: p2.user_name,
-        current_turn: 'white',
-        board_state: t.game_type === 'chess' ? JSON.stringify({ board: Array(8).fill(null).map(()=>Array(8).fill(null)), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(Array(10).fill(null).map(()=>Array(10).fill(0))),
-        is_private: false,
-        tournament_id: t.id,
-        tournament_round: round
+      status: 'waiting',
+      game_type: t.game_type,
+      white_player_id: p1.user_id,
+      white_player_name: p1.user_name,
+      black_player_id: p2.user_id,
+      black_player_name: p2.user_name,
+      current_turn: 'white',
+      board_state: t.game_type === 'chess' ? JSON.stringify({
+        board: initializeChessBoard(),
+        castlingRights: { wK: true, wQ: true, bK: true, bQ: true },
+        lastMove: null,
+        halfMoveClock: 0,
+        positionHistory: {}
+      }) : JSON.stringify(initializeCheckers()),
+      is_private: false,
+      tournament_id: t.id,
+      tournament_round: round
       });
       createdGames.push(game);
     }
