@@ -19,12 +19,18 @@ export default async function handler(req) {
         // Check User Preferences
         const recipient = await base44.asServiceRole.entities.User.get(recipient_id);
         if (recipient && recipient.preferences) {
-            if (type === 'game_invite' && recipient.preferences.notify_invite === false) {
-                return Response.json({ skipped: true, reason: 'user_disabled_invites' });
-            }
-            // Other types if sent via this endpoint
-            if ((type === 'tournament' || type === 'tournament_update') && recipient.preferences.notify_tournament === false) {
-                return Response.json({ skipped: true, reason: 'user_disabled_tournament' });
+            const p = recipient.preferences;
+            const disabled = (
+                (type === 'game_invite' && p.notify_invite === false) ||
+                (type === 'tournament_starting' && p.notify_tournament === false) ||
+                (type === 'tournament_round' && p.notify_tournament === false) ||
+                (type === 'game_started' && (p.notify_game_started === false || p.notify_match === false)) ||
+                (type === 'game_your_turn' && (p.notify_your_turn === false || p.notify_match === false)) ||
+                (type === 'friend_request' && p.notify_friend_request === false) ||
+                (type === 'friend_online' && p.notify_friend_online === false)
+            );
+            if (disabled) {
+                return Response.json({ skipped: true, reason: 'user_disabled_type' });
             }
         }
 
@@ -49,6 +55,17 @@ export default async function handler(req) {
                     const evt = new CustomEvent('invitation-received', { detail: { email, gameId: metadata.gameId } });
                     // No real DOM here; instead, persist a helper Notification for email based UIs if needed
                 }
+            }
+        } catch (_) {}
+
+        // Optional email
+        try {
+            if (recipient?.email && recipient?.preferences?.notifications_email) {
+                await base44.asServiceRole.integrations.Core.SendEmail({
+                    to: recipient.email,
+                    subject: title,
+                    body: message
+                });
             }
         } catch (_) {}
 

@@ -147,28 +147,28 @@ export default async function handler(req) {
     // Notify all participants
     const notifChannel = new BroadcastChannel('notifications');
     for (const p of participants) {
-        // Check Prefs
-        const pUser = userMap.get(p.user_id);
-        if (pUser && pUser.preferences && pUser.preferences.notify_tournament === false) continue;
+    // Check Prefs
+    const pUser = userMap.get(p.user_id);
+    if (pUser && pUser.preferences && pUser.preferences.notify_tournament === false) continue;
 
-        // Create Notification Entity
-        base44.asServiceRole.entities.Notification.create({
-            recipient_id: p.user_id,
-            type: 'tournament_update',
-            title: 'Tournoi commencé !',
-            message: `Le tournoi ${tournament.name} a commencé. Préparez-vous !`,
-            link: `/Tournaments?id=${tournament.id}`,
-            read: false
-        }).catch(console.error);
+    // Create Notification Entity
+    base44.asServiceRole.entities.Notification.create({
+        recipient_id: p.user_id,
+        type: 'tournament_starting',
+        title: 'Tournoi sur le point de commencer',
+        message: `Le tournoi ${tournament.name} démarre. Préparez-vous !`,
+        link: `/Tournaments?id=${tournament.id}`,
+        read: false
+    }).catch(console.error);
 
-        // Real-time Push
-        notifChannel.postMessage({
-            recipientId: p.user_id,
-            type: 'tournament_update',
-            title: 'Tournoi commencé !',
-            message: `Le tournoi ${tournament.name} a commencé. Préparez-vous !`,
-            link: `/Tournaments?id=${tournament.id}`
-        });
+    // Real-time Push
+    notifChannel.postMessage({
+        recipientId: p.user_id,
+        type: 'tournament_starting',
+        title: 'Tournoi sur le point de commencer',
+        message: `Le tournoi ${tournament.name} démarre. Préparez-vous !`,
+        link: `/Tournaments?id=${tournament.id}`
+    });
     }
 
     // 3. Bracket (Single Elimination) - Seeded 1 vs N, 2 vs N-1...

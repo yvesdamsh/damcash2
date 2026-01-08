@@ -22,6 +22,7 @@ import Tournaments from './pages/Tournaments';
 import Training from './pages/Training';
 import Wallet from './pages/Wallet';
 import index from './pages/index';
+import Notifications from './pages/Notifications';
 import __Layout from './Layout.jsx';
 
 
@@ -50,6 +51,7 @@ export const PAGES = {
     "Training": Training,
     "Wallet": Wallet,
     "index": index,
+    "Notifications": Notifications,
 }
 
 export const pagesConfig = {

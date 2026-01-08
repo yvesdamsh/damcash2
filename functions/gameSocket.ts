@@ -102,6 +102,21 @@ Deno.serve(async (req) => {
 
                     // Then write to DB (authoritative)
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
+
+                    // Notify next player it's their turn
+                    try {
+                        const g2 = await base44.asServiceRole.entities.Game.get(gameId);
+                        const nextId = g2.current_turn === 'white' ? g2.white_player_id : g2.black_player_id;
+                        if (nextId) {
+                            await base44.asServiceRole.functions.invoke('sendNotification', {
+                                recipient_id: nextId,
+                                type: 'game_your_turn',
+                                title: 'À vous de jouer',
+                                message: 'Votre adversaire a joué. C\'est votre tour.',
+                                link: `/Game?id=${gameId}`
+                            });
+                        }
+                    } catch (_) {}
                 }
             } 
             else if (data.type === 'MOVE_NOTIFY') {

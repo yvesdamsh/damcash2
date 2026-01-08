@@ -26,7 +26,12 @@ export default function Preferences() {
         notifications_browser: true,
         notify_tournament: true,
         notify_match: true,
-        notify_invite: true
+        notify_invite: true,
+        notify_game_started: true,
+        notify_your_turn: true,
+        notify_friend_request: true,
+        notify_friend_online: true,
+        notifications_email: false
     });
 
     useEffect(() => {
@@ -289,6 +294,61 @@ export default function Preferences() {
                                 <Switch 
                                     checked={preferences.notify_invite !== false} 
                                     onCheckedChange={(c) => updatePref('notify_invite', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Début de partie</Label>
+                                    <div className="text-sm text-gray-500">Alerte quand une partie commence</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_game_started !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_game_started', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>À votre tour</Label>
+                                    <div className="text-sm text-gray-500">Notification quand c'est votre tour</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_your_turn !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_your_turn', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Demandes d'amis</Label>
+                                    <div className="text-sm text-gray-500">Alerte quand quelqu'un vous ajoute</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_friend_request !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_friend_request', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Amis en ligne</Label>
+                                    <div className="text-sm text-gray-500">Alerte quand un ami se connecte</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notify_friend_online !== false} 
+                                    onCheckedChange={(c) => updatePref('notify_friend_online', c)} 
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-0.5">
+                                    <Label>Email</Label>
+                                    <div className="text-sm text-gray-500">Recevoir aussi par email</div>
+                                </div>
+                                <Switch 
+                                    checked={preferences.notifications_email === true} 
+                                    onCheckedChange={(c) => updatePref('notifications_email', c)} 
                                 />
                             </div>
                         </CardContent>

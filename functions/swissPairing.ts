@@ -76,7 +76,7 @@ export default async function handler(req) {
             // Notify Bye
             await base44.asServiceRole.entities.Notification.create({
                 recipient_id: byePlayer.user_id,
-                type: "info",
+                type: "tournament_round",
                 title: "Bye (Tour 1)",
                 message: "Vous avez reçu un Bye pour le premier tour (1 point).",
                 link: `/TournamentDetail?id=${tournamentId}`
@@ -210,9 +210,9 @@ export default async function handler(req) {
             
             await base44.asServiceRole.entities.Notification.create({
                 recipient_id: pid,
-                type: 'game',
-                title: 'Nouveau Match (Suisse)',
-                message: `Round ${newRound}: Contre ${opponentName}`,
+                type: 'tournament_round',
+                title: `Tour ${newRound} prêt`,
+                message: `Contre ${opponentName}`,
                 link: `/Game?id=${game.id}`
             });
         };

@@ -41,7 +41,7 @@ export default async function handler(req) {
     
     await base44.asServiceRole.entities.Notification.create({
         recipient_id: targetId,
-        type: "info",
+        type: "friend_request",
         title,
         message,
         sender_id: user.id,
@@ -51,7 +51,7 @@ export default async function handler(req) {
     // Broadcast
     channel.postMessage({
         recipientId: targetId,
-        type: 'info',
+        type: 'friend_request',
         title,
         message,
         senderId: user.id

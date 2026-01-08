@@ -142,8 +142,8 @@ export default async function handler(req) {
             // We don't await this to avoid blocking response
             base44.asServiceRole.functions.invoke('sendNotification', {
                 recipient_id: opponentId,
-                type: 'game',
-                title: 'Partie commencée !',
+                type: 'game_started',
+                title: 'Partie commencée',
                 message: `${user.full_name || user.username || 'Un joueur'} a rejoint la partie. À vous de jouer !`,
                 link: `/Game?id=${gameId}`
             }).catch(console.error);

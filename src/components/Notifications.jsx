@@ -260,6 +260,11 @@ export default function Notifications() {
                         </div>
                     )}
                 </div>
+                <div className="border-t border-[#d4c5b0] dark:border-[#3d2b1f] p-2">
+                    <Button variant="ghost" className="w-full text-sm" onClick={() => { setIsOpen(false); navigate('/Notifications'); }}>
+                        Voir toutes les notifications
+                    </Button>
+                </div>
             </PopoverContent>
         </Popover>
     );

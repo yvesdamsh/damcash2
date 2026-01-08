@@ -26,7 +26,7 @@ import {
   LogIn,
   Settings
   } from 'lucide-react';
-import Notifications from '@/components/Notifications';
+import NotificationCenter from '@/components/NotificationCenter';
 import SettingsMenu from '@/components/SettingsMenu';
 import FriendsManager from '@/components/FriendsManager';
 import WalletBalance from '@/components/WalletBalance';
@@ -203,6 +203,13 @@ function LayoutContent({ children }) {
             try {
                 const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
+                // Notify friends on first login in this session
+                try {
+                  if (currentUser && !sessionStorage.getItem('online_notified_v1')) {
+                    await base44.functions.invoke('notifyFriendsOnline', {});
+                    sessionStorage.setItem('online_notified_v1', '1');
+                  }
+                } catch (_) {}
             } catch (e) {
                 console.error("Auth check failed", e);
             } finally {
@@ -502,7 +509,7 @@ function LayoutContent({ children }) {
                         {/* Mobile/Global Actions (Notifications, Settings, Menu) */}
                         <div className="flex items-center gap-1 pl-2">
                             <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
-                            {user && <Notifications />}
+                            {user && <NotificationCenter />}
                             {user && <div className="hidden md:flex items-center text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mr-2">
                                 {user.username || `Joueur ${user.id.substring(0,4)}`}
                             </div>}
