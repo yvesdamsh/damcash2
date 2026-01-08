@@ -23,6 +23,7 @@ import Training from './pages/Training';
 import Wallet from './pages/Wallet';
 import index from './pages/index';
 import Notifications from './pages/Notifications';
+import ActiveGames from './pages/ActiveGames';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +53,7 @@ export const PAGES = {
     "Wallet": Wallet,
     "index": index,
     "Notifications": Notifications,
+    "ActiveGames": ActiveGames,
 }
 
 export const pagesConfig = {

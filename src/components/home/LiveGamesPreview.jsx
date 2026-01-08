@@ -33,6 +33,8 @@ export default function LiveGamesPreview({ limit = 5, gameType = null }) {
   return (
     <section className="mt-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Link to see all */}
+        
         {games.map(g => (
           <LiveGameCard key={g.id} game={g} />
         ))}

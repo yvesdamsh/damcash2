@@ -1,7 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import MiniBoard from "./MiniBoard";
-import { Clock } from "lucide-react";
+import { Clock, Eye, Star } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 
 function formatMMSS(totalSeconds) {
@@ -15,11 +16,25 @@ export default function LiveGameCard({ game }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [now, setNow] = React.useState(() => Date.now());
+  const [spectators, setSpectators] = React.useState(0);
 
   React.useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(iv);
   }, []);
+
+  React.useEffect(() => {
+    let stop = false;
+    const fetchSpectators = async () => {
+      try {
+        const res = await base44.functions.invoke('gameSocket', { type: 'SPECTATORS', gameId: game.id });
+        if (!stop) setSpectators(res.data?.spectators || 0);
+      } catch (_) {}
+    };
+    fetchSpectators();
+    const iv = setInterval(fetchSpectators, 10000);
+    return () => { stop = true; clearInterval(iv); };
+  }, [game.id]);
 
   if (!game) return null;
 
@@ -72,6 +87,11 @@ export default function LiveGameCard({ game }) {
 
   const whiteName = game.white_player_name || t("game.white") || "Blancs";
   const blackName = game.black_player_name || t("game.black") || "Noirs";
+  const whiteElo = game.white_player_elo ?? 1200;
+  const blackElo = game.black_player_elo ?? 1200;
+  const avgElo = Math.round(((whiteElo) + (blackElo)) / 2);
+  const featured = Math.max(whiteElo, blackElo) >= 2000 || avgElo >= 1900;
+  const timeLabel = `${game.initial_time || 0}+${game.increment || 0}`;
 
   const turnLabel = currentTurn === "white" ? (t("game.white_turn") || "Tour des Blancs") : (t("game.black_turn") || "Tour des Noirs");
 
@@ -82,9 +102,9 @@ export default function LiveGameCard({ game }) {
     >
       <div className="px-3 pt-2 pb-1 flex items-center justify-between text-xs text-[#6b5138] dark:text-[#b09a85]">
         <div className="truncate font-semibold">
-          <span className="truncate max-w-[7rem] inline-block align-middle">{whiteName}</span>
+          <span className="truncate max-w-[8.5rem] inline-block align-middle">{whiteName} ({whiteElo})</span>
           <span className="mx-1 opacity-60">vs</span>
-          <span className="truncate max-w-[7rem] inline-block align-middle">{blackName}</span>
+          <span className="truncate max-w-[8.5rem] inline-block align-middle">{blackName} ({blackElo})</span>
         </div>
         {showClock && (
           <div className="flex items-center gap-1 font-mono text-[11px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5">
@@ -95,6 +115,11 @@ export default function LiveGameCard({ game }) {
       </div>
 
       <div className="relative p-2">
+        {featured && (
+          <div className="absolute z-10 top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-900 border border-yellow-300 shadow-sm flex items-center gap-1">
+            <Star className="w-3 h-3 text-yellow-600" /> Featured
+          </div>
+        )}
         {/* Turn badge */}
         <div className="absolute z-10 top-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shadow-sm">
           {turnLabel}
@@ -107,6 +132,14 @@ export default function LiveGameCard({ game }) {
           lastMove={lastMove}
           className="shadow-inner"
         />
+      </div>
+      <div className="px-3 pb-2 flex items-center justify-between text-[11px] text-[#6b5138] dark:text-[#b09a85]">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5">{type === 'chess' ? 'Chess' : (t('game.checkers') || 'Checkers')}</span>
+          <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 flex items-center gap-1"><Clock className="w-3 h-3" /> {timeLabel}</span>
+          <span className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 flex items-center gap-1"><Eye className="w-3 h-3" /> {spectators}</span>
+        </div>
+        <span className="opacity-60">Avg ELO {avgElo}</span>
       </div>
     </div>
   );
