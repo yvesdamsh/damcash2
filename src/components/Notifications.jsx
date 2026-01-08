@@ -59,6 +59,7 @@ export default function Notifications() {
     }, []);
 
     const markAsRead = async (id) => {
+        try { await base44.entities.Notification.update(id, { read: true }); } catch (e) { /* ignore */ }
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
         setUnreadCount(prev => Math.max(0, prev - 1));
     };
