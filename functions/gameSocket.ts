@@ -18,9 +18,11 @@ Deno.serve(async (req) => {
             try {
                 // Allow server-to-server nudges without user auth
                 const body = await req.json().catch(() => ({}));
-                const gameId = body.gameId;
-                const type = body.type || 'GAME_REFETCH';
-                const payload = body.payload || null;
+                const { gameId, type = 'GAME_REFETCH', payload = null } = body || {};
+                if (type === 'SPECTATORS' && gameId) {
+                    const count = connections.get(gameId)?.size || 0;
+                    return Response.json({ spectators: count });
+                }
                 if (!gameId || !type) return Response.json({ error: 'Missing params' }, { status: 400 });
 
                 // Cross-instance fanout + local broadcast (if any sockets on this instance)

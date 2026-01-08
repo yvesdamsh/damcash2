@@ -87,3 +87,5 @@ export default async function handler(req) {
 
     return response;
 }
+
+Deno.serve(handler);
