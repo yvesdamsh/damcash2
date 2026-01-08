@@ -24,6 +24,7 @@ import Wallet from './pages/Wallet';
 import index from './pages/index';
 import Notifications from './pages/Notifications';
 import ActiveGames from './pages/ActiveGames';
+import QAReport from './pages/QAReport';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "index": index,
     "Notifications": Notifications,
     "ActiveGames": ActiveGames,
+    "QAReport": QAReport,
 }
 
 export const pagesConfig = {
