@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { z } from 'npm:zod@3.24.2';
+import { initializeChessBoard } from './validation/chess.js';
+import { initializeBoard as initializeCheckers } from './validation/checkers.js';
 
 const schema = z.object({
   name: z.string().min(3),
