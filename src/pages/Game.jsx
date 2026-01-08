@@ -2316,6 +2316,11 @@ export default function Game() {
 
                 {/* Board Area - Centered and Natural Size */}
                 <div className="flex flex-col items-center w-full">
+                    {game.status === 'waiting' && (
+                        <div className="mb-3 text-center text-sm font-semibold text-[#6b5138] bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-full animate-pulse">
+                            {t('game.waiting_opponent') || 'Waiting for opponent...'}
+                        </div>
+                    )}
                     {game && (
                         <div className="mb-2 flex items-center gap-3">
                             <div className="text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138] flex items-center gap-2">

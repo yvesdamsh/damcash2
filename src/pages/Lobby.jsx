@@ -21,6 +21,7 @@ export default function Lobby() {
     const [publicGames, setPublicGames] = useState([]);
     const [activeGames, setActiveGames] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [queues, setQueues] = useState({ checkers: 0, chess: 0 });
     const [currentUser, setCurrentUser] = useState(null);
     const [myTeam, setMyTeam] = useState(null);
     const [playerFilter, setPlayerFilter] = useState({ elo_min: 0, name: '' });
@@ -36,8 +37,11 @@ export default function Lobby() {
             setUsers(onlineUsers);
 
             // 2. Fetch Public Waiting Games
-            const games = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 20);
+            const games = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
             setPublicGames(games);
+            const q = { checkers: 0, chess: 0 };
+            games.forEach(g => { if (g.game_type === 'chess') q.chess++; else q.checkers++; });
+            setQueues(q);
 
             // 3. Fetch Active Games (to determine user status)
             const playing = await base44.entities.Game.filter({ status: 'playing' }, '-updated_date', 50);
@@ -96,6 +100,50 @@ export default function Lobby() {
             }
         }
     });
+
+    const estimateWait = (type) => {
+        const onlineOfType = users.filter(u => (u.default_game || 'checkers') === type).length;
+        const queue = queues[type] || 0;
+        const seconds = Math.max(5, 60 - Math.min(40, onlineOfType * 2) + Math.max(0, queue - onlineOfType) * 10);
+        return seconds < 15 ? '<15s' : seconds < 45 ? '~30s' : '~1m+';
+    };
+
+    const handleQuickMatch = async (type) => {
+        if (!currentUser) return base44.auth.redirectToLogin();
+        try {
+            // Try to join an existing public waiting game not created by me
+            const candidates = publicGames.filter(g => g.game_type === type && g.white_player_id !== currentUser.id);
+            if (candidates.length) {
+                const game = candidates[0];
+                await handleJoinGame(game.id);
+                return;
+            }
+            // Otherwise create one publicly
+            await handleCreatePublicGame(type);
+        } catch (e) { toast.error(t('lobby.join_error')); }
+    };
+
+    const handleCreatePrivateGame = async (type) => {
+        if (!currentUser) return base44.auth.redirectToLogin();
+        try {
+            const initialBoard = type === 'chess' 
+                ? JSON.stringify({ board: initializeChessBoard(), castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null })
+                : JSON.stringify(initializeBoard());
+            const newGame = await base44.entities.Game.create({
+                status: 'waiting',
+                game_type: type,
+                white_player_id: currentUser.id,
+                white_player_name: currentUser.full_name || currentUser.username || t('lobby.me'),
+                current_turn: 'white',
+                board_state: initialBoard,
+                is_private: true,
+                access_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                created_by_user_id: currentUser.id
+            });
+            toast.success(t('lobby.private_created') || 'Private game created');
+            navigate(`/Game?id=${newGame.id}`);
+        } catch (e) { toast.error(t('lobby.create_error')); }
+    };
 
     const handleCreatePublicGame = async (type) => {
         if (!currentUser) return base44.auth.redirectToLogin();
@@ -367,13 +415,25 @@ export default function Lobby() {
                 <TabsContent value="games" className="animate-in fade-in duration-500">
                     <div className="flex flex-col lg:flex-row gap-6">
                         <div className="flex-1">
-                            <div className="mb-6 flex gap-4 justify-center">
-                                <Button onClick={() => handleCreatePublicGame('checkers')} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
-                                    <Circle className="w-4 h-4" /> {t('lobby.create_checkers')}
-                                </Button>
-                                <Button onClick={() => handleCreatePublicGame('chess')} className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white gap-2">
-                                    <Gamepad2 className="w-4 h-4" /> {t('lobby.create_chess')}
-                                </Button>
+                            <div className="mb-6 flex flex-col items-center gap-3">
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    <Button onClick={() => handleQuickMatch('checkers')} className="bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] gap-2">
+                                        <Swords className="w-4 h-4" /> {t('lobby.quick_match_checkers') || 'Quick Match (Checkers)'}
+                                    </Button>
+                                    <Button onClick={() => handleQuickMatch('chess')} className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white gap-2">
+                                        <Swords className="w-4 h-4" /> {t('lobby.quick_match_chess') || 'Quick Match (Chess)'}
+                                    </Button>
+                                    <Button onClick={() => handleCreatePrivateGame('checkers')} variant="outline" className="border-[#d4c5b0] text-[#6b5138] gap-2">
+                                        <Circle className="w-4 h-4" /> {t('lobby.create_private_checkers') || 'Create Game (Private Checkers)'}
+                                    </Button>
+                                    <Button onClick={() => handleCreatePrivateGame('chess')} variant="outline" className="border-[#d4c5b0] text-[#6b5138] gap-2">
+                                        <Gamepad2 className="w-4 h-4" /> {t('lobby.create_private_chess') || 'Create Game (Private Chess)'}
+                                    </Button>
+                                </div>
+                                <div className="text-xs text-[#6b5138] flex flex-wrap gap-3 justify-center">
+                                    <span>Queues: Checkers {queues.checkers} • Chess {queues.chess}</span>
+                                    <span>ETA: Checkers {estimateWait('checkers')} • Chess {estimateWait('chess')}</span>
+                                </div>
                             </div>
 
                             {publicGames.length === 0 ? (
