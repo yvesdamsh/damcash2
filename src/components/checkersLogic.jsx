@@ -125,41 +125,23 @@ export const getMovesForPiece = (board, r, c, piece, onlyCaptures = false) => {
         } 
         // Logique DAME (Flying King)
         else {
-            let dist = 1;
-            for (let __safe=0; __safe<100; __safe++) {
-                const nr = r + (dr * dist);
-                const nc = c + (dc * dist);
-
-                if (!isValidPos(nr, nc)) break;
-
+            // Parcours en ligne pour une dame
+            for (let nr = r + dr, nc = c + dc; isValidPos(nr, nc); nr += dr, nc += dc) {
                 const cell = board[nr][nc];
-
                 if (cell === 0) {
-                    // Case vide : mouvement possible si pas onlyCaptures
                     if (!onlyCaptures) {
                         moves.push({ from: {r,c}, to: {r: nr, c: nc}, captured: null });
                     }
-                } else {
-                    // Pièce rencontrée
-                    if (isOwnPiece(cell, isWhite ? 'white' : 'black')) {
-                        break; // Bloqué par ami
-                    } else {
-                        // Ennemi rencontré : vérifier si on peut sauter DERRIÈRE
-                        // On doit vérifier les cases après l'ennemi
-                        let jumpDist = 1;
-                        for (let __safe=0; __safe<100; __safe++) {
-                            const jr = nr + (dr * jumpDist);
-                            const jc = nc + (dc * jumpDist);
-                            if (!isValidPos(jr, jc) || board[jr][jc] !== 0) break;
-                            
-                            // Case vide derrière l'ennemi = Prise valide
-                            captures.push({ from: {r,c}, to: {r: jr, c: jc}, captured: {r: nr, c: nc} });
-                            jumpDist++;
-                        }
-                        break; // On ne peut pas sauter plus d'une pièce d'un coup dans la même ligne sans atterrir
-                    }
+                    continue;
                 }
-                dist++;
+                if (isOwnPiece(cell, isWhite ? 'white' : 'black')) {
+                    break; // Bloqué par une pièce alliée
+                }
+                // Ennemi rencontré: vérifier toutes les cases vides derrière pour une prise
+                for (let jr = nr + dr, jc = nc + dc; isValidPos(jr, jc) && board[jr][jc] === 0; jr += dr, jc += dc) {
+                    captures.push({ from: {r,c}, to: {r: jr, c: jc}, captured: {r: nr, c: nc} });
+                }
+                break; // On s'arrête après avoir rencontré une pièce
             }
         }
     });

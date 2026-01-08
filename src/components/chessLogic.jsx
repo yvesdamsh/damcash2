@@ -119,20 +119,16 @@ export const getPieceMoves = (board, r, c, piece, lastMove, castlingRights) => {
                                           [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [1, 0], [0, -1], [0, 1]];
         
         directions.forEach(([dr, dc]) => {
-            let d = 1;
-            for (let __safe=0; __safe<64; __safe++) {
-                const tr = r + dr * d, tc = c + dc * d;
-                if (!isValidPos(tr, tc)) break;
+            for (let tr = r + dr, tc = c + dc; isValidPos(tr, tc); tr += dr, tc += dc) {
                 const target = board[tr][tc];
                 if (!target) {
                     moves.push({ from: { r, c }, to: { r: tr, c: tc }, captured: null });
-                } else {
-                    if (getColor(target) !== color) {
-                        moves.push({ from: { r, c }, to: { r: tr, c: tc }, captured: target });
-                    }
-                    break;
+                    continue;
                 }
-                d++;
+                if (getColor(target) !== color) {
+                    moves.push({ from: { r, c }, to: { r: tr, c: tc }, captured: target });
+                }
+                break;
             }
         });
     }
