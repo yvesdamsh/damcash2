@@ -347,13 +347,13 @@ export default function Profile() {
                         </motion.div>
                     )}
                     <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-8 z-20 flex gap-2 flex-wrap justify-end">
-                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                        {isOwnProfile && (
                             <Button size="sm" variant="secondary" onClick={() => navigate('/Shop')} className="bg-yellow-500/20 hover:bg-yellow-500/40 text-white border-yellow-500/50 backdrop-blur-sm h-8 sm:h-10 text-xs sm:text-sm">
                                 <ShoppingBag className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" /> {t('profile.shop')}
                             </Button>
                         )}
                         
-                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                        {isOwnProfile && (
                             <Dialog open={isEditing} onOpenChange={setIsEditing}>
                                 <DialogTrigger asChild>
                                     <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
@@ -461,7 +461,7 @@ export default function Profile() {
                             </Dialog>
                         )}
 
-                        {(!profileId || (user && user.email === (base44.auth.me()?.email || ''))) && (
+                        {isOwnProfile && (
                             <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                                 <DialogTrigger asChild>
                                     <Button variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-sm">
