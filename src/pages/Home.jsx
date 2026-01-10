@@ -252,12 +252,13 @@ export default function Home() {
                         const isWhite = userIds.includes(g.white_player_id);
                         const friendId = isWhite ? g.white_player_id : g.black_player_id;
                         const friendName = isWhite ? g.white_player_name : g.black_player_name;
+                        const gameName = g.game_type === 'chess' ? t('game.chess') : t('game.checkers');
                         return {
                             type: 'game',
                             id: g.id,
                             friendId,
                             friendName,
-                            desc: `a joué une partie de ${g.game_type === 'chess' ? 'Chess' : 'Dames'}`,
+                            desc: t('home.played_a_game', { game: gameName }),
                             date: g.updated_date
                         };
                     });
@@ -856,7 +857,7 @@ export default function Home() {
                             <CardHeader className="pb-3 border-b border-gray-100 dark:border-[#3d2b1f]">
                                 <CardTitle className="text-xl text-[#3d2b1f] dark:text-[#e8dcc5] flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-amber-600" /> 
-                                    {t('home.active_games') || "Parties en cours"}
+                                    {t('home.active_games')}
                                     <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/50 dark:text-amber-200">
                                         {activeGames.length}
                                     </Badge>

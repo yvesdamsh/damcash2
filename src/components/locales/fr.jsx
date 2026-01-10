@@ -254,6 +254,7 @@ export default {
   "home.or_join": "OU REJOINDRE",
   "home.ask_code": "Demandez le code à votre ami",
   "home.learn_play": "Apprendre à Jouer",
+  "home.played_a_game": "a joué une partie de {{game}}",
   "home.featured": "À la Une - Top Parties",
   "home.see_all": "Voir tout",
   "home.online_now": "En ligne maintenant",

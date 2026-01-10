@@ -158,6 +158,7 @@ export default {
   "home.or_join": "OR JOIN",
   "home.ask_code": "Ask your friend for the code",
   "home.learn_play": "Learn to Play",
+  "home.played_a_game": "played a game of {{game}}",
   "home.featured": "Featured - Top Games",
   "home.see_all": "See All",
   "home.online_now": "Online now",
