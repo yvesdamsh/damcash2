@@ -464,38 +464,47 @@ const gameNotifInFlightRef = useRef(false);
         }
     }, [game?.white_player_id, game?.black_player_id, game?.status]);
 
-    // Polling: add fallback for PLAYING games when WS is disconnected
-    useEffect(() => {
-        if (!id || id === 'local-ai' || game?.status !== 'playing') return;
-        const interval = setInterval(async () => {
-            if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-                logger.warn('[POLL] WS disconnected, fetching game...');
-                const fresh = await base44.entities.Game.get(id).catch(() => null);
-                if (fresh && fresh.last_move_at !== game?.last_move_at) {
-                    logger.log('[POLL] applied fresh state', { last_move_at: fresh.last_move_at });
-                    setGame(fresh);
-                }
-            }
-        }, 2000);
-        return () => clearInterval(interval);
-        }, [id, game?.status, game?.last_move_at]);
+    // (Disabled) Separate fallback poll removed to avoid duplicate requests
+    useEffect(() => {}, [id, game?.status, game?.last_move_at]);
 
-        // Polling intelligent de l'état de la partie (pseudo temps réel en preview)
+        // Polling intelligent de l'état de la partie (auto-backoff, WS-aware)
         useEffect(() => {
-          if (!id) return;
-          
-          // Vérifie l'état du jeu toutes les 2 secondes
-          const gameInterval = setInterval(async () => {
+          let canceled = false;
+          let timer = null;
+          const backoffRef = { value: 500 };
+          const inFlight = { value: false };
+
+          const shouldPoll = () => {
+            if (!id) return false;
+            if (typeof document !== 'undefined' && document.hidden) return false;
+            const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
+            // Poll only when WS is not open OR in preview iframe
+            return !wsOpen || isPreview;
+          };
+
+          const loop = async () => {
+            if (canceled) return;
+            if (!shouldPoll()) { timer = setTimeout(loop, 1000); return; }
+            if (inFlight.value) { timer = setTimeout(loop, backoffRef.value); return; }
+            inFlight.value = true;
             try {
               const updated = await base44.entities.Game.get(id);
-              if (updated && JSON.stringify(updated) !== JSON.stringify(game)) {
+              if (updated && updated.updated_date !== game?.updated_date) {
                 setGame(updated);
               }
-            } catch (e) {}
-          }, 500);
-          
-          return () => clearInterval(gameInterval);
-        }, [id, game]);
+              backoffRef.value = 500; // reset on success
+            } catch (e) {
+              // Exponential backoff on errors (e.g., rate limits)
+              backoffRef.value = Math.min(backoffRef.value * 2, 5000);
+            } finally {
+              inFlight.value = false;
+              if (!canceled) timer = setTimeout(loop, backoffRef.value);
+            }
+          };
+
+          loop();
+          return () => { canceled = true; if (timer) clearTimeout(timer); };
+        }, [id, isPreview, game?.updated_date]);
 
         // Ecoute les événements de mouvements pour recharger immédiatement
         useEffect(() => {

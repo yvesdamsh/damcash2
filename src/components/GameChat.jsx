@@ -65,19 +65,39 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
         }
     }, [messages]);
 
-    // Polling intelligent des messages de chat (toutes les 2s)
+    // Polling intelligent des messages de chat (pausé si WS ouvert, backoff simple)
     useEffect(() => {
       if (!gameId) return;
-      const chatInterval = setInterval(async () => {
+      let timer = null;
+      let canceled = false;
+      let inFlight = false;
+
+      const shouldPoll = () => {
+        if (typeof document !== 'undefined' && document.hidden) return false;
+        const open = socket && socket.readyState === WebSocket.OPEN;
+        return !open; // on poll uniquement si le WS n'est pas ouvert
+      };
+
+      const tick = async () => {
+        if (canceled) return;
+        if (!shouldPoll()) { timer = setTimeout(tick, 1500); return; }
+        if (inFlight) { timer = setTimeout(tick, 2000); return; }
+        inFlight = true;
         try {
           const msgs = await base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 200);
           if (JSON.stringify(msgs) !== JSON.stringify(chatByGame[gameId])) {
             setMessages(msgs || []);
           }
         } catch (e) {}
-      }, 2000);
-      return () => clearInterval(chatInterval);
-    }, [gameId, chatByGame]);
+        finally {
+          inFlight = false;
+          if (!canceled) timer = setTimeout(tick, 2000);
+        }
+      };
+
+      tick();
+      return () => { canceled = true; if (timer) clearTimeout(timer); };
+    }, [gameId, chatByGame, socket]);
 
     const handleSend = async (e, contentOverride) => {
         if (e) e.preventDefault();
