@@ -297,7 +297,7 @@ export default {
   "home.free": "Gratuit",
   "home.friends_activity": "Activité des amis",
   "home.invite_sent_to": "Invitation envoyée à {{name}}",
-  "home.create_table_error": "Impossible de créer la table. Réessayez."
+  "home.create_table_error": "Impossible de créer la table. Réessayez.",
   "lobby.title": "LOBBY JOUEURS",
   "lobby.subtitle": "Trouvez des adversaires et défiez-les en temps réel.",
   "lobby.tab_play": "Jouer",
