@@ -66,7 +66,8 @@ export function RealTimeProvider({ children }) {
                 setNotifications(prev => [
                     {
                         id: 'live-invite-' + Date.now(),
-                        type: data.type || 'game_invite',
+                        // Force invite type to ensure UI shows instantly even if backend sends a generic type
+                        type: 'game_invite',
                         title: inviteTitle,
                         message: inviteMessage,
                         link: inviteLink,
