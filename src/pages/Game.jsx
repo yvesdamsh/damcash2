@@ -599,6 +599,19 @@ export default function Game() {
 
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
+    // Sync global theme (gameMode) to actual game type to avoid chess board on checkers theme
+    useEffect(() => {
+        if (!game || !game.game_type) return;
+        const desired = game.game_type === 'chess' ? 'chess' : 'checkers';
+        try {
+            const current = localStorage.getItem('gameMode');
+            if (current !== desired) {
+                localStorage.setItem('gameMode', desired);
+                window.dispatchEvent(new Event('gameModeChanged'));
+            }
+        } catch (_) {}
+    }, [game?.game_type]);
+
     // Track last update timestamp to detect staleness
     useEffect(() => {
         if (!game) return;

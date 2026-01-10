@@ -223,13 +223,7 @@ export default function Home() {
                 })
                 .sort((a,b) => new Date(b.updated_date) - new Date(a.updated_date));
             setActiveGames(active);
-            const cutoffMs = Date.now() - 10*60*1000; // show invites from last 10 minutes
-            const recentInvites = (myInvites || []).filter(inv => {
-                if (!inv || inv.status !== 'pending') return false;
-                if (!inv.created_date) return false;
-                return new Date(inv.created_date).getTime() >= cutoffMs;
-            });
-            setInvitations(recentInvites);
+            setInvitations((myInvites || []).filter(inv => inv && inv.status === 'pending'));
             
             if (checkRejoin && active.length > 0 && !hasShownRejoin) {
                 const hasSeen = sessionStorage.getItem('damcash_rejoin_seen');
@@ -345,7 +339,7 @@ export default function Home() {
 
         // Real-time invitation updates
         useEffect(() => {
-            if (!user?.email) return;
+            if (!user?.id) return;
 
             const refreshInvites = async () => {
                 console.log('[HOME] Refreshing invitations for:', user.email);
@@ -380,7 +374,7 @@ export default function Home() {
                 window.removeEventListener('notification-update', onInv);
                 clearInterval(intervalId);
             };
-        }, [user?.email]);
+        }, [user?.id]);
 
     const handleAcceptInvite = async (invite) => {
         try {
@@ -403,7 +397,7 @@ export default function Home() {
                 } catch (_) {
                     console.log('Could not force refetch via socket');
                 }
-                navigate(`/Game?id=${res.data.gameId}`);
+                navigate(`/Game?id=${res.data.gameId}&join=player`);
                 } else {
                 alert('Invitation expirée ou table complète');
                 }
@@ -421,20 +415,8 @@ export default function Home() {
         }
     };
 
-    // Auto-remove pending invitations older than 1 minute while the page is open
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            setInvitations((prev) => {
-                const cutoff = Date.now() - 10*60*1000; // keep invites for 10 minutes
-                return (prev || []).filter(inv => {
-                    if (!inv || inv.status !== 'pending') return false;
-                    const created = inv.created_date ? new Date(inv.created_date).getTime() : 0;
-                    return created >= cutoff;
-                });
-            });
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
+    // Keep all pending invitations visible until user action
+    React.useEffect(() => {}, []);
 
     const saveGameTypePref = (type) => {
         setGameType(type);
