@@ -76,7 +76,7 @@ const gameNotifInFlightRef = useRef(false);
     const [syncedSignals, setSyncedSignals] = useState([]);
     const [lastDragMove, setLastDragMove] = useState(null);
     const [isAuthed, setIsAuthed] = useState(false);
-    const [pausePolling, setPausePolling] = useState(false);
+
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -424,36 +424,7 @@ const gameNotifInFlightRef = useRef(false);
         return () => { cancelled = true; };
     }, [id]);
 
-    // Temporary minimal polling only while waiting for opponent to join
-    useEffect(() => {
-        if (!id || id === 'local-ai') return;
-        if (!game) return;
-        const waitingForOpponent = (!game?.white_player_id || !game?.black_player_id);
-        // Always run a short-lived fast poll just after join to eliminate any eventual consistency
-        // Continue only if still waiting
-        if (!waitingForOpponent) return;
-        let iv = setInterval(async () => {
-            try {
-                const fresh = await base44.entities.Game.get(id);
-                if (!fresh) return;
-                // Stop as soon as both players are present
-                if (fresh.white_player_id && fresh.black_player_id) {
-                    setGame(fresh);
-                    clearInterval(iv);
-                    return;
-                }
-                // Update if seat assignment changed
-                if (
-                    fresh.white_player_id !== game?.white_player_id ||
-                    fresh.black_player_id !== game?.black_player_id ||
-                    fresh.status !== game.status
-                ) {
-                    setGame(fresh);
-                }
-            } catch (e) { logger.warn('[WAIT_POLL] error', e); }
-        }, 2000);
-        return () => clearInterval(iv);
-    }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
+    // Polling d'attente supprimé pour éviter l'écrasement d'état optimiste
 
     // Normalize status locally when both players present (prevents stuck 'waiting')
     useEffect(() => {
@@ -468,97 +439,22 @@ const gameNotifInFlightRef = useRef(false);
     // (Disabled) Separate fallback poll removed to avoid duplicate requests
     useEffect(() => {}, [id, game?.status, game?.last_move_at]);
 
-        // Polling intelligent de l'état de la partie (auto-backoff, WS-aware)
-        useEffect(() => {
-          let canceled = false;
-          let timer = null;
-          const backoffRef = { value: 1200 };
-          const inFlight = { value: false };
+        // Auto-polling supprimé (évite l'écrasement de l'état optimiste)
 
-          const shouldPoll = () => {
-            if (!id) return false;
-            if (typeof document !== 'undefined' && document.hidden) return false;
-            if (pausePolling) return false;
-            const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-            // Poll only when WS is not open OR in preview iframe
-            return !wsOpen || isPreview;
-          };
-
-          const loop = async () => {
-            if (canceled) return;
-            if (!shouldPoll()) { timer = setTimeout(loop, 1000); return; }
-            if (inFlight.value) { timer = setTimeout(loop, backoffRef.value); return; }
-            inFlight.value = true;
-            try {
-              const updated = await base44.entities.Game.get(id);
-              const changed = !!(updated && updated.updated_date !== game?.updated_date);
-              if (changed) {
-                setGame(updated);
-                backoffRef.value = 800; // briefly faster after change
-              } else {
-                // slow down when no change to reduce API pressure
-                backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 5000);
-              }
-            } catch (e) {
-              // Exponential backoff on errors (e.g., rate limits)
-              backoffRef.value = Math.min(backoffRef.value * 2, 6000);
-            } finally {
-              inFlight.value = false;
-              if (!canceled) timer = setTimeout(loop, backoffRef.value);
-            }
-          };
-
-          loop();
-          return () => { canceled = true; if (timer) clearTimeout(timer); };
-        }, [id, isPreview, game?.updated_date, pausePolling]);
-
-        // Ecoute les événements de mouvements pour recharger immédiatement
+        // Recharge uniquement quand l'adversaire joue (événement WebSocket relayé)
         useEffect(() => {
           if (!id) return;
-          const handleMove = async () => {
-            if (pausePolling) return; // skip if we just moved locally
+          const reloadGame = async () => {
             try {
               const updated = await base44.entities.Game.get(id);
               if (updated) setGame(updated);
-            } catch (e) {}
+            } catch (_) {}
           };
-          window.addEventListener('game-move', handleMove);
-          return () => window.removeEventListener('game-move', handleMove);
+          window.addEventListener('opponent-move', reloadGame);
+          return () => window.removeEventListener('opponent-move', reloadGame);
         }, [id]);
 
-    // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
-    useEffect(() => {
-        if (!id || id === 'local-ai') return;
-        if (!isPreview) return; // only in preview mode
-
-        const fetchOnce = async () => {
-            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) return;
-            try {
-                const g = await base44.entities.Game.get(id);
-                if (!g) return;
-                setGame(prev => {
-                    if (!prev) return g;
-                    const prevU = prev.updated_date ? new Date(prev.updated_date).getTime() : 0;
-                    const newU = g.updated_date ? new Date(g.updated_date).getTime() : 0;
-                    const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
-                    const newLast = g.last_move_at ? new Date(g.last_move_at).getTime() : 0;
-                    return (newU > prevU || newLast > prevLast) ? g : prev;
-                });
-            } catch (e) { logger.warn('[PREVIEW_FETCH] error', e); }
-        };
-
-        fetchOnce();
-        const onFocus = () => fetchOnce();
-        window.addEventListener('focus', onFocus);
-        const onVisibility = () => { if (document.visibilityState === 'visible') fetchOnce(); };
-        document.addEventListener('visibilitychange', onVisibility);
-        // Removed 30s refetch polling - WebSocket is sufficient
-
-        return () => {
-            window.removeEventListener('focus', onFocus);
-            document.removeEventListener('visibilitychange', onVisibility);
-        };
-    }, [id, isPreview]);
+    // Fallback preview fetch supprimé (évite recharges non sollicitées)
 
     // Auto-join game on arrival if a seat is free (handles invite accept + direct link)
     useEffect(() => {
@@ -637,6 +533,7 @@ const gameNotifInFlightRef = useRef(false);
                     }
                 } catch (e) { logger.warn('[SILENT]', e); }
                 setGame(prev => ({ ...prev, ...payload }));
+                try { window.dispatchEvent(new CustomEvent('opponent-move', { detail: { gameId: id } })); } catch (_) {}
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
@@ -1757,13 +1654,16 @@ const gameNotifInFlightRef = useRef(false);
              updateData.last_move_at = now;
         }
 
-        // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
-        setPausePolling(true);
+        // OPTIMISTIC UPDATE (pas de polling auto)
         setGame(prev => ({ ...prev, ...updateData }));
-        // Dispatch local event to trigger immediate refetch listeners
         try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
-        // Resume polling after a short settle time to avoid yo-yo
-        setTimeout(() => setPausePolling(false), 1000);
+        // Recharge 1 fois après 1s pour synchroniser avec le serveur
+        setTimeout(async () => {
+          try {
+            const fresh = await base44.entities.Game.get(game.id);
+            if (fresh) setGame(fresh);
+          } catch (_) {}
+        }, 1000);
 
         if (game.id === 'local-ai') return;
 
