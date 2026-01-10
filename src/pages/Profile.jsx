@@ -662,52 +662,8 @@ export default function Profile() {
                         </TabsContent>
 
  className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
-                                <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
-                                            <TrendingUp className="w-5 h-5 text-green-600" /> {t('profile.elo_progression')}
-                                        </CardTitle>
-                                        <div className="flex gap-2 text-xs">
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 bg-white border shadow-sm text-[#6b5138]">1m</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">6m</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">1y</Button>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-500 hover:text-[#6b5138]">All</Button>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="p-4 h-64">
-                                    {chartData.length > 1 ? (
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={chartData}>
-                                                <defs>
-                                                    <linearGradient id="colorElo" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="#4a3728" stopOpacity={0.3}/>
-                                                        <stop offset="95%" stopColor="#4a3728" stopOpacity={0}/>
-                                                    </linearGradient>
-                                                </defs>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#f0e6d2" />
-                                                <XAxis dataKey="name" hide />
-                                                <YAxis domain={['auto', 'auto']} stroke="#8c7b6a" fontSize={12} />
-                                                <Tooltip 
-                                                    contentStyle={{ backgroundColor: '#fff', borderColor: '#d4c5b0', borderRadius: '8px' }}
-                                                    labelStyle={{ display: 'none' }}
-                                                    itemStyle={{ color: '#4a3728', fontWeight: 'bold' }}
-                                                    formatter={(value, name, props) => [value, `${props.payload.game}`]}
-                                                />
-                                                <Area type="monotone" dataKey="elo" stroke="#4a3728" strokeWidth={2} fillOpacity={1} fill="url(#colorElo)" />
-                                            </AreaChart>
-                                        </ResponsiveContainer>
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-gray-400">
-                                            <p>{t('profile.play_more')}</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                            </div>
-                        </TabsContent>
+
 
                         <TabsContent value="stats">
                             <div className="bg-white rounded-xl p-6 border border-[#d4c5b0] shadow-sm mb-6">
