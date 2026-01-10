@@ -681,7 +681,7 @@ const gameNotifInFlightRef = useRef(false);
             if (gameId !== id) return;
             const now = Date.now();
             if (gameNotifInFlightRef.current) return;
-            if (now - gameNotifRefetchAtRef.current < 1000) return; // throttle to 1 req/sec
+            if (now - gameNotifRefetchAtRef.current < 2500) return; // throttle to ~1 req/2.5s
             gameNotifRefetchAtRef.current = now;
             gameNotifInFlightRef.current = true;
             base44.entities.Game.get(id)
