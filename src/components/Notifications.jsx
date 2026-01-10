@@ -41,7 +41,7 @@ export default function Notifications() {
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
     }, []);
 
-    // Sync local list from realtime store
+    // Sync local list from realtime store (recompute true count after immediate increments)
     useEffect(() => {
         setNotifications(liveNotifications || []);
         setUnreadCount((liveNotifications || []).filter(n => !n.read).length);
