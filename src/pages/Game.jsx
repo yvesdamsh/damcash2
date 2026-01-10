@@ -729,7 +729,7 @@ export default function Game() {
         } catch (e) {
             toast.error(t('game.save_error'));
         }
-    };
+    }, [currentUser, isSaved, id, t]);
 
     // Calculate real-time clock
     const getTimeLeft = useCallback((color) => {
@@ -1891,7 +1891,7 @@ export default function Game() {
                 }
             }
         } catch (_) {}
-        base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch(() => {});
+        base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch((e) => { logger.warn('[SILENT]', e); });
         toast.success(t('game.draw_offered'));
     };
 
