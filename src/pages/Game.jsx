@@ -595,7 +595,12 @@ const gameNotifInFlightRef = useRef(false);
             } else if (data.type === 'DRAW_DECLINED') {
                 setGame(prev => ({ ...prev, draw_offer_by: null }));
                 toast.error(t('game.draw_declined') || 'Nulle refusée');
-            } else if (data.type === 'SIGNAL') {
+                } else if (data.type === 'DRAW_ACCEPTED') {
+                 setGame(prev => ({ ...prev, draw_offer_by: null, status: data.payload?.status || prev.status }));
+                 toast.success(t('game.draw_accepted') || 'Nulle acceptée');
+                } else if (data.type === 'PLAYER_JOINED') {
+                 base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch(() => {});
+                } else if (data.type === 'SIGNAL') {
                 // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
                 // Forward to shared chat store (RealTimeContext will consume via window event if needed)

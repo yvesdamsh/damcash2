@@ -22,7 +22,7 @@ export default function GameControls({
 
     return (
         <div className="flex justify-center items-center gap-2 md:gap-4 py-2 mx-2 md:mx-0">
-            {isPlaying && (
+            {isPlayer && isPlaying && (
                 <>
                     {/* UNDO ACTIONS */}
                     {game.takeback_requested_by === currentUser?.id ? (
@@ -71,7 +71,7 @@ export default function GameControls({
                 </>
             )}
             
-            {isFinished && (
+            {isPlayer && isFinished && (
                  <Button onClick={onRematch} className="h-10 bg-[#4a3728] hover:bg-[#2c1e12] text-[#e8dcc5] font-bold shadow-sm">
                     <RotateCcw className="w-4 h-4 mr-2" /> Rejouer
                 </Button>
