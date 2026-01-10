@@ -33,6 +33,24 @@ Deno.serve(async (req) => {
                     gameUpdates.postMessage({ gameId, type });
                     broadcast(gameId, { type }, null);
                 }
+                // If coming via HTTP, also trigger finish notifications (resign/draw) like WS path
+                try {
+                    if (type === 'GAME_UPDATE' && payload?.status === 'finished') {
+                        const base44 = createClientFromRequest(req);
+                        const g = await base44.asServiceRole.entities.Game.get(gameId);
+                        const white = g.white_player_id;
+                        const black = g.black_player_id;
+                        const winner = payload.winner_id || null;
+                        if (winner) {
+                            const loser = (winner === white) ? black : white;
+                            if (winner) channel.postMessage({ recipientId: winner, type: 'game', title: 'Victoire', message: 'Votre adversaire a abandonné', link: `/Game?id=${gameId}` });
+                            if (loser) channel.postMessage({ recipientId: loser, type: 'game', title: 'Défaite', message: 'Vous avez abandonné', link: `/Game?id=${gameId}` });
+                        } else {
+                            if (white) channel.postMessage({ recipientId: white, type: 'game', title: 'Partie nulle', message: 'La partie s\'est terminée par une nulle', link: `/Game?id=${gameId}` });
+                            if (black) channel.postMessage({ recipientId: black, type: 'game', title: 'Partie nulle', message: 'La partie s\'est terminée par une nulle', link: `/Game?id=${gameId}` });
+                        }
+                    }
+                } catch (_) {}
                 return Response.json({ ok: true });
             } catch (e) {
                 return Response.json({ error: e.message }, { status: 500 });
@@ -139,6 +157,46 @@ Deno.serve(async (req) => {
                      console.error('Persist error (STATE_UPDATE):', e);
                  }
              } 
+            else if (data.type === 'DRAW_OFFER') {
+                try {
+                    const me = socket.user;
+                    const g = await base44.asServiceRole.entities.Game.get(gameId);
+                    await base44.asServiceRole.entities.Game.update(gameId, { draw_offer_by: me?.id || null, updated_date: new Date().toISOString() });
+                    const opponentId = me?.id === g.white_player_id ? g.black_player_id : g.white_player_id;
+                    const senderName = me?.full_name || me?.username || 'Joueur';
+                    const msg = { type: 'DRAW_OFFER', payload: { by: me?.id, name: senderName } };
+                    broadcast(gameId, msg, null);
+                    gameUpdates.postMessage({ gameId, ...msg });
+                    if (opponentId) {
+                        channel.postMessage({ recipientId: opponentId, type: 'game', title: 'Proposition de nulle', message: `${senderName} propose une nulle`, link: `/Game?id=${gameId}` });
+                    }
+                } catch (e) { console.error('DRAW_OFFER failed', e); }
+            }
+            else if (data.type === 'DRAW_RESPONSE') {
+                try {
+                    const accept = !!data.payload?.accept;
+                    const me = socket.user;
+                    const g = await base44.asServiceRole.entities.Game.get(gameId);
+                    const opponentId = me?.id === g.white_player_id ? g.black_player_id : g.white_player_id;
+                    if (accept) {
+                        const updateData = { status: 'finished', winner_id: null, updated_date: new Date().toISOString(), draw_offer_by: null };
+                        await base44.asServiceRole.entities.Game.update(gameId, updateData);
+                        const msg = { type: 'GAME_UPDATE', payload: updateData };
+                        broadcast(gameId, msg, null);
+                        gameUpdates.postMessage({ gameId, ...msg });
+                        // Notify both players of draw
+                        if (g.white_player_id) channel.postMessage({ recipientId: g.white_player_id, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${gameId}` });
+                        if (g.black_player_id) channel.postMessage({ recipientId: g.black_player_id, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${gameId}` });
+                    } else {
+                        await base44.asServiceRole.entities.Game.update(gameId, { draw_offer_by: null, updated_date: new Date().toISOString() });
+                        const msg = { type: 'DRAW_DECLINED', payload: { by: me?.id } };
+                        broadcast(gameId, msg, null);
+                        gameUpdates.postMessage({ gameId, ...msg });
+                        // Notify offerer that draw was declined
+                        if (opponentId) channel.postMessage({ recipientId: opponentId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${gameId}` });
+                    }
+                } catch (e) { console.error('DRAW_RESPONSE failed', e); }
+            }
             else if (data.type === 'CHAT_MESSAGE') {
                 const { sender_id, sender_name, content } = data.payload;
                 
