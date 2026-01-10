@@ -561,9 +561,10 @@ export default function Game() {
 
     // Robust WebSocket Connection
     const { socket: robustSocket, readyState: wsReadyState, latencyMs, isOnline: wsOnline } = useRobustWebSocket(`/functions/gameSocket?gameId=${id}`, {
-                            autoConnect: !!id && id !== 'local-ai',
-                            reconnectInterval: 1000,
-                            heartbeatInterval: 10000,
+                             autoConnect: !!id && id !== 'local-ai',
+                             reconnectInterval: 1000,
+                             reconnectAttempts: 50,
+                             heartbeatInterval: 10000,
                             onMessage: (event, data) => {
             if (!data) return;
             if (data.type === 'GAME_UPDATE') {
@@ -608,6 +609,21 @@ export default function Game() {
     useEffect(() => {
         socketRef.current = robustSocket;
     }, [robustSocket]);
+
+    // Listen for cross-channel game notifications (fallback when WS fanout used sendNotification)
+    useEffect(() => {
+        if (!id) return;
+        const handler = (event) => {
+            const { gameId } = event.detail || {};
+            if (gameId === id) {
+                base44.entities.Game.get(id)
+                  .then(g => { if (g) setGame(prev => ({ ...(prev || {}), ...g })); })
+                  .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); });
+            }
+        };
+        window.addEventListener('game-notification', handler);
+        return () => window.removeEventListener('game-notification', handler);
+    }, [id]);
 
     // Nudge all participants to refetch as soon as socket connects (reduces join latency)
     useEffect(() => {}, [game?.id]);
@@ -1902,8 +1918,8 @@ export default function Game() {
                 // Fallback: clôture immédiate et notification via centre
                 await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null, updated_date: new Date().toISOString() });
                 const w = game?.white_player_id; const b = game?.black_player_id;
-                if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
-                if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
+                if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
+                if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
             }
         } catch (e) { logger.warn('[SILENT]', e); }
         setGame(prev => ({ ...prev, draw_offer_by: null }));
@@ -1919,7 +1935,7 @@ export default function Game() {
                 await base44.entities.Game.update(game.id, { draw_offer_by: null });
                 const offererId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (offererId) {
-                    await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}` });
+                    await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
                 }
             }
         } catch (e) { logger.warn('[SILENT]', e); }
@@ -2235,7 +2251,7 @@ export default function Game() {
                   try {
                     const opponentId = isMeWhite ? game?.black_player_id : game?.white_player_id;
                     if (opponentId) {
-                      await base44.functions.invoke('sendNotification', { recipient_id: opponentId, type: 'game', title: 'Abandon', message: 'Votre adversaire a abandonné', link: `/Game?id=${game.id}` });
+                      await base44.functions.invoke('sendNotification', { recipient_id: opponentId, type: 'game', title: 'Abandon', message: 'Votre adversaire a abandonné', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
                     }
                   } catch (e) { logger.warn('[RESIGN][notify] error', e); }
                 }

@@ -148,6 +148,20 @@ export function RealTimeProvider({ children }) {
                     };
                 }
                 
+                if (data.type === 'game' && data.metadata && data.metadata.game_id) {
+                    try {
+                        window.dispatchEvent(new CustomEvent('game-notification', {
+                            detail: {
+                                gameId: data.metadata.game_id,
+                                type: data.type,
+                                title: data.title,
+                                message: data.message,
+                                link: data.link,
+                                metadata: data.metadata
+                            }
+                        }));
+                    } catch (_) {}
+                }
                 window.dispatchEvent(new CustomEvent('notification-update'));
             } else {
                 // Fallback for providers sending minimal payloads (ensure badge increments)
