@@ -65,6 +65,20 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
         }
     }, [messages]);
 
+    // Polling intelligent des messages de chat (toutes les 2s)
+    useEffect(() => {
+      if (!gameId) return;
+      const chatInterval = setInterval(async () => {
+        try {
+          const msgs = await base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 200);
+          if (JSON.stringify(msgs) !== JSON.stringify(chatByGame[gameId])) {
+            setMessages(msgs || []);
+          }
+        } catch (e) {}
+      }, 2000);
+      return () => clearInterval(chatInterval);
+    }, [gameId, chatByGame]);
+
     const handleSend = async (e, contentOverride) => {
         if (e) e.preventDefault();
         const textToSend = contentOverride || newMessage.trim();
