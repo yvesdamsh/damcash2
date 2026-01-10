@@ -1003,7 +1003,14 @@ export default function Home() {
                                                     title: t('home.invite_friend'),
                                                     message: t('home.invite_from') + ` ${user.username || t('common.anonymous')}`,
                                                     link: `/Game?id=${newGame.id}`,
-                                                    metadata: { gameId: newGame.id, invitationId: invitation.id }
+                                                    metadata: {
+                                                        gameId: newGame.id,
+                                                        invitationId: invitation.id,
+                                                        game_type: gameType,
+                                                        time: gameConfig.time,
+                                                        increment: gameConfig.increment,
+                                                        series: gameConfig.series
+                                                    }
                                                 }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
                                             } catch (e) {
                                                 console.error('[INVITE] Failed:', e);

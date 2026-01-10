@@ -194,7 +194,13 @@ export default function Notifications() {
                     {notifications
                         .filter(n => {
                             if (activeTab === 'all') return true;
-                            if (activeTab === 'game') return ['game', 'game_invite', 'team_challenge', 'team_request', 'tournament_update'].includes(n.type);
+                            if (activeTab === 'game') return ['game', 'tournament_update'].includes(n.type);
+                            if (activeTab === 'invites') {
+                                try {
+                                    const meta = typeof n.metadata === 'string' ? safeJSONParse(n.metadata, {}) : (n.metadata || {});
+                                    return n.type === 'game_invite' || !!(meta.gameId || meta.invitationId);
+                                } catch(_) { return n.type === 'game_invite'; }
+                            }
                             if (activeTab === 'system') return ['info', 'success', 'warning', 'tournament', 'message', 'forum'].includes(n.type);
                             return true;
                         })
@@ -235,8 +241,27 @@ export default function Notifications() {
                                             <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 break-words">
                                                 {notification.message}
                                             </p>
-                                            
-                                            {(notification.type === 'game_invite' || notification.type === 'team_challenge') && (
+
+                                            {/* Time control / config badge for invites */}
+                                            {(() => {
+                                                try {
+                                                    const meta = typeof notification.metadata === 'string' ? safeJSONParse(notification.metadata, {}) : (notification.metadata || {});
+                                                    const isInvite = notification.type === 'game_invite' || meta?.gameId || meta?.invitationId;
+                                                    if (!isInvite) return null;
+                                                    const tc = `${meta?.time ?? meta?.initial_time ?? '?'}+${meta?.increment ?? 0}`;
+                                                    const series = meta?.series ? ` · BO${meta.series}` : '';
+                                                    const gt = meta?.game_type ? (meta.game_type === 'chess' ? 'Chess' : 'Dames') : '';
+                                                    return (
+                                                        <div className="mt-1 text-[11px] text-[#4a3728] dark:text-[#e8dcc5]">
+                                                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#f5efe3] dark:bg-[#2a201a] border border-[#e8dcc5]/60">
+                                                                {gt && (<span className="font-semibold mr-1">{gt}</span>)}{tc}{series}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                } catch (_) { return null; }
+                                            })()}
+
+                                            {(notification.type === 'game_invite' || notification.type === 'team_challenge' || (()=>{ try { const m = typeof notification.metadata === 'string' ? JSON.parse(notification.metadata) : (notification.metadata||{}); return !!(m.gameId || m.invitationId); } catch(_) { return false; } })()) && (
                                                 <div className="flex gap-2 mt-2">
                                                     <Button size="sm" className="h-6 text-xs bg-green-600 hover:bg-green-700" onClick={(e) => handleAction(e, notification, 'accept')}>
                                                         {t('common.accept')}
