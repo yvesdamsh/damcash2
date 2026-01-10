@@ -51,12 +51,47 @@ export function RealTimeProvider({ children }) {
                 ));
 
             if (isInvitation) {
-                console.log('[REALTIME] Invitation detected, dispatching event');
-                const invitationData = data.metadata || data.payload || data.data || data;
-                window.dispatchEvent(new CustomEvent('invitation-received', { 
-                    detail: invitationData
-                }));
-                console.log('[REALTIME] Event dispatched with data:', invitationData);
+                console.log('[REALTIME] Invitation detected, dispatching event + updating store');
+                const invitationData = data.metadata || data.payload || data.data || {};
+                const inviteTitle = data.title || 'Nouvelle invitation';
+                const inviteMessage = data.message || 'Vous avez reçu une invitation à jouer';
+                const inviteLink = data.link || invitationData.link || invitationData.game_link || null;
+
+                // 1) Push into in-memory notifications store with defaults
+                setNotifications(prev => [
+                    {
+                        id: 'live-invite-' + Date.now(),
+                        type: data.type || 'game_invite',
+                        title: inviteTitle,
+                        message: inviteMessage,
+                        link: inviteLink,
+                        sender_id: data.senderId,
+                        created_date: new Date().toISOString(),
+                        read: false,
+                        metadata: invitationData
+                    },
+                    ...prev
+                ].slice(0, 50));
+
+                // 2) Toast immediate
+                try {
+                    toast(inviteTitle, {
+                        description: inviteMessage,
+                        action: inviteLink ? { label: 'Voir', onClick: () => navigate(inviteLink) } : undefined,
+                    });
+                } catch (_) {}
+
+                // 3) System notification (if allowed and tab not focused)
+                try {
+                    if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
+                        const n = new Notification(inviteTitle, { body: inviteMessage, icon: '/favicon.ico' });
+                        n.onclick = () => { window.focus(); if (inviteLink) navigate(inviteLink); };
+                    }
+                } catch (_) {}
+
+                // 4) Fire events to update UI counters immediately
+                try { window.dispatchEvent(new CustomEvent('notification-update')); } catch (_) {}
+                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: invitationData })); } catch (_) {}
             }
 
             // Direct messages -> event bus for DirectChat
