@@ -89,8 +89,13 @@ export default function Notifications() {
     // Sync from realtime store, restricted to allowed types
     useEffect(() => {
         const normalized = normalizeList(liveNotifications || []);
-        setNotifications(normalized);
-        const live = normalized.filter(n => !n.read).length;
+        // If an invite arrives live, merge it into existing list instead of overwriting (prevents flicker)
+        setNotifications(prev => {
+            const byId = new Map(prev.map(n => [n.id, n]));
+            normalized.forEach(n => byId.set(n.id, n));
+            return Array.from(byId.values());
+        });
+        const live = (normalized || []).filter(n => !n.read).length;
         setUnreadCount(live);
     }, [liveNotifications]);
 
