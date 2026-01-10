@@ -113,7 +113,14 @@ export function RealTimeProvider({ children }) {
         }
     });
 
-    const connectGame = (gameId, onGameMessage) => {
+    // Ensure registration even if the socket opened before user was loaded
+    useEffect(() => {
+        if (user?.id) {
+            try { sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
+        }
+    }, [user?.id]);
+
+     const connectGame = (gameId, onGameMessage) => {
         // Return a hook config or just the hook result?
         // Hooks must be called in components.
         // So we cannot call useRobustWebSocket here dynamically.

@@ -344,12 +344,23 @@ export default function Home() {
             const refreshInvites = async () => {
                 console.log('[HOME] Refreshing invitations for:', user.email);
                 try {
-                    const pending = await base44.entities.Invitation.filter({ 
+                    const pendingById = await base44.entities.Invitation.filter({ 
                         to_user_id: user.id, 
                         status: 'pending' 
                     });
-                    console.log('[HOME] Invitations loaded:', pending.length);
-                    setInvitations(pending);
+                    let merged = pendingById;
+                    // Fallback by email for older invites
+                    try {
+                        if ((merged?.length || 0) === 0 && user.email) {
+                            const pendingByEmail = await base44.entities.Invitation.filter({ 
+                                to_user_email: user.email.toLowerCase(),
+                                status: 'pending'
+                            });
+                            merged = pendingByEmail;
+                        }
+                    } catch (_) {}
+                    console.log('[HOME] Invitations loaded:', merged.length);
+                    setInvitations(merged);
                 } catch (e) {
                     console.error('[HOME] Error loading invitations:', e);
                 }
