@@ -19,12 +19,19 @@ export default function Notifications() {
     const { notifications: liveNotifications } = useRealTime();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useState('invites');
     const [pushEnabled, setPushEnabled] = useState(
         typeof Notification !== 'undefined' && Notification.permission === 'granted'
     );
     const [userId, setUserId] = useState(null);
     const navigate = useNavigate();
+
+    // Only show Invites (unread) and Inbox Messages in the bell
+    const isAllowed = (n) => n && (n.type === 'game_invite' || n.type === 'message');
+    const normalizeList = (list = []) => (list || [])
+        .filter(isAllowed)
+        // Do not keep history for invites: show only unread invites
+        .filter(n => !(n.type === 'game_invite' && n.read));
 
     const requestPushPermission = async () => {
         if (typeof Notification === 'undefined') return;
@@ -41,16 +48,16 @@ export default function Notifications() {
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
     }, []);
 
-    // Baseline: fetch unread count from DB so badge reflects existing unread on load
+    // Baseline: fetch only allowed notifications; invites shown only if unread
     useEffect(() => {
         const loadUnread = async () => {
             if (!userId) return;
             try {
                 const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
-                const unread = (all || []).filter(n => !n.read).length;
+                const processed = normalizeList(all);
+                setNotifications(processed);
+                const unread = processed.filter(n => !n.read).length;
                 setUnreadCount(unread);
-                // also seed list if empty to avoid empty popover on first load
-                setNotifications(prev => (prev && prev.length ? prev : (all || [])));
             } catch (_) {}
         };
         loadUnread();
@@ -64,15 +71,17 @@ export default function Notifications() {
         };
     }, [userId]);
 
-    // Sync from realtime store but preserve baseline (DB) count if larger
+    // Sync from realtime store, restricted to allowed types
     useEffect(() => {
-        setNotifications(liveNotifications || []);
-        const live = (liveNotifications || []).filter(n => !n.read).length;
-        setUnreadCount((c) => Math.max(c, live));
+        const normalized = normalizeList(liveNotifications || []);
+        setNotifications(normalized);
+        const live = normalized.filter(n => !n.read).length;
+        setUnreadCount(live);
     }, [liveNotifications]);
 
     useEffect(() => {
-        const onNotif = () => setUnreadCount(c => c + 1);
+        // For generic updates, let the live sync effect recalc; only invites increment immediately
+        const onNotif = () => {};
         const onInvite = () => setUnreadCount(c => c + 1);
         window.addEventListener('notification-update', onNotif);
         window.addEventListener('invitation-received', onInvite);
@@ -198,9 +207,9 @@ export default function Notifications() {
                     </div>
                 </div>
                 
-                {/* Category Tabs */}
+                {/* Category Tabs (only two) */}
                 <div className="flex border-b border-[#d4c5b0] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#1e1814]">
-                    {['all', 'game', 'system'].map(tab => (
+                    {['invites', 'messages'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -209,25 +218,14 @@ export default function Notifications() {
                                     ? 'text-[#4a3728] dark:text-[#e8dcc5] border-b-2 border-[#4a3728] dark:border-[#e8dcc5]' 
                                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
                         >
-                            {tab === 'all' ? 'Tout' : tab === 'game' ? 'Jeu' : 'Système'}
+                            {tab === 'invites' ? 'Invitations' : 'Messages'}
                         </button>
                     ))}
                 </div>
 
                 <div className="max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-[#d4c5b0] dark:scrollbar-thumb-[#3d2b1f] scrollbar-track-transparent">
                     {notifications
-                        .filter(n => {
-                            if (activeTab === 'all') return true;
-                            if (activeTab === 'game') return ['game', 'tournament_update'].includes(n.type);
-                            if (activeTab === 'invites') {
-                                try {
-                                    const meta = typeof n.metadata === 'string' ? safeJSONParse(n.metadata, {}) : (n.metadata || {});
-                                    return n.type === 'game_invite' || !!(meta.gameId || meta.invitationId);
-                                } catch(_) { return n.type === 'game_invite'; }
-                            }
-                            if (activeTab === 'system') return ['info', 'success', 'warning', 'tournament', 'message', 'forum'].includes(n.type);
-                            return true;
-                        })
+                        .filter(n => activeTab === 'invites' ? (n.type === 'game_invite' && !n.read) : (n.type === 'message'))
                         .length === 0 ? (
                         <div className="p-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                             Aucune notification
@@ -235,12 +233,7 @@ export default function Notifications() {
                     ) : (
                         <div className="divide-y divide-[#e8dcc5] dark:divide-[#3d2b1f]">
                             {notifications
-                                .filter(n => {
-                                    if (activeTab === 'all') return true;
-                                    if (activeTab === 'game') return ['game', 'game_invite', 'team_challenge', 'team_request', 'tournament_update'].includes(n.type);
-                                    if (activeTab === 'system') return ['info', 'success', 'warning', 'tournament', 'message', 'forum'].includes(n.type);
-                                    return true;
-                                })
+                                .filter(n => activeTab === 'invites' ? (n.type === 'game_invite' && !n.read) : (n.type === 'message'))
                                 .map((notification) => (
                                 <div
                                     key={notification.id}
