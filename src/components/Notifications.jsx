@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp, Swords, Trophy, UserPlus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,6 +24,18 @@ export default function Notifications() {
         typeof Notification !== 'undefined' && Notification.permission === 'granted'
     );
     const [userId, setUserId] = useState(null);
+
+    // Centralized reload to keep UI in sync without page refresh
+    const reloadUnread = useCallback(async () => {
+        if (!userId) return;
+        try {
+            const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
+            const processed = normalizeList(all);
+            setNotifications(processed);
+            const unread = processed.filter(n => !n.read).length;
+            setUnreadCount(unread);
+        } catch (_) {}
+    }, [userId]);
     const navigate = useNavigate();
 
     // Only show Invites (unread) and Inbox Messages in the bell
@@ -50,26 +62,16 @@ export default function Notifications() {
 
     // Baseline: fetch only allowed notifications; invites shown only if unread
     useEffect(() => {
-        const loadUnread = async () => {
-            if (!userId) return;
-            try {
-                const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
-                const processed = normalizeList(all);
-                setNotifications(processed);
-                const unread = processed.filter(n => !n.read).length;
-                setUnreadCount(unread);
-            } catch (_) {}
-        };
-        loadUnread();
-        const onFocus = () => loadUnread();
-        const onVisibility = () => { if (document.visibilityState === 'visible') loadUnread(); };
+        reloadUnread();
+        const onFocus = () => reloadUnread();
+        const onVisibility = () => { if (document.visibilityState === 'visible') reloadUnread(); };
         window.addEventListener('focus', onFocus);
         document.addEventListener('visibilitychange', onVisibility);
         return () => {
             window.removeEventListener('focus', onFocus);
             document.removeEventListener('visibilitychange', onVisibility);
         };
-    }, [userId]);
+    }, [reloadUnread]);
 
     // Sync from realtime store, restricted to allowed types
     useEffect(() => {
@@ -80,16 +82,16 @@ export default function Notifications() {
     }, [liveNotifications]);
 
     useEffect(() => {
-        // For generic updates, let the live sync effect recalc; only invites increment immediately
-        const onNotif = () => {};
-        const onInvite = () => setUnreadCount(c => c + 1);
+        // On WS push, reload from DB to reflect canonical state immediately
+        const onNotif = () => reloadUnread();
+        const onInvite = () => reloadUnread();
         window.addEventListener('notification-update', onNotif);
         window.addEventListener('invitation-received', onInvite);
         return () => {
             window.removeEventListener('notification-update', onNotif);
             window.removeEventListener('invitation-received', onInvite);
         };
-    }, []);
+    }, [reloadUnread]);
 
     const markAsRead = async (id) => {
         try { await base44.entities.Notification.update(id, { read: true }); } catch (e) { /* ignore */ }
