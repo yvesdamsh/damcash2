@@ -76,6 +76,7 @@ const gameNotifInFlightRef = useRef(false);
     const [syncedSignals, setSyncedSignals] = useState([]);
     const [lastDragMove, setLastDragMove] = useState(null);
     const [isAuthed, setIsAuthed] = useState(false);
+    const [pausePolling, setPausePolling] = useState(false);
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -477,6 +478,7 @@ const gameNotifInFlightRef = useRef(false);
           const shouldPoll = () => {
             if (!id) return false;
             if (typeof document !== 'undefined' && document.hidden) return false;
+            if (pausePolling) return false;
             const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
             // Poll only when WS is not open OR in preview iframe
             return !wsOpen || isPreview;
@@ -504,12 +506,13 @@ const gameNotifInFlightRef = useRef(false);
 
           loop();
           return () => { canceled = true; if (timer) clearTimeout(timer); };
-        }, [id, isPreview, game?.updated_date]);
+        }, [id, isPreview, game?.updated_date, pausePolling]);
 
         // Ecoute les événements de mouvements pour recharger immédiatement
         useEffect(() => {
           if (!id) return;
           const handleMove = async () => {
+            if (pausePolling) return; // skip if we just moved locally
             try {
               const updated = await base44.entities.Game.get(id);
               if (updated) setGame(updated);
@@ -1751,9 +1754,12 @@ const gameNotifInFlightRef = useRef(false);
         }
 
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
+        setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
         // Dispatch local event to trigger immediate refetch listeners
         try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
+        // Resume polling after a short settle time to avoid yo-yo
+        setTimeout(() => setPausePolling(false), 1000);
 
         if (game.id === 'local-ai') return;
 
