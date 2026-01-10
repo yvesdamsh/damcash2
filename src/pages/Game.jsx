@@ -67,6 +67,8 @@ export default function Game() {
     const [showResignConfirm, setShowResignConfirm] = useState(false);
     const socketRef = useRef(null);
     const pendingMovesRef = useRef(new Map());
+const gameNotifRefetchAtRef = useRef(0);
+const gameNotifInFlightRef = useRef(false);
     const [reactions, setReactions] = useState([]);
     // lastSignal removed - VideoChat handles it directly
     const [inviteOpen, setInviteOpen] = useState(false);
@@ -615,11 +617,16 @@ export default function Game() {
         if (!id) return;
         const handler = (event) => {
             const { gameId } = event.detail || {};
-            if (gameId === id) {
-                base44.entities.Game.get(id)
-                  .then(g => { if (g) setGame(prev => ({ ...(prev || {}), ...g })); })
-                  .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); });
-            }
+            if (gameId !== id) return;
+            const now = Date.now();
+            if (gameNotifInFlightRef.current) return;
+            if (now - gameNotifRefetchAtRef.current < 1000) return; // throttle to 1 req/sec
+            gameNotifRefetchAtRef.current = now;
+            gameNotifInFlightRef.current = true;
+            base44.entities.Game.get(id)
+              .then(g => { if (g) setGame(prev => ({ ...(prev || {}), ...g })); })
+              .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); })
+              .finally(() => { gameNotifInFlightRef.current = false; });
         };
         window.addEventListener('game-notification', handler);
         return () => window.removeEventListener('game-notification', handler);
