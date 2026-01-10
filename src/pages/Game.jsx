@@ -480,6 +480,23 @@ const gameNotifInFlightRef = useRef(false);
         return () => clearInterval(interval);
         }, [id, game?.status, game?.last_move_at]);
 
+        // Polling intelligent de l'état de la partie (pseudo temps réel en preview)
+        useEffect(() => {
+          if (!id) return;
+          
+          // Vérifie l'état du jeu toutes les 2 secondes
+          const gameInterval = setInterval(async () => {
+            try {
+              const updated = await base44.entities.Game.get(id);
+              if (updated && JSON.stringify(updated) !== JSON.stringify(game)) {
+                setGame(updated);
+              }
+            } catch (e) {}
+          }, 2000);
+          
+          return () => clearInterval(gameInterval);
+        }, [id, game]);
+
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
         if (!id || id === 'local-ai') return;

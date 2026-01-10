@@ -86,6 +86,19 @@ export default function Notifications() {
         };
     }, [reloadUnread]);
 
+    // Polling intelligent pour contourner les limites WebSocket de Base44
+    useEffect(() => {
+      if (!userId) return;
+      
+      // Polling toutes les 3 secondes
+      const pollInterval = setInterval(() => {
+        reloadUnread();
+      }, 3000);
+      
+      // Cleanup
+      return () => clearInterval(pollInterval);
+    }, [userId]);
+
     // Sync from realtime store, restricted to allowed types
     useEffect(() => {
         const normalized = normalizeList(liveNotifications || []);
