@@ -129,12 +129,14 @@ export default async function handler(req) {
             updated_date: new Date().toISOString()
         };
         gameUpdates.postMessage({ gameId, type: 'GAME_UPDATE', payload: updatePayload });
-        // Also trigger a refetch signal for clients that rely on it
+        // Also trigger a refetch + explicit player-joined to force immediate UI refresh
         gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+        gameUpdates.postMessage({ gameId, type: 'PLAYER_JOINED', payload: { userId: user.id } });
 
         // Fan-out via HTTP function to reach all WS instances immediately
         base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updatePayload }).catch(() => {});
         base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_REFETCH' }).catch(() => {});
+        base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'PLAYER_JOINED', payload: { userId: user.id } }).catch(() => {});
 
         // Notify opponent
         const opponentId = finalGame.white_player_id === user.id ? finalGame.black_player_id : finalGame.white_player_id;

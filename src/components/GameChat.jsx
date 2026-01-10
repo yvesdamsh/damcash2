@@ -16,10 +16,20 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
     const { chatByGame, sendGameChat } = useRealTime();
     const [messages, setMessages] = useState([]);
     
-    // Sync with shared chat store
+    // Sync with shared chat store and external push-in
     useEffect(() => {
         setMessages(chatByGame[gameId] || []);
     }, [chatByGame, gameId]);
+
+    useEffect(() => {
+        if (externalMessages && externalMessages.length) {
+            setMessages(prev => {
+                const known = new Set(prev.map(m => m.id));
+                const extra = externalMessages.filter(m => !known.has(m.id));
+                return extra.length ? [...prev, ...extra] : prev;
+            });
+        }
+    }, [externalMessages]);
 
     const quickReplies = [
         t('chat.quick.well_played'),

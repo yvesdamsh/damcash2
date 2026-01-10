@@ -231,6 +231,11 @@ Deno.serve(async (req) => {
                     console.error("Failed to notify opponent", e);
                 }
             }
+            else if (data.type === 'PLAYER_JOINED') {
+                // Soft ping to clients to refresh seats quickly
+                broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+            }
             else if (data.type === 'GAME_REACTION') {
                 const payload = data.payload;
                 broadcast(gameId, { type: 'GAME_REACTION', payload });

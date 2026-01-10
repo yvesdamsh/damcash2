@@ -592,7 +592,10 @@ export default function Game() {
             } else if (data.type === 'CHAT_UPDATE') {
                 // Forward to shared chat store (RealTimeContext will consume via window event if needed)
                 try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (_) {}
+                try { handleGameMessage(id, data.payload); } catch (_) {}
                 setSyncedMessages(prev => [...prev, data.payload]);
+            } else if (data.type === 'GAME_REFETCH') {
+                base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch(()=>{});
             }
         }
     });
@@ -2224,6 +2227,19 @@ export default function Game() {
                                             if (wsReadyState === WebSocket.OPEN && socketRef.current) {
                                                 socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                                             }
+                                            // Immediate bell notification to opponent
+                                            try {
+                                                const opponentId = isMeWhite ? game.black_player_id : game.white_player_id;
+                                                if (opponentId) {
+                                                    await base44.functions.invoke('sendNotification', {
+                                                        recipient_id: opponentId,
+                                                        type: 'game',
+                                                        title: 'Abandon',
+                                                        message: 'Votre adversaire a abandonné',
+                                                        link: `/Game?id=${game.id}`
+                                                    });
+                                                }
+                                            } catch (_) {}
                                         }
                                         soundManager.play('loss');
                                     }}
