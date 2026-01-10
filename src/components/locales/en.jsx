@@ -482,6 +482,10 @@ export default {
   "tournaments.weekly_badge": "Weekly",
   "tournaments.join_btn": "Join",
   "tournaments.no_official": "No official events coming soon.",
+  "leagues.promotion": "Promotion:",
+  "leagues.relegation": "Relegation:",
+  "profile.change_banner": "Change",
+  "profile.no_banner": "No banner"
   "tournaments.search_placeholder": "Search tournament...",
   "tournaments.filter_game": "Game Type",
   "tournaments.filter_all_games": "All Games",
