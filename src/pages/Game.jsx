@@ -2064,7 +2064,7 @@ export default function Game() {
                 link: `/Game?id=${game.id}`,
                 metadata: { game_id: game.id, kind: 'spectator' }
                 });
-            toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
+            toast.success(t('game.invite_sent', { name: (userToInvite.username || t('common.player') || 'Joueur') }) || `Invitation envoyée à ${(userToInvite.username || t('common.player') || 'Joueur')}`);
             setInviteOpen(false);
         } catch (e) {
             toast.error(t('game.invite_error'));
@@ -2268,7 +2268,7 @@ export default function Game() {
                                         message: t('game.spectate_invite_msg', { name: currentUser.username || t('common.anonymous'), game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') }),
                                         link: `/Game?id=${game.id}`,
                                         sender_id: currentUser.id,
-                                        metadata: JSON.stringify({ kind: 'spectator' })
+                                        metadata: { kind: 'spectator' }
                                       });
                                       toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
                                       setInviteOpen(false);
