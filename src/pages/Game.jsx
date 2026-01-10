@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -40,6 +40,7 @@ import GameControls from '@/components/game/GameControls';
 import ReplayControls from '@/components/game/ReplayControls';
 import GameReactions from '@/components/game/GameReactions';
 import BettingPanel from '@/components/BettingPanel';
+import ConnectionBadge from '@/components/game/ConnectionBadge';
 
 export default function Game() {
     const { t } = useLanguage();
@@ -365,7 +366,7 @@ export default function Game() {
                 const authed = await base44.auth.isAuthenticated().catch(() => false);
                 setIsAuthed(authed);
             } catch (e) {
-                console.error("Auth check error", e);
+                logger.error("Auth check error", e);
             }
         };
         checkAuth();
@@ -396,7 +397,7 @@ export default function Game() {
                     ]);
                     setPlayersInfo({ white, black });
                 } catch (e) {
-                    console.error("Error fetching players", e);
+                    logger.error("Error fetching players", e);
                 }
             };
             fetchPlayers();
@@ -445,7 +446,7 @@ export default function Game() {
                 ) {
                     setGame(fresh);
                 }
-            } catch (_) {}
+            } catch (e) { logger.warn('[WAIT_POLL] error', e); }
         }, 2000);
         return () => clearInterval(iv);
     }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
@@ -484,7 +485,7 @@ export default function Game() {
                     const newLast = g.last_move_at ? new Date(g.last_move_at).getTime() : 0;
                     return (newU > prevU || newLast > prevLast) ? g : prev;
                 });
-            } catch (_) {}
+            } catch (e) { logger.warn('[PREVIEW_FETCH] error', e); }
         };
 
         fetchOnce();
@@ -598,7 +599,7 @@ export default function Game() {
                 try { handleGameMessage(id, data.payload); } catch (_) {}
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch(()=>{});
+                base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
             }
         }
     });
@@ -609,6 +610,20 @@ export default function Game() {
 
     // Nudge all participants to refetch as soon as socket connects (reduces join latency)
     useEffect(() => {}, [game?.id]);
+
+    const handleSync = useCallback(async () => {
+        try {
+            toast.info(t('game.syncing'));
+            const g = await base44.entities.Game.get(game.id);
+            setGame(g);
+            if (window.__damcash_last_game && window.__damcash_last_game.id === game.id) {
+                setGame(window.__damcash_last_game);
+                window.__damcash_last_game = null;
+            }
+        } catch (e) {
+            logger.warn('[SYNC] error', e);
+        }
+    }, [game?.id, t]);
 
     // Removed WebSocket fallback polling - causing 429 rate limit errors
 
@@ -714,7 +729,7 @@ export default function Game() {
     };
 
     // Calculate real-time clock
-    const getTimeLeft = (color) => {
+    const getTimeLeft = useCallback((color) => {
         if (!game) return 600;
         const baseTime = color === 'white' ? (game.white_seconds_left || 600) : (game.black_seconds_left || 600);
         if (game.status === 'playing' && game.current_turn === color && game.last_move_at) {
@@ -722,7 +737,7 @@ export default function Game() {
             return Math.max(0, baseTime - elapsed);
         }
         return baseTime;
-    };
+    }, [game]);
 
     // -----------------------------------------------------------------------
     // AI Logic
@@ -1113,7 +1128,7 @@ export default function Game() {
                                 try {
                                     await updateGameOnMove(seqBoard, nextTurn, status, winnerId, newMoveEntry);
                                 } catch (e) {
-                                    console.error('[AI] Persist error (backend sequence)', e);
+                                    logger.error('[AI] Persist error (backend sequence)', e);
                                 }
                             }
 
@@ -1189,7 +1204,7 @@ export default function Game() {
                                     try {
                                         await updateGameOnMove(newBoard, nextTurn, status, winnerId, newMoveEntry);
                                     } catch (e) {
-                                        console.error('[AI] Persist error (fallback)', e);
+                                        logger.error('[AI] Persist error (fallback)', e);
                                     }
                                 }
 
@@ -1209,7 +1224,7 @@ export default function Game() {
                         }
                     }
                 } catch (err) {
-                    console.error("AI Error:", err);
+                    logger.error("AI Error:", err);
                     // Fallback: ensure the AI still plays a legal move locally
                     try {
                         if (game.game_type === 'chess') {
@@ -1235,7 +1250,7 @@ export default function Game() {
                             }
                         }
                     } catch (e2) {
-                        console.error('[AI] Local fallback failed:', e2);
+                        logger.error('[AI] Local fallback failed:', e2);
                     }
                 } finally {
                     // Always reset thinking flag to avoid getting stuck after state changes
@@ -1683,12 +1698,12 @@ export default function Game() {
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {
-                          console.error("Move save error", e);
+                          logger.error("Move save error", e);
                           try {
                               await base44.entities.Game.update(game.id, updateData);
-                              console.log("Move save retry succeeded");
+                              logger.log("Move save retry succeeded");
                           } catch (retryError) {
-                              console.error("Move save retry failed", retryError);
+                              logger.error("Move save retry failed", retryError);
                               if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                                   socketRef.current.send(JSON.stringify({
                                       type: 'FORCE_SAVE_MOVE',
@@ -1826,7 +1841,7 @@ export default function Game() {
             };
 
             if (game.id !== 'local-ai') {
-                base44.entities.Game.update(game.id, updateData).catch(e => console.error("Rematch update error", e));
+                base44.entities.Game.update(game.id, updateData).catch(e => logger.error("Rematch update error", e));
                 // Re-fetch to be sure for online games
                 setTimeout(async () => {
                     const refreshed = await base44.entities.Game.get(game.id);
@@ -1840,7 +1855,7 @@ export default function Game() {
             setReplayIndex(-1);
             toast.success(t('game.new_round_started'));
         } catch (e) {
-            console.error("Rematch error", e);
+            logger.error("Rematch error", e);
             toast.error(t('game.rematch_error'));
         }
     };
@@ -1919,7 +1934,7 @@ export default function Game() {
         try {
             if (!isAiGame) {
                 // First mark game finished so both clients stop clocks immediately
-                base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => console.error("Finish game error", e));
+                base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => logger.error("Finish game error", e));
                 // Broadcast state through socket
                 if (wsReadyState === WebSocket.OPEN && socketRef.current) {
                     socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() } }));
@@ -1943,7 +1958,7 @@ export default function Game() {
             setGame(prev => ({ ...prev, status: 'finished', winner_id: winnerId }));
             setShowResult(true);
         } catch (e) {
-            console.error("Timeout handling error", e);
+            logger.error("Timeout handling error", e);
         }
     };
 
@@ -1953,7 +1968,7 @@ export default function Game() {
         const moves = game.moves ? safeJSONParse(game.moves, []) : [];
         if (moves.length === 0) return;
 
-        base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id }).catch(e => console.error("Takeback request error", e));
+        base44.entities.Game.update(game.id, { takeback_requested_by: currentUser.id }).catch(e => logger.error("Takeback request error", e));
         toast.success(t('game.takeback_sent'));
     };
 
@@ -1996,11 +2011,11 @@ export default function Game() {
                 // We should probably adjust time too, but that's complex. Let's keep time flowing or running.
                 // Actually time usually reverts too but we don't track time per move history easily here.
                 // We'll leave time as is for simplicity (penalty for mistake).
-            }).catch(e => console.error("Accept takeback error", e));
+            }).catch(e => logger.error("Accept takeback error", e));
             
             toast.success(t('game.takeback_accepted'));
         } catch (e) {
-            console.error(e);
+            logger.error(e);
             toast.error(t('game.takeback_error'));
         } finally {
             setTakebackLoading(false);
@@ -2009,7 +2024,7 @@ export default function Game() {
 
     const handleDeclineTakeback = async () => {
         if (!game) return;
-        base44.entities.Game.update(game.id, { takeback_requested_by: null }).catch(e => console.error("Decline takeback error", e));
+        base44.entities.Game.update(game.id, { takeback_requested_by: null }).catch(e => logger.error("Decline takeback error", e));
         toast.error(t('game.takeback_declined'));
     };
 
@@ -2100,57 +2115,61 @@ export default function Game() {
         </div>
     );
 
-    const movesList = safeJSONParse(game?.moves, []);
-    let displayBoard = board;
-    if (replayIndex !== -1 && movesList[replayIndex]) {
-        try {
-            const parsedMove = safeJSONParse(movesList[replayIndex].board, {});
-            displayBoard = game.game_type === 'chess' ? (parsedMove.board || []) : parsedMove;
-        } catch (e) {
-            displayBoard = [];
+    const movesList = useMemo(() => safeJSONParse(game?.moves, []), [game?.moves]);
+    const displayBoardMemo = useMemo(() => {
+        if (replayIndex !== -1 && movesList[replayIndex]) {
+            try {
+                const parsedMove = safeJSONParse(movesList[replayIndex].board, {});
+                return game.game_type === 'chess' ? (parsedMove.board || []) : parsedMove;
+            } catch (e) {
+                return [];
+            }
         }
-    }
-    if (!Array.isArray(displayBoard)) displayBoard = [];
+        return board;
+    }, [replayIndex, movesList, game?.game_type, board]);
+    const displayBoard = useMemo(() => (Array.isArray(displayBoardMemo) ? displayBoardMemo : []), [displayBoardMemo]);
 
     // Orientation Logic
-    const autoOrientation = (currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id) ? 'black' : 'white';
-    const orientation = manualOrientation || autoOrientation;
+    const autoOrientation = useMemo(() => (
+        (currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id) ? 'black' : 'white'
+    ), [currentUser?.id, game?.black_player_id]);
+    const orientation = useMemo(() => (manualOrientation || autoOrientation), [manualOrientation, autoOrientation]);
     const isFlipped = orientation === 'black';
     
-    const topPlayer = (isFlipped) ? { 
-        id: game.white_player_id, 
-        name: game.white_player_name || playersInfo.white?.username, 
+    const topPlayer = useMemo(() => (isFlipped ? {
+        id: game.white_player_id,
+        name: game.white_player_name || playersInfo.white?.username,
         color: 'white',
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
-    } : { 
-        id: game.black_player_id, 
-        name: game.black_player_name || playersInfo.black?.username, 
+    } : {
+        id: game.black_player_id,
+        name: game.black_player_name || playersInfo.black?.username,
         color: 'black',
         info: playersInfo.black,
         timeLeft: getTimeLeft('black')
-    };
+    }), [isFlipped, game?.white_player_id, game?.white_player_name, game?.black_player_id, game?.black_player_name, playersInfo, getTimeLeft]);
 
-    const bottomPlayer = (isFlipped) ? { 
-        id: game.black_player_id, 
-        name: game.black_player_name || playersInfo.black?.username, 
+    const bottomPlayer = useMemo(() => (isFlipped ? {
+        id: game.black_player_id,
+        name: game.black_player_name || playersInfo.black?.username,
         color: 'black',
         info: playersInfo.black,
         timeLeft: getTimeLeft('black')
-    } : { 
-        id: game.white_player_id, 
-        name: game.white_player_name || playersInfo.white?.username, 
+    } : {
+        id: game.white_player_id,
+        name: game.white_player_name || playersInfo.white?.username,
         color: 'white',
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
-    };
+    }), [isFlipped, game?.white_player_id, game?.white_player_name, game?.black_player_id, game?.black_player_name, playersInfo, getTimeLeft]);
 
-    const isSpectator = !currentUser?.id || !game || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id);
+    const isSpectator = useMemo(() => (!currentUser?.id || !game || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id)), [currentUser?.id, game?.white_player_id, game?.black_player_id, game]);
 
-    const getElo = (info, type) => {
+    const getElo = useCallback((info, type) => {
         if (!info) return DEFAULT_ELO;
         return type === 'chess' ? (info.elo_chess || DEFAULT_ELO) : (info.elo_checkers || DEFAULT_ELO);
-    };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#f0e6d2] pb-10">
@@ -2230,7 +2249,7 @@ export default function Game() {
                                                 status: 'finished', 
                                                 winner_id: winnerId,
                                                 updated_date: new Date().toISOString()
-                                            }).catch(e => console.error("Finish game error", e));
+                                            }).catch(e => logger.error("Finish game error", e));
 
                                             // Then trigger server-side processing (ELO, etc.)
                                             await base44.functions.invoke('processGameResult', { 
@@ -2320,7 +2339,7 @@ export default function Game() {
                                         game_type: game.game_type,
                                         game_id: game.id,
                                         status: 'pending'
-                                      }).catch((e) => console.warn('[INVITE] entity create failed', e));
+                                      }).catch((e) => logger.warn('[INVITE] entity create failed', e));
 
                                       toast.success(t('game.invite_sent', { name: userToInvite.username || t('common.player') }));
                                       setInviteOpen(false);
@@ -2390,43 +2409,14 @@ export default function Game() {
                     )}
                     {game && (
                         <div className="mb-2 flex items-center gap-3">
-                            <div className="text-sm font-mono bg-black/10 px-2 py-1 rounded text-[#6b5138] flex items-center gap-2">
-                                <span>Table #{game.is_private ? game.access_code : game.id.substring(0, 6).toUpperCase()}</span>
-                                <div className="h-4 w-px bg-[#6b5138]/20"></div>
-                                {wsReadyState === 1 ? (
-                                    <div className="flex items-center gap-2">
-                                        <span className="inline-block w-2 h-2 rounded-full bg-green-500" title="Connecté" />
-                                        <Wifi className="w-3 h-3 text-green-600" title="Connecté" />
-                                        <LatencyIndicator latencyMs={latencyMs} connected={wsReadyState===1} isOnline={wsOnline} />
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse" title="Déconnecté" />
-                                        <WifiOff className="w-3 h-3 text-red-500" title="Déconnecté" />
-                                        <LatencyIndicator latencyMs={latencyMs} connected={false} isOnline={wsOnline} />
-                                    </div>
-                                )}
-                            </div>
-                            {!isAiGame && (
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-7 w-7 text-[#6b5138] hover:bg-[#6b5138]/10"
-                                    onClick={async () => {
-                                        toast.info(t('game.syncing'));
-                                        const g = await base44.entities.Game.get(game.id);
-                                        setGame(g);
-                                        // Also check if a cached fresh game exists (after join via notification)
-                                        if (window.__damcash_last_game && window.__damcash_last_game.id === game.id) {
-                                            setGame(window.__damcash_last_game);
-                                            window.__damcash_last_game = null;
-                                        }
-                                    }}
-                                    title="Forcer la synchronisation"
-                                >
-                                    <RefreshCw className="w-3 h-3" />
-                                </Button>
-                            )}
+                            <ConnectionBadge
+                              game={game}
+                              wsReadyState={wsReadyState}
+                              latencyMs={latencyMs}
+                              wsOnline={wsOnline}
+                              isAiGame={isAiGame}
+                              onSync={handleSync}
+                            />
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
