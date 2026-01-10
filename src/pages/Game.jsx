@@ -2095,14 +2095,14 @@ export default function Game() {
     const isFlipped = orientation === 'black';
     
     const topPlayer = useMemo(() => (isFlipped ? {
-        id: game.white_player_id,
-        name: game.white_player_name || playersInfo.white?.username,
+        id: game?.white_player_id,
+        name: game?.white_player_name || playersInfo.white?.username,
         color: 'white',
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
     } : {
-        id: game.black_player_id,
-        name: game.black_player_name || playersInfo.black?.username,
+        id: game?.black_player_id,
+        name: game?.black_player_name || playersInfo.black?.username,
         color: 'black',
         info: playersInfo.black,
         timeLeft: getTimeLeft('black')
