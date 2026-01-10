@@ -1676,6 +1676,16 @@ const gameNotifInFlightRef = useRef(false);
         } else {
             if (isInCheck(newBoard, nextTurn)) {
                 san += "+";
+                // Notif "Échec" (léger) pour les deux joueurs (échecs uniquement)
+                try {
+                  if (game.id !== 'local-ai') {
+                    const link = `/Game?id=${game.id}`;
+                    const whiteId = game?.white_player_id;
+                    const blackId = game?.black_player_id;
+                    if (whiteId) base44.functions.invoke('sendNotification', { recipient_id: whiteId, type: 'game', title: 'Échec', message: 'Votre roi est en échec ou vous venez de mettre échec.', link, metadata: { game_id: game.id } });
+                    if (blackId && blackId !== whiteId) base44.functions.invoke('sendNotification', { recipient_id: blackId, type: 'game', title: 'Échec', message: 'Votre roi est en échec ou vous venez de mettre échec.', link, metadata: { game_id: game.id } });
+                  }
+                } catch (_) {}
             }
         }
 
