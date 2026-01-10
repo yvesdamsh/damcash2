@@ -28,13 +28,26 @@ export default function Notifications() {
     // Centralized reload to keep UI in sync without page refresh
     const reloadUnread = useCallback(async () => {
         if (!userId) return;
-        try {
-            const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
-            const processed = normalizeList(all);
-            setNotifications(processed);
-            const unread = processed.filter(n => !n.read).length;
-            setUnreadCount(unread);
-        } catch (_) {}
+        const now = Date.now();
+        // Throttle: max 1 call per second, collapse concurrent calls
+        if (__notifCache.cooldownUntil && now < __notifCache.cooldownUntil) return;
+        if (__notifCache.pending) return;
+        __notifCache.cooldownUntil = now + 1000;
+        __notifCache.pending = (async () => {
+            try {
+                const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
+                const processed = normalizeList(all);
+                setNotifications(processed);
+                const unread = processed.filter(n => !n.read).length;
+                setUnreadCount(unread);
+            } catch (_) {
+                // back off harder on failure to avoid spamming backend
+                __notifCache.cooldownUntil = Date.now() + 3000;
+            } finally {
+                __notifCache.pending = null;
+            }
+        })();
+        await __notifCache.pending;
     }, [userId]);
     const navigate = useNavigate();
 
