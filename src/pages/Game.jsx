@@ -43,7 +43,6 @@ import BettingPanel from '@/components/BettingPanel';
 import ConnectionBadge from '@/components/game/ConnectionBadge';
 import ResignConfirmDialog from '@/components/game/ResignConfirmDialog';
 import SeriesScore from '@/components/game/SeriesScore';
-import ConnectionBadge from '@/components/game/ConnectionBadge';
 
 export default function Game() {
     const { t } = useLanguage();
@@ -219,7 +218,7 @@ export default function Game() {
         try {
             if (Array.isArray(b)) return JSON.parse(JSON.stringify(b));
             if (b && Array.isArray(b.board)) return JSON.parse(JSON.stringify(b.board));
-        } catch (_) {}
+        } catch (e) { logger.warn('[SILENT]', e); }
         return [];
     };
 
@@ -330,8 +329,8 @@ export default function Game() {
             if (!forceMuteMedia) return;
             const muteAll = () => {
                 document.querySelectorAll('video,audio').forEach((m) => {
-                    try { m.muted = true; } catch(_) {}
-                    try { m.volume = 0; } catch(_) {}
+                    try { m.muted = true; } catch (e) { logger.warn('[SILENT]', e); }
+                    try { m.volume = 0; } catch (e) { logger.warn('[SILENT]', e); }
                 });
             };
             muteAll();
@@ -552,7 +551,7 @@ export default function Game() {
                             setGame(refreshed);
                         }, 300);
                         navigate(`/Game?id=${game.id}`, { replace: true });
-                    } catch (_) {}
+                    } catch (e) { logger.warn('[SILENT]', e); }
                 }
                 }
                 };
@@ -578,9 +577,9 @@ export default function Game() {
                         logger.log('[MOVE][CONFIRM]', new Date().toISOString(), `rt=${dt}ms`, { last_move_at: k });
                         moveTimingsRef.current.delete(k);
                     }
-                } catch (_) {}
+                } catch (e) { logger.warn('[SILENT]', e); }
                 setGame(prev => ({ ...prev, ...payload }));
-                try { logger.log('[MOVE][RECEIVE]', payload); } catch (_) {}
+                try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
                 }
@@ -598,8 +597,8 @@ export default function Game() {
                 // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
                 // Forward to shared chat store (RealTimeContext will consume via window event if needed)
-                try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (_) {}
-                try { handleGameMessage(id, data.payload); } catch (_) {}
+                try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (e) { logger.warn('[SILENT]', e); }
+                try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
                 base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
@@ -640,7 +639,7 @@ export default function Game() {
                 localStorage.setItem('gameMode', desired);
                 window.dispatchEvent(new Event('gameModeChanged'));
             }
-        } catch (_) {}
+        } catch (e) { logger.warn('[SILENT]', e); }
     }, [game?.game_type]);
 
     // Track last update timestamp to detect staleness
@@ -1725,7 +1724,7 @@ export default function Game() {
              try {
                  (function(){ const href = window.location.href; const isLogin = window.location.pathname.toLowerCase().includes('login') || href.toLowerCase().includes('/login'); const nextUrl = isLogin ? (window.location.origin + '/Home') : href; base44.auth.redirectToLogin(nextUrl); })();
              } finally {
-                 try { window.top.location.href = window.location.href; } catch (e) {}
+                 try { window.top.location.href = window.location.href; } catch (e) { logger.warn('[SILENT]', e); }
              }
              return;
          }
@@ -1890,7 +1889,7 @@ export default function Game() {
                     });
                 }
             }
-        } catch (_) {}
+        } catch (e) { logger.warn('[SILENT]', e); }
         base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch((e) => { logger.warn('[SILENT]', e); });
         toast.success(t('game.draw_offered'));
     };
@@ -1907,7 +1906,7 @@ export default function Game() {
                 if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
                 if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
             }
-        } catch (_) {}
+        } catch (e) { logger.warn('[SILENT]', e); }
         setGame(prev => ({ ...prev, draw_offer_by: null }));
         toast.success(t('game.draw_accepted'));
     };
@@ -1924,7 +1923,7 @@ export default function Game() {
                     await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}` });
                 }
             }
-        } catch (_) {}
+        } catch (e) { logger.warn('[SILENT]', e); }
         setGame(prev => ({ ...prev, draw_offer_by: null }));
         toast.error(t('game.draw_declined'));
     };
@@ -2110,7 +2109,7 @@ export default function Game() {
                         }
                         const g = await base44.entities.Game.get(id);
                         if (g) setGame(g);
-                    } catch (e) {}
+                    } catch (e) { logger.warn('[SILENT]', e); }
                 }}
             >
                 Rafraîchir
@@ -2200,7 +2199,7 @@ export default function Game() {
                 <div className="bg-yellow-50 border border-yellow-200 text-[#6b5138] rounded-lg p-3 flex flex-col md:flex-row items-center justify-between gap-2">
                   <div className="text-sm font-medium">Connexion requise pour rejoindre la table et activer la vidéo.</div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => { try { const href = window.location.href; const isLogin = window.location.pathname.toLowerCase().includes('login') || href.toLowerCase().includes('/login'); const nextUrl = isLogin ? (window.location.origin + '/Home') : href; base44.auth.redirectToLogin(nextUrl); } finally { try { window.top.location.href = window.location.href; } catch (e) {} } }}>
+                    <Button size="sm" variant="outline" onClick={() => { try { const href = window.location.href; const isLogin = window.location.pathname.toLowerCase().includes('login') || href.toLowerCase().includes('/login'); const nextUrl = isLogin ? (window.location.origin + '/Home') : href; base44.auth.redirectToLogin(nextUrl); } finally { try { window.top.location.href = window.location.href; } catch (e) { logger.warn('[SILENT]', e); } } }}>
                       Se connecter
                     </Button>
                     <Button size="sm" onClick={() => { try { window.top.location.href = window.location.href; } catch (e) { window.location.href = window.location.href; } }}>
@@ -2212,82 +2211,37 @@ export default function Game() {
             )}
 
             {/* Resign Confirmation Overlay */}
-            <AnimatePresence>
-                {showResignConfirm && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-[#fdfbf7] border border-[#d4c5b0] rounded-xl p-6 shadow-2xl max-w-sm w-full"
-                        >
-                            <h3 className="text-xl font-bold text-[#4a3728] mb-2">{t('game.resign_confirm_title')}</h3>
-                            <p className="text-[#6b5138] mb-6">{t('game.resign_confirm_desc')}</p>
-                            <div className="flex gap-3 justify-end">
-                                <Button 
-                                    variant="outline" 
-                                    onClick={() => setShowResignConfirm(false)}
-                                    className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]"
-                                >
-                                    {t('common.cancel')}
-                                </Button>
-                                <Button 
-                                    onClick={async () => {
-                                        setShowResignConfirm(false);
-                                        const isMeWhite = currentUser?.id === game.white_player_id;
-                                        let winnerId;
-                                        if (isAiGame) {
-                                            winnerId = 'ai'; 
-                                        } else {
-                                            winnerId = isMeWhite ? game.black_player_id : game.white_player_id;
-                                        }
-                                        const newStatus = 'finished';
-                                        setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
-                                        setShowResult(true);
-                                        if (!isAiGame) {
-                                            // Explicitly update status first to ensure immediate consistency and prevent "zombie" games
-                                            base44.entities.Game.update(game.id, { 
-                                                status: 'finished', 
-                                                winner_id: winnerId,
-                                                updated_date: new Date().toISOString()
-                                            }).catch(e => logger.error("Finish game error", e));
-
-                                            // Then trigger server-side processing (ELO, etc.)
-                                            await base44.functions.invoke('processGameResult', { 
-                                                gameId: game.id, 
-                                                outcome: { winnerId, result: 'resignation' } 
-                                            });
-                                            // Broadcast via socket so opponent stops immediately
-                                            if (wsReadyState === WebSocket.OPEN && socketRef.current) {
-                                                socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
-                                            }
-                                            // Immediate bell notification to opponent
-                                            try {
-                                                const opponentId = isMeWhite ? game.black_player_id : game.white_player_id;
-                                                if (opponentId) {
-                                                    await base44.functions.invoke('sendNotification', {
-                                                        recipient_id: opponentId,
-                                                        type: 'game',
-                                                        title: 'Abandon',
-                                                        message: 'Votre adversaire a abandonné',
-                                                        link: `/Game?id=${game.id}`
-                                                    });
-                                                }
-                                            } catch (_) {}
-                                        }
-                                        soundManager.play('loss');
-                                    }}
-                                    className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                    {t('game.resign')}
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <ResignConfirmDialog
+              open={showResignConfirm}
+              onCancel={() => setShowResignConfirm(false)}
+              onConfirm={async () => {
+                setShowResignConfirm(false);
+                const isMeWhite = currentUser?.id === game.white_player_id;
+                let winnerId;
+                if (isAiGame) {
+                  winnerId = 'ai';
+                } else {
+                  winnerId = isMeWhite ? game.black_player_id : game.white_player_id;
+                }
+                const newStatus = 'finished';
+                setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
+                setShowResult(true);
+                if (!isAiGame) {
+                  base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => logger.error("Finish game error", e));
+                  await base44.functions.invoke('processGameResult', { gameId: game.id, outcome: { winnerId, result: 'resignation' } });
+                  if (wsReadyState === WebSocket.OPEN && socketRef.current) {
+                    socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
+                  }
+                  try {
+                    const opponentId = isMeWhite ? game.black_player_id : game.white_player_id;
+                    if (opponentId) {
+                      await base44.functions.invoke('sendNotification', { recipient_id: opponentId, type: 'game', title: 'Abandon', message: 'Votre adversaire a abandonné', link: `/Game?id=${game.id}` });
+                    }
+                  } catch (e) { logger.warn('[RESIGN][notify] error', e); }
+                }
+                soundManager.play('loss');
+              }}
+            />
 
             {/* Promotion Overlay */}
             <AnimatePresence>
