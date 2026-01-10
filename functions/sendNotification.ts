@@ -12,6 +12,19 @@ export default async function handler(req) {
     try {
         const { recipient_id, type, title, message, link, metadata } = await req.json();
 
+        // Enforce required invite metadata fields for real-time clients
+        const enrichedMetadata = (() => {
+          const m = metadata || {};
+          return {
+            ...m,
+            invitation_id: m.invitation_id || m.id,
+            id: m.id || m.invitation_id,
+            to_user_id: m.to_user_id || recipient_id,
+            from_user_id: m.from_user_id || user.id,
+            game_id: m.game_id || m.gameId
+          };
+        })();
+
         if (!recipient_id || !title || !message) {
             return Response.json({ error: "Missing fields" }, { status: 400 });
         }
@@ -43,7 +56,7 @@ export default async function handler(req) {
             link,
             sender_id: user.id,
             read: false,
-            metadata: metadata ? JSON.stringify(metadata) : null
+            metadata: enrichedMetadata ? JSON.stringify(enrichedMetadata) : null
         });
 
         // Also emit a synthetic invitation event for recipients filtering by email only
@@ -80,10 +93,10 @@ export default async function handler(req) {
            message,
            link,
            senderId: user.id,
-           metadata
+           metadata: enrichedMetadata
         });
         // Immediate invite ping on dedicated channel for redundancy
-        try { if (type === 'game_invite') invitesBC.postMessage({ recipientId: recipient_id, type: 'game_invite', title, message, link, senderId: user.id, metadata }); } catch (_) {}
+        try { if (type === 'game_invite') invitesBC.postMessage({ recipientId: recipient_id, type: 'game_invite', title, message, link, senderId: user.id, metadata: enrichedMetadata }); } catch (_) {}
 
         // Additionally, HTTP fanout directly to userSocket to ensure instant delivery
         try {
@@ -93,7 +106,7 @@ export default async function handler(req) {
                 title,
                 message,
                 link,
-                metadata
+                metadata: enrichedMetadata
             });
         } catch (_) {}
 

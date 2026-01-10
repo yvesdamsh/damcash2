@@ -100,16 +100,24 @@ export default function Notifications() {
     }, [liveNotifications]);
 
     useEffect(() => {
-        // On WS push, reload from DB to reflect canonical state immediately
-        const onNotif = () => reloadUnread();
-        const onInvite = () => reloadUnread();
-        window.addEventListener('notification-update', onNotif);
-        window.addEventListener('invitation-received', onInvite);
-        return () => {
-            window.removeEventListener('notification-update', onNotif);
-            window.removeEventListener('invitation-received', onInvite);
-        };
-    }, [reloadUnread]);
+      const handleInvite = (e) => {
+        console.log('[NOTIF] invitation-received:', e.detail);
+        reloadUnread(); // Force reload immédiat
+      };
+      
+      const handleUpdate = () => {
+        console.log('[NOTIF] notification-update');
+        reloadUnread();
+      };
+      
+      window.addEventListener('invitation-received', handleInvite);
+      window.addEventListener('notification-update', handleUpdate);
+      
+      return () => {
+        window.removeEventListener('invitation-received', handleInvite);
+        window.removeEventListener('notification-update', handleUpdate);
+      };
+    }, []);
 
     const markAsRead = async (id) => {
         try { await base44.entities.Notification.update(id, { read: true }); } catch (e) { /* ignore */ }

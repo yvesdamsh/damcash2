@@ -52,11 +52,14 @@ export function RealTimeProvider({ children }) {
 
             if (isInvitation) {
                 console.log('[REALTIME] Invitation detected, dispatching event + updating store');
-                const invitationDataRaw = data.metadata || data.payload || data.data || {};
                 const invitationData = {
-                    ...invitationDataRaw,
-                    id: invitationDataRaw.id || invitationDataRaw.invitationId || invitationDataRaw.invitation_id || ('live-invite-' + Date.now()),
-                    to_user_id: invitationDataRaw.to_user_id || user?.id
+                  id: data.metadata?.id || data.metadata?.invitation_id || 'live-invite-' + Date.now(),
+                  to_user_id: data.metadata?.to_user_id || user?.id,
+                  from_user_id: data.metadata?.from_user_id || data.senderId,
+                  game_id: data.metadata?.game_id,
+                  status: 'pending',
+                  created_date: new Date().toISOString(),
+                  ...(data.metadata || data.payload || data.data || {})
                 };
                 const inviteTitle = data.title || 'Nouvelle invitation';
                 const inviteMessage = data.message || 'Vous avez reçu une invitation à jouer';
