@@ -91,24 +91,31 @@ export default function Notifications() {
         try {
             if (n.type === 'game_invite' || n.type === 'team_challenge') {
                 if (action === 'accept') {
-                    // Ensure user joins the game before navigating so names/video appear immediately
                     try {
-                        const meta = typeof n.metadata === 'string' ? safeJSONParse(n.metadata, {}) : (n.metadata || {});
                         const gameIdFromMeta = meta?.game_id || meta?.gameId;
+                        const invitationId = meta?.invitationId || meta?.invitation_id;
                         let gameId = gameIdFromMeta;
-                        if (!gameId && n.link) {
-                            const url = new URL(n.link, window.location.origin);
-                            gameId = url.searchParams.get('id');
+
+                        if (invitationId) {
+                            const r = await base44.functions.invoke('acceptInvitation', { invitationId });
+                            if (!gameId && r?.data?.gameId) gameId = r.data.gameId;
+                        } else {
+                            if (!gameId && n.link) {
+                                const url = new URL(n.link, window.location.origin);
+                                gameId = url.searchParams.get('id');
+                            }
+                            if (gameId) {
+                                await base44.functions.invoke('joinGame', { gameId });
+                            }
                         }
-                        if (gameId) {
-                            const res = await base44.functions.invoke('joinGame', { gameId });
-                            // Force a fresh game fetch right after join so names/orientation are correct
-                            base44.entities.Game.get(gameId).then(g => window.__damcash_last_game = g);
-                        }
+                        if (gameId) base44.entities.Game.get(gameId).then(g => window.__damcash_last_game = g).catch(()=>{});
+                        let link = n.link || (gameId ? `/Game?id=${gameId}` : null);
+                        if (link && !link.includes('join=')) link += (link.includes('?') ? '&' : '?') + 'join=player';
+                        if (link) navigate(link);
                     } catch (e) {
-                        console.warn('Join on accept failed (will still navigate):', e);
+                        console.warn('Accept via bell failed (will still navigate if possible):', e);
+                        if (n.link) navigate(n.link);
                     }
-                    navigate(n.link);
                 } else {
                     // Reject logic (could be a cloud function)
                     // For now just delete notification

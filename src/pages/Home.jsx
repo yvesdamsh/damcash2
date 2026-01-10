@@ -983,7 +983,7 @@ export default function Home() {
                                                 const newGame = await base44.entities.Game.create({ status: 'waiting', game_type: gameType, white_player_id: user.id, white_player_name: user.username || t('common.host'), current_turn: 'white', board_state: initialBoard, is_private: true });
 
                                                 // Persist invitation BEFORE navigating to ensure delivery
-                                                await base44.entities.Invitation.create({ 
+                                                const invitation = await base44.entities.Invitation.create({ 
                                                     from_user_id: user.id, 
                                                     from_user_name: user.username || `Joueur ${user.id.substring(0,4)}`, 
                                                     to_user_email: (invitedUser.email || '').toLowerCase(),
@@ -1003,7 +1003,7 @@ export default function Home() {
                                                     title: t('home.invite_friend'),
                                                     message: t('home.invite_from') + ` ${user.username || t('common.anonymous')}`,
                                                     link: `/Game?id=${newGame.id}`,
-                                                    metadata: { gameId: newGame.id }
+                                                    metadata: { gameId: newGame.id, invitationId: invitation.id }
                                                 }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
                                             } catch (e) {
                                                 console.error('[INVITE] Failed:', e);
