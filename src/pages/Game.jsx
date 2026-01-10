@@ -1696,6 +1696,30 @@ const gameNotifInFlightRef = useRef(false);
         });
 
         if (status === 'finished') {
+            // Notifications fin de partie (échecs)
+            if (game.id !== 'local-ai') {
+                const whiteId = game?.white_player_id;
+                const blackId = game?.black_player_id;
+                const link = `/Game?id=${game.id}`;
+                const notifyBoth = async (title, message) => {
+                    if (whiteId) base44.functions.invoke('sendNotification', { recipient_id: whiteId, type: 'game', title, message, link, metadata: { game_id: game.id } });
+                    if (blackId && blackId !== whiteId) base44.functions.invoke('sendNotification', { recipient_id: blackId, type: 'game', title, message, link, metadata: { game_id: game.id } });
+                };
+                if (winnerId) {
+                    const winnerLabel = (winnerId === whiteId) ? 'Blancs' : 'Noirs';
+                    const title = 'Échec et mat';
+                    const message = `${winnerLabel} gagnent la partie.`;
+                    notifyBoth(title, message);
+                } else {
+                    const title = 'Partie nulle';
+                    const reason = (gameStatus === 'stalemate') ? 'Pat' :
+                                   (gameStatus === 'draw_50_moves') ? 'Règle des 50 coups' :
+                                   (gameStatus === 'draw_repetition') ? 'Nulle par répétition' :
+                                   (gameStatus === 'draw_insufficient') ? 'Mat impossible' : 'Nulle';
+                    const message = `Échecs • ${reason}`;
+                    notifyBoth(title, message);
+                }
+            }
             base44.functions.invoke('processGameResult', { 
                 gameId: game.id, 
                 outcome: { winnerId, result: gameStatus } 
