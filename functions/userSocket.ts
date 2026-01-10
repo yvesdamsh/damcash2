@@ -7,7 +7,9 @@ const invitesBC = new BroadcastChannel('invites');
 channel.onmessage = (event) => {
     const { recipientId, type, title, message, link, senderId, metadata } = event.data;
     if (connections.has(recipientId)) {
-        const payload = JSON.stringify({ type, title, message, link, senderId, metadata });
+        // Normalize invites to ensure clients treat as invitation immediately
+        const liveType = (type === 'game_invite' || (title||'').toLowerCase().includes('invitation')) ? 'game_invite' : type;
+        const payload = JSON.stringify({ type: liveType, title, message, link, senderId, metadata });
         connections.get(recipientId).forEach(socket => {
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(payload);
