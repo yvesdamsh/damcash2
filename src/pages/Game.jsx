@@ -302,8 +302,8 @@ export default function Game() {
         // Enable AI mode automatically when a player is 'ai' (not just local-ai)
         useEffect(() => {
                if (!game) return;
-               const whiteIsAI = game.white_player_id === 'ai';
-               const blackIsAI = game.black_player_id === 'ai';
+               const whiteIsAI = game?.white_player_id === 'ai';
+               const blackIsAI = game?.black_player_id === 'ai';
 
                // SAFETY: In local-ai mode, AI must ALWAYS be Black. If detected as White, fix immediately.
                if (id === 'local-ai' && whiteIsAI && !blackIsAI) {
@@ -320,7 +320,7 @@ export default function Game() {
 
                const aiPresent = whiteIsAI || blackIsAI || id === 'local-ai';
                setIsAiGame(aiPresent);
-               logger.log('[AI] Detection', { aiPresent, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
+               logger.log('[AI] Detection', { aiPresent, whiteId: game?.white_player_id, blackId: game?.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name, id });
             }, [game?.white_player_id, game?.black_player_id, game?.white_player_name, game?.black_player_name, id]);
 
         // Mute all media elements in preview if requested
@@ -393,8 +393,8 @@ export default function Game() {
                         try { return await base44.entities.User.get(uid); } catch { return null; }
                     };
                     const [white, black] = await Promise.all([
-                        safeGet(game.white_player_id),
-                        safeGet(game.black_player_id)
+                        safeGet(game?.white_player_id),
+                        safeGet(game?.black_player_id)
                     ]);
                     setPlayersInfo({ white, black });
                 } catch (e) {
@@ -425,7 +425,7 @@ export default function Game() {
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         if (!game) return;
-        const waitingForOpponent = (!game.white_player_id || !game.black_player_id);
+        const waitingForOpponent = (!game?.white_player_id || !game?.black_player_id);
         // Always run a short-lived fast poll just after join to eliminate any eventual consistency
         // Continue only if still waiting
         if (!waitingForOpponent) return;
@@ -441,8 +441,8 @@ export default function Game() {
                 }
                 // Update if seat assignment changed
                 if (
-                    fresh.white_player_id !== game.white_player_id ||
-                    fresh.black_player_id !== game.black_player_id ||
+                    fresh.white_player_id !== game?.white_player_id ||
+                    fresh.black_player_id !== game?.black_player_id ||
                     fresh.status !== game.status
                 ) {
                     setGame(fresh);
@@ -507,8 +507,8 @@ export default function Game() {
         if (!game) return;
         const run = async () => {
             const currentId = (await base44.auth.me().catch(() => null))?.id || currentUser?.id;
-            const amInGame = !!currentId && (currentId === game.white_player_id || currentId === game.black_player_id);
-            const slotOpen = !game.white_player_id || !game.black_player_id;
+            const amInGame = !!currentId && (currentId === game?.white_player_id || currentId === game?.black_player_id);
+            const slotOpen = !game?.white_player_id || !game?.black_player_id;
             if ((game.status === 'waiting' || game.status === 'playing') && slotOpen && !amInGame && game.id && game.id !== 'local-ai') {
                 const authed = await base44.auth.isAuthenticated().catch(() => false);
                 if (!authed) {
@@ -654,8 +654,8 @@ export default function Game() {
     useEffect(() => {
         if (!game || !currentUser || !premove || game.status !== 'playing') return;
 
-        const isMyTurnNow = (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
-                            (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
+        const isMyTurnNow = (game.current_turn === 'white' && currentUser?.id === game?.white_player_id) ||
+                            (game.current_turn === 'black' && currentUser?.id === game?.black_player_id);
 
         if (isMyTurnNow) {
             // Small delay to ensure UI renders the new board before moving again
@@ -746,8 +746,8 @@ export default function Game() {
     useEffect(() => {
         // Determine AI presence even before game object is fully ready
         const aiPresentNow = (id === 'local-ai') || (!!game && (
-            game.white_player_id === 'ai' ||
-            game.black_player_id === 'ai'
+            game?.white_player_id === 'ai' ||
+            game?.black_player_id === 'ai'
         ));
         // Proactively set AI flag to avoid early false negatives
         if (isAiGame !== aiPresentNow) setIsAiGame(aiPresentNow);
@@ -765,8 +765,8 @@ export default function Game() {
 
         // Robust check: Is it AI's turn?
         // In local-ai, assume AI is Black if no explicit AI id
-        const whiteIsAI = game.white_player_id === 'ai';
-        const blackIsAI = game.black_player_id === 'ai';
+        const whiteIsAI = game?.white_player_id === 'ai';
+        const blackIsAI = game?.black_player_id === 'ai';
         // If both sides are AI (misconfigured), do not let AI auto-play both in non-local games
         const aiCount = (whiteIsAI ? 1 : 0) + (blackIsAI ? 1 : 0);
         if (id !== 'local-ai' && aiCount !== 1) {
@@ -774,7 +774,7 @@ export default function Game() {
           return;
         }
         // Only let the human opponent's client trigger AI moves (avoid spectators or empty seats driving AI)
-        const nonAiPlayerId = whiteIsAI ? game.black_player_id : (blackIsAI ? game.white_player_id : null);
+        const nonAiPlayerId = whiteIsAI ? game?.black_player_id : (blackIsAI ? game?.white_player_id : null);
         const iAmHumanOpponent = !!currentUser && !!nonAiPlayerId && currentUser.id === nonAiPlayerId;
         // Always allow driving AI; server/state will deduplicate moves across clients
         const aiIsBlack = (id === 'local-ai') ? true : blackIsAI;
@@ -790,10 +790,10 @@ export default function Game() {
                     // allow scheduling even if previous job is thinking; aiJobRef prevents duplicates
                 // Guard: ensure it's truly AI's turn
                 if (!game) { aiJobRef.current = false; return; }
-                const whiteIsAI = game.white_player_id === 'ai';
-                const blackIsAI = game.black_player_id === 'ai';
+                const whiteIsAI = game?.white_player_id === 'ai';
+                const blackIsAI = game?.black_player_id === 'ai';
                 const aiTurnCheck = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
-                if (!aiTurnCheck) { logger.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game.white_player_id, blackId: game.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
+                if (!aiTurnCheck) { logger.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game?.white_player_id, blackId: game?.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
                 if (!isActive) return;
                 setIsAiThinking(true);
                 const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
@@ -1272,7 +1272,7 @@ export default function Game() {
     }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
-        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game.white_player_id && game.black_player_id))) return;
+        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game?.white_player_id && game?.black_player_id))) return;
         
         // If drop on same square, treat as click (selection)
         if (fromR === toR && fromC === toC) {
@@ -1281,9 +1281,9 @@ export default function Game() {
             return;
         }
 
-        const isMyTurn = (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
-                         (game.current_turn === 'black' && currentUser?.id === game.black_player_id) || 
-                         (game.white_player_id === game.black_player_id);
+        const isMyTurn = (game.current_turn === 'white' && currentUser?.id === game?.white_player_id) ||
+                         (game.current_turn === 'black' && currentUser?.id === game?.black_player_id) || 
+                         (game?.white_player_id === game?.black_player_id);
 
         if (!isMyTurn) {
             if (!isSoloMode && currentUser) {
@@ -1339,10 +1339,10 @@ export default function Game() {
     const isSoloMode = game?.white_player_id === game?.black_player_id;
 
     const handleSquareClick = async (r, c) => {
-        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game.white_player_id && game.black_player_id)) || replayIndex !== -1) return;
+        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game?.white_player_id && game?.black_player_id)) || replayIndex !== -1) return;
         
-        const isMyTurn = isSoloMode || (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
-                                       (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
+        const isMyTurn = isSoloMode || (game.current_turn === 'white' && currentUser?.id === game?.white_player_id) ||
+                                       (game.current_turn === 'black' && currentUser?.id === game?.black_player_id);
 
         if (!isMyTurn) {
              if (premove) {
@@ -1412,7 +1412,7 @@ export default function Game() {
             if (isAiGame) {
                 winnerId = winnerColor === 'white' ? currentUser?.id : 'ai';
             } else {
-                winnerId = winnerColor === 'white' ? game.white_player_id : game.black_player_id;
+                winnerId = winnerColor === 'white' ? game?.white_player_id : game?.black_player_id;
             }
             soundManager.play(winnerId === currentUser?.id ? 'win' : 'loss');
         } 
@@ -1579,7 +1579,7 @@ export default function Game() {
         
         if (['checkmate'].includes(gameStatus)) {
             status = 'finished';
-            winnerId = playerColor === 'white' ? game.white_player_id : game.black_player_id;
+            winnerId = playerColor === 'white' ? game?.white_player_id : game?.black_player_id;
             san += "#";
         } else if (['stalemate', 'draw_50_moves', 'draw_repetition', 'draw_insufficient'].includes(gameStatus)) {
             status = 'finished';
@@ -1644,7 +1644,7 @@ export default function Game() {
 
         // Normalize status: if both players seated, start playing
         let normalizedStatus = status;
-        if (normalizedStatus === 'waiting' && game.white_player_id && game.black_player_id) {
+        if (normalizedStatus === 'waiting' && game?.white_player_id && game?.black_player_id) {
             normalizedStatus = 'playing';
         }
 
@@ -1768,8 +1768,8 @@ export default function Game() {
             let currentWhiteScore = game.series_score_white || 0;
             let currentBlackScore = game.series_score_black || 0;
             
-            if (game.winner_id === game.white_player_id) currentWhiteScore++;
-            else if (game.winner_id === game.black_player_id) currentBlackScore++;
+            if (game.winner_id === game?.white_player_id) currentWhiteScore++;
+            else if (game.winner_id === game?.black_player_id) currentBlackScore++;
             else { currentWhiteScore += 0.5; currentBlackScore += 0.5; }
 
             // Auto-extend series if needed
@@ -1783,9 +1783,9 @@ export default function Game() {
 
             if (game.id === 'local-ai') {
                 // Ensure White is the human, Black is the AI
-                const humanId = (game.white_player_id === 'ai') ? game.black_player_id : game.white_player_id;
-                const humanName = (game.white_player_id === 'ai') ? game.black_player_name : game.white_player_name;
-                const humanElo = (game.white_player_id === 'ai') ? game.black_player_elo : game.white_player_elo;
+                const humanId = (game?.white_player_id === 'ai') ? game?.black_player_id : game?.white_player_id;
+                const humanName = (game?.white_player_id === 'ai') ? game.black_player_name : game.white_player_name;
+                const humanElo = (game?.white_player_id === 'ai') ? game.black_player_elo : game.white_player_elo;
 
                 newWhiteId = humanId;
                 newWhiteName = humanName;
@@ -1800,8 +1800,8 @@ export default function Game() {
                 newSeriesScoreBlack = currentBlackScore;
             } else {
                 // Alternate colors for online games
-                newWhiteId = game.black_player_id;
-                newBlackId = game.white_player_id;
+                newWhiteId = game?.black_player_id;
+                newBlackId = game?.white_player_id;
                 newWhiteName = game.black_player_name;
                 newBlackName = game.white_player_name;
                 newWhiteElo = game.black_player_elo;
@@ -1876,7 +1876,7 @@ export default function Game() {
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.send(JSON.stringify({ type: 'DRAW_OFFER' }));
             } else {
-                const opponentId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                const opponentId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (opponentId) {
                     await base44.functions.invoke('sendNotification', {
                         recipient_id: opponentId,
@@ -1901,7 +1901,7 @@ export default function Game() {
             } else {
                 // Fallback: clôture immédiate et notification via centre
                 await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null, updated_date: new Date().toISOString() });
-                const w = game.white_player_id; const b = game.black_player_id;
+                const w = game?.white_player_id; const b = game?.black_player_id;
                 if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
                 if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
             }
@@ -1917,7 +1917,7 @@ export default function Game() {
                 socketRef.current.send(JSON.stringify({ type: 'DRAW_RESPONSE', payload: { accept: false } }));
             } else {
                 await base44.entities.Game.update(game.id, { draw_offer_by: null });
-                const offererId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                const offererId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (offererId) {
                     await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}` });
                 }
@@ -1930,7 +1930,7 @@ export default function Game() {
     const handleTimeout = async (color) => {
         if (!game || game.status !== 'playing') return;
         
-        const winnerId = color === 'white' ? game.black_player_id : game.white_player_id;
+        const winnerId = color === 'white' ? game?.black_player_id : game?.white_player_id;
         
         try {
             if (!isAiGame) {
@@ -2089,7 +2089,7 @@ export default function Game() {
 
     // Orientation Logic
     const autoOrientation = useMemo(() => (
-        (currentUser?.id && game?.black_player_id && currentUser.id === game.black_player_id) ? 'black' : 'white'
+        (currentUser?.id && game?.black_player_id && currentUser.id === game?.black_player_id) ? 'black' : 'white'
     ), [currentUser?.id, game?.black_player_id]);
     const orientation = useMemo(() => (manualOrientation || autoOrientation), [manualOrientation, autoOrientation]);
     const isFlipped = orientation === 'black';
@@ -2216,12 +2216,12 @@ export default function Game() {
               onCancel={() => setShowResignConfirm(false)}
               onConfirm={async () => {
                 setShowResignConfirm(false);
-                const isMeWhite = currentUser?.id === game.white_player_id;
+                const isMeWhite = currentUser?.id === game?.white_player_id;
                 let winnerId;
                 if (isAiGame) {
                   winnerId = 'ai';
                 } else {
-                  winnerId = isMeWhite ? game.black_player_id : game.white_player_id;
+                  winnerId = isMeWhite ? game?.black_player_id : game?.white_player_id;
                 }
                 const newStatus = 'finished';
                 setGame(prev => ({ ...prev, status: newStatus, winner_id: winnerId }));
@@ -2233,7 +2233,7 @@ export default function Game() {
                     socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                   }
                   try {
-                    const opponentId = isMeWhite ? game.black_player_id : game.white_player_id;
+                    const opponentId = isMeWhite ? game?.black_player_id : game?.white_player_id;
                     if (opponentId) {
                       await base44.functions.invoke('sendNotification', { recipient_id: opponentId, type: 'game', title: 'Abandon', message: 'Votre adversaire a abandonné', link: `/Game?id=${game.id}` });
                     }
@@ -2495,11 +2495,11 @@ export default function Game() {
                             (() => {
                                 // Series Exit Logic for Button
                                 const seriesLength = game.series_length || 1;
-                                const currentWhiteScore = (game.series_score_white || 0) + (game.winner_id === game.white_player_id ? 1 : game.winner_id ? 0 : 0.5);
-                                const currentBlackScore = (game.series_score_black || 0) + (game.winner_id === game.black_player_id ? 1 : game.winner_id ? 0 : 0.5);
+                                const currentWhiteScore = (game.series_score_white || 0) + (game.winner_id === game?.white_player_id ? 1 : game.winner_id ? 0 : 0.5);
+                                const currentBlackScore = (game.series_score_black || 0) + (game.winner_id === game?.black_player_id ? 1 : game.winner_id ? 0 : 0.5);
                                 const isSeriesDecided = currentWhiteScore > seriesLength / 2 || currentBlackScore > seriesLength / 2 || (currentWhiteScore + currentBlackScore >= seriesLength);
                                 
-                                const isWhite = currentUser?.id === game.white_player_id;
+                                const isWhite = currentUser?.id === game?.white_player_id;
                                 const myScore = isWhite ? currentWhiteScore : currentBlackScore;
                                 const opponentScore = isWhite ? currentBlackScore : currentWhiteScore;
                                 const canLeave = isSeriesDecided || (myScore < opponentScore);
@@ -2549,7 +2549,7 @@ export default function Game() {
                                 gameId={game.id} 
                                 currentUser={currentUser} 
                                 socket={socketRef.current} 
-                                players={{white: game.white_player_id, black: game.black_player_id}} 
+                                players={{white: game?.white_player_id, black: game?.black_player_id}} 
                                 externalMessages={syncedMessages}
                             />
                         )}
