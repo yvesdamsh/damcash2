@@ -492,10 +492,23 @@ const gameNotifInFlightRef = useRef(false);
                 setGame(updated);
               }
             } catch (e) {}
-          }, 2000);
+          }, 500);
           
           return () => clearInterval(gameInterval);
         }, [id, game]);
+
+        // Ecoute les événements de mouvements pour recharger immédiatement
+        useEffect(() => {
+          if (!id) return;
+          const handleMove = async () => {
+            try {
+              const updated = await base44.entities.Game.get(id);
+              if (updated) setGame(updated);
+            } catch (e) {}
+          };
+          window.addEventListener('game-move', handleMove);
+          return () => window.removeEventListener('game-move', handleMove);
+        }, [id]);
 
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
