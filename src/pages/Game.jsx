@@ -455,14 +455,16 @@ export default function Game() {
         if (!id || id === 'local-ai' || game?.status !== 'playing') return;
         const interval = setInterval(async () => {
             if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+                logger.warn('[POLL] WS disconnected, fetching game...');
                 const fresh = await base44.entities.Game.get(id).catch(() => null);
                 if (fresh && fresh.last_move_at !== game?.last_move_at) {
+                    logger.log('[POLL] applied fresh state', { last_move_at: fresh.last_move_at });
                     setGame(fresh);
                 }
             }
-        }, 5000);
+        }, 2000);
         return () => clearInterval(interval);
-    }, [id, game?.status, game?.last_move_at]);
+        }, [id, game?.status, game?.last_move_at]);
 
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
@@ -574,6 +576,7 @@ export default function Game() {
                     }
                 } catch (_) {}
                 setGame(prev => ({ ...prev, ...payload }));
+                try { logger.log('[MOVE][RECEIVE]', payload); } catch (_) {}
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
                 }
@@ -1663,9 +1666,20 @@ export default function Game() {
         const moveId = Date.now().toString();
         const updateDataWithId = { ...updateData, moveId };
         pendingMovesRef.current.set(moveId, { data: updateData, sentAt: Date.now() });
-        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        const wsConnected = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
+        if (wsConnected) {
+            logger.log('[MOVE][SEND] Via WebSocket direct', updateDataWithId);
             socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateDataWithId }));
         }
+
+        // Explicit backend broadcast to ensure delivery
+        base44.functions.invoke('gameSocket', { 
+            gameId: game.id, 
+            type: 'GAME_UPDATE', 
+            payload: updateDataWithId 
+        })
+        .then(() => logger.log('[MOVE][BROADCAST] Via gameSocket function success', updateDataWithId))
+        .catch((e) => logger.warn('[MOVE][BROADCAST] error', e?.response?.data || e?.message || e));
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {
