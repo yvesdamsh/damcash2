@@ -243,13 +243,7 @@ export default function Notifications() {
                                     <div className="flex justify-between items-start gap-2">
                                         <div className="mt-1 flex-shrink-0">
                                             {notification.type === 'message' && <MessageSquare className="w-4 h-4 text-blue-500" />}
-                                            {notification.type === 'game' && <Gamepad2 className="w-4 h-4 text-green-500" />}
                                             {notification.type === 'game_invite' && <Gamepad2 className="w-4 h-4 text-purple-500" />}
-                                            {notification.type === 'team_challenge' && <Swords className="w-4 h-4 text-orange-500" />}
-                                            {notification.type === 'tournament_update' && <Trophy className="w-4 h-4 text-yellow-500" />}
-                                            {notification.type === 'team_request' && <UserPlus className="w-4 h-4 text-teal-500" />}
-                                            {notification.type === 'forum' && <ThumbsUp className="w-4 h-4 text-pink-500" />}
-                                            {notification.type === 'info' && <Info className="w-4 h-4 text-gray-500" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h5 className={`text-sm mb-1 text-[#4a3728] dark:text-[#e8dcc5] ${!notification.read ? 'font-bold' : 'font-medium'} truncate`}>
