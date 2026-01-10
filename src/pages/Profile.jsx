@@ -174,7 +174,7 @@ export default function Profile() {
                 // Badges
                 // Only check award if own profile, else just fetch
                 let userBadges;
-                if (isOwnProfile) {
+                if (isOwnProfileLocal) {
                     userBadges = await checkAndAwardBadges(u, myStats);
                 } else {
                     userBadges = await base44.entities.UserBadge.filter({ user_id: u.id });
@@ -661,9 +661,7 @@ export default function Profile() {
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="stats">
-                            {/* Graph Section */}
-                            <Card className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
+<!-- removed duplicate stats tab: graph block deleted --> className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
                                 <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
