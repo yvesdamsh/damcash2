@@ -1929,6 +1929,8 @@ const gameNotifInFlightRef = useRef(false);
             } else {
                 // Fallback: clôture immédiate et notification via centre
                 await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null, updated_date: new Date().toISOString() });
+                // Backend broadcast to all clients
+                base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: null, draw_offer_by: null, updated_date: new Date().toISOString() } });
                 const w = game?.white_player_id; const b = game?.black_player_id;
                 if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
                 if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
@@ -1945,6 +1947,8 @@ const gameNotifInFlightRef = useRef(false);
                 socketRef.current.send(JSON.stringify({ type: 'DRAW_RESPONSE', payload: { accept: false } }));
             } else {
                 await base44.entities.Game.update(game.id, { draw_offer_by: null });
+                // Backend broadcast decline
+                base44.functions.invoke('gameSocket', { gameId: game.id, type: 'DRAW_DECLINED', payload: { by: currentUser.id } });
                 const offererId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (offererId) {
                     await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}`, metadata: { game_id: game.id } });
