@@ -661,7 +661,7 @@ export default function Profile() {
                             </div>
                         </TabsContent>
 
- className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
+
 
 
 
