@@ -2109,14 +2109,14 @@ export default function Game() {
     }), [isFlipped, game?.white_player_id, game?.white_player_name, game?.black_player_id, game?.black_player_name, playersInfo, getTimeLeft]);
 
     const bottomPlayer = useMemo(() => (isFlipped ? {
-        id: game.black_player_id,
-        name: game.black_player_name || playersInfo.black?.username,
+        id: game?.black_player_id,
+        name: game?.black_player_name || playersInfo.black?.username,
         color: 'black',
         info: playersInfo.black,
         timeLeft: getTimeLeft('black')
     } : {
-        id: game.white_player_id,
-        name: game.white_player_name || playersInfo.white?.username,
+        id: game?.white_player_id,
+        name: game?.white_player_name || playersInfo.white?.username,
         color: 'white',
         info: playersInfo.white,
         timeLeft: getTimeLeft('white')
