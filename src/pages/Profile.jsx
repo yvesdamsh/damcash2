@@ -661,7 +661,7 @@ export default function Profile() {
                             </div>
                         </TabsContent>
 
-<!-- removed duplicate stats tab: graph block deleted --> className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
+ className="mb-8 border-[#d4c5b0] shadow-sm overflow-hidden">
                                 <CardHeader className="bg-[#f9f6f0] border-b border-[#f0e6d2] py-3">
                                     <div className="flex justify-between items-center">
                                         <CardTitle className="text-lg text-[#4a3728] flex items-center gap-2">
