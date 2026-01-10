@@ -1743,6 +1743,8 @@ const gameNotifInFlightRef = useRef(false);
 
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setGame(prev => ({ ...prev, ...updateData }));
+        // Dispatch local event to trigger immediate refetch listeners
+        try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
 
         if (game.id === 'local-ai') return;
 
