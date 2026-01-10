@@ -472,7 +472,7 @@ const gameNotifInFlightRef = useRef(false);
         useEffect(() => {
           let canceled = false;
           let timer = null;
-          const backoffRef = { value: 500 };
+          const backoffRef = { value: 1200 };
           const inFlight = { value: false };
 
           const shouldPoll = () => {
@@ -491,13 +491,17 @@ const gameNotifInFlightRef = useRef(false);
             inFlight.value = true;
             try {
               const updated = await base44.entities.Game.get(id);
-              if (updated && updated.updated_date !== game?.updated_date) {
+              const changed = !!(updated && updated.updated_date !== game?.updated_date);
+              if (changed) {
                 setGame(updated);
+                backoffRef.value = 800; // briefly faster after change
+              } else {
+                // slow down when no change to reduce API pressure
+                backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 5000);
               }
-              backoffRef.value = 500; // reset on success
             } catch (e) {
               // Exponential backoff on errors (e.g., rate limits)
-              backoffRef.value = Math.min(backoffRef.value * 2, 5000);
+              backoffRef.value = Math.min(backoffRef.value * 2, 6000);
             } finally {
               inFlight.value = false;
               if (!canceled) timer = setTimeout(loop, backoffRef.value);
