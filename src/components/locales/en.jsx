@@ -489,7 +489,7 @@ export default {
   "leagues.promotion": "Promotion:",
   "leagues.relegation": "Relegation:",
   "profile.change_banner": "Change",
-  "profile.no_banner": "No banner"
+  "profile.no_banner": "No banner",
   "tournaments.search_placeholder": "Search tournament...",
   "tournaments.filter_game": "Game Type",
   "tournaments.filter_all_games": "All Games",
