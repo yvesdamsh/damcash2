@@ -2122,7 +2122,7 @@ export default function Game() {
         timeLeft: getTimeLeft('white')
     }), [isFlipped, game?.white_player_id, game?.white_player_name, game?.black_player_id, game?.black_player_name, playersInfo, getTimeLeft]);
 
-    const isSpectator = useMemo(() => (!currentUser?.id || !game || (currentUser.id !== game.white_player_id && currentUser.id !== game.black_player_id)), [currentUser?.id, game?.white_player_id, game?.black_player_id, game]);
+    const isSpectator = useMemo(() => (!currentUser?.id || !game || (currentUser.id !== game?.white_player_id && currentUser.id !== game?.black_player_id)), [currentUser?.id, game?.white_player_id, game?.black_player_id, game]);
 
     const getElo = useCallback((info, type) => {
         if (!info) return DEFAULT_ELO;
