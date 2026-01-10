@@ -454,6 +454,16 @@ const gameNotifInFlightRef = useRef(false);
         return () => clearInterval(iv);
     }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
 
+    // Normalize status locally when both players present (prevents stuck 'waiting')
+    useEffect(() => {
+        if (!game?.id) return;
+        const both = !!(game?.white_player_id && game?.black_player_id);
+        if (game?.status === 'waiting' && both) {
+            setGame(prev => ({ ...prev, status: 'playing' }));
+            base44.entities.Game.update(game.id, { status: 'playing' }).catch(() => {});
+        }
+    }, [game?.white_player_id, game?.black_player_id, game?.status]);
+
     // Polling: add fallback for PLAYING games when WS is disconnected
     useEffect(() => {
         if (!id || id === 'local-ai' || game?.status !== 'playing') return;
@@ -1903,6 +1913,8 @@ const gameNotifInFlightRef = useRef(false);
         try {
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
                 socketRef.current.send(JSON.stringify({ type: 'DRAW_OFFER', payload: { by: currentUser.id, name: currentUser.username || currentUser.full_name || 'Joueur' } }));
+                // Backend fanout to all clients (cross-instance)
+                base44.functions.invoke('gameSocket', { gameId: game.id, type: 'DRAW_OFFER', payload: { by: currentUser.id, name: currentUser.username || currentUser.full_name || 'Joueur' } });
             } else {
                 const opponentId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (opponentId) {
@@ -1915,6 +1927,8 @@ const gameNotifInFlightRef = useRef(false);
                         metadata: { game_id: game.id }
                     });
                 }
+                // Backend fanout even if WS not open on this client
+                base44.functions.invoke('gameSocket', { gameId: game.id, type: 'DRAW_OFFER', payload: { by: currentUser.id, name: currentUser.username || currentUser.full_name || 'Joueur' } });
             }
         } catch (e) { logger.warn('[SILENT]', e); }
         base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch((e) => { logger.warn('[SILENT]', e); });
@@ -2262,8 +2276,10 @@ const gameNotifInFlightRef = useRef(false);
                   base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => logger.error("Finish game error", e));
                   await base44.functions.invoke('processGameResult', { gameId: game.id, outcome: { winnerId, result: 'resignation' } });
                   if (wsReadyState === WebSocket.OPEN && socketRef.current) {
-                    socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
+                   socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                   }
+                  // Backend fanout to all clients
+                  base44.functions.invoke('gameSocket', { gameId: game.id, type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } });
                   try {
                     const opponentId = isMeWhite ? game?.black_player_id : game?.white_player_id;
                     if (opponentId) {

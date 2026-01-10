@@ -222,8 +222,10 @@ export function RealTimeProvider({ children }) {
         if (data.type === 'CHAT_UPDATE' && data.payload) {
             setChatByGame(prev => {
                 const prevList = prev[gameId] || [];
-                if (prevList.some(m => m.id === data.payload.id)) return prev;
-                return { ...prev, [gameId]: [...prevList, data.payload] };
+                // Remove temp optimistic message if same sender/content
+                const filtered = prevList.filter(m => !(String(m.id||'').startsWith('temp-') && m.sender_id === data.payload.sender_id && m.content === data.payload.content));
+                if (filtered.some(m => m.id === data.payload.id)) return prev;
+                return { ...prev, [gameId]: [...filtered, data.payload] };
             });
             try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId, message: data.payload } })); } catch (_) {}
         }
@@ -233,6 +235,15 @@ export function RealTimeProvider({ children }) {
         if (!content || !currentUser || !gameId) return;
         if (socket && socket.readyState === WebSocket.OPEN) {
             try {
+                // Optimistic local update with temporary id
+                const temp = {
+                    id: 'temp-' + Date.now(),
+                    game_id: gameId,
+                    sender_id: currentUser.id,
+                    sender_name: currentUser.full_name || currentUser.username || 'Joueur',
+                    content
+                };
+                setChatByGame(prev => ({ ...prev, [gameId]: [ ...(prev[gameId]||[]), temp ] }));
                 socket.send(JSON.stringify({
                     type: 'CHAT_MESSAGE',
                     payload: {
