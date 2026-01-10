@@ -71,14 +71,16 @@ export default async function handler(req) {
 
         // Broadcast to WebSocket via Channel
         // Note: userSocket.js expects recipientId (camelCase) in event.data
+        // Always send a specialized invite event for instant client reaction
+        const liveType = type === 'game_invite' ? 'game_invite' : type;
         if (channel) channel.postMessage({
-            recipientId: recipient_id,
-            type,
-            title,
-            message,
-            link,
-            senderId: user.id,
-            metadata
+           recipientId: recipient_id,
+           type: liveType,
+           title,
+           message,
+           link,
+           senderId: user.id,
+           metadata
         });
         // Immediate invite ping on dedicated channel for redundancy
         try { if (type === 'game_invite') invitesBC.postMessage({ recipientId: recipient_id, type, title, message, link, senderId: user.id, metadata }); } catch (_) {}
