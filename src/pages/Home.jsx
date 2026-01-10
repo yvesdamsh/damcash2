@@ -410,10 +410,10 @@ export default function Home() {
                 }
                 navigate(`/Game?id=${res.data.gameId}&join=player`);
                 } else {
-                alert('Invitation expirée ou table complète');
+                    alert(t('home.invite_expired_or_full'));
                 }
                 } catch (e) {
-                alert('Invitation expirée ou table complète');
+                alert(t('home.invite_expired_or_full'));
                 }
                 };
 
@@ -442,10 +442,7 @@ export default function Home() {
     const canStartNewGame = () => {
         if (activeGames.length > 0) {
             // Using alert/toast to notify user
-            // Assuming toast is available via sonner (imported globally usually or need import)
-            // Home.js doesn't import toast yet? Let's check imports.
-            // It doesn't. I'll add import or use alert.
-            alert(t('home.limit_reached') || "Vous avez déjà une partie en cours. Terminez-la avant d'en commencer une nouvelle.");
+            alert(t('home.limit_reached'));
             return false;
         }
         return true;
@@ -1020,7 +1017,7 @@ export default function Home() {
                                     />
                                     <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.or_join')}</span></div></div>
                                     <form onSubmit={handleJoinByCode} className="flex gap-2">
-                                        <Input placeholder="Code" value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
+                                        <Input placeholder={t('home.code_placeholder')} value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
                                         <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
                                     </form>
                                     <p className="text-[10px] text-gray-500 text-center">{t('home.ask_code')}</p>
