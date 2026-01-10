@@ -144,6 +144,26 @@ export function RealTimeProvider({ children }) {
                 }
                 
                 window.dispatchEvent(new CustomEvent('notification-update'));
+            } else {
+                // Fallback for providers sending minimal payloads (ensure badge increments)
+                const title = data.title || 'Nouvelle notification';
+                const message = data.message || 'Vous avez une nouvelle alerte';
+                setNotifications(prev => [
+                    {
+                        id: 'live-fallback-' + Date.now(),
+                        type: data.type || 'info',
+                        title,
+                        message,
+                        link: data.link,
+                        sender_id: data.senderId,
+                        created_date: new Date().toISOString(),
+                        read: false,
+                        metadata: data.metadata
+                    },
+                    ...prev
+                ].slice(0, 50));
+                try { toast(title, { description: message }); } catch(_) {}
+                try { window.dispatchEvent(new CustomEvent('notification-update')); } catch(_) {}
             }
         }
     });

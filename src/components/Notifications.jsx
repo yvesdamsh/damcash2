@@ -54,6 +54,14 @@ export default function Notifications() {
             } catch (_) {}
         };
         loadUnread();
+        const onFocus = () => loadUnread();
+        const onVisibility = () => { if (document.visibilityState === 'visible') loadUnread(); };
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, [userId]);
 
     // Sync from realtime store but preserve baseline (DB) count if larger
