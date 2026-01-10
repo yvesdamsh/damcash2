@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { socket, response } = Deno.upgradeWebSocket(req);
 
+    // Hint clients running in sandboxed iframes to use HTTP fallback
+    try { socket.send(JSON.stringify({ type: 'WS_READY' })); } catch (_) {}
+
     // Store socket info
     socket.gameId = gameId;
     socket.user = null;
@@ -160,11 +163,17 @@ Deno.serve(async (req) => {
             else if (data.type === 'DRAW_OFFER') {
                 try {
                     const me = socket.user;
+                    const payloadIn = data.payload || {};
+                    const senderId = me?.id || payloadIn.by || null;
+                    const senderName = me?.full_name || me?.username || payloadIn.name || 'Joueur';
                     const g = await base44.asServiceRole.entities.Game.get(gameId);
-                    await base44.asServiceRole.entities.Game.update(gameId, { draw_offer_by: me?.id || null, updated_date: new Date().toISOString() });
-                    const opponentId = me?.id === g.white_player_id ? g.black_player_id : g.white_player_id;
-                    const senderName = me?.full_name || me?.username || 'Joueur';
-                    const msg = { type: 'DRAW_OFFER', payload: { by: me?.id, name: senderName } };
+                    if (senderId) {
+                        await base44.asServiceRole.entities.Game.update(gameId, { draw_offer_by: senderId, updated_date: new Date().toISOString() });
+                    } else {
+                        await base44.asServiceRole.entities.Game.update(gameId, { draw_offer_by: null, updated_date: new Date().toISOString() });
+                    }
+                    const opponentId = senderId === g.white_player_id ? g.black_player_id : g.white_player_id;
+                    const msg = { type: 'DRAW_OFFER', payload: { by: senderId, name: senderName } };
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
                     if (opponentId) {

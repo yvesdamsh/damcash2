@@ -113,7 +113,7 @@ export default async function handler(req) {
         // Re-fetch and set playing only when both players present
         let finalGame = await base44.asServiceRole.entities.Game.get(gameId);
         if (finalGame.white_player_id && finalGame.black_player_id && finalGame.status === 'waiting') {
-            finalGame = await base44.asServiceRole.entities.Game.update(gameId, { status: 'playing' });
+            finalGame = await base44.asServiceRole.entities.Game.update(gameId, { status: 'playing', updated_date: new Date().toISOString() });
         }
 
         // Broadcast start with explicit player fields to avoid stale caches on clients

@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const updated = await base44.asServiceRole.entities.Game.update(gameId, update);
     let final = await base44.asServiceRole.entities.Game.get(gameId);
     if (final.white_player_id && final.black_player_id && final.status === 'waiting') {
-      final = await base44.asServiceRole.entities.Game.update(gameId, { status: 'playing' });
+      final = await base44.asServiceRole.entities.Game.update(gameId, { status: 'playing', updated_date: new Date().toISOString() });
     }
 
     // Fanout

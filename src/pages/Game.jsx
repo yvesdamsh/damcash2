@@ -1897,7 +1897,7 @@ const gameNotifInFlightRef = useRef(false);
         setGame(prev => ({ ...prev, draw_offer_by: currentUser.id }));
         try {
             if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                socketRef.current.send(JSON.stringify({ type: 'DRAW_OFFER' }));
+                socketRef.current.send(JSON.stringify({ type: 'DRAW_OFFER', payload: { by: currentUser.id, name: currentUser.username || currentUser.full_name || 'Joueur' } }));
             } else {
                 const opponentId = currentUser.id === game?.white_player_id ? game?.black_player_id : game?.white_player_id;
                 if (opponentId) {

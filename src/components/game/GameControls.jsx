@@ -17,7 +17,7 @@ export default function GameControls({
 }) {
     if (!game) return null;
 
-    const isPlaying = game.status === 'playing';
+    const isPlaying = game.status === 'playing' || (game.status === 'waiting' && game.white_player_id && game.black_player_id);
     const isFinished = game.status === 'finished';
 
     return (
