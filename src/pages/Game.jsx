@@ -581,11 +581,18 @@ export default function Game() {
                 pendingMovesRef.current.delete(data.moveId);
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
+            } else if (data.type === 'DRAW_OFFER') {
+                setGame(prev => ({ ...prev, draw_offer_by: data.payload?.by || '__unknown__' }));
+                toast.info(t('game.draw_offer_received') || 'Proposition de nulle reçue');
+            } else if (data.type === 'DRAW_DECLINED') {
+                setGame(prev => ({ ...prev, draw_offer_by: null }));
+                toast.error(t('game.draw_declined') || 'Nulle refusée');
             } else if (data.type === 'SIGNAL') {
                 // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
                 // Forward to shared chat store (RealTimeContext will consume via window event if needed)
                 try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (_) {}
+                setSyncedMessages(prev => [...prev, data.payload]);
             }
         }
     });
@@ -1830,43 +1837,60 @@ export default function Game() {
 
     const handleOfferDraw = async () => {
         if (!game || !currentUser) return;
-        base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch(e => console.error("Draw offer error", e));
-        
-        const opponentId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
-        if (opponentId) {
-            await base44.entities.Notification.create({
-                recipient_id: opponentId,
-                type: "info",
-                title: t('game.draw_offer_sent_title'),
-                message: t('game.draw_offer_sent_msg', { name: currentUser.username || currentUser.full_name }),
-                link: `/Game?id=${game.id}`
-            });
-        }
-        
+        // Optimiste
+        setGame(prev => ({ ...prev, draw_offer_by: currentUser.id }));
+        try {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({ type: 'DRAW_OFFER' }));
+            } else {
+                const opponentId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                if (opponentId) {
+                    await base44.functions.invoke('sendNotification', {
+                        recipient_id: opponentId,
+                        type: 'game',
+                        title: 'Proposition de nulle',
+                        message: `${currentUser.username || currentUser.full_name || 'Joueur'} propose une nulle`,
+                        link: `/Game?id=${game.id}`,
+                        metadata: { game_id: game.id }
+                    });
+                }
+            }
+        } catch (_) {}
+        base44.entities.Game.update(game.id, { draw_offer_by: currentUser.id }).catch(() => {});
         toast.success(t('game.draw_offered'));
     };
 
     const handleAcceptDraw = async () => {
         if (!game) return;
-        
-        if (!isAiGame) {
-            // Secure Server-Side End
-            await base44.functions.invoke('processGameResult', { 
-                gameId: game.id, 
-                outcome: { winnerId: null, result: 'draw_agreement' } 
-            });
-        }
-
-        // Optimistic update
-        setGame(prev => ({ ...prev, status: 'finished', winner_id: null, draw_offer_by: null }));
-        
-        soundManager.play('win');
+        try {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({ type: 'DRAW_RESPONSE', payload: { accept: true } }));
+            } else {
+                // Fallback: clôture immédiate et notification via centre
+                await base44.entities.Game.update(game.id, { status: 'finished', winner_id: null, draw_offer_by: null, updated_date: new Date().toISOString() });
+                const w = game.white_player_id; const b = game.black_player_id;
+                if (w) base44.functions.invoke('sendNotification', { recipient_id: w, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
+                if (b && b !== w) base44.functions.invoke('sendNotification', { recipient_id: b, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${game.id}` });
+            }
+        } catch (_) {}
+        setGame(prev => ({ ...prev, draw_offer_by: null }));
         toast.success(t('game.draw_accepted'));
     };
 
     const handleDeclineDraw = async () => {
-        if (!game) return;
-        base44.entities.Game.update(game.id, { draw_offer_by: null }).catch(e => console.error("Cancel draw error", e));
+        if (!game || !currentUser) return;
+        try {
+            if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                socketRef.current.send(JSON.stringify({ type: 'DRAW_RESPONSE', payload: { accept: false } }));
+            } else {
+                await base44.entities.Game.update(game.id, { draw_offer_by: null });
+                const offererId = currentUser.id === game.white_player_id ? game.black_player_id : game.white_player_id;
+                if (offererId) {
+                    await base44.functions.invoke('sendNotification', { recipient_id: offererId, type: 'game', title: 'Nulle refusée', message: 'Votre proposition de nulle a été refusée', link: `/Game?id=${game.id}` });
+                }
+            }
+        } catch (_) {}
+        setGame(prev => ({ ...prev, draw_offer_by: null }));
         toast.error(t('game.draw_declined'));
     };
 
