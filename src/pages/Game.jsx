@@ -2071,50 +2071,7 @@ export default function Game() {
         }
     };
 
-    if (loading.game) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
 
-    // Safe fallback when game failed to load (avoid null property access)
-    if (!game) return (
-        <div className="flex flex-col justify-center h-screen items-center gap-3 text-[#4a3728]">
-            <div className="text-sm">Synchronisation en cours…</div>
-            <Button
-                variant="outline"
-                onClick={async () => {
-                    try {
-                        if (id === 'local-ai') {
-                            const type = (searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers');
-                            const difficulty = searchParams.get('difficulty') || 'medium';
-                            const initialBoard = type === 'chess' ? initializeChessBoard() : initializeBoard();
-                            if (type === 'chess') {
-                                setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
-                            }
-                            setBoard(initialBoard);
-                            setGame({
-                                id: 'local-ai',
-                                status: 'playing',
-                                game_type: type,
-                                white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
-                                black_player_name: `AI (${difficulty})`,
-                                white_player_id: currentUser?.id || 'guest',
-                                black_player_id: 'ai',
-                                current_turn: 'white',
-                                board_state: type === 'chess' ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initialBoard),
-                                moves: JSON.stringify([]),
-                                white_seconds_left: 600,
-                                black_seconds_left: 600,
-                                last_move_at: null,
-                            });
-                            return;
-                        }
-                        const g = await base44.entities.Game.get(id);
-                        if (g) setGame(g);
-                    } catch (e) { logger.warn('[SILENT]', e); }
-                }}
-            >
-                Rafraîchir
-            </Button>
-        </div>
-    );
 
     const movesList = useMemo(() => safeJSONParse(game?.moves, []), [game?.moves]);
     const displayBoardMemo = useMemo(() => {
@@ -2171,6 +2128,50 @@ export default function Game() {
         if (!info) return DEFAULT_ELO;
         return type === 'chess' ? (info.elo_chess || DEFAULT_ELO) : (info.elo_checkers || DEFAULT_ELO);
     }, []);
+
+    // Loading/Fallback after all hooks to keep hook order stable
+    if (loading.game) return <div className="flex justify-center h-screen items-center"><Loader2 className="w-10 h-10 animate-spin text-[#4a3728]" /></div>;
+    if (!game) return (
+        <div className="flex flex-col justify-center h-screen items-center gap-3 text-[#4a3728]">
+            <div className="text-sm">Synchronisation en cours…</div>
+            <Button
+                variant="outline"
+                onClick={async () => {
+                    try {
+                        if (id === 'local-ai') {
+                            const type = (searchParams.get('type') || localStorage.getItem('gameMode') || 'checkers');
+                            const difficulty = searchParams.get('difficulty') || 'medium';
+                            const initialBoard = type === 'chess' ? initializeChessBoard() : initializeBoard();
+                            if (type === 'chess') {
+                                setChessState({ castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null });
+                            }
+                            setBoard(initialBoard);
+                            setGame({
+                                id: 'local-ai',
+                                status: 'playing',
+                                game_type: type,
+                                white_player_name: currentUser ? (currentUser.username || t('common.you')) : t('common.you'),
+                                black_player_name: `AI (${difficulty})`,
+                                white_player_id: currentUser?.id || 'guest',
+                                black_player_id: 'ai',
+                                current_turn: 'white',
+                                board_state: type === 'chess' ? JSON.stringify({ board: initialBoard, castlingRights: { wK: true, wQ: true, bK: true, bQ: true }, lastMove: null }) : JSON.stringify(initialBoard),
+                                moves: JSON.stringify([]),
+                                white_seconds_left: 600,
+                                black_seconds_left: 600,
+                                last_move_at: null,
+                            });
+                            return;
+                        }
+                        const g = await base44.entities.Game.get(id);
+                        if (g) setGame(g);
+                    } catch (e) { logger.warn('[SILENT]', e); }
+                }}
+            >
+                Rafraîchir
+            </Button>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-[#f0e6d2] pb-10">
