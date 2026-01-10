@@ -211,9 +211,9 @@ const gameNotifInFlightRef = useRef(false);
                     pendingMovesRef.current.delete(moveId);
                 }
             }
-        }, 1000);
+        }, 3000);
         return () => clearInterval(interval);
-    }, [game?.id]);
+        }, [game?.id]);
 
     // Safe deep clone for board structures (handles [], {board: []}, undefined)
     const deepCloneBoard = (b) => {
@@ -451,9 +451,9 @@ const gameNotifInFlightRef = useRef(false);
                     setGame(fresh);
                 }
             } catch (e) { logger.warn('[WAIT_POLL] error', e); }
-        }, 2000);
+        }, 3000);
         return () => clearInterval(iv);
-    }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
+        }, [id, game?.status, game?.white_player_id, game?.black_player_id]);
 
     // Normalize status locally when both players present (prevents stuck 'waiting')
     useEffect(() => {
