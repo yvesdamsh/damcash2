@@ -19,7 +19,7 @@ export function RealTimeProvider({ children }) {
     // Global User Socket (Notifications)
     const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
         autoConnect: true,
-        reconnectAttempts: 5,
+        reconnectAttempts: 50,
         reconnectInterval: 1000,
         onOpen: () => {
             try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
@@ -182,6 +182,14 @@ export function RealTimeProvider({ children }) {
                     ...prev
                 ].slice(0, 50));
                 try { toast(title, { description: message }); } catch(_) {}
+                // Relay game-related fallback notifications too
+                try {
+                    if (data?.metadata?.game_id) {
+                        window.dispatchEvent(new CustomEvent('game-notification', {
+                            detail: { gameId: data.metadata.game_id, type: data.type || 'game', title, message, link: data.link, metadata: data.metadata }
+                        }));
+                    }
+                } catch(_) {}
                 try { window.dispatchEvent(new CustomEvent('notification-update')); } catch(_) {}
             }
         }
