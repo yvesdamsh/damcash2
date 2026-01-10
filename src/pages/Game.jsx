@@ -41,6 +41,9 @@ import ReplayControls from '@/components/game/ReplayControls';
 import GameReactions from '@/components/game/GameReactions';
 import BettingPanel from '@/components/BettingPanel';
 import ConnectionBadge from '@/components/game/ConnectionBadge';
+import ResignConfirmDialog from '@/components/game/ResignConfirmDialog';
+import SeriesScore from '@/components/game/SeriesScore';
+import ConnectionBadge from '@/components/game/ConnectionBadge';
 
 export default function Game() {
     const { t } = useLanguage();
@@ -710,7 +713,7 @@ export default function Game() {
         }
     }, [currentUser, id]);
 
-    const toggleSaveGame = async () => {
+    const toggleSaveGame = useCallback(async () => {
         if (!currentUser) return;
         try {
             let newFavs = currentUser.favorite_games || [];
@@ -1860,12 +1863,12 @@ export default function Game() {
         }
     };
 
-    const copyInviteCode = () => {
+    const copyInviteCode = useCallback(() => {
         navigator.clipboard.writeText(game.access_code);
         setInviteCopied(true);
         toast.success(t('game.code_copied'));
         setTimeout(() => setInviteCopied(false), 2000);
-    };
+    }, [game?.access_code, t]);
 
     const handleOfferDraw = async () => {
         if (!game || !currentUser) return;
@@ -2364,25 +2367,7 @@ export default function Game() {
             <div className="max-w-4xl mx-auto w-full p-0 md:p-4 space-y-2 md:space-y-4">
                 
                 {/* Series Score Display */}
-                {(game.series_length >= 1) && (
-                    <div className="flex justify-center items-center -mb-2 z-10 relative">
-                        <div className="bg-[#4a3728] text-[#e8dcc5] px-4 py-1 rounded-full shadow-md border-2 border-[#e8dcc5] text-sm font-bold flex gap-3 max-w-full overflow-hidden">
-                            <span className="whitespace-nowrap">{t('game.round_display', { current: (game.series_score_white + game.series_score_black) - ((game.status === 'finished') ? 1 : 0) + 1, total: game.series_length })}</span>
-                            <span className="text-yellow-500">|</span>
-                            <span className="flex gap-2 min-w-0">
-                                <span className={cn("truncate max-w-[80px] md:max-w-[150px]", game.series_score_white > game.series_score_black ? "text-green-400" : "text-white")}>
-                                    {playersInfo.white?.username || game.white_player_name}
-                                </span>
-                                <span className={game.series_score_white > game.series_score_black ? "text-green-400" : "text-white"}>: {game.series_score_white}</span>
-                                <span>-</span>
-                                <span className={cn("truncate max-w-[80px] md:max-w-[150px]", game.series_score_black > game.series_score_white ? "text-green-400" : "text-white")}>
-                                    {playersInfo.black?.username || game.black_player_name}
-                                </span>
-                                <span className={game.series_score_black > game.series_score_white ? "text-green-400" : "text-white"}>: {game.series_score_black}</span>
-                            </span>
-                        </div>
-                    </div>
-                )}
+                <SeriesScore game={game} playersInfo={playersInfo} />
 
                 {/* Betting for Spectators */}
                 {isSpectator && game.status === 'playing' && (
