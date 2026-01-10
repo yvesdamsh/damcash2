@@ -33,7 +33,6 @@ import { DEFAULT_ELO } from '@/components/constants/gameConstants';
 import { useLoadingState } from '@/components/hooks/useLoadingState';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import GameResultOverlay from '@/components/game/GameResultOverlay';
-import LatencyIndicator from '@/components/LatencyIndicator';
 import PromotionDialog from '@/components/game/PromotionDialog';
 import PlayerInfoCard from '@/components/game/PlayerInfoCard';
 import GameControls from '@/components/game/GameControls';
