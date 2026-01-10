@@ -2454,7 +2454,7 @@ export default function Game() {
                             </div>
                         )}
 
-                        {isSpectator && (!game.white_player_id || !game.black_player_id) && (
+                        {isSpectator && (!game?.white_player_id || !game?.black_player_id) && (
                             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={attemptJoin}>
                                 {t('game.join') || 'Rejoindre'}
                             </Button>
