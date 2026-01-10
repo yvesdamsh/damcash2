@@ -722,14 +722,14 @@ export default function Home() {
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-[#6b5138] dark:text-[#b09a85]">{t('home.cadence')}</label>
                                 <div className="grid grid-cols-4 gap-2">
-                                    {[1, 3, 5, 10, 15, 30, 60].map(t => (
+                                    {[1, 3, 5, 10, 15, 30, 60].map(time => (
                                         <Button 
-                                            key={t}
-                                            variant={gameConfig.time === t ? "default" : "outline"}
-                                            onClick={() => setGameConfig({...gameConfig, time: t})}
-                                            className={gameConfig.time === t ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138] dark:text-[#b09a85] dark:border-[#3d2b1f] dark:hover:bg-[#2c241b]"}
+                                            key={time}
+                                            variant={gameConfig.time === time ? "default" : "outline"}
+                                            onClick={() => setGameConfig({...gameConfig, time: time})}
+                                            className={gameConfig.time === time ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138] dark:text-[#b09a85] dark:border-[#3d2b1f] dark:hover:bg-[#2c241b]"}
                                         >
-                                            {t} min
+                                            {time} {t('common.min')}
                                         </Button>
                                     ))}
                                 </div>
@@ -761,7 +761,7 @@ export default function Home() {
                                             onClick={() => setGameConfig({...gameConfig, series: s})}
                                             className={`flex-1 ${gameConfig.series === s ? "bg-[#6b5138] hover:bg-[#5c4430]" : "border-[#d4c5b0] text-[#6b5138]"}`}
                                         >
-                                            {s === 1 ? "Unique" : s}
+                                            {s === 1 ? t('home.single_game') : s}
                                         </Button>
                                     ))}
                                 </div>
@@ -777,7 +777,7 @@ export default function Home() {
                                             onClick={() => setGameConfig({...gameConfig, stake: s})}
                                             className={`flex-1 ${gameConfig.stake === s ? "bg-yellow-600 hover:bg-yellow-700 text-white" : "border-[#d4c5b0] text-[#6b5138]"}`}
                                         >
-                                            {s === 0 ? "Gratuit" : s}
+                                            {s === 0 ? t('home.free') : s}
                                         </Button>
                                     ))}
                                 </div>
@@ -993,7 +993,7 @@ export default function Home() {
                                                     status: 'pending' 
                                                 });
 
-                                                toast.success(`Invitation envoyée à ${invitedUser.username || `Joueur ${invitedUser.id.substring(0,4)}`}`);
+                                                toast.success(t('home.invite_sent_to', { name: invitedUser.username || ((t('profile.default_player') || 'Player') + ' ' + invitedUser.id.substring(0,4)) }));
                                                 navigate(`/Game?id=${newGame.id}`);
 
                                                 // Fire-and-forget: notify invitee
@@ -1014,7 +1014,7 @@ export default function Home() {
                                                 }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
                                             } catch (e) {
                                                 console.error('[INVITE] Failed:', e);
-                                                toast.error('Impossible de créer la table. Réessayez.');
+                                                toast.error(t('home.create_table_error'));
                                             }
                                         }}
                                     />
@@ -1032,7 +1032,7 @@ export default function Home() {
                                 <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-sm font-bold uppercase text-gray-500 flex items-center gap-2">
-                                            <Users className="w-4 h-4" /> Activité des amis
+                                            <Users className="w-4 h-4" /> {t('home.friends_activity')}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">

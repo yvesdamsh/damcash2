@@ -289,6 +289,11 @@ export default {
   "home.chess_subtitle": "Le jeu des rois, pure stratégie",
   "home.level_placeholder": "Niveau",
   "home.play_vs_ai": "Jouer vs IA",
+  "home.single_game": "Unique",
+  "home.free": "Gratuit",
+  "home.friends_activity": "Activité des amis",
+  "home.invite_sent_to": "Invitation envoyée à {{name}}",
+  "home.create_table_error": "Impossible de créer la table. Réessayez."
   "lobby.title": "LOBBY JOUEURS",
   "lobby.subtitle": "Trouvez des adversaires et défiez-les en temps réel.",
   "lobby.tab_play": "Jouer",
