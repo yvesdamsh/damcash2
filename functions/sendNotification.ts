@@ -83,7 +83,7 @@ export default async function handler(req) {
            metadata
         });
         // Immediate invite ping on dedicated channel for redundancy
-        try { if (type === 'game_invite') invitesBC.postMessage({ recipientId: recipient_id, type, title, message, link, senderId: user.id, metadata }); } catch (_) {}
+        try { if (type === 'game_invite') invitesBC.postMessage({ recipientId: recipient_id, type: 'game_invite', title, message, link, senderId: user.id, metadata }); } catch (_) {}
 
         // Additionally, HTTP fanout directly to userSocket to ensure instant delivery
         try {
