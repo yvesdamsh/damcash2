@@ -41,10 +41,26 @@ export default function Notifications() {
         base44.auth.me().then(u => setUserId(u?.id || null)).catch(() => setUserId(null));
     }, []);
 
-    // Sync local list from realtime store (recompute true count after immediate increments)
+    // Baseline: fetch unread count from DB so badge reflects existing unread on load
+    useEffect(() => {
+        const loadUnread = async () => {
+            if (!userId) return;
+            try {
+                const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
+                const unread = (all || []).filter(n => !n.read).length;
+                setUnreadCount(unread);
+                // also seed list if empty to avoid empty popover on first load
+                setNotifications(prev => (prev && prev.length ? prev : (all || [])));
+            } catch (_) {}
+        };
+        loadUnread();
+    }, [userId]);
+
+    // Sync from realtime store but preserve baseline (DB) count if larger
     useEffect(() => {
         setNotifications(liveNotifications || []);
-        setUnreadCount((liveNotifications || []).filter(n => !n.read).length);
+        const live = (liveNotifications || []).filter(n => !n.read).length;
+        setUnreadCount((c) => Math.max(c, live));
     }, [liveNotifications]);
 
     useEffect(() => {
