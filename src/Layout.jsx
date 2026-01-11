@@ -537,11 +537,13 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                               {/* Game Mode Toggle */}
                                 <button
                                     onClick={toggleGameMode}
-                                    className={`px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm
-                                            ${gameMode === 'chess' 
-                                                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--border)] hover:brightness-110' 
-                                                : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
-                                            `}
+                                    className={
+                                        "px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm " +
+                                        (gameMode === 'chess'
+                                            ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--border)] hover:brightness-110'
+                                            : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
+                                        )
+                                    }
                                 >
                                     {gameMode === 'chess' ? (
                                         <><span aria-hidden="true">♟️</span> {t('game.chess')}</>
