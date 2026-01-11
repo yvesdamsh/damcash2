@@ -491,6 +491,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             `}</style>
             <AnimatePresence>
                 {showIntro && (
+
                     <motion.div 
                         className="fixed inset-0 z-[200]"
                         exit={{ opacity: 0 }}
