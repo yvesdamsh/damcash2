@@ -308,6 +308,22 @@ function LayoutContent({ children }) {
 
     // handleLogout removed
 
+    // Open chat listener: when a message notification is clicked, open Messages with the target user
+    React.useEffect(() => {
+        const handler = (e) => {
+            try {
+                const id = e?.detail?.senderId;
+                if (id) {
+                    navigate(`/Messages?userId=${encodeURIComponent(id)}`);
+                } else {
+                    navigate('/Messages');
+                }
+            } catch (_) {}
+        };
+        window.addEventListener('open-chat', handler);
+        return () => window.removeEventListener('open-chat', handler);
+    }, [navigate]);
+
     // Mobile Viewport Optimization
     React.useEffect(() => {
         try {
