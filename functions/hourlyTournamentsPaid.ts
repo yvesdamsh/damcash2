@@ -17,7 +17,7 @@ function getNextTopOfHourBrisbaneISO() {
 
 function pickTimeControl(nextLocal) {
   const idx = Math.floor(nextLocal.getTime() / 3600000) % 3; // rotate hourly
-  const tcs = ['5+0', '3+0', '3+2'];
+  const tcs = ['3+0', '5+0', '3+2'];
   return tcs[idx];
 }
 

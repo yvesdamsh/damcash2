@@ -62,6 +62,13 @@ export default function UpcomingTournaments() {
   const seconds = Math.floor((diffMs % 60000) / 1000);
   const countdown = `${hours > 0 ? String(hours).padStart(2,'0') + ':' : ''}${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
   const upcomingStarts = Array.from({ length: 5 }, (_, i) => new Date(nextStart.getTime() + i * 60 * 60 * 1000));
+  const ROTATION = ['3+0','5+0','3+2'];
+  const baseIndex = React.useMemo(() => {
+    if (items[0]?.time_control && ROTATION.includes(items[0].time_control)) return ROTATION.indexOf(items[0].time_control);
+    const hIndex = Math.floor(nextStart.getTime() / 3600000) % 3;
+    return hIndex % 3;
+  }, [items, nextStart]);
+  const schedule = upcomingStarts.map((d, i) => ({ date: d, tc: ROTATION[(baseIndex + i) % 3] }));
 
   return (
     <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#d4c5b0] dark:border-[#3d2b1f] shadow-xl h-full">
@@ -79,7 +86,7 @@ export default function UpcomingTournaments() {
                 <Megaphone className="w-4 h-4" />
                 {tt('home.hourly_tournament', 'Damcash Hourly Tournament')}
               </div>
-              <p className="text-sm text-[#6b5138] dark:text-[#b09a85] mt-1">{tt('home.hourly_tournament_desc', 'Every hour on the hour. Fast 5+0 matches, prizes and badges.')}</p>
+              <p className="text-sm text-[#6b5138] dark:text-[#b09a85] mt-1">{tt('home.hourly_tournament_desc', 'Every hour. Rotating 3+0 → 5+0 → 3+2. Join early to enter the waiting list.')}</p>
               <div className="mt-2 text-xs flex items-center gap-1 text-[#6b5138] dark:text-[#b09a85]">
                 <Clock className="w-3 h-3" /> {tt('home.starts_every_hour', 'Starts every hour')}
               </div>
@@ -87,6 +94,10 @@ export default function UpcomingTournaments() {
             <Link to={items[0]?.id ? `/TournamentDetail?id=${items[0].id}` : "/Tournaments"} className="flex-shrink-0">
               <Button size="sm" className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">{tt('tournaments.join_btn', 'Rejoindre')}</Button>
             </Link>
+          </div>
+          <div className="mt-2 text-xs text-[#6b5138] dark:text-[#b09a85]">
+            <span className="inline-block px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold mr-2">{tt('home.waiting_list','Waiting list')}</span>
+            {tt('home.waiting_list_desc','Join now to reserve your seat; you’ll wait until the start time.')}
           </div>
         </div>
         {/* Live countdown to next start */}
@@ -103,8 +114,8 @@ export default function UpcomingTournaments() {
         <div className="p-3 rounded-lg border bg-[#fdfbf7] dark:bg-[#2c241b] border-[#e8dcc5] dark:border-[#3d2b1f]">
           <div className="text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mb-2">{tt('home.upcoming_hourly','Upcoming hourly tournaments')}</div>
           <ul className="text-sm text-[#6b5138] dark:text-[#b09a85] space-y-1">
-            {upcomingStarts.map((d,i) => (
-              <li key={i}>• 5+0 {tt('home.at','at')} {formatDate(d, 'p')}</li>
+            {schedule.map(({date, tc}, i) => (
+              <li key={i}>• {tc} {tt('home.at','at')} {formatDate(date, 'p')}</li>
             ))}
           </ul>
         </div>
