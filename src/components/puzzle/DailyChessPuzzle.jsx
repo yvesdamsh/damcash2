@@ -99,7 +99,7 @@ export default function DailyChessPuzzle({ puzzle, board: initialBoard }) {
   };
 
   return (
-    <div className="w-full max-w-[640px] mx-auto">
+    <div className="w-full max-w-none mx-auto">
       <ChessBoard
         board={board}
         onSquareClick={handleSquareClick}

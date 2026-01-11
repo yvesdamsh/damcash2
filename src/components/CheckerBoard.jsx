@@ -43,7 +43,7 @@ const CheckerSquare = memo(({
         <div
             data-r={r}
             data-c={c}
-            onClick={piece === 0 ? () => onSquareClick(r, c) : undefined}
+            onClick={() => onSquareClick(r, c)}
             style={{ aspectRatio: '1/1' }}
             className={`
                 board-square
