@@ -719,5 +719,8 @@ export default {
   "matchmaking.opponent_found": "Adversaire trouvé !",
   "matchmaking.starting_game": "Démarrage de la partie...",
   "matchmaking.join_error": "Erreur de connexion à la partie",
-  "matchmaking.game_starting": "Partie trouvée !"
+  "matchmaking.game_starting": "Partie trouvée !",
+  "welcome.title": "Bienvenue sur Damcash !",
+  "welcome.guest": "En invité, vous pouvez regarder des parties en direct, parcourir les tournois et essayer les puzzles du jour. Créez un compte gratuit pour jouer des matchs, rejoindre des ligues, discuter, gagner des badges et sauvegarder votre progression. Sans compte, vous ne pouvez pas défier des joueurs, miser, rejoindre des événements payants, créer des équipes ou envoyer des messages.",
+  "welcome.registered": "Bienvenue à bord ! Vous pouvez maintenant jouer des matchs, rejoindre des ligues et tournois, discuter avec les joueurs, enregistrer vos parties, gagner des badges et suivre vos statistiques. Limitations : pour miser ou rejoindre des événements payants, il faut disposer d’un solde suffisant et des vérifications requises."
 };

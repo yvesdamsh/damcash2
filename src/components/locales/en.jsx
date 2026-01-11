@@ -691,5 +691,8 @@ export default {
   "matchmaking.opponent_found": "Opponent found!",
   "matchmaking.starting_game": "Starting game...",
   "matchmaking.join_error": "Error joining the game",
-  "matchmaking.game_starting": "Game found!"
+  "matchmaking.game_starting": "Game found!",
+  "welcome.title": "Welcome to Damcash!",
+  "welcome.guest": "As a guest, you can watch live games, browse tournaments, and try daily puzzles. Create a free account to play matches, join leagues, chat, earn badges and save your progress. Without an account you cannot challenge players, place wagers, join paid events, create teams or send messages.",
+  "welcome.registered": "Welcome aboard! You can now play matches, join leagues and tournaments, chat with players, save games, earn badges and track your stats. Limitations: to place wagers or join paid events you’ll need a sufficient wallet balance and any required verification."
 };

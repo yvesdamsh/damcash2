@@ -32,6 +32,7 @@ import WalletBalance from '@/components/WalletBalance';
 import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import UsernameSetupDialog from '@/components/UsernameSetupDialog';
+import { toast } from 'sonner';
 
 export default function Layout({ children }) {
     return (
@@ -209,6 +210,33 @@ function LayoutContent({ children }) {
                   if (currentUser && !sessionStorage.getItem('online_notified_v1')) {
                     await base44.functions.invoke('notifyFriendsOnline', {});
                     sessionStorage.setItem('online_notified_v1', '1');
+                  }
+                  // Welcome message (first-time) for authenticated users
+                  if (currentUser && !currentUser.welcome_sent_at) {
+                    const title = t('welcome.title') || 'Welcome to Damcash!';
+                    const body = t('welcome.registered') || 'Welcome! You can now play, join leagues, chat and more.';
+                    await base44.entities.Notification.create({
+                      recipient_id: currentUser.id,
+                      type: 'message',
+                      title,
+                      message: body,
+                      link: '/Home'
+                    });
+                    await base44.auth.updateMe({ welcome_sent_at: new Date().toISOString() });
+                  }
+                  // Guest welcome (only once per browser)
+                  if (!currentUser) {
+                    const authed = await base44.auth.isAuthenticated().catch(() => false);
+                    if (!authed) {
+                      try {
+                        if (!localStorage.getItem('welcome_shown_v1')) {
+                          const title = t('welcome.title') || 'Welcome to Damcash!';
+                          const body = t('welcome.guest') || 'Create a free account to play and chat.';
+                          try { toast.info(`${title}\n${body}`); } catch (_) {}
+                          localStorage.setItem('welcome_shown_v1', '1');
+                        }
+                      } catch (_) {}
+                    }
                   }
                 } catch (_) {}
             } catch (e) {
