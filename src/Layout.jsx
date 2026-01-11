@@ -600,7 +600,8 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             {user && (
                               <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
                                 {user.username || `Joueur ${user.id.substring(0,4)}`
-                            </div>}
+                              </div>
+                            )}
                             <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
                             <button
