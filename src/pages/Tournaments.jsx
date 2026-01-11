@@ -262,7 +262,7 @@ export default function Tournaments() {
                             <Plus className="w-5 h-5" /> {t('tournaments.create_btn')}
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0] max-w-2xl h-[90vh] overflow-y-auto">
+                    <DialogContent className="bg-[#fdfbf7] border-[#d4c5b0] max-w-2xl max-h-[80vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle className="text-[#4a3728] text-2xl font-serif">{t('tournaments.create_title')}</DialogTitle>
                         </DialogHeader>
