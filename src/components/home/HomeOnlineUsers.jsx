@@ -69,6 +69,12 @@ export default function HomeOnlineUsers() {
     if (!me) return users;
     const exists = users.find((u) => u.id === me.id);
     if (exists) return users;
+
+    // Only include current user when their preferred/default game matches the current filter
+    const pref = String(me?.default_game || me?.preferred_game_type || '').toLowerCase();
+    const shouldIncludeMe = pref === cfg.type;
+    if (!shouldIncludeMe) return users;
+
     return [{
       id: me.id,
       username: me.username,
