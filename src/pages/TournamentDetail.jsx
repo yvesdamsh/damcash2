@@ -488,9 +488,8 @@ export default function TournamentDetail() {
             const already = participants.some(p => p.user_id === user.id);
             if (already) return;
             if (tournament.team_mode) { setIsTeamJoinOpen(true); return; }
-            if ((tournament.entry_fee || 0) > 0) { toast.info('Cliquez sur “Rejoindre” pour confirmer le paiement.'); return; }
-            // Safe auto-join (free tournaments only)
-            handleJoin();
+            // Toujours demander confirmation, même pour les tournois gratuits
+            toast.info('Cliquez sur “Rejoindre” pour confirmer votre inscription.');
         }
     }, [location.search, tournament?.id, participants.length, user?.id]);
 
