@@ -722,7 +722,12 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             )}
 
             {/* Main Content */}
-            <main className={`relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 ${location.pathname.toLowerCase().startsWith('/game') ? 'px-0' : 'px-4'`}>
+            <main
+              className={
+                "relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 " +
+                (location.pathname.toLowerCase().startsWith('/game') ? "px-0" : "px-4")
+              }
+            >
                 {children}
             </main>
         </div>
