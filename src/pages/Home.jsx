@@ -755,7 +755,7 @@ export default function Home() {
                 seconds={mmSeconds}
                 waitingGames={mmWaitingGames}
                 liveGames={mmLiveGames}
-                criteria={{ time: gameConfig.time, increment: gameConfig.increment }}
+                criteria={{ time: gameConfig.time, increment: gameConfig.increment, gameType }}
                 onCancel={cancelMatchmaking}
                 onWatch={(id) => navigate(`/Game?id=${id}`)}
             />
