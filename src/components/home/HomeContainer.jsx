@@ -170,16 +170,17 @@ export default function HomeContainer() {
     const fetchData = async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
         const nowTs = Date.now();
-        if (fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 4000)) { return; }
+        if (fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 10000)) { return; }
         fetchInFlightRef.current = true;
         try {
             // Parallel fetching for games
-            const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
-                base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
-                base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' }),
-                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 10)
-            ]);
+            let myGamesWhite = await base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' });
+            await new Promise(r => setTimeout(r, 200));
+            let myGamesBlack = await base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' });
+            await new Promise(r => setTimeout(r, 200));
+            let myInvites = await base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' });
+            await new Promise(r => setTimeout(r, 200));
+            let topGames = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 10);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
             // Actually, just showing the highest rated active games is good.
@@ -191,26 +192,8 @@ export default function HomeContainer() {
             }).slice(0, 5);
             setFeaturedGames(sortedFeatured);
 
-            // Ensure tester games (you and Missdeecash) always appear in featured embeds
-            try {
-                const testerNamesRaw = [currentUser?.username, 'Missdeecash'];
-                const testerNames = Array.from(new Set((testerNamesRaw.filter(Boolean) || []).map(n => String(n))));
-                if (testerNames.length > 0) {
-                    const queries = [];
-                    testerNames.forEach(name => {
-                        queries.push(base44.entities.Game.filter({ status: 'playing', white_player_name: name }, '-updated_date', 5));
-                        queries.push(base44.entities.Game.filter({ status: 'playing', black_player_name: name }, '-updated_date', 5));
-                    });
-                    const results = await Promise.all(queries);
-                    const merged = results.flat();
-                    const unique = Array.from(new Map(merged.map(g => [g.id, g])).values());
-                    setTesterGames(unique.slice(0, 2));
-                } else {
-                    setTesterGames([]);
-                }
-            } catch (_) {
-                setTesterGames([]);
-            }
+            // Tester spotlight disabled to reduce extra queries
+            setTesterGames([]);
             
             // Deduplicate and STRICTLY filter games
             const allGames = [...myGamesWhite, ...myGamesBlack];
@@ -256,37 +239,8 @@ export default function HomeContainer() {
                 }
             }
 
-            // Fetch Following Activity
-            const follows = await base44.entities.Follow.filter({ follower_id: currentUser.id });
-            if (follows.length > 0) {
-                const userIds = follows.filter(f => f.target_type === 'user' || !f.target_type).map(f => f.target_id);
-                // Fetch recent games of followed users
-                if (userIds.length > 0) {
-                    // Simple logic: fetch recent games where white or black is in userIds
-                    // Note: This is an expensive generic query if not optimized, but for small scale fine.
-                    // We can't do "OR" easily in filter sometimes, so we might fetch list() sorted and filter client side if backend limits it.
-                    // Or iterate. Let's try iterating 5 users max for now to be safe or list recent finished games and match.
-                    
-                    const recentGames = await base44.entities.Game.filter({ status: 'finished' }, '-updated_date', 25);
-                    const relevant = recentGames.filter(g => userIds.includes(g.white_player_id) || userIds.includes(g.black_player_id));
-                    
-                    const activity = relevant.map(g => {
-                        const isWhite = userIds.includes(g.white_player_id);
-                        const friendId = isWhite ? g.white_player_id : g.black_player_id;
-                        const friendName = isWhite ? g.white_player_name : g.black_player_name;
-                        const gameName = g.game_type === 'chess' ? t('game.chess') : t('game.checkers');
-                        return {
-                            type: 'game',
-                            id: g.id,
-                            friendId,
-                            friendName,
-                            desc: t('home.played_a_game', { game: gameName }),
-                            date: g.updated_date
-                        };
-                    });
-                    setFollowingActivity(activity.slice(0, 5));
-                }
-            }
+            // Following activity disabled to save API calls
+            setFollowingActivity([]);
 
         } catch(e) {
             console.error("Refresh error", e);
@@ -296,7 +250,7 @@ export default function HomeContainer() {
         }
     };
 
-        const throttledFetchData = React.useMemo(() => throttle(fetchData, 5000), [fetchData]);
+        const throttledFetchData = React.useMemo(() => throttle(fetchData, 30000), [fetchData]);
 
         useEffect(() => {
             let intervalId;
@@ -643,7 +597,7 @@ export default function HomeContainer() {
 
                     // Start polling
                     if (mmPollRef.current) clearInterval(mmPollRef.current);
-                    mmPollRef.current = setInterval(tick, 4000);
+                    mmPollRef.current = setInterval(tick, 5000);
                     // Run first immediately
                     tick();
                 }
