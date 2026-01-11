@@ -236,7 +236,7 @@ const gameNotifInFlightRef = useRef(false);
         let currentBoard = [];
         let lastChessMove = null;
 
-        const currentBoardStateRaw = String(game.board_state || '');
+        const currentBoardStateRaw = typeof game.board_state === 'string' ? game.board_state : JSON.stringify(game.board_state || '');
         const gameTs = new Date(game.updated_date || game.last_move_at || Date.now()).getTime();
         const stateChanged = currentBoardStateRaw !== (lastAppliedBoardStateRef.current || null);
         const isNewerOrEqual = gameTs >= (lastAppliedAtRef.current || 0);
@@ -262,12 +262,12 @@ const gameNotifInFlightRef = useRef(false);
                     setChessState(prev => ({
                         ...prev,
                         castlingRights: parsed?.castlingRights || prev.castlingRights || {},
-                        lastMove: lastChessMove ?? prev.lastMove ?? null,
-                        halfMoveClock: parsed?.halfMoveClock ?? prev.halfMoveClock ?? 0,
+                        lastMove: (lastChessMove !== null && lastChessMove !== undefined) ? lastChessMove : (prev.lastMove ?? null),
+                        halfMoveClock: (parsed?.halfMoveClock !== undefined) ? parsed.halfMoveClock : (prev.halfMoveClock ?? 0),
                         positionHistory: parsed?.positionHistory || prev.positionHistory || {}
                     }));
                 }
-            } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); /* do not setBoard([]) to avoid flicker */ }
         } else {
             try {
                 const parsed = safeJSONParse(game.board_state, []);
@@ -277,7 +277,7 @@ const gameNotifInFlightRef = useRef(false);
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
                     lastAppliedAtRef.current = gameTs;
                 }
-            } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); /* do not setBoard([]) to avoid flicker */ }
         }
 
         // Sound & Notification Logic
@@ -1770,6 +1770,7 @@ const gameNotifInFlightRef = useRef(false);
             winner_id: winnerId,
             board_state: JSON.stringify(newStateObj)
         }));
+        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch (_) {}
         setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
@@ -1816,6 +1817,12 @@ const gameNotifInFlightRef = useRef(false);
             // First move, just set timestamp
              updateData.last_move_at = now;
         }
+
+        // Track the local board we are about to apply (prevents stale re-application)
+        try {
+          lastAppliedBoardStateRef.current = updateData.board_state;
+          lastAppliedAtRef.current = new Date(updateData.last_move_at || Date.now()).getTime();
+        } catch (_) {}
 
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setPausePolling(true);
