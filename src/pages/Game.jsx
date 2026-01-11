@@ -203,6 +203,21 @@ const gameNotifInFlightRef = useRef(false);
     const lastAppliedMoveCountRef = useRef(0);
     const wsLastReceivedRef = useRef(Date.now());
     const wsRefetchAtRef = useRef(0);
+    const gameFetchInFlightRef = useRef(null);
+    const gameFetchLastAtRef = useRef(0);
+
+    const safeFetchGame = React.useCallback(async () => {
+        const now = Date.now();
+        if (gameFetchInFlightRef.current) return await gameFetchInFlightRef.current;
+        if (now - (gameFetchLastAtRef.current || 0) < 2000) return null;
+        const p = base44.entities.Game.get(id)
+            .finally(() => {
+                gameFetchLastAtRef.current = Date.now();
+                gameFetchInFlightRef.current = null;
+            });
+        gameFetchInFlightRef.current = p;
+        return await p;
+    }, [id]);
     const isPollingRef = useRef(false);
     const aiJobRef = useRef(false);
     const lastUpdateRef = useRef(Date.now());
@@ -538,10 +553,10 @@ const gameNotifInFlightRef = useRef(false);
               if (changed && incomingLen >= currentLen) {
                 setGame(updated);
                 lastAppliedMoveCountRef.current = Math.max(currentLen, incomingLen);
-                backoffRef.value = 800; // briefly faster after change
+                backoffRef.value = 2000; // briefly faster after change
               } else {
                 // slow down when no change or older to reduce API pressure
-                backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 5000);
+                backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 8000);
               }
             } catch (e) {
               // Exponential backoff on errors (e.g., rate limits)
@@ -705,10 +720,10 @@ const gameNotifInFlightRef = useRef(false);
                 const missingBoardOrMoves = !Object.prototype.hasOwnProperty.call(payload, 'board_state') || !hasMoves;
                 if (missingBoardOrMoves && id) {
                     const now = Date.now();
-                    if (now - (wsRefetchAtRef.current || 0) > 800) {
+                    if (now - (wsRefetchAtRef.current || 0) > 2000) {
                         wsRefetchAtRef.current = now;
-                        base44.entities.Game.get(id)
-                          .then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); })
+                        safeFetchGame()
+                          ?.then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); })
                           .catch(() => {});
                     }
                 }
@@ -746,7 +761,7 @@ const gameNotifInFlightRef = useRef(false);
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(g => { if (g) {
+                safeFetchGame()?.then(g => { if (g) {
                   try {
                     const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
                     const currLen = lastAppliedMoveCountRef.current || 0;
@@ -775,8 +790,8 @@ const gameNotifInFlightRef = useRef(false);
             if (now - gameNotifRefetchAtRef.current < 2500) return; // throttle to ~1 req/2.5s
             gameNotifRefetchAtRef.current = now;
             gameNotifInFlightRef.current = true;
-            base44.entities.Game.get(id)
-              .then(g => { if (g) {
+            safeFetchGame()
+              ?.then(g => { if (g) {
                 try {
                   const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
                   const currLen = lastAppliedMoveCountRef.current || 0;
