@@ -56,6 +56,16 @@ export default function TournamentDetail() {
     // Ranking & Sorting State
     const [sortConfig, setSortConfig] = useState({ key: 'score', direction: 'desc' });
 
+    // Page visibility state for adaptive polling
+    const [isVisible, setIsVisible] = useState(() => {
+        try { return !document.hidden; } catch (_) { return true; }
+    });
+    useEffect(() => {
+        const onVis = () => setIsVisible(!document.hidden);
+        document.addEventListener('visibilitychange', onVis);
+        return () => document.removeEventListener('visibilitychange', onVis);
+    }, []);
+
     const standings = useMemo(() => {
         if (!participants.length) return [];
         
@@ -169,11 +179,12 @@ export default function TournamentDetail() {
 
     useEffect(() => {
         if (!id) return;
+
         const init = async () => {
             try {
                 const u = await base44.auth.me();
                 setUser(u);
-                
+
                 // Fetch Data in parallel
                 const [tData, pData, mData, allUsers] = await Promise.all([
                     base44.entities.Tournament.filter({ id }),
@@ -189,7 +200,7 @@ export default function TournamentDetail() {
                 if (tData.length) {
                     const t = tData[0];
                     setTournament(t);
-                    
+
                     // Check Follow Status
                     if (u) {
                         const follows = await base44.entities.TournamentFollow.filter({ tournament_id: id, user_id: u.id });
@@ -205,7 +216,7 @@ export default function TournamentDetail() {
                         }
                     }
                 }
-                setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0))); 
+                setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
                 setMatches(mData);
             } catch (e) {
                 console.error(e);
@@ -213,12 +224,20 @@ export default function TournamentDetail() {
                 setLoading(false);
             }
         };
-        init();
-        
-        // Polling for updates
-        const interval = setInterval(init, 5000);
+
+        const tick = () => {
+            if (!isVisible) return;
+            init();
+        };
+
+        // Initial load
+        tick();
+
+        const open = tWsReady === 1;
+        const intervalMs = isVisible ? (open ? 15000 : 7000) : 30000;
+        const interval = setInterval(tick, intervalMs);
         return () => clearInterval(interval);
-    }, [id]);
+    }, [id, tWsReady, isVisible]);
 
     const isParticipant = participants.some(p => 
         p.user_id === user?.id || (tournament?.team_mode && p.team_id && myLedTeams.some(t => t.id === p.team_id))
