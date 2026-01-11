@@ -359,7 +359,7 @@ function LayoutContent({ children }) {
             : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
 
     return (
-        <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass`}}>
+        <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass}`}>
             <style>{`
 .theme-chess {
   /* Green-dominant palette for chess */
