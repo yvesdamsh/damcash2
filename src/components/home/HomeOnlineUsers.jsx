@@ -42,7 +42,7 @@ export default function HomeOnlineUsers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [cfg.type]);
 
   React.useEffect(() => {
     fetchOnline();
