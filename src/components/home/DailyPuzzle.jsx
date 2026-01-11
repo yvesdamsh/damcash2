@@ -7,6 +7,7 @@ import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";
 import ChessBoard from "@/components/ChessBoard";
+import DailyChessPuzzle from "@/components/puzzle/DailyChessPuzzle";
 import PuzzleEditor from "@/components/home/PuzzleEditor";
 import DailyCheckersPuzzle from "@/components/puzzle/DailyCheckersPuzzle";
 
@@ -94,16 +95,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
               ) : (
                 valid ? (
                   <div className="space-y-3">
-                    <div className="w-full max-w-[520px] mx-auto">
-                      <ChessBoard 
-                        board={(Array.isArray(board) && board.length===8 && board.every(r=>Array.isArray(r)&&r.length===8)) ? board : Array.from({length:8},()=>Array(8).fill(null))} 
-                        onSquareClick={() => {}} 
-                        validMoves={[]} 
-                        currentTurn="white" 
-                        orientation="white" 
-                        pieceSet="standard"
-                      />
-                    </div>
+                    <DailyChessPuzzle puzzle={puzzle} board={(Array.isArray(board) && board.length===8 && board.every(r=>Array.isArray(r)&&r.length===8)) ? board : Array.from({length:8},()=>Array(8).fill(null))} />
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="bg-[#e8dcc5] text-[#4a3728] dark:bg-[#3d2b1f] dark:text-[#e8dcc5]">
                         {puzzle.difficulty || 'medium'}
