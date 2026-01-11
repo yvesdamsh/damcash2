@@ -25,7 +25,7 @@ export default function LeagueMatchmaking({ league, currentUser }) {
 
   React.useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 4000);
+    const iv = setInterval(refresh, 30000);
     return () => clearInterval(iv);
   }, [refresh]);
 

@@ -171,7 +171,7 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 20000);
+        const interval = setInterval(heartbeat, 45000);
         return () => clearInterval(interval);
     }, [user]);
 

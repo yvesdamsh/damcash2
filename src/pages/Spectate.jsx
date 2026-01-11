@@ -73,7 +73,7 @@ export default function Spectate() {
         };
 
         fetchGames(true); // Initial load shows spinner
-        const interval = setInterval(() => fetchGames(false), 10000); // Background refresh does not
+        const interval = setInterval(() => fetchGames(false), 60000); // Background refresh does not
         return () => clearInterval(interval);
     }, [filters]);
 

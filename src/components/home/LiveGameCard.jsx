@@ -32,7 +32,7 @@ export default function LiveGameCard({ game }) {
       } catch (_) {}
     };
     fetchSpectators();
-    const iv = setInterval(fetchSpectators, 10000);
+    const iv = setInterval(fetchSpectators, 60000);
     return () => { stop = true; clearInterval(iv); };
   }, [game.id]);
 

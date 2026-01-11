@@ -102,7 +102,7 @@ export default function Messages() {
         };
 
         fetchMessages();
-        const interval = setInterval(fetchMessages, 3000); // Poll for new messages
+        const interval = setInterval(fetchMessages, 30000); // Poll for new messages
         return () => clearInterval(interval);
     }, [selectedConvId]);
 

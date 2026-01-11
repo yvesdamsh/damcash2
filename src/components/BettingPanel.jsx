@@ -28,7 +28,7 @@ export default function BettingPanel({ game, currentUser }) {
         };
         load();
         // refresh every 5s for live odds
-        timer = setInterval(load, 5000);
+        timer = setInterval(load, 60000);
         return () => clearInterval(timer);
     }, [game, currentUser]);
 

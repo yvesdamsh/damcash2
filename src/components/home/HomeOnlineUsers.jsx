@@ -46,7 +46,7 @@ export default function HomeOnlineUsers() {
 
   React.useEffect(() => {
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
-    fetchOnline();
+    setTimeout(() => fetchOnline(), 2000);
   }, [cfg.type, fetchOnline]);
 
   React.useEffect(() => {
@@ -56,8 +56,7 @@ export default function HomeOnlineUsers() {
   }, []);
 
   React.useEffect(() => {
-      fetchOnline();
-      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 20000);
+      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 60000);
       return () => clearInterval(iv);
   }, [fetchOnline]);
 

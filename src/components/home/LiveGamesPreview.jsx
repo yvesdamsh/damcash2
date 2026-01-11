@@ -23,9 +23,9 @@ export default function LiveGamesPreview({ limit = 5, gameType = null }) {
   }, [limit, gameType]);
 
   React.useEffect(() => {
-    refresh();
-    const iv = setInterval(() => { if (!document.hidden) refresh(); }, 30000);
-    return () => clearInterval(iv);
+    const t = setTimeout(() => refresh(), 4000);
+    const iv = setInterval(() => { if (!document.hidden) refresh(); }, 60000);
+    return () => { clearTimeout(t); clearInterval(iv); };
   }, [refresh]);
 
   if (!games.length) return null;

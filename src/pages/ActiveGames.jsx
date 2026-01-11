@@ -21,7 +21,7 @@ export default function ActiveGames() {
 
   React.useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 10000);
+    const iv = setInterval(refresh, 60000);
     return () => clearInterval(iv);
   }, [refresh]);
 

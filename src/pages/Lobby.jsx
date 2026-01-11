@@ -79,7 +79,7 @@ export default function Lobby() {
         init();
 
         // Auto-refresh lobby data (users/games) every 15s to keep list fresh
-        const interval = setInterval(fetchData, 15000);
+        const interval = setInterval(fetchData, 60000);
         return () => clearInterval(interval);
     }, []);
 
