@@ -74,6 +74,14 @@ export default function Home() {
     const [currentLegendIndex, setCurrentLegendIndex] = useState(0);
     const navigate = useNavigate();
 
+    const fetchInFlightRef = React.useRef(false);
+    const lastFetchAtRef = React.useRef(0);
+    const userRef = React.useRef(null);
+    const invInFlightRef = React.useRef(false);
+    const invNextAllowedRef = React.useRef(0);
+
+    React.useEffect(() => { userRef.current = user; }, [user]);
+
     const checkersLegends = [
         {
             id: 'babasy',
@@ -150,6 +158,9 @@ export default function Home() {
 
     const fetchData = async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
+        const nowTs = Date.now();
+        if (fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 4000)) { return; }
+        fetchInFlightRef.current = true;
         try {
             // Parallel fetching for games
             const [myGamesWhite, myGamesBlack, myInvites, topGames] = await Promise.all([
@@ -268,6 +279,9 @@ export default function Home() {
 
         } catch(e) {
             console.error("Refresh error", e);
+        } finally {
+            fetchInFlightRef.current = false;
+            lastFetchAtRef.current = Date.now();
         }
     };
 
@@ -282,6 +296,7 @@ export default function Home() {
                 
                 if (currentUser) {
                     setUser(currentUser);
+                    userRef.current = currentUser;
                     setShowSplash(false);
                 } else {
                     setLoading(false);
@@ -315,8 +330,8 @@ export default function Home() {
                 await fetchData(currentUser, true);
 
                 // Start polling only if authenticated
-                intervalId = setInterval(async () => {
-                    const u = await base44.auth.me().catch(()=>null);
+                intervalId = setInterval(() => {
+                    const u = userRef.current;
                     if (u) throttledFetchData(u, false);
                 }, 60000);
 
@@ -344,6 +359,9 @@ export default function Home() {
 
             const refreshInvites = async () => {
                 console.log('[HOME] Refreshing invitations for:', user.email);
+                const now = Date.now();
+                if (invInFlightRef.current || now < invNextAllowedRef.current) return;
+                invInFlightRef.current = true;
                 try {
                     const pendingById = await base44.entities.Invitation.filter({ 
                         to_user_id: user.id, 
@@ -364,6 +382,9 @@ export default function Home() {
                     setInvitations(merged);
                 } catch (e) {
                     console.error('[HOME] Error loading invitations:', e);
+                } finally {
+                    invInFlightRef.current = false;
+                    invNextAllowedRef.current = Date.now() + 3000;
                 }
             };
 
