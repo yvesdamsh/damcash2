@@ -2,12 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Trophy, Medal, Crown, Shield, User, ArrowUpCircle, ArrowDownCircle, ChevronLeft, Sword, Loader2, UserPlus, LogIn } from 'lucide-react';
+import LeagueMatchmaking from '@/components/LeagueMatchmaking';
+import LeagueStatsCard from '@/components/LeagueStatsCard';
+import LeagueSeasonBanner from '@/components/LeagueSeasonBanner';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/components/LanguageContext';
 import UserSearchDialog from '@/components/UserSearchDialog';
 import { toast } from 'sonner';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
+import LeagueProgressSection from '@/components/LeagueProgressSection';
 
 const TierIcon = ({ tier }) => {
     const colors = {
@@ -176,6 +180,9 @@ export default function LeagueDetail() {
                 <Link to="/Leagues" className="text-[#6b5138] hover:underline flex items-center gap-1 mb-4">
                     <ChevronLeft className="w-4 h-4" /> {t('league.back')}
                 </Link>
+                <div className="mb-4">
+                  <LeagueSeasonBanner league={league} participants={participants} currentUserId={currentUser?.id} />
+                </div>
                 <div className="bg-[#4a3728] rounded-xl p-8 text-[#e8dcc5] shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 opacity-10 transform translate-x-10 -translate-y-10">
                         <Trophy className="w-64 h-64" />
@@ -192,22 +199,14 @@ export default function LeagueDetail() {
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                             {league.status === 'active' && participants.some(p => p.user_id === currentUser?.id) ? (
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 w-full md:w-auto">
                                     <Button 
                                         variant="outline"
                                         onClick={() => setInviteOpen(true)}
-                                        className="bg-black/20 text-[#e8dcc5] border-transparent hover:bg-black/30"
+                                        className="bg-black/20 text-[#e8dcc5] border-transparent hover:bg_black/30"
                                     >
                                         <UserPlus className="w-5 h-5 mr-2" />
                                         {t('game.invite')}
-                                    </Button>
-                                    <Button 
-                                        onClick={handlePlayMatch} 
-                                        disabled={matching}
-                                        className="bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold text-lg px-8 py-6 shadow-lg animate-in slide-in-from-right-4"
-                                    >
-                                        {matching ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Sword className="w-6 h-6 mr-2" />}
-                                        {t('league.play_match')}
                                     </Button>
                                 </div>
                             ) : (
@@ -235,6 +234,8 @@ export default function LeagueDetail() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <LeagueStatsCard league={league} currentUser={currentUser} />
+                <LeagueMatchmaking league={league} currentUser={currentUser} />
                 {/* Rewards Card */}
                 <div className="bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 rounded-xl p-6 shadow-sm">
                     <h3 className="font-bold text-[#4a3728] mb-4 flex items-center gap-2"><Trophy className="w-5 h-5 text-yellow-500" /> {t('league.rewards_title')}</h3>
@@ -354,6 +355,9 @@ export default function LeagueDetail() {
                     </table>
                 </div>
             </div>
+
+            {/* Historique & progression */}
+            <LeagueProgressSection leagueId={league.id} userId={currentUser?.id} />
         </div>
     );
 }

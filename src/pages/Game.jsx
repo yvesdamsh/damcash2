@@ -1577,6 +1577,7 @@ const gameNotifInFlightRef = useRef(false);
                     gameId: game.id, 
                     outcome: { winnerId, result: 'win' } 
                 });
+                base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
             }
     
             setBoard(newBoard);
@@ -1760,6 +1761,7 @@ const gameNotifInFlightRef = useRef(false);
                 gameId: game.id, 
                 outcome: { winnerId, result: gameStatus } 
             });
+            base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
         }
 
         setBoard(newBoard);
@@ -2109,6 +2111,7 @@ const gameNotifInFlightRef = useRef(false);
                     gameId: game.id, 
                     outcome: { winnerId, result: 'timeout' } 
                 });
+                base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
             }
             
             // Notify
@@ -2403,6 +2406,7 @@ const gameNotifInFlightRef = useRef(false);
                 if (!isAiGame) {
                   base44.entities.Game.update(game.id, { status: 'finished', winner_id: winnerId, updated_date: new Date().toISOString() }).catch(e => logger.error("Finish game error", e));
                   await base44.functions.invoke('processGameResult', { gameId: game.id, outcome: { winnerId, result: 'resignation' } });
+                  base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
                   if (wsReadyState === WebSocket.OPEN && socketRef.current) {
                    socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: { status: 'finished', winner_id: winnerId, result: 'resignation', updated_date: new Date().toISOString() } }));
                   }
