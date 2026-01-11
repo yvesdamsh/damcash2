@@ -72,7 +72,28 @@ export default function TournamentBracket({ matches, players, currentRound }) {
 
                                         {/* Connector Lines (Cosmetic for now) */}
                                         {roundIndex < roundNumbers.length - 1 && (
-                                            <div className="absolute top-1/2 -right-4 w-4 h-0.5 bg-[#d4c5b0]" />
+                                            <svg
+                                                className="absolute top-1/2 -right-6 w-6 h-3 text-[#d4c5b0]"
+                                                viewBox="0 0 24 8"
+                                                fill="none"
+                                                aria-hidden="true"
+                                            >
+                                                <defs>
+                                                    <marker id="bracketArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                                                        <path d="M0,0 L6,3 L0,6 Z" fill="currentColor" />
+                                                    </marker>
+                                                </defs>
+                                                <path
+                                                    d="M0,4 C8,4 14,4 24,4"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeDasharray="4 4"
+                                                    markerEnd="url(#bracketArrow)"
+                                                >
+                                                    <animate attributeName="stroke-dashoffset" from="0" to="-8" dur="1.2s" repeatCount="indefinite" />
+                                                </path>
+                                            </svg>
                                         )}
                                     </div>
                                 );
