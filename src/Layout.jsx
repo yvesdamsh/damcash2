@@ -524,7 +524,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                       className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[#e8dcc5] to-yellow-500 drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                                <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[var(--nav-fg)] to-[var(--gold-accent)] drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
                                     DAMCASH
                                 </span>
                             </Link>
@@ -636,7 +636,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                         toggleGameMode();
                                         setIsMenuOpen(false);
                                     }}
-                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
+                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[var(--nav-fg)] hover:bg-white/10 hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
                                     <span className="flex-shrink-0">{gameMode === 'chess' ? '♟️' : '⚪'}</span>
                                     <span className="truncate">{gameMode === 'chess' ? t('nav.mode.chess') : t('nav.mode.checkers')}</span>
@@ -646,12 +646,12 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                         toggleSound();
                                         setIsMenuOpen(false);
                                     }}
-                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
+                                    className="text-left px-3 py-2 rounded-md text-sm font-medium text-[var(--nav-fg)] hover:bg-white/10 hover:text-white flex items-center gap-2 overflow-hidden"
                                 >
                                     {soundEnabled ? <Volume2 className="w-4 h-4 flex-shrink-0" /> : <VolumeX className="w-4 h-4 flex-shrink-0" />}
                                     <span className="truncate">{soundEnabled ? t('nav.sound.on') : t('nav.sound.off')}</span>
                                 </button>
-                                <div className="px-3 py-2 col-span-2 flex justify-center bg-[#5c4430]/30 rounded-md">
+                                <div className="px-3 py-2 col-span-2 flex justify-center bg-white/10 rounded-md">
                                     <LanguageSwitcher variant="minimal" />
                                 </div>
 
