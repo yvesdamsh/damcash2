@@ -714,7 +714,13 @@ export default function TournamentDetail() {
                                          <div className="text-gray-400 uppercase text-[10px] mb-1">Derniers coups</div>
                                          {/* Parse moves if available or show placeholder */}
                                          <div className="text-white/80">
-                                             {spectatingGame.moves ? spectatingGame.moves.split(' ').slice(-10).join(' ') : 'Partie démarrée...'}
+                                             {(() => {
+                                                 try {
+                                                     const moves = JSON.parse(spectatingGame.moves || '[]');
+                                                     if (!Array.isArray(moves)) return 'Partie démarrée...';
+                                                     return moves.slice(-5).map(m => m?.notation || `${m.from}-${m.to}`).join(', ') || 'Partie démarrée...';
+                                                 } catch { return 'Partie démarrée...'; }
+                                             })()}
                                          </div>
                                      </div>
 
