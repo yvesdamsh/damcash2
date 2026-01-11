@@ -532,12 +532,15 @@ const gameNotifInFlightRef = useRef(false);
             inFlight.value = true;
             try {
               const updated = await base44.entities.Game.get(id);
+              const incomingLen = (() => { try { const m = updated?.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+              const currentLen = lastAppliedMoveCountRef.current || 0;
               const changed = !!(updated && updated.updated_date !== game?.updated_date);
-              if (changed) {
+              if (changed && incomingLen >= currentLen) {
                 setGame(updated);
+                lastAppliedMoveCountRef.current = Math.max(currentLen, incomingLen);
                 backoffRef.value = 800; // briefly faster after change
               } else {
-                // slow down when no change to reduce API pressure
+                // slow down when no change or older to reduce API pressure
                 backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 5000);
               }
             } catch (e) {
@@ -583,7 +586,9 @@ const gameNotifInFlightRef = useRef(false);
                     const newU = g.updated_date ? new Date(g.updated_date).getTime() : 0;
                     const prevLast = prev.last_move_at ? new Date(prev.last_move_at).getTime() : 0;
                     const newLast = g.last_move_at ? new Date(g.last_move_at).getTime() : 0;
-                    return (newU > prevU || newLast > prevLast) ? g : prev;
+                    const prevLen = (() => { try { const m = prev.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                    const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                    return (newLen > prevLen) || (newU > prevU || newLast > prevLast) ? g : prev;
                 });
             } catch (e) { logger.warn('[PREVIEW_FETCH] error', e); }
         };
@@ -741,7 +746,16 @@ const gameNotifInFlightRef = useRef(false);
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
+                base44.entities.Game.get(id).then(g => { if (g) {
+                  try {
+                    const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                    const currLen = lastAppliedMoveCountRef.current || 0;
+                    if (newLen >= currLen) {
+                      lastAppliedMoveCountRef.current = Math.max(currLen, newLen);
+                      setGame(prev => ({ ...(prev||{}), ...g }));
+                    }
+                  } catch (_) { setGame(prev => ({ ...(prev||{}), ...g })); }
+                } }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
             }
         }
     });
@@ -762,7 +776,16 @@ const gameNotifInFlightRef = useRef(false);
             gameNotifRefetchAtRef.current = now;
             gameNotifInFlightRef.current = true;
             base44.entities.Game.get(id)
-              .then(g => { if (g) setGame(prev => ({ ...(prev || {}), ...g })); })
+              .then(g => { if (g) {
+                try {
+                  const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                  const currLen = lastAppliedMoveCountRef.current || 0;
+                  if (newLen >= currLen) {
+                    lastAppliedMoveCountRef.current = Math.max(currLen, newLen);
+                    setGame(prev => ({ ...(prev || {}), ...g }));
+                  }
+                } catch (_) { setGame(prev => ({ ...(prev || {}), ...g })); }
+              } })
               .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); })
               .finally(() => { gameNotifInFlightRef.current = false; });
         };
