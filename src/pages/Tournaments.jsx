@@ -263,10 +263,10 @@ export default function Tournaments() {
                         
                         <Tabs defaultValue="general" className="w-full">
                             <TabsList className="w-full grid grid-cols-4 mb-4 bg-[#e8dcc5]">
-                                <TabsTrigger value="general">Général</TabsTrigger>
-                                <TabsTrigger value="format">Format</TabsTrigger>
-                                <TabsTrigger value="scoring">Points</TabsTrigger>
-                                <TabsTrigger value="prizes">Prix & Accès</TabsTrigger>
+                                <TabsTrigger value="general">{t('tournaments.tab_general')}</TabsTrigger>
+                                <TabsTrigger value="format">{t('tournaments.tab_format')}</TabsTrigger>
+                                <TabsTrigger value="scoring">{t('tournaments.tab_scoring')}</TabsTrigger>
+                                <TabsTrigger value="prizes">{t('tournaments.tab_prizes')}</TabsTrigger>
                             </TabsList>
 
                             {/* TAB 1: GENERAL */}
