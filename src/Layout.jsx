@@ -451,6 +451,32 @@ function LayoutContent({ children }) {
   transition-duration: var(--anim-normal);
 }
 `}</style>
+            <style>{`
+/* Micro-interactions and accessibility */
+@keyframes capture {
+0% { transform: scale(1); opacity: 1; }
+50% { transform: scale(1.3); opacity: 0.5; }
+100% { transform: scale(0); opacity: 0; }
+}
+@keyframes victory {
+0% { transform: scale(0); }
+50% { transform: scale(1.1); }
+100% { transform: scale(1); }
+}
+@keyframes slideIn {
+from { transform: translateX(100%); opacity: 0; }
+to { transform: translateX(0); opacity: 1; }
+}
+
+.animate-capture { animation: capture 250ms ease forwards; }
+.animate-victory { animation: victory 400ms ease-out both; }
+.animate-slide-in { animation: slideIn 300ms ease both; }
+
+button, a, [role="button"] { min-height: 44px; min-width: 44px; }
+*:focus-visible { outline: 3px solid #b8860b; outline-offset: 2px; }
+.text-on-dark { color: #e8dcc5; }
+.text-on-light { color: #4a3728; }
+            `}</style>
             <AnimatePresence>
                 {showIntro && (
                     <motion.div 
