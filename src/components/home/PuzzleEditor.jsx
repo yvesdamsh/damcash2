@@ -137,6 +137,10 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
           </div>
 
           <div className="space-y-3">
+           {/* Aide: définir la solution attendue pour rendre le puzzle jouable */}
+           <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+             Astuce: pour rendre le puzzle interactif, ajoutez une solution (SAN pour échecs, from/to pour dames) après publication via l’admin ou une mise à jour ultérieure.
+           </div>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tf('home.puzzle_title', 'Titre du puzzle')} />
             <div>
               <label className="text-xs text-gray-500">{tf('home.difficulty', 'Difficulté')}</label>
