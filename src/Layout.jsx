@@ -549,7 +549,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                   <>
                                       <div className="flex items-center mr-2 hidden lg:flex gap-2">
                                           <WalletBalance />
-                                          <div className="text-xs font-bold text-[#d4c5b0] bg-[#2c1e12]/50 px-2 py-1 rounded-full border border-yellow-500/30">
+                                          <div className="text-xs font-bold text-[var(--nav-fg)] bg-black/30 dark:bg-white/10 px-2 py-1 rounded-full border border-[var(--gold-accent)]/30">
                                               Lvl {user.level || 1}
                                           </div>
                                       </div>
@@ -672,7 +672,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                             handleLogin();
                                             setIsMenuOpen(false);
                                         }}
-                                        className="text-left px-3 py-2 rounded-md text-sm font-medium text-[#6B8E4E] hover:bg-[#5c4430] hover:text-green-400 flex items-center gap-2 overflow-hidden col-span-2"
+                                        className="text-left px-3 py-2 rounded-md text-sm font-medium text-[var(--primary)] hover:bg-white/10 hover:text-[var(--primary)]/90 flex items-center gap-2 overflow-hidden col-span-2"
                                     >
                                         <LogIn className="w-4 h-4 flex-shrink-0" />
                                         <span className="truncate">{t('nav.login') || 'Connexion'}</span>
