@@ -33,7 +33,7 @@ export default function HomeOnlineUsers() {
       if (!current) { setUsers([]); return; }
       let list = [];
       try {
-        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
+        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20, gameType: cfg.type });
         list = res?.data?.users || [];
       } catch (_) {
         list = [];
@@ -42,6 +42,16 @@ export default function HomeOnlineUsers() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  React.useEffect(() => {
+    fetchOnline();
+  }, [cfg.type, fetchOnline]);
+
+  React.useEffect(() => {
+    const onMode = () => setCfg(prev => ({ ...prev, type: (localStorage.getItem('gameMode') || 'checkers') }));
+    window.addEventListener('gameModeChanged', onMode);
+    return () => window.removeEventListener('gameModeChanged', onMode);
   }, []);
 
   React.useEffect(() => {

@@ -10,21 +10,30 @@ Deno.serve(async (req) => {
 
     let payload = {};
     try { payload = await req.json(); } catch { payload = {}; }
-    const { limit = 20, search = '' } = payload || {};
+    const { limit = 20, search = '', gameType } = payload || {};
 
     const since = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // last 5 minutes
 
     // Fetch recent users and filter client-side to avoid unsupported operators
     const recentUsers = await base44.asServiceRole.entities.User.list('-last_seen', 200);
     const lcSearch = String(search || '').toLowerCase();
-    const filtered = (recentUsers || [])
+    let filtered = (recentUsers || [])
       .filter(u => u?.last_seen && u.last_seen >= since)
       .filter(u => {
         if (!lcSearch) return true;
         const hay = `${u?.username||''} ${u?.full_name||''} ${u?.email||''}`.toLowerCase();
         return hay.includes(lcSearch);
-      })
-      .slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
+      });
+
+    // Optional filtering by game type preference (default_game or preferred_game_type)
+    if (gameType === 'checkers' || gameType === 'chess') {
+      filtered = filtered.filter(u => {
+        const pref = String(u.default_game || u.preferred_game_type || '').toLowerCase();
+        return pref === gameType;
+      });
+    }
+
+    filtered = filtered.slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
     const users = filtered;
 
     // Return only needed fields
@@ -37,6 +46,7 @@ Deno.serve(async (req) => {
       last_seen: u.last_seen,
       elo_checkers: u.elo_checkers,
       elo_chess: u.elo_chess,
+      default_game: u.default_game,
     }));
 
     return Response.json({ users: sanitized });
