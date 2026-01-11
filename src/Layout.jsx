@@ -33,7 +33,6 @@ import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 import { toast } from 'sonner';
-import './globals.css';
 
 export default function Layout({ children }) {
     return (
