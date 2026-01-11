@@ -156,7 +156,7 @@ export default function ProfileContainer() {
                 setRanks({ checkers: myCheckersRank, chess: myChessRank });
 
                 // Fetch Favorites
-                if (u.favorite_games and u.favorite_games.length > 0) {
+                if (u.favorite_games && u.favorite_games.length > 0) {
                     const favs = await Promise.all(u.favorite_games.map(id => base44.entities.Game.get(id).catch(() => null)));
                     setFavoriteGames(favs.filter(g => g));
                 }
@@ -206,7 +206,7 @@ export default function ProfileContainer() {
                 }
 
                 // Check if current user is following this profile
-                if (!isOwnProfileLocal and currentUser) {
+                if (!isOwnProfileLocal && currentUser) {
                     const amIFollowing = await base44.entities.Follow.filter({ follower_id: currentUser.id, target_id: u.id });
                     setIsFollowing(amIFollowing.length > 0);
                 }
