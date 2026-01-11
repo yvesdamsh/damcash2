@@ -77,6 +77,9 @@ const gameNotifInFlightRef = useRef(false);
     const [lastDragMove, setLastDragMove] = useState(null);
     const [isAuthed, setIsAuthed] = useState(false);
     const [pausePolling, setPausePolling] = useState(false);
+  // Sync guard to avoid re-applying stale board states
+  const lastAppliedBoardStateRef = useRef(null);
+  const lastAppliedAtRef = useRef(0);
     
     // AI State
     const [isAiGame, setIsAiGame] = useState(false);
@@ -233,26 +236,48 @@ const gameNotifInFlightRef = useRef(false);
         let currentBoard = [];
         let lastChessMove = null;
 
+        const currentBoardStateRaw = String(game.board_state || '');
+        const gameTs = new Date(game.updated_date || game.last_move_at || Date.now()).getTime();
+        const stateChanged = currentBoardStateRaw !== (lastAppliedBoardStateRef.current || null);
+        const isNewerOrEqual = gameTs >= (lastAppliedAtRef.current || 0);
+
         if (game.game_type === 'chess') {
             try {
                 const parsed = safeJSONParse(game.board_state, { board: [], castlingRights: {}, lastMove: null, halfMoveClock: 0, positionHistory: {} });
                 currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
                 lastChessMove = parsed?.lastMove || null;
 
-                setBoard(currentBoard);
-                setChessState({ 
-                    castlingRights: parsed?.castlingRights || {}, 
-                    lastMove: lastChessMove,
-                    halfMoveClock: parsed?.halfMoveClock || 0,
-                    positionHistory: parsed?.positionHistory || {}
-                });
-            } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); setBoard([]); }
+                if (stateChanged && isNewerOrEqual) {
+                    setBoard(currentBoard);
+                    setChessState({ 
+                        castlingRights: parsed?.castlingRights || {}, 
+                        lastMove: lastChessMove,
+                        halfMoveClock: parsed?.halfMoveClock || 0,
+                        positionHistory: parsed?.positionHistory || {}
+                    });
+                    lastAppliedBoardStateRef.current = currentBoardStateRaw;
+                    lastAppliedAtRef.current = gameTs;
+                } else {
+                    // Keep chess state metadata in sync even if board not reapplied
+                    setChessState(prev => ({
+                        ...prev,
+                        castlingRights: parsed?.castlingRights || prev.castlingRights || {},
+                        lastMove: lastChessMove ?? prev.lastMove ?? null,
+                        halfMoveClock: parsed?.halfMoveClock ?? prev.halfMoveClock ?? 0,
+                        positionHistory: parsed?.positionHistory || prev.positionHistory || {}
+                    }));
+                }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); }
         } else {
             try {
                 const parsed = safeJSONParse(game.board_state, []);
                 currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
-                setBoard(currentBoard);
-            } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); setBoard([]); }
+                if (stateChanged && isNewerOrEqual) {
+                    setBoard(currentBoard);
+                    lastAppliedBoardStateRef.current = currentBoardStateRaw;
+                    lastAppliedAtRef.current = gameTs;
+                }
+            } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); }
         }
 
         // Sound & Notification Logic
