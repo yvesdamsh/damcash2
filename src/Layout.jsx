@@ -20,7 +20,6 @@ import {
   Brain,
   Shield,
   Users,
-  PlayCircle,
   ShoppingBag,
   History,
   LogIn,
