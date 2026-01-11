@@ -162,6 +162,8 @@ function LayoutContent({ children }) {
                 const me = await base44.auth.me();
                 if (me) {
                     await base44.auth.updateMe({ last_seen: new Date().toISOString() });
+                    // Also notify friends each heartbeat to keep presence symmetric
+                    base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
                 }
             } catch (e) {
                 console.error('Heartbeat update failed', e);
@@ -169,7 +171,7 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 60000); 
+        const interval = setInterval(heartbeat, 20000);
         return () => clearInterval(interval);
     }, [user]);
 

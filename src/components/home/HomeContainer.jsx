@@ -425,22 +425,14 @@ export default function HomeContainer() {
             const res = await base44.functions.invoke('acceptInvitation', { invitationId: invite.id });
             if (res.status === 200 && res.data?.gameId) {
                 setInvitations((prev) => prev.filter(i => i.id !== invite.id));
-                // Wait until assignment is reflected
-                let ok = false;
-                for (let i=0;i<5 && !ok;i++) {
-                    await new Promise(r=>setTimeout(r, 500));
-                    try {
-                        const g = await base44.entities.Game.get(res.data.gameId);
-                        const me = await base44.auth.me().catch(()=>null);
-                        if (g && me && (g.white_player_id === me.id || g.black_player_id === me.id)) ok = true;
-                    } catch (_) {}
-                }
-                // Try to nudge inviter via socket to refetch (HTTP fanout)
                 try {
-                    await base44.functions.invoke('gameSocket', { gameId: res.data.gameId, type: 'GAME_REFETCH' });
-                } catch (_) {
-                    console.log('Could not force refetch via socket');
-                }
+                    const g = await base44.entities.Game.get(res.data.gameId);
+                    if (g) {
+                        window.__damcash_last_game = g;
+                        // Broadcast immediate join with full payload
+                        base44.functions.invoke('gameSocket', { gameId: res.data.gameId, type: 'PLAYER_JOINED', payload: g }).catch(() => {});
+                    }
+                } catch (_) {}
                 navigate(`/Game?id=${res.data.gameId}&join=player`);
                 } else {
                     alert(t('home.invite_expired_or_full'));

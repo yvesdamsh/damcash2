@@ -33,7 +33,7 @@ export default function HomeOnlineUsers() {
       if (!current) { setUsers([]); return; }
       let list = [];
       try {
-        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20, gameType: cfg.type });
+        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
         list = res?.data?.users || [];
       } catch (_) {
         list = [];
@@ -55,9 +55,9 @@ export default function HomeOnlineUsers() {
   }, []);
 
   React.useEffect(() => {
-    fetchOnline();
-    const iv = setInterval(fetchOnline, 30000);
-    return () => clearInterval(iv);
+      fetchOnline();
+      const iv = setInterval(fetchOnline, 10000);
+      return () => clearInterval(iv);
   }, [fetchOnline]);
 
   const isOnline = (lastSeen) => {

@@ -200,6 +200,8 @@ const gameNotifInFlightRef = useRef(false);
 
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
+    const lastAppliedMoveCountRef = useRef(0);
+    const wsLastReceivedRef = useRef(Date.now());
     const isPollingRef = useRef(false);
     const aiJobRef = useRef(false);
     const lastUpdateRef = useRef(Date.now());
@@ -326,6 +328,16 @@ const gameNotifInFlightRef = useRef(false);
         else setShowResult(false);
 
         prevGameRef.current = game;
+        try {
+            const len = (() => {
+              try {
+                if (Array.isArray(game?.moves)) return game.moves.length;
+                if (typeof game?.moves === 'string') { const arr = JSON.parse(game.moves); return Array.isArray(arr) ? arr.length : 0; }
+                return 0;
+              } catch { return 0; }
+            })();
+            if (len >= 0) lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, len);
+        } catch (_) {}
         }, [game]);
 
         // Enable AI mode automatically when a player is 'ai' (not just local-ai)
@@ -498,7 +510,7 @@ const gameNotifInFlightRef = useRef(false);
         useEffect(() => {
           let canceled = false;
           let timer = null;
-          const backoffRef = { value: 1200 };
+          const backoffRef = { value: 5000 };
           const inFlight = { value: false };
 
           const shouldPoll = () => {
@@ -506,8 +518,10 @@ const gameNotifInFlightRef = useRef(false);
             if (typeof document !== 'undefined' && document.hidden) return false;
             if (pausePolling) return false;
             const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-            // Poll only when WS is not open OR in preview iframe
-            return !wsOpen || isPreview;
+            // Poll when preview OR WS has been silent >15s OR socket not open
+            const lastWs = wsLastReceivedRef.current || 0;
+            const silent = (Date.now() - lastWs) > 15000;
+            return isPreview || silent || !wsOpen;
           };
 
           const loop = async () => {
@@ -650,6 +664,7 @@ const gameNotifInFlightRef = useRef(false);
                              reconnectAttempts: 50,
                              heartbeatInterval: 10000,
                             onMessage: (event, data) => {
+            try { wsLastReceivedRef.current = Date.now(); } catch (_) {}
             if (!data) return;
             if (data.type === 'GAME_UPDATE') {
                 const payload = data.payload || {};
@@ -662,7 +677,18 @@ const gameNotifInFlightRef = useRef(false);
                         moveTimingsRef.current.delete(k);
                     }
                 } catch (e) { logger.warn('[SILENT]', e); }
+                // Guard against stale updates using move count
+                const incomingMovesLen = (() => {
+                    try {
+                        const m = payload.moves;
+                        if (Array.isArray(m)) return m.length;
+                        if (typeof m === 'string') { const arr = JSON.parse(m); return Array.isArray(arr) ? arr.length : 0; }
+                        return 0;
+                    } catch { return 0; }
+                })();
+                if ((lastAppliedMoveCountRef.current || 0) > incomingMovesLen) { return; }
                 setGame(prev => ({ ...prev, ...payload }));
+                lastAppliedMoveCountRef.current = incomingMovesLen;
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
@@ -681,7 +707,15 @@ const gameNotifInFlightRef = useRef(false);
                  setGame(prev => ({ ...prev, draw_offer_by: null, status: data.payload?.status || prev.status }));
                  toast.success(t('game.draw_accepted') || 'Nulle acceptée');
                 } else if (data.type === 'PLAYER_JOINED') {
-                 base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch(() => {});
+                 if (data.payload) {
+                   setGame(prev => ({ ...(prev || {}), ...data.payload }));
+                   try {
+                     const len = (() => { try { const m = data.payload.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                     lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, len);
+                   } catch (_) {}
+                 } else {
+                   base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch(() => {});
+                 }
                 } else if (data.type === 'SIGNAL') {
                 // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {

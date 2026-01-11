@@ -182,7 +182,16 @@ export default function Notifications() {
                                 await base44.functions.invoke('joinGame', { gameId });
                             }
                         }
-                        if (gameId) base44.entities.Game.get(gameId).then(g => window.__damcash_last_game = g).catch(()=>{});
+                        try {
+                            if (gameId) {
+                                const g = await base44.entities.Game.get(gameId);
+                                if (g) {
+                                    window.__damcash_last_game = g;
+                                    // Broadcast immediate join with full payload
+                                    base44.functions.invoke('gameSocket', { gameId, type: 'PLAYER_JOINED', payload: g }).catch(() => {});
+                                }
+                            }
+                        } catch (_) {}
                         let link = n.link || (gameId ? `/Game?id=${gameId}` : null);
                         if (link && !link.includes('join=')) link += (link.includes('?') ? '&' : '?') + 'join=player';
                         if (link) navigate(link);
