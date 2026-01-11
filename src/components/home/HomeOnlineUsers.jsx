@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 export default function HomeOnlineUsers() {
   const { t } = useLanguage();
   const [me, setMe] = React.useState(null);
+  const meRef = React.useRef(null);
   const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const navigate = useNavigate();
@@ -28,8 +29,7 @@ export default function HomeOnlineUsers() {
   const fetchOnline = React.useCallback(async () => {
     setLoading(true);
     try {
-      const current = await base44.auth.me().catch(() => null);
-      setMe(current);
+      const current = meRef.current || me;
       if (!current) { setUsers([]); return; }
       let list = [];
       try {
@@ -42,9 +42,10 @@ export default function HomeOnlineUsers() {
     } finally {
       setLoading(false);
     }
-  }, [cfg.type]);
+  }, [cfg.type, me]);
 
   React.useEffect(() => {
+    base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
     fetchOnline();
   }, [cfg.type, fetchOnline]);
 
@@ -56,7 +57,7 @@ export default function HomeOnlineUsers() {
 
   React.useEffect(() => {
       fetchOnline();
-      const iv = setInterval(fetchOnline, 10000);
+      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 20000);
       return () => clearInterval(iv);
   }, [fetchOnline]);
 

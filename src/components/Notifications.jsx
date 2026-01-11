@@ -35,7 +35,7 @@ export default function Notifications() {
         __notifCache.cooldownUntil = now + 1000;
         __notifCache.pending = (async () => {
             try {
-                const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 200);
+                const all = await base44.entities.Notification.filter({ recipient_id: userId }, '-created_date', 100);
                 const processed = normalizeList(all);
                 setNotifications(processed);
                 const unread = processed.filter(n => !n.read).length;
@@ -90,10 +90,10 @@ export default function Notifications() {
     useEffect(() => {
       if (!userId) return;
       
-      // Polling toutes les 3 secondes
+      // Polling plus doux et uniquement quand l’onglet est visible
       const pollInterval = setInterval(() => {
-        reloadUnread();
-      }, 3000);
+        if (!document.hidden) reloadUnread();
+      }, 12000);
       
       // Cleanup
       return () => clearInterval(pollInterval);

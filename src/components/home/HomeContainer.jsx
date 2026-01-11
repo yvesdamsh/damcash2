@@ -178,7 +178,7 @@ export default function HomeContainer() {
                 base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' }),
                 base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' }),
                 base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' }),
-                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 20)
+                base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 10)
             ]);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
@@ -267,7 +267,7 @@ export default function HomeContainer() {
                     // We can't do "OR" easily in filter sometimes, so we might fetch list() sorted and filter client side if backend limits it.
                     // Or iterate. Let's try iterating 5 users max for now to be safe or list recent finished games and match.
                     
-                    const recentGames = await base44.entities.Game.filter({ status: 'finished' }, '-updated_date', 50);
+                    const recentGames = await base44.entities.Game.filter({ status: 'finished' }, '-updated_date', 25);
                     const relevant = recentGames.filter(g => userIds.includes(g.white_player_id) || userIds.includes(g.black_player_id));
                     
                     const activity = relevant.map(g => {
@@ -561,7 +561,7 @@ export default function HomeContainer() {
 
                     const tick = async () => {
                         // 1) Try to join a compatible existing waiting game (not mine)
-                        const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+                        const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 20);
                         // Update visible lists
                         setMmWaitingGames(waitingGames);
                         const live = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 2);
@@ -643,7 +643,7 @@ export default function HomeContainer() {
 
                     // Start polling
                     if (mmPollRef.current) clearInterval(mmPollRef.current);
-                    mmPollRef.current = setInterval(tick, 2000);
+                    mmPollRef.current = setInterval(tick, 4000);
                     // Run first immediately
                     tick();
                 }

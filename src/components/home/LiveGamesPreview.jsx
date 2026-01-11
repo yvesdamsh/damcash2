@@ -24,7 +24,7 @@ export default function LiveGamesPreview({ limit = 5, gameType = null }) {
 
   React.useEffect(() => {
     refresh();
-    const iv = setInterval(refresh, 10000);
+    const iv = setInterval(() => { if (!document.hidden) refresh(); }, 30000);
     return () => clearInterval(iv);
   }, [refresh]);
 
