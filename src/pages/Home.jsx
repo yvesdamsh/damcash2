@@ -72,6 +72,7 @@ export default function Home() {
     const mmTimerRef = React.useRef(null);
     const mmPollRef = React.useRef(null);
     const mmCreatedGameIdRef = React.useRef(null);
+    const mmStartAtRef = React.useRef(null);
     const [hasShownRejoin, setHasShownRejoin] = useState(false);
     const [followingActivity, setFollowingActivity] = useState([]);
     const [gameConfig, setGameConfig] = useState({
@@ -560,6 +561,7 @@ export default function Home() {
                     setIsSearching(false);
                     setMmOpen(true);
                     setMmSeconds(0);
+                    mmStartAtRef.current = Date.now();
                     if (mmTimerRef.current) clearInterval(mmTimerRef.current);
                     mmTimerRef.current = setInterval(() => {
                         setMmSeconds((s) => s + 1);
@@ -573,13 +575,19 @@ export default function Home() {
                         const live = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 2);
                         setMmLiveGames(live);
 
-                        let candidates = waitingGames.filter(g => 
-                            g.white_player_id !== user.id &&
-                            (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
-                            g.initial_time === gameConfig.time &&
-                            g.increment === gameConfig.increment &&
-                            g.series_length === gameConfig.series
-                        );
+                        // Progressive ELO range widening with time
+                        const elapsed = mmStartAtRef.current ? Math.floor((Date.now() - mmStartAtRef.current) / 1000) : mmSeconds;
+                        const eloRange = Math.min(200 + Math.floor(elapsed / 10) * 50, 500);
+
+                        let candidates = waitingGames.filter(g => {
+                            const sameParams = (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
+                                               g.initial_time === gameConfig.time &&
+                                               g.increment === gameConfig.increment &&
+                                               g.series_length === gameConfig.series;
+                            if (!sameParams) return false;
+                            const oppElo = g.white_player_elo || 1200;
+                            return Math.abs(oppElo - myElo) <= eloRange;
+                        });
 
                         if (gameConfig.difficulty !== 'any') {
                             candidates = candidates.filter(g => {
@@ -668,6 +676,7 @@ export default function Home() {
                 }
             }
         } catch (_) {}
+        mmStartAtRef.current = null;
         mmCreatedGameIdRef.current = null;
         setMmCreatedGameId(null);
         setIsSearching(false);
@@ -746,6 +755,7 @@ export default function Home() {
                 seconds={mmSeconds}
                 waitingGames={mmWaitingGames}
                 liveGames={mmLiveGames}
+                criteria={{ time: gameConfig.time, increment: gameConfig.increment }}
                 onCancel={cancelMatchmaking}
                 onWatch={(id) => navigate(`/Game?id=${id}`)}
             />
