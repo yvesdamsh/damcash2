@@ -110,7 +110,7 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 items-start xl:grid-cols-[1fr_360px]">
-          <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full max-w-none aspect-square z-0 mx-auto">
+          <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0 mx-auto">
             {gameType === 'chess' ? (
               <ChessBoard 
                 board={chessBoard}
