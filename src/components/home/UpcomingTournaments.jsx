@@ -91,7 +91,7 @@ export default function UpcomingTournaments() {
                 <Clock className="w-3 h-3" /> {tt('home.starts_every_hour', 'Starts every hour')}
               </div>
             </div>
-            <Link to={items[0]?.id ? `/TournamentDetail?id=${items[0].id}` : "/Tournaments"} className="flex-shrink-0">
+            <Link to={items[0]?.id ? `/TournamentDetail?id=${items[0].id}&join=queue` : "/Tournaments"} className="flex-shrink-0">
               <Button size="sm" className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white">{tt('tournaments.join_btn', 'Rejoindre')}</Button>
             </Link>
           </div>
@@ -108,7 +108,7 @@ export default function UpcomingTournaments() {
             </div>
             <div className="text-lg font-bold text-amber-700 dark:text-amber-300 tabular-nums">{countdown}</div>
           </div>
-          <div className="text-xs text-[#6b5138] dark:text-[#b09a85] mt-1">{tt('home.join_opens_at','Join opens at')} {formatDate(joinOpens, 'p')}</div>
+          <div className="text-xs text-[#6b5138] dark:text-[#b09a85] mt-1"><span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-green-100 text-green-800 font-semibold">{tt('home.waiting_list_open','Waiting list is open')}</span></div>
         </div>
         {/* Upcoming hourly list (5 items) */}
         <div className="p-3 rounded-lg border bg-[#fdfbf7] dark:bg-[#2c241b] border-[#e8dcc5] dark:border-[#3d2b1f]">
