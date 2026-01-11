@@ -546,7 +546,8 @@ const gameNotifInFlightRef = useRef(false);
             if (inFlight.value) { timer = setTimeout(loop, backoffRef.value); return; }
             inFlight.value = true;
             try {
-              const updated = await base44.entities.Game.get(id);
+              const updated = await safeFetchGame();
+              if (!updated) { backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 8000); return; }
               const incomingLen = (() => { try { const m = updated?.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
               const currentLen = lastAppliedMoveCountRef.current || 0;
               const changed = !!(updated && updated.updated_date !== game?.updated_date);
@@ -577,7 +578,8 @@ const gameNotifInFlightRef = useRef(false);
           const handleMove = async () => {
             if (pausePolling) return; // skip if we just moved locally
             try {
-              const updated = await base44.entities.Game.get(id);
+              const updated = await safeFetchGame();
+              if (!updated) { backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 8000); return; }
               if (updated) setGame(updated);
             } catch (e) {}
           };
