@@ -14,7 +14,9 @@ export default function Academy() {
     const [lessons, setLessons] = useState([]);
     const [puzzles, setPuzzles] = useState([]);
     const [activeTab, setActiveTab] = useState('lessons');
-    const [gameType, setGameType] = useState('checkers');
+    const [gameType, setGameType] = useState(() => {
+        try { return localStorage.getItem('gameMode') || 'checkers'; } catch (_) { return 'checkers'; }
+    });
 
     useEffect(() => {
         const fetchContent = async () => {
@@ -33,6 +35,18 @@ export default function Academy() {
         fetchContent();
     }, [gameType]);
 
+    // Sync with global game mode changes
+    useEffect(() => {
+        const handler = () => {
+            try {
+                const mode = localStorage.getItem('gameMode');
+                if (mode && mode !== gameType) setGameType(mode);
+            } catch (_) {}
+        };
+        window.addEventListener('gameModeChanged', handler);
+        return () => window.removeEventListener('gameModeChanged', handler);
+    }, [gameType]);
+
     return (
         <div className="max-w-6xl mx-auto p-6">
             <div className="text-center mb-10">
@@ -45,13 +59,13 @@ export default function Academy() {
             <div className="flex justify-center mb-8">
                 <div className="bg-[#e8dcc5] p-1 rounded-full flex gap-1">
                     <button 
-                        onClick={() => setGameType('checkers')}
+                        onClick={() => { setGameType('checkers'); try { localStorage.setItem('gameMode','checkers'); } catch (_) {} window.dispatchEvent(new Event('gameModeChanged')); }}
                         className={`px-6 py-2 rounded-full font-bold transition-all ${gameType === 'checkers' ? 'bg-[#4a3728] text-[#e8dcc5]' : 'text-[#4a3728] hover:bg-[#d4c5b0]'}`}
                     >
                         ⚪ {t('game.checkers')}
                     </button>
                     <button 
-                        onClick={() => setGameType('chess')}
+                        onClick={() => { setGameType('chess'); try { localStorage.setItem('gameMode','chess'); } catch (_) {} window.dispatchEvent(new Event('gameModeChanged')); }}
                         className={`px-6 py-2 rounded-full font-bold transition-all ${gameType === 'chess' ? 'bg-[#4a3728] text-[#e8dcc5]' : 'text-[#4a3728] hover:bg-[#d4c5b0]'}`}
                     >
                         ♟️ {t('game.chess')}
