@@ -202,6 +202,7 @@ const gameNotifInFlightRef = useRef(false);
     const moveTimingsRef = useRef(new Map());
     const lastAppliedMoveCountRef = useRef(0);
     const wsLastReceivedRef = useRef(Date.now());
+    const wsRefetchAtRef = useRef(0);
     const isPollingRef = useRef(false);
     const aiJobRef = useRef(false);
     const lastUpdateRef = useRef(Date.now());
@@ -677,19 +678,35 @@ const gameNotifInFlightRef = useRef(false);
                         moveTimingsRef.current.delete(k);
                     }
                 } catch (e) { logger.warn('[SILENT]', e); }
-                // Guard against stale updates using move count
+                // Guard against stale updates using move count (only when moves included)
+                const hasMoves = Object.prototype.hasOwnProperty.call(payload, 'moves');
                 const incomingMovesLen = (() => {
                     try {
                         const m = payload.moves;
                         if (Array.isArray(m)) return m.length;
                         if (typeof m === 'string') { const arr = JSON.parse(m); return Array.isArray(arr) ? arr.length : 0; }
-                        return 0;
-                    } catch { return 0; }
+                        return lastAppliedMoveCountRef.current || 0;
+                    } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
-                if ((lastAppliedMoveCountRef.current || 0) > incomingMovesLen) { return; }
+                if (hasMoves && (lastAppliedMoveCountRef.current || 0) > incomingMovesLen) {
+                    return; // ignore clearly older state
+                }
                 setGame(prev => ({ ...prev, ...payload }));
-                lastAppliedMoveCountRef.current = incomingMovesLen;
+                if (hasMoves) {
+                    lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, incomingMovesLen);
+                }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
+                // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
+                const missingBoardOrMoves = !Object.prototype.hasOwnProperty.call(payload, 'board_state') || !hasMoves;
+                if (missingBoardOrMoves && id) {
+                    const now = Date.now();
+                    if (now - (wsRefetchAtRef.current || 0) > 800) {
+                        wsRefetchAtRef.current = now;
+                        base44.entities.Game.get(id)
+                          .then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); })
+                          .catch(() => {});
+                    }
+                }
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
                 }
