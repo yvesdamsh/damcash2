@@ -232,7 +232,7 @@ function LayoutContent({ children }) {
                         if (!localStorage.getItem('welcome_shown_v1')) {
                           const title = t('welcome.title') || 'Welcome to Damcash!';
                           const body = t('welcome.guest') || 'Create a free account to play and chat.';
-                          try { toast.info(`${title}\n${body`}); } catch (_) {}
+                          try { toast.info(`${title}\n${body}`); } catch (_) {}
                           localStorage.setItem('welcome_shown_v1', '1');
                         }
                       } catch (_) {}
@@ -314,7 +314,7 @@ function LayoutContent({ children }) {
             try {
                 const id = e?.detail?.senderId;
                 if (id) {
-                    navigate(`/Messages?userId=${encodeURIComponent(id)`});
+                    navigate(`/Messages?userId=${encodeURIComponent(id)}`);
                 } else {
                     navigate('/Messages');
                 }
@@ -503,8 +503,8 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             </AnimatePresence>
             {/* Background Wood Texture */}
             <div 
-                className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${isDark ? 'opacity-10 mix-blend-overlay' : 'opacity-40'`}}
-                style={{
+                className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${isDark ? 'opacity-10 mix-blend-overlay' : 'opacity-40'}`}
+                 style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1575018288729-6e0993577181?q=80&w=2574&auto=format&fit=crop')`,
                     backgroundSize: 'cover',
                     filter: bgFilter
@@ -597,7 +597,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
                             {user && <NotificationCenter />}
                             {user && <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
-                                {user.username || `Joueur ${user.id.substring(0,4)`}}
+                                {user.username || `Joueur ${user.id.substring(0,4)}`
                             </div>}
                             <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
@@ -632,10 +632,10 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                         >
                                             <Icon className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{item.label}</span>
-                                        </Link>
-                                    );
-                                })}
-                                <button
+                                            </Link>
+                                            );
+                                            })}
+                                            <button
                                     onClick={() => {
                                         toggleGameMode();
                                         setIsMenuOpen(false);
