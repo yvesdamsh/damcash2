@@ -163,14 +163,20 @@ export default function Tournaments() {
             
             const list = await base44.entities.Tournament.filter(query, sort, 50);
             setTournaments(list);
-            // Fetch participants counts for visible tournaments (limit 30)
+            // Fetch participant counts in one backend call (with fallback)
             try {
                 const ids = list.slice(0, 30).map(t => t.id);
-                const results = await Promise.all(ids.map(async (id) => {
-                    const parts = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
-                    return [id, parts.length];
-                }));
-                setParticipantsCounts(prev => ({ ...prev, ...Object.fromEntries(results) }));
+                const { data } = await base44.functions.invoke('countParticipants', { ids });
+                if (data && data.counts) {
+                    setParticipantsCounts(prev => ({ ...prev, ...data.counts }));
+                } else {
+                    // Fallback to per-id (should rarely happen)
+                    const results = await Promise.all(ids.map(async (id) => {
+                        const parts = await base44.entities.TournamentParticipant.filter({ tournament_id: id });
+                        return [id, parts.length];
+                    }));
+                    setParticipantsCounts(prev => ({ ...prev, ...Object.fromEntries(results) }));
+                }
             } catch (e) {
                 console.error('Fetch participant counts error', e);
             }
