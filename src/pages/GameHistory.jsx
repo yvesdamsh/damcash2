@@ -133,7 +133,7 @@ export default function GameHistory() {
                                                         >
                                                             {exportingId === game.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
                                                         </Button>
-                                                        <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">{t('history.review')}</Button>
+                                                        <Button size="sm" variant="outline" onClick={() => navigate(`/Game?id=${game.id}&review=1`)} className="border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white">{t('history.review')}</Button>
                                                     </div>
                                                 </td>
                                             </tr>

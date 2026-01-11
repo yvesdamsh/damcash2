@@ -88,6 +88,7 @@ const gameNotifInFlightRef = useRef(false);
     const navigate = useNavigate();
     const searchParams = new URLSearchParams(location.search);
     const [id, setId] = useState(searchParams.get('id'));
+    const isReviewMode = (searchParams.get('review') === '1' || searchParams.get('review') === 'true');
     // Prevent infinite spinner when no game id is present (e.g., opening /Game without ?id=...)
     useEffect(() => {
         if (!id) {
@@ -296,7 +297,7 @@ const gameNotifInFlightRef = useRef(false);
         }
 
         // Result Logic
-        if (game.status === 'finished') setShowResult(true);
+        if (game.status === 'finished') setShowResult(!isReviewMode);
         else setShowResult(false);
 
         prevGameRef.current = game;
@@ -2205,6 +2206,16 @@ const gameNotifInFlightRef = useRef(false);
 
 
     const movesList = useMemo(() => safeJSONParse(game?.moves, []), [game?.moves]);
+
+    // Review mode: open finished games at move 1 and hide result overlay
+    useEffect(() => {
+        if (!game || !isReviewMode) return;
+        if (game.status === 'finished') {
+            setShowResult(false);
+            setActiveTab('moves');
+            if (movesList.length > 0) setReplayIndex(0);
+        }
+    }, [game?.id, game?.status, isReviewMode, movesList.length]);
     const displayBoardMemo = useMemo(() => {
         if (replayIndex !== -1 && movesList[replayIndex]) {
             try {
