@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, X, Trophy, Handshake } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/components/LanguageContext';
+import confetti from 'canvas-confetti';
 
 export default function GameResultOverlay({ 
     game, 
@@ -18,6 +19,14 @@ export default function GameResultOverlay({
     const isWinner = !isSpectator && game.winner_id === currentUser?.id;
     const isLoser = !isSpectator && game.winner_id && game.winner_id !== currentUser?.id;
     const isDraw = !game.winner_id;
+
+    useEffect(() => {
+        if (game?.winner_id) {
+            const spectator = currentUser?.id !== game.white_player_id && currentUser?.id !== game.black_player_id;
+            const particleCount = spectator ? 60 : 120;
+            confetti({ particleCount, spread: 70, origin: { y: 0.6 } });
+        }
+    }, [game?.winner_id, currentUser?.id]);
 
     // Calculate Series Status
     const seriesLength = game.series_length || 1;
