@@ -232,7 +232,7 @@ function LayoutContent({ children }) {
                         if (!localStorage.getItem('welcome_shown_v1')) {
                           const title = t('welcome.title') || 'Welcome to Damcash!';
                           const body = t('welcome.guest') || 'Create a free account to play and chat.';
-                          try { toast.info(`${title}\n${body}`); } catch (_) {}
+                          try { toast.info(`${title}\n${body`}); } catch (_) {}
                           localStorage.setItem('welcome_shown_v1', '1');
                         }
                       } catch (_) {}
@@ -314,7 +314,7 @@ function LayoutContent({ children }) {
             try {
                 const id = e?.detail?.senderId;
                 if (id) {
-                    navigate(`/Messages?userId=${encodeURIComponent(id)}`);
+                    navigate(`/Messages?userId=${encodeURIComponent(id)`});
                 } else {
                     navigate('/Messages');
                 }
@@ -359,7 +359,7 @@ function LayoutContent({ children }) {
             : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
 
     return (
-        <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass}`}>
+        <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass`}}>
             <style>{`
 .theme-chess {
   /* Green-dominant palette for chess */
@@ -503,7 +503,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             </AnimatePresence>
             {/* Background Wood Texture */}
             <div 
-                className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${isDark ? 'opacity-10 mix-blend-overlay' : 'opacity-40'}`}
+                className={`fixed inset-0 z-0 pointer-events-none transition-opacity duration-500 ${isDark ? 'opacity-10 mix-blend-overlay' : 'opacity-40'`}}
                 style={{
                     backgroundImage: `url('https://images.unsplash.com/photo-1575018288729-6e0993577181?q=80&w=2574&auto=format&fit=crop')`,
                     backgroundSize: 'cover',
@@ -540,7 +540,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                             ${gameMode === 'chess' 
                                                 ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--border)] hover:brightness-110' 
                                                 : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
-                                            }`
+                                            `}
                                 >
                                     {gameMode === 'chess' ? (
                                         <><span aria-hidden="true">♟️</span> {t('game.chess')}</>
@@ -597,7 +597,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
                             {user && <NotificationCenter />}
                             {user && <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
-                                {user.username || `Joueur ${user.id.substring(0,4)}`}
+                                {user.username || `Joueur ${user.id.substring(0,4)`}}
                             </div>}
                             <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
@@ -719,7 +719,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             )}
 
             {/* Main Content */}
-            <main className={`relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 ${location.pathname.toLowerCase().startsWith('/game') ? 'px-0' : 'px-4'}`}>
+            <main className={`relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 ${location.pathname.toLowerCase().startsWith('/game') ? 'px-0' : 'px-4'`}}>
                 {children}
             </main>
         </div>
