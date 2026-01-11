@@ -359,7 +359,7 @@ function LayoutContent({ children }) {
             : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
 
     return (
-        <div className={`min-h-screen font-sans relative transition-colors duration-300 ${appBgClass} ${themeClass}`}>
+        <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass}`}>
             <style>{`
 .theme-chess {
   /* Green-dominant palette for chess */
@@ -512,7 +512,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             />
 
             {/* Navbar */}
-            <nav className={`relative z-[100] shadow-lg border-b-4 transition-colors duration-300 ${activeNavTheme}`}>
+            <nav className="relative z-[100] shadow-lg border-b-4 transition-colors duration-300 bg-[var(--nav-bg)] text-[var(--nav-fg)] border-[var(--nav-border)]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
@@ -537,10 +537,10 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                 <button
                                     onClick={toggleGameMode}
                                     className={`px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm
-                                        ${gameMode === 'chess' 
-                                            ? 'bg-[#6B8E4E] text-white border-[#3d2b1f] hover:bg-[#5a7a40]' 
-                                            : 'bg-[#e8dcc5] text-[#4a3728] border-[#d4c5b0] hover:bg-[#d4c5b0]'
-                                        }`}
+                                            ${gameMode === 'chess' 
+                                                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--border)] hover:brightness-110' 
+                                                : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
+                                            }`
                                 >
                                     {gameMode === 'chess' ? `♟️ ${t('game.chess')}` : `⚪ ${t('game.checkers')}`}
                                 </button>
@@ -592,7 +592,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                         <div className="flex items-center gap-1 pl-2">
                             <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
                             {user && <NotificationCenter />}
-                            {user && <div className="hidden md:flex items-center text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] mr-2">
+                            {user && <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
                                 {user.username || `Joueur ${user.id.substring(0,4)}`}
                             </div>}
                             <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
@@ -614,7 +614,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            className="bg-[#4a3728] border-t border-[#5c4430] overflow-hidden absolute w-full z-50 shadow-xl"
+                            className="bg-[var(--nav-bg)] border-t border-[var(--nav-border)] overflow-hidden absolute w-full z-50 shadow-xl"
                         >
                             <div className="grid grid-cols-2 gap-2 p-2">
                                 {navItems.map((item) => {
@@ -694,7 +694,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             <a
                                 href={typeof window !== 'undefined' ? window.location.href : '/Home'}
                                 target="_top"
-                                className="px-3 py-1.5 rounded-md bg-[#6B8E4E] text-white text-sm font-bold border border-[#3d2b1f] hover:bg-[#5a7a40]"
+                                className="px-3 py-1.5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-sm font-bold border border-[var(--border)] hover:brightness-110"
                             >
                                 Ouvrir en plein écran
                             </a>
