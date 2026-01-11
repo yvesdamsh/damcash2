@@ -89,6 +89,8 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
       description: '',
       difficulty,
       theme: 'daily',
+      // Default empty solution so creation passes entity requirements; can be edited later
+      solution_moves: JSON.stringify([]),
       board_state:
         gameType === 'chess'
           ? JSON.stringify({ board: chessBoard, castlingRights: { wK: false, wQ: false, bK: false, bQ: false }, lastMove: null })
