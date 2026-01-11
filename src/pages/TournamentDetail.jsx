@@ -9,6 +9,7 @@ import { Loader2, ArrowLeft, Calendar, Users, Play, Trophy, Share2, MessageSquar
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { useLanguage } from '@/components/LanguageContext';
 import TournamentBracket from '@/components/TournamentBracket';
 import TournamentChat from '@/components/TournamentChat';
 import { initializeBoard } from '@/components/checkersLogic';
@@ -24,6 +25,9 @@ export default function TournamentDetail() {
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const id = params.get('id');
+
+    const { t } = useLanguage();
+    const tt = (key, fallback) => { const v = t(key); return v === key ? fallback : v; };
     
     const [tournament, setTournament] = useState(null);
     const [participants, setParticipants] = useState([]);
@@ -275,10 +279,10 @@ export default function TournamentDetail() {
 
             if (now < start) {
                 const diff = start - now;
-                setCountdown(`Démarre dans ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
+                setCountdown(`${tt('tournaments.starts_in','Commence dans')} ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
             } else if (now < end) {
                 const diff = end - now;
-                setCountdown(`Fin dans ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
+                setCountdown(`${tt('tournaments.ends_in','Fin dans')} ${Math.floor(diff/60000)}m ${Math.floor((diff%60000)/1000)}s`);
                 
                 if (diff < 90000) { // Less than 1m 30s
                     setPairingsClosed(true);
@@ -286,7 +290,7 @@ export default function TournamentDetail() {
                     setPairingsClosed(false);
                 }
             } else {
-                setCountdown("Terminé");
+                setCountdown(tt('tournaments.finished','Terminé'));
                 setPairingsClosed(true);
             }
         }, 1000);
@@ -299,7 +303,7 @@ export default function TournamentDetail() {
         // Team Mode Check
         if (tournament.team_mode) {
             if (myLedTeams.length === 0) {
-                toast.error("Vous devez être chef d'une équipe pour l'inscrire !");
+                toast.error(tt("tournaments.must_be_team_leader","Vous devez être chef d'une équipe pour l'inscrire !"));
                 return;
             }
             setIsTeamJoinOpen(true);
@@ -310,7 +314,7 @@ export default function TournamentDetail() {
 
         // For Arena, unlimited players
         if (tournament.format !== 'arena' && participants.length >= tournament.max_players) {
-            toast.error("Le tournoi est complet !");
+            toast.error(tt('tournaments.full','Le tournoi est complet !'));
             return;
         }
 
@@ -342,7 +346,7 @@ export default function TournamentDetail() {
                 score: 0,
                 games_played: 0
             });
-            toast.success("Inscription confirmée !");
+            toast.success(tt('tournaments.join_confirmed','Inscription confirmée !'));
             // Rafraîchir et diffuser la présence (HTTP fanout + local refresh)
             const pData = await base44.entities.TournamentParticipant.filter({ tournament_id: tournament.id });
             setParticipants(pData.sort((a, b) => (b.score || 0) - (a.score || 0)));
@@ -588,7 +592,7 @@ export default function TournamentDetail() {
                     
                     <div className="flex items-center gap-4">
                          <div className="text-right">
-                             <div className="text-xs text-gray-400 uppercase font-bold">Commence dans</div>
+                             <div className="text-xs text-gray-400 uppercase font-bold">{tt('tournaments.starts_in_short','Commence dans')}</div>
                              <div className="text-2xl font-mono text-gray-600 font-medium">
                                  {countdown.replace(/[^0-9:]/g, '') || "00:00"}
                              </div>
@@ -601,15 +605,15 @@ export default function TournamentDetail() {
                                      className="bg-[#6B8E4E] hover:bg-[#5a7a40] text-white font-bold px-8 py-6 rounded shadow-lg text-lg uppercase tracking-wider"
                                  >
                                      <Play className="w-5 h-5 mr-2 fill-current" />
-                                     Rejoindre
+                                     {tt('common.join','Rejoindre')}
                                  </Button>
                              ) : (
                                  <div className="flex flex-col gap-2">
                                      <Button disabled className="bg-gray-200 text-gray-500 font-bold px-6 py-2">
-                                         Inscrit
+                                        {tt('tournaments.registered','Inscrit')}
                                      </Button>
                                      <button onClick={handleWithdraw} className="text-xs text-red-400 hover:text-red-600 underline">
-                                         Quitter
+                                         {tt('common.leave','Quitter')}
                                      </button>
                                  </div>
                              )
