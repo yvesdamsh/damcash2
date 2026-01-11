@@ -256,7 +256,6 @@ function LayoutContent({ children }) {
         { label: t('nav.academy'), path: '/Academy', icon: Brain, public: true },
         // Private items
         { label: t('nav.history'), path: '/GameHistory', icon: History, public: false },
-        { label: t('nav.replays'), path: '/ReplayCenter', icon: PlayCircle, public: false },
         { label: t('nav.teams'), path: '/Teams', icon: Users, public: false },
         { label: t('nav.training'), path: '/Training', icon: Brain, public: false },
         { label: t('nav.profile'), path: '/Profile', icon: User, public: false },
