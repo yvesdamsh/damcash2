@@ -272,7 +272,7 @@ export default function Tournaments() {
                             {/* TAB 1: GENERAL */}
                             <TabsContent value="general" className="space-y-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="t_name" className="text-[#4a3728] font-bold">Nom du Tournoi</Label>
+                                    <Label htmlFor="t_name" className="text-[#4a3728] font-bold">{t('tournaments.form_name')}</Label>
                                     <Input 
                                         id="t_name" name="t_name"
                                         value={newTournament.name} 
@@ -284,7 +284,7 @@ export default function Tournaments() {
                                 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_start">Date de début</Label>
+                                        <Label htmlFor="t_start">{t('tournaments.form_start_date')}</Label>
                                         <Input 
                                             id="t_start" name="t_start"
                                             type="datetime-local"
@@ -294,7 +294,7 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_game">Jeu</Label>
+                                        <Label htmlFor="t_game">{t('tournaments.form_game')}</Label>
                                         <Input id="t_game" name="t_game" value={newTournament.game_type === 'chess' ? t('game.chess') : t('game.checkers')} disabled className="bg-gray-100 border-[#d4c5b0]" />
                                     </div>
                                 </div>
@@ -335,7 +335,7 @@ export default function Tournaments() {
                             <TabsContent value="format" className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_format">Format</Label>
+                                        <Label htmlFor="t_format">{t('tournaments.form_format')}</Label>
                                         <Select 
                                             value={newTournament.format || 'bracket'} 
                                             onValueChange={v => setNewTournament({...newTournament, format: v})}
@@ -352,7 +352,7 @@ export default function Tournaments() {
                                         </Select>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_time_control">Cadence</Label>
+                                        <Label htmlFor="t_time_control">{t('tournaments.form_time_control')}</Label>
                                         <Select 
                                             value={newTournament.time_control} 
                                             onValueChange={v => setNewTournament({...newTournament, time_control: v})}
@@ -373,7 +373,7 @@ export default function Tournaments() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_max_players">Joueurs Max</Label>
+                                        <Label htmlFor="t_max_players">{t('tournaments.form_max_players')}</Label>
                                         <Select 
                                             value={newTournament.max_players.toString()} 
                                             onValueChange={v => setNewTournament({...newTournament, max_players: v})}
@@ -392,7 +392,7 @@ export default function Tournaments() {
                                         </Select>
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_rounds">Rondes / Tours</Label>
+                                        <Label htmlFor="t_rounds">{t('tournaments.form_rounds')}</Label>
                                         <Input 
                                             id="t_rounds" name="t_rounds"
                                             type="number"
@@ -455,7 +455,7 @@ export default function Tournaments() {
                                 </div>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className="grid gap-2">
-                                        <Label className="text-green-700">Victoire</Label>
+                                        <Label className="text-green-700">{t('tournaments.form_points_win')}</Label>
                                         <Input 
                                             type="number"
                                             step="0.5"
@@ -468,7 +468,7 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-blue-700">Nulle</Label>
+                                        <Label className="text-blue-700">{t('tournaments.form_points_draw')}</Label>
                                         <Input 
                                             type="number"
                                             step="0.5"
@@ -481,7 +481,7 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label className="text-red-700">Défaite</Label>
+                                        <Label className="text-red-700">{t('tournaments.form_points_loss')}</Label>
                                         <Input 
                                             type="number"
                                             step="0.5"
@@ -511,7 +511,7 @@ export default function Tournaments() {
                             <TabsContent value="prizes" className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label>Frais d'entrée ($)</Label>
+                                        <Label>{t('tournaments.form_entry_fee')}</Label>
                                         <Input 
                                             type="number"
                                             min="0"
@@ -521,7 +521,7 @@ export default function Tournaments() {
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_prize_pool">Cagnotte Garantie ($)</Label>
+                                        <Label htmlFor="t_prize_pool">{t('tournaments.form_prize_pool')}</Label>
                                         <Input 
                                             id="t_prize_pool" name="t_prize_pool"
                                             type="number"
@@ -545,17 +545,17 @@ export default function Tournaments() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_badge_name">Badge Vainqueur</Label>
+                                        <Label htmlFor="t_badge_name">{t('tournaments.form_badge_name')}</Label>
                                         <Input 
                                             id="t_badge_name" name="t_badge_name"
                                             value={newTournament.badge_name || ''} 
                                             onChange={e => setNewTournament({...newTournament, badge_name: e.target.value})}
-                                            placeholder="Nom du badge"
+                                            placeholder={t('tournaments.form_badge_name_placeholder')}
                                             className="border-[#d4c5b0]"
                                         />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="t_badge_icon">Icône</Label>
+                                        <Label htmlFor="t_badge_icon">{t('tournaments.form_badge_icon')}</Label>
                                         <Select 
                                             value={newTournament.badge_icon || 'Trophy'} 
                                             onValueChange={v => setNewTournament({...newTournament, badge_icon: v})}
@@ -583,12 +583,12 @@ export default function Tournaments() {
                                             onChange={e => setNewTournament({...newTournament, is_private: e.target.checked})}
                                             className="w-5 h-5 rounded border-gray-300 text-[#4a3728] focus:ring-[#4a3728]"
                                         />
-                                        <Label htmlFor="is_private" className="font-bold text-[#4a3728]">Tournoi Privé</Label>
+                                        <Label htmlFor="is_private" className="font-bold text-[#4a3728]">{t('tournaments.form_private')}</Label>
                                     </div>
                                     
                                     {newTournament.is_private && (
                                         <div className="grid gap-2 pl-7 animate-in fade-in slide-in-from-top-2">
-                                            <Label>Code d'accès</Label>
+                                            <Label>{t('tournaments.form_access_code')}</Label>
                                             <Input 
                                                 value={newTournament.access_code || ''} 
                                                 onChange={e => setNewTournament({...newTournament, access_code: e.target.value.toUpperCase()})}
