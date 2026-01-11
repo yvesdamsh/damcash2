@@ -22,6 +22,7 @@ import NextTournamentBanner from '@/components/NextTournamentBanner';
 import LiveGamesPreview from '@/components/home/LiveGamesPreview.jsx';
 import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
+import MatchmakingModal from '@/components/home/MatchmakingModal';
 import { throttle } from '@/components/utils/rateLimit';
 import { safeJSONParse } from '@/components/utils/errorHandler';
 import { toast } from 'sonner';
@@ -62,6 +63,15 @@ export default function Home() {
     const [isPrivateConfig, setIsPrivateConfig] = useState(false);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [rejoinOpen, setRejoinOpen] = useState(false);
+    // Matchmaking modal state
+    const [mmOpen, setMmOpen] = useState(false);
+    const [mmSeconds, setMmSeconds] = useState(0);
+    const [mmWaitingGames, setMmWaitingGames] = useState([]);
+    const [mmLiveGames, setMmLiveGames] = useState([]);
+    const [mmCreatedGameId, setMmCreatedGameId] = useState(null);
+    const mmTimerRef = React.useRef(null);
+    const mmPollRef = React.useRef(null);
+    const mmCreatedGameIdRef = React.useRef(null);
     const [hasShownRejoin, setHasShownRejoin] = useState(false);
     const [followingActivity, setFollowingActivity] = useState([]);
     const [gameConfig, setGameConfig] = useState({
@@ -546,68 +556,97 @@ export default function Home() {
                 }
                 navigate(`/Game?id=${newGame.id}`);
                 } else {
-                // Matchmaking Pool Logic
-                let matchFound = null;
-                
-                // Try to find a match for 5 seconds (simulation of pool)
-                const attempts = 5;
-                for (let i = 0; i < attempts; i++) {
-                    // Fetch fresh waiting games
-                    const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
-                    
-                    // Filter candidates
-                    let candidates = waitingGames.filter(g => 
-                        g.white_player_id !== user.id && 
-                        (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
-                        g.initial_time === gameConfig.time &&
-                        g.increment === gameConfig.increment &&
-                        g.series_length === gameConfig.series
-                    );
+                    // New continuous matchmaking flow: open modal and keep searching without timeout
+                    setIsSearching(false);
+                    setMmOpen(true);
+                    setMmSeconds(0);
+                    if (mmTimerRef.current) clearInterval(mmTimerRef.current);
+                    mmTimerRef.current = setInterval(() => {
+                        setMmSeconds((s) => s + 1);
+                    }, 1000);
 
-                    // Apply Difficulty Filter
-                    if (gameConfig.difficulty !== 'any') {
-                        candidates = candidates.filter(g => {
-                            const oppElo = g.white_player_elo || 1200;
-                            const diff = oppElo - myElo;
-                            if (gameConfig.difficulty === 'similar') return Math.abs(diff) <= 200;
-                            if (gameConfig.difficulty === 'harder') return diff > 100;
-                            if (gameConfig.difficulty === 'easier') return diff < -100;
-                            return true;
-                        });
-                    }
+                    const tick = async () => {
+                        // 1) Try to join a compatible existing waiting game (not mine)
+                        const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 50);
+                        // Update visible lists
+                        setMmWaitingGames(waitingGames);
+                        const live = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 2);
+                        setMmLiveGames(live);
 
-                    if (candidates.length > 0) {
-                        // Sort by ELO proximity
-                        candidates.sort((a, b) => {
-                            const eloA = a.white_player_elo || 1200;
-                            const eloB = b.white_player_elo || 1200;
-                            return Math.abs(eloA - myElo) - Math.abs(eloB - myElo);
-                        });
-                        matchFound = candidates[0];
-                        break;
-                    }
-                    
-                    // Wait 1s before next attempt if not last
-                    if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000));
+                        let candidates = waitingGames.filter(g => 
+                            g.white_player_id !== user.id &&
+                            (g.game_type === gameType || (!g.game_type && gameType === 'checkers')) &&
+                            g.initial_time === gameConfig.time &&
+                            g.increment === gameConfig.increment &&
+                            g.series_length === gameConfig.series
+                        );
+
+                        if (gameConfig.difficulty !== 'any') {
+                            candidates = candidates.filter(g => {
+                                const oppElo = g.white_player_elo || 1200;
+                                const diff = oppElo - myElo;
+                                if (gameConfig.difficulty === 'similar') return Math.abs(diff) <= 200;
+                                if (gameConfig.difficulty === 'harder') return diff > 100;
+                                if (gameConfig.difficulty === 'easier') return diff < -100;
+                                return true;
+                            });
+                        }
+
+                        if (candidates.length > 0) {
+                            candidates.sort((a, b) => {
+                                const eloA = a.white_player_elo || 1200;
+                                const eloB = b.white_player_elo || 1200;
+                                return Math.abs(eloA - myElo) - Math.abs(eloB - myElo);
+                            });
+                            const match = candidates[0];
+                            try {
+                                await base44.entities.Game.update(match.id, {
+                                    black_player_id: user.id,
+                                    black_player_name: user.username || `Joueur ${user.id.substring(0,4)}`,
+                                    black_player_elo: myElo,
+                                    status: 'playing'
+                                });
+                                // Success → close modal and navigate
+                                if (mmTimerRef.current) clearInterval(mmTimerRef.current);
+                                if (mmPollRef.current) clearInterval(mmPollRef.current);
+                                setMmOpen(false);
+                                navigate(`/Game?id=${match.id}`);
+                                return;
+                            } catch (_) {
+                                // If race, we'll retry next tick
+                            }
+                        }
+
+                        // 2) If no candidate and we haven't created our public game, create it once
+                        if (!mmCreatedGameIdRef.current) {
+                            const newGame = await base44.entities.Game.create({
+                                ...commonGameData,
+                                is_private: false
+                            });
+                            mmCreatedGameIdRef.current = newGame.id;
+                            setMmCreatedGameId(newGame.id);
+                            return;
+                        }
+
+                        // 3) If we created a game, check if someone joined it
+                        try {
+                            const g = await base44.entities.Game.get(mmCreatedGameIdRef.current);
+                            if (g && g.status === 'playing') {
+                                if (mmTimerRef.current) clearInterval(mmTimerRef.current);
+                                if (mmPollRef.current) clearInterval(mmPollRef.current);
+                                setMmOpen(false);
+                                navigate(`/Game?id=${g.id}`);
+                                return;
+                            }
+                        } catch (_) {}
+                    };
+
+                    // Start polling
+                    if (mmPollRef.current) clearInterval(mmPollRef.current);
+                    mmPollRef.current = setInterval(tick, 2000);
+                    // Run first immediately
+                    tick();
                 }
-
-                if (matchFound) {
-                    await base44.entities.Game.update(matchFound.id, {
-                        black_player_id: user.id,
-                        black_player_name: user.username || `Joueur ${user.id.substring(0,4)}`,
-                        black_player_elo: myElo,
-                        status: 'playing'
-                    });
-                    navigate(`/Game?id=${matchFound.id}`);
-                } else {
-                    // Create new game if no match found in pool
-                    const newGame = await base44.entities.Game.create({
-                        ...commonGameData,
-                        is_private: false
-                    });
-                    navigate(`/Game?id=${newGame.id}`);
-                }
-            }
         } catch (error) {
             console.error("Game start failed", error);
             setIsSearching(false);
@@ -615,6 +654,24 @@ export default function Home() {
         } finally {
             // setIsSearching(false); // Don't disable here, let navigation handle unmount or do it before nav
         }
+    };
+
+    const cancelMatchmaking = async () => {
+        setMmOpen(false);
+        if (mmTimerRef.current) clearInterval(mmTimerRef.current);
+        if (mmPollRef.current) clearInterval(mmPollRef.current);
+        try {
+            if (mmCreatedGameIdRef.current) {
+                const g = await base44.entities.Game.get(mmCreatedGameIdRef.current);
+                if (g && g.status === 'waiting') {
+                    await base44.entities.Game.delete(mmCreatedGameIdRef.current);
+                }
+            }
+        } catch (_) {}
+        mmCreatedGameIdRef.current = null;
+        setMmCreatedGameId(null);
+        setIsSearching(false);
+        setIsCreating(false);
     };
 
     const handleSoloMode = async () => {
@@ -682,6 +739,15 @@ export default function Home() {
                 open={rejoinOpen} 
                 onOpenChange={setRejoinOpen}
                 currentUser={user}
+            />
+
+            <MatchmakingModal
+                open={mmOpen}
+                seconds={mmSeconds}
+                waitingGames={mmWaitingGames}
+                liveGames={mmLiveGames}
+                onCancel={cancelMatchmaking}
+                onWatch={(id) => navigate(`/Game?id=${id}`)}
             />
 
             {/* Searching Overlay */}
