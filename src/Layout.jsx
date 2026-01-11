@@ -542,7 +542,11 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                                 : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
                                             }`
                                 >
-                                    {gameMode === 'chess' ? `♟️ ${t('game.chess')}` : `⚪ ${t('game.checkers')}`}
+                                    {gameMode === 'chess' ? (
+                                        <><span aria-hidden="true">♟️</span> {t('game.chess')}</>
+                                    ) : (
+                                        <><span aria-hidden="true">⚪</span> {t('game.checkers')}</>
+                                    )}
                                 </button>
 
                                 {user && (
