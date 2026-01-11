@@ -713,8 +713,8 @@ export default function Tournaments() {
                         <Button 
                             onClick={async () => {
                                 if (!accessCodeInput) return;
-                                const res = await base44.entities.Tournament.list(); 
-                                const target = res.find(t => t.access_code === accessCodeInput && t.status !== 'finished');
+                                const res = await base44.entities.Tournament.filter({ access_code: accessCodeInput });
+                                const target = res.find(t => t.status !== 'finished');
                                 if (target) {
                                     window.location.href = `/TournamentDetail?id=${target.id}&join=queue`;
                                 } else {
