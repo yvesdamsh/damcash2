@@ -265,7 +265,7 @@ const gameNotifInFlightRef = useRef(false);
                 currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
                 lastChessMove = parsed?.lastMove || null;
 
-                if (stateChanged && isNewerOrEqual) {
+                if (stateChanged) {
                     setBoard(currentBoard);
                     setChessState({ 
                         castlingRights: parsed?.castlingRights || {}, 
@@ -290,7 +290,7 @@ const gameNotifInFlightRef = useRef(false);
             try {
                 const parsed = safeJSONParse(game.board_state, []);
                 currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
-                if (stateChanged && isNewerOrEqual) {
+                if (stateChanged) {
                     setBoard(currentBoard);
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
                     lastAppliedAtRef.current = gameTs;
