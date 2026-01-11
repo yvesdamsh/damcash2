@@ -416,6 +416,12 @@ function LayoutContent({ children }) {
   --border: 24 28% 23%;
   --input: 24 28% 23%;
   --ring: var(--primary);
+
+  /* Design tokens (light) */
+  --nav-bg: #4a3728;
+  --nav-fg: #e8dcc5;
+  --nav-border: #2c1e12;
+  --gold-accent: #b8860b;
 }
 
 .dark {
@@ -438,6 +444,12 @@ function LayoutContent({ children }) {
   --border: 24 18% 20%;
   --input: 24 18% 20%;
   --ring: var(--primary);
+
+  /* Design tokens (dark) */
+  --nav-bg: #1a120b;
+  --nav-fg: #e8dcc5;
+  --nav-border: #3d2b1f;
+  --gold-accent: #b8860b;
 }
 
 /* Typography scale */
@@ -505,7 +517,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
                             <Link to="/Home" className="flex-shrink-0 flex items-center gap-2 group">
-                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full shadow-lg border-2 border-[#e8dcc5] overflow-hidden transform group-hover:scale-110 transition-transform">
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full shadow-lg border-2 border-[var(--nav-fg)] overflow-hidden transform group-hover:scale-110 transition-transform">
                                     <img
                                       src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/b31958665_Screenshot2025-12-21at121530AM.png"
                                       alt="DamCash Logo"
@@ -550,7 +562,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
 
                                 <button 
                                     onClick={toggleSound}
-                                    className="p-2 rounded-full hover:bg-[#5c4430] text-[#d4c5b0] transition-colors"
+                                    className="p-2 rounded-full hover:bg-white/10 text-[var(--nav-fg)] transition-colors"
                                     title={soundEnabled ? "Couper le son" : "Activer le son"}
                                 >
                                     {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -567,7 +579,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                 ) : (
                                     <button 
                                         onClick={handleLogin}
-                                        className="flex items-center gap-2 px-4 py-2 ml-2 rounded-full bg-[#6B8E4E] hover:bg-[#5a7a40] text-white transition-colors text-sm font-bold shadow-md border border-[#3d2b1f]"
+                                        className="flex items-center gap-2 px-4 py-2 ml-2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] hover:brightness-110 transition-colors text-sm font-bold shadow-md border border-[var(--border)]"
                                         title="Connexion"
                                     >
                                         <LogIn className="w-4 h-4" />
@@ -587,7 +599,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             
                             <button
                                 onClick={toggleMenu}
-                                className="inline-flex items-center justify-center p-2 rounded-md text-[#d4c5b0] hover:bg-white/10 focus:outline-none ml-1"
+                                className="inline-flex items-center justify-center p-2 rounded-md text-[var(--nav-fg)] hover:bg-white/10 focus:outline-none ml-1"
                             >
                                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                             </button>
@@ -612,7 +624,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                             key={item.path}
                                             to={item.path}
                                             onClick={() => setIsMenuOpen(false)}
-                                            className="px-3 py-2 rounded-md text-sm font-medium text-[#d4c5b0] hover:bg-[#5c4430] hover:text-white flex items-center gap-2 overflow-hidden"
+                                            className="px-3 py-2 rounded-md text-sm font-medium text-[var(--nav-fg)] hover:bg-white/10 hover:text-white flex items-center gap-2 overflow-hidden"
                                         >
                                             <Icon className="w-4 h-4 flex-shrink-0" />
                                             <span className="truncate">{item.label}</span>
