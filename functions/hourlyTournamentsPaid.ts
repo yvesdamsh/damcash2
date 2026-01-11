@@ -36,6 +36,7 @@ async function ensureTournament(base44, { name, description, game_type, time_con
     start_date: start_date_iso,
     status: 'open',
     is_private: false,
+    created_by_user_id: 'system',
     entry_fee: entry_fee,
     prize_pool: 0,
     format: 'arena',

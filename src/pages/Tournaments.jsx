@@ -616,7 +616,7 @@ export default function Tournaments() {
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
                     {tournaments
-                        .filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing') && t.game_type === gameMode)
+                        .filter(t => ((t.created_by_user_id === 'system') || ((t.name || '').toLowerCase().startsWith('damcash ')) || (t.badge_name === 'Gratuit' || t.badge_name === 'Payant')) && (t.status === 'open' || t.status === 'ongoing') && t.game_type === gameMode)
                         // Show next 10 hours approximately (or just list all available upcoming)
                         .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
                         .map(tournament => (
@@ -646,7 +646,7 @@ export default function Tournaments() {
                                 </CardContent>
                             </Card>
                         ))}
-                    {tournaments.filter(t => t.created_by_user_id === 'system' && (t.status === 'open' || t.status === 'ongoing')).length === 0 && (
+                    {tournaments.filter(t => ((t.created_by_user_id === 'system') || ((t.name || '').toLowerCase().startsWith('damcash ')) || (t.badge_name === 'Gratuit' || t.badge_name === 'Payant')) && (t.status === 'open' || t.status === 'ongoing') && t.game_type === gameMode).length === 0 && (
                          <div className="col-span-full bg-white/50 p-4 rounded-lg text-center text-gray-500 border border-dashed border-gray-300">
                              {t('tournaments.no_official')}
                          </div>
