@@ -209,7 +209,7 @@ const gameNotifInFlightRef = useRef(false);
     const safeFetchGame = React.useCallback(async () => {
         const now = Date.now();
         if (gameFetchInFlightRef.current) return await gameFetchInFlightRef.current;
-        if (now - (gameFetchLastAtRef.current || 0) < 2000) return null;
+        if (now - (gameFetchLastAtRef.current || 0) < 500) return null;
         const p = base44.entities.Game.get(id)
             .finally(() => {
                 gameFetchLastAtRef.current = Date.now();
@@ -700,29 +700,38 @@ const gameNotifInFlightRef = useRef(false);
                         moveTimingsRef.current.delete(k);
                     }
                 } catch (e) { logger.warn('[SILENT]', e); }
-                // Guard against stale updates using move count (only when moves included)
-                const hasMoves = Object.prototype.hasOwnProperty.call(payload, 'moves');
+                // Guard against stale updates using total move count (prefer payload.move_count)
+                const hasMoves = Object.prototype.hasOwnProperty.call(payload, 'moves') || Object.prototype.hasOwnProperty.call(payload, 'move_count');
                 const incomingMovesLen = (() => {
                     try {
+                        if (typeof payload.move_count === 'number') return payload.move_count;
                         const m = payload.moves;
                         if (Array.isArray(m)) return m.length;
                         if (typeof m === 'string') { const arr = JSON.parse(m); return Array.isArray(arr) ? arr.length : 0; }
                         return lastAppliedMoveCountRef.current || 0;
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
-                if (hasMoves && (lastAppliedMoveCountRef.current || 0) > incomingMovesLen) {
+                const currentMovesLen = (() => {
+                    try {
+                        if (Array.isArray(game?.moves)) return game.moves.length;
+                        if (typeof game?.moves === 'string') { const arr = JSON.parse(game.moves); return Array.isArray(arr) ? arr.length : 0; }
+                        return lastAppliedMoveCountRef.current || 0;
+                    } catch { return lastAppliedMoveCountRef.current || 0; }
+                })();
+                if (hasMoves && Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen) > incomingMovesLen) {
                     return; // ignore clearly older state
                 }
                 setGame(prev => ({ ...prev, ...payload }));
                 if (hasMoves) {
-                    lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, incomingMovesLen);
+                    const newCount = incomingMovesLen;
+                    lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
                 const missingBoardOrMoves = !Object.prototype.hasOwnProperty.call(payload, 'board_state') || !hasMoves;
                 if (missingBoardOrMoves && id) {
                     const now = Date.now();
-                    if (now - (wsRefetchAtRef.current || 0) > 2000) {
+                    if (now - (wsRefetchAtRef.current || 0) > 500) {
                         wsRefetchAtRef.current = now;
                         safeFetchGame()
                           ?.then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); })

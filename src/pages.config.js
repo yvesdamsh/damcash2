@@ -24,8 +24,8 @@ import TournamentDetail from './pages/TournamentDetail';
 import Tournaments from './pages/Tournaments';
 import Training from './pages/Training';
 import Wallet from './pages/Wallet';
-import index from './pages/index';
 import game from './pages/game';
+import index from './pages/index';
 import __Layout from './Layout.jsx';
 
 
@@ -56,8 +56,8 @@ export const PAGES = {
     "Tournaments": Tournaments,
     "Training": Training,
     "Wallet": Wallet,
-    "index": index,
     "game": game,
+    "index": index,
 }
 
 export const pagesConfig = {
