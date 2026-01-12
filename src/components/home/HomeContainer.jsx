@@ -1125,6 +1125,7 @@ export default function HomeContainer() {
                                     </div>
                                 </Card>
                             </div>
+                            </>
                         </div>
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="space-y-3">
