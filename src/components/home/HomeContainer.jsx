@@ -283,7 +283,7 @@ export default function HomeContainer() {
                     console.error('[HOME] Error loading invitations:', e);
                 } finally {
                     invInFlightRef.current = false;
-                    invNextAllowedRef.current = Date.now() + 3000;
+                    invNextAllowedRef.current = Date.now() + 10000;
                 }
             };
 
@@ -293,7 +293,7 @@ export default function HomeContainer() {
             };
 
             window.addEventListener('invitation-received', onInv);
-            window.addEventListener('notification-update', onInv);
+
 
             // Initial load
             refreshInvites();
@@ -303,7 +303,7 @@ export default function HomeContainer() {
 
             return () => {
                 window.removeEventListener('invitation-received', onInv);
-                window.removeEventListener('notification-update', onInv);
+
                 clearInterval(intervalId);
             };
         }, [user?.id]);
