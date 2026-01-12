@@ -107,9 +107,7 @@ export default function HomeContainer() {
     /* Legends moved into LegendsCarousel component */
     
 
-    const legends = gameType === 'chess' ? chessLegends : checkersLegends;
-    const safeIndex = Number.isFinite(currentLegendIndex) && currentLegendIndex >= 0 && currentLegendIndex < (legends?.length || 0) ? currentLegendIndex : 0;
-    */
+    // Legends handled by LegendsCarousel
     // Legends handled by LegendsCarousel
 
 
