@@ -20,6 +20,7 @@ import HomeOnlineUsers from '@/components/home/HomeOnlineUsers.jsx';
 import NextTournamentBanner from '@/components/NextTournamentBanner';
 // import LiveGameEmbed from '@/components/home/LiveGameEmbed';
 import LiveGamesPreview from '@/components/home/LiveGamesPreview.jsx';
+import LegendsCarousel from '@/components/home/LegendsCarousel.jsx';
 import DailyPuzzle from '@/components/home/DailyPuzzle';
 import UpcomingTournaments from '@/components/home/UpcomingTournaments';
 import MatchmakingModal from '@/components/home/MatchmakingModal';
@@ -126,7 +127,8 @@ export default function HomeContainer() {
         }
     ];
 
-    const chessLegends = [
+    /* Legends moved into LegendsCarousel component */
+    /* const chessLegends = [
         {
             id: 'kasparov',
             name: "Garry Kasparov",
@@ -151,7 +153,8 @@ export default function HomeContainer() {
 
     const legends = gameType === 'chess' ? chessLegends : checkersLegends;
     const safeIndex = Number.isFinite(currentLegendIndex) && currentLegendIndex >= 0 && currentLegendIndex < (legends?.length || 0) ? currentLegendIndex : 0;
-    const currentLegend = (legends && legends.length > 0) ? legends[safeIndex] : null;
+    */
+    // Legends handled by LegendsCarousel
 
     useEffect(() => {
         setCurrentLegendIndex(0);
@@ -167,7 +170,7 @@ export default function HomeContainer() {
     const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
     const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
 
-    const fetchData = async (currentUser, checkRejoin = false) => {
+    const fetchData = React.useCallback(async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
         const nowTs = Date.now();
         if (fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 10000)) { return; }
@@ -248,9 +251,9 @@ export default function HomeContainer() {
             fetchInFlightRef.current = false;
             lastFetchAtRef.current = Date.now();
         }
-    };
+    }, [hasShownRejoin]);
 
-        const throttledFetchData = React.useMemo(() => throttle(fetchData, 30000), [fetchData]);
+     const throttledFetchData = React.useMemo(() => throttle(fetchData, 30000), [fetchData]);
 
         useEffect(() => {
             let intervalId;
