@@ -118,7 +118,8 @@ export default function HomeContainer() {
             badge: "Champion",
             position: 'object-top'
         }
-    ];
+];
+*/
 
     const legends = gameType === 'chess' ? chessLegends : checkersLegends;
     const safeIndex = Number.isFinite(currentLegendIndex) && currentLegendIndex >= 0 && currentLegendIndex < (legends?.length || 0) ? currentLegendIndex : 0;
