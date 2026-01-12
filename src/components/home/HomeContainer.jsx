@@ -83,7 +83,7 @@ export default function HomeContainer() {
         stake: 0,
         difficulty: 'any' // any, easy, medium, hard
     });
-    const [currentLegendIndex, setCurrentLegendIndex] = useState(0);
+
     const navigate = useNavigate();
 
     const fetchInFlightRef = React.useRef(false);
@@ -94,38 +94,7 @@ export default function HomeContainer() {
 
     React.useEffect(() => { userRef.current = user; }, [user]);
 
-    const checkersLegends = [
-        {
-            id: 'babasy',
-            name: t('legend.babasy.name') || "Baba Sy",
-            subtitle: t('legend.babasy.subtitle') || "Le génie africain",
-            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/8055076a4_1764571213479.jpg',
-            description: t('legend.babasy.desc') || "Grand Maître sénégalais, considéré comme l'un des plus grands joueurs de dames de tous les temps.",
-            link: 'https://fr.wikipedia.org/wiki/Baba_Sy',
-            badge: t('legend.babasy.badge') || "Légende",
-            position: 'object-top'
-        },
-        {
-            id: 'sijbrands',
-            name: t('legend.sijbrands.name') || "Ton Sijbrands",
-            subtitle: t('legend.sijbrands.subtitle') || "Le virtuose hollandais",
-            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/62119ad07_1764873196043.jpg',
-            description: t('legend.sijbrands.desc') || "Champion du monde à plusieurs reprises, connu pour ses parties à l'aveugle.",
-            link: 'https://fr.wikipedia.org/wiki/Ton_Sijbrands',
-            badge: t('legend.sijbrands.badge') || "Champion",
-            position: 'object-[center_30%]'
-        },
-        {
-            id: 'boomstra',
-            name: t('legend.boomstra.name') || "Roel Boomstra",
-            subtitle: t('legend.boomstra.subtitle') || "Le prodige moderne",
-            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/38a69b1a1_Screenshot_20251206_032614_SamsungInternet.jpg',
-            description: t('legend.boomstra.desc') || "Champion du monde en titre, alliant technique et créativité.",
-            link: 'https://fr.wikipedia.org/wiki/Roel_Boomstra',
-            badge: t('legend.boomstra.badge') || "Maitre",
-            position: 'object-top'
-        }
-    ];
+
 
     /* Legends moved into LegendsCarousel component */
     /* const chessLegends = [
@@ -156,19 +125,7 @@ export default function HomeContainer() {
     */
     // Legends handled by LegendsCarousel
 
-    useEffect(() => {
-        setCurrentLegendIndex(0);
-    }, [gameType]);
 
-    useEffect(() => {
-        if (!Array.isArray(legends) || legends.length === 0) return;
-        if (!Number.isFinite(currentLegendIndex) || currentLegendIndex >= legends.length) {
-            setCurrentLegendIndex(0);
-        }
-    }, [legends.length]);
-
-    const nextLegend = () => setCurrentLegendIndex((prev) => (prev + 1) % legends.length);
-    const prevLegend = () => setCurrentLegendIndex((prev) => (prev - 1 + legends.length) % legends.length);
 
     const fetchData = React.useCallback(async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
