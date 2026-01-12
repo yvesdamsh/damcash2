@@ -95,12 +95,7 @@ export default function HomeContainer() {
     React.useEffect(() => { userRef.current = user; }, [user]);
 
     // TEMP: Shimming legacy in-file Legends block until full removal
-    const legends = [];
-    const currentLegend = null;
-    const currentLegendIndex = 0;
-    const setCurrentLegendIndex = () => {};
-    const nextLegend = () => {};
-    const prevLegend = () => {};
+    // Removed legacy in-file legends shims; Legends are now handled by LegendsCarousel.
 
 
 
