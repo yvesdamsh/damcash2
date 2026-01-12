@@ -97,6 +97,8 @@ export default function HomeContainer() {
     // TEMP: Shimming legacy in-file Legends block until full removal
     const legends = [];
     const currentLegend = null;
+    const currentLegendIndex = 0;
+    const setCurrentLegendIndex = () => {};
     const nextLegend = () => {};
     const prevLegend = () => {};
 
