@@ -1054,7 +1054,7 @@ export default function HomeContainer() {
                         <div className="md:col-span-2">
                             {/* Legends Carousel Section */}
                             <LegendsCarousel gameType={gameType} />
-                            {/* legacy-start */}
+                            {/* legacy-start */} <>
                                 <div className="absolute top-1/2 -left-4 z-20 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Button size="icon" variant="outline" className="rounded-full bg:white/80 backdrop-blur shadow-lg border:#d4c5b0 hover:bg:#4a3728 hover:text:white" onClick={prevLegend}>
                                         <ChevronLeft className="w-5 h-5" />
