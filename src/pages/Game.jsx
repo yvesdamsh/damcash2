@@ -534,10 +534,10 @@ const gameNotifInFlightRef = useRef(false);
             if (typeof document !== 'undefined' && document.hidden) return false;
             if (pausePolling) return false;
             const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-            // Poll when preview OR WS has been silent >15s OR socket not open
+            // Poll when preview, or socket not open, or WS has been silent >30s
             const lastWs = wsLastReceivedRef.current || 0;
-            const silent = (Date.now() - lastWs) > 15000;
-            return isPreview || silent || !wsOpen;
+            const silent = (Date.now() - lastWs) > 30000;
+            return isPreview || !wsOpen || silent;
           };
 
           const loop = async () => {
