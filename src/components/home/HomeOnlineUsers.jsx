@@ -12,6 +12,8 @@ export default function HomeOnlineUsers() {
   const { t } = useLanguage();
   const [me, setMe] = React.useState(null);
   const meRef = React.useRef(null);
+  const fetchInFlightRef = React.useRef(false);
+  const lastFetchRef = React.useRef(0);
   const [users, setUsers] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const navigate = useNavigate();
@@ -27,6 +29,9 @@ export default function HomeOnlineUsers() {
   });
 
   const fetchOnline = React.useCallback(async () => {
+    const now = Date.now();
+    if (fetchInFlightRef.current || now - lastFetchRef.current < 30000) return;
+    fetchInFlightRef.current = true;
     setLoading(true);
     try {
       const current = meRef.current || me;
@@ -35,14 +40,17 @@ export default function HomeOnlineUsers() {
       try {
         const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
         list = res?.data?.users || [];
-      } catch (_) {
-        list = [];
+      } catch (e) {
+        // On rate limit or other error, keep current list and back off silently
+        list = users;
       }
       setUsers(list);
+      lastFetchRef.current = Date.now();
     } finally {
+      fetchInFlightRef.current = false;
       setLoading(false);
     }
-  }, [cfg.type, me]);
+  }, [cfg.type, me, users]);
 
   React.useEffect(() => {
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
@@ -56,7 +64,7 @@ export default function HomeOnlineUsers() {
   }, []);
 
   React.useEffect(() => {
-      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 60000);
+      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 120000);
       return () => clearInterval(iv);
   }, [fetchOnline]);
 
