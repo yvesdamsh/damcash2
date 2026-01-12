@@ -105,29 +105,7 @@ export default function HomeContainer() {
 
 
     /* Legends moved into LegendsCarousel component */
-    /* const chessLegends = [
-        {
-            id: 'kasparov',
-            name: "Garry Kasparov",
-            subtitle: "The Beast of Baku",
-            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/29a50e470_images.jpeg',
-            description: "World Chess Champion (1985–2000). Widely considered the greatest chess player of all time due to his dominance and longevity at the top.",
-            link: 'https://en.wikipedia.org/wiki/Garry_Kasparov',
-            badge: "G.O.A.T.",
-            position: 'object-top'
-        },
-        {
-            id: 'magnus',
-            name: "Magnus Carlsen",
-            subtitle: "The Mozart of Chess",
-            image: 'https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/692cf465001e7ca7b491343d/1abb4a478_Screenshot_20251211_072546_Facebook.jpg',
-            description: "World Chess Champion (2013–2023). Highest rated player in history. Known for his intuitive style and endgame prowess.",
-            link: 'https://en.wikipedia.org/wiki/Magnus_Carlsen',
-            badge: "Champion",
-            position: 'object-top'
-        }
-];
-*/
+    
 
     const legends = gameType === 'chess' ? chessLegends : checkersLegends;
     const safeIndex = Number.isFinite(currentLegendIndex) && currentLegendIndex >= 0 && currentLegendIndex < (legends?.length || 0) ? currentLegendIndex : 0;
