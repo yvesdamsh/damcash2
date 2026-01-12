@@ -67,6 +67,7 @@ function LayoutContent({ children }) {
     });
     const [isFramed, setIsFramed] = React.useState(false);
     const [isAuthed, setIsAuthed] = React.useState(false);
+    const lastNotifyRef = React.useRef(0);
 
     React.useEffect(() => {
         const hide = () => setShowIntro(false);
@@ -162,8 +163,12 @@ function LayoutContent({ children }) {
                 const me = await base44.auth.me();
                 if (me) {
                     await base44.auth.updateMe({ last_seen: new Date().toISOString() });
-                    // Also notify friends each heartbeat to keep presence symmetric
-                    base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
+                    // Also notify friends at most every 5 minutes to avoid rate limits
+                    const now = Date.now();
+                    if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
+                        lastNotifyRef.current = now;
+                        base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
+                    }
                 }
             } catch (e) {
                 console.error('Heartbeat update failed', e);
