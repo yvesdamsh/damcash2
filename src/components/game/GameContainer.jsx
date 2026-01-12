@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw, ArrowUpDown } from 'lucide-react';
+import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw, ArrowUpDown, Video, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
@@ -2296,6 +2296,12 @@ export default function GameContainer() {
                         )}
                         <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138] hover:bg-[#f5f0e6]" onClick={() => setInviteOpen(true)}>
                             <UserPlus className="w-4 h-4 mr-1" /> {t('game.invite')}
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-[#d4c5b0] text-[#6b5138]" onClick={() => { if (window.__videochat_open) window.__videochat_open(); }}>
+                            <Video className="w-4 h-4 mr-1" /> {t('game.video_chat')}
+                        </Button>
+                        <Button size="sm" className="bg-[#6b5138] hover:bg-[#5c4430] text-white" onClick={() => { if (window.__videochat_call) window.__videochat_call(); }}>
+                            <Phone className="w-4 h-4 mr-1" /> {t('game.call')}
                         </Button>
                         <Popover>
                             <PopoverTrigger asChild>
