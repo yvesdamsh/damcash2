@@ -1049,78 +1049,7 @@ export default function HomeContainer() {
                         <div className="md:col-span-2">
                             {/* Legends Carousel Section */}
                             <LegendsCarousel gameType={gameType} />
-                            {/* legacy-start */} <>
-                                <div className="absolute top-1/2 -left-4 z-20 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button size="icon" variant="outline" className="rounded-full bg:white/80 backdrop-blur shadow-lg border:#d4c5b0 hover:bg:#4a3728 hover:text:white" onClick={prevLegend}>
-                                        <ChevronLeft className="w-5 h-5" />
-                                    </Button>
-                                </div>
-                                <div className="absolute top-1/2 -right-4 z-20 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button size="icon" variant="outline" className="rounded-full bg:white/80 backdrop-blur shadow-lg border:#d4c5b0 hover:bg:#4a3728 hover:text:white" onClick={nextLegend}>
-                                        <ChevronRight className="w-5 h-5" />
-                                    </Button>
-                                </div>
 
-                                <Card className="overflow-hidden bg:#fdfbf7 dark:bg:#1e1814 border:#d4c5b0 dark:border:#3d2b1f shadow-xl h-[450px] md:h-[380px] relative">
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={currentLegendIndex}
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -20 }}
-                                            transition={{ duration: 0.3 }}
-                                            className="absolute inset-0 flex flex-col md:flex-row"
-                                        >
-                                            <div className="w-full h-60 md:h-full md:w-2/5 relative shrink-0 overflow-hidden">
-                                                <img 
-                                                    src={currentLegend?.image} 
-                                                    alt={currentLegend?.name || 'Legend'} 
-                                                    className={`w-full h-full object-cover ${currentLegend?.position || 'object-top'}`}
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from:#4a3728 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to:#fdfbf7 dark:md:to:#1e1814" />
-                                                <div className="absolute bottom-0 left-0 p-4 text:#e8dcc5 md:hidden">
-                                                    <h3 className="text-xl font-bold">{currentLegend?.name}</h3>
-                                                    <p className="text-xs opacity-90">{currentLegend?.badge}</p>
-                                                </div>
-                                            </div>
-                                            <div className="p-6 md:w-3/5 flex flex-col justify-center h-full">
-                                                <div className="hidden md:block mb-3">
-                                                    <Badge variant="secondary" className="bg:#e8dcc5 text:#4a3728 hover:bg:#d4c5b0 dark:bg:#3d2b1f dark:text:#e8dcc5 mb-2">
-                                                        {currentLegend?.badge}
-                                                    </Badge>
-                                                    <h3 className="text-3xl font-black text:#4a3728 dark:text:#e8dcc5 mb-1">{currentLegend?.name}</h3>
-                                                    <p className="text-sm text:#8c6b4a dark:text:#a8907a font-serif italic">{currentLegend?.subtitle}</p>
-                                                </div>
-                                                <p className="text:#6b5138 dark:text:#b09a85 mb-6 text-sm leading-relaxed md:text-base line-clamp-5 md:line-clamp-none">
-                                                    {currentLegend?.description}
-                                                </p>
-                                                <div className="flex gap-3 mt-auto md:mt-0">
-                                                    <Button variant="outline" disabled={!currentLegend?.link} className="border:#4a3728 text:#4a3728 hover:bg:#4a3728 hover:text:#e8dcc5 dark:border:#e8dcc5 dark:text:#e8dcc5 dark:hover:bg:#e8dcc5 dark:hover:text:#1e1814" onClick={() => currentLegend?.link && window.open(currentLegend.link, '_blank')}>
-                                                        <BookOpen className="w-4 h-4 mr-2" />
-                                                        {t('common.read_bio')}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    </AnimatePresence>
-                                    
-                                    {/* Dots Indicator */}
-                                    <div className="absolute bottom-4 right-4 flex gap-2 md:bottom-6 md:right-8 z-10">
-                                        {legends.map((_, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => setCurrentLegendIndex(idx)}
-                                                className={`w-2 h-2 rounded-full transition-all ${
-                                                    idx === currentLegendIndex 
-                                                        ? 'bg:#4a3728 w-6 dark:bg:#b8860b' 
-                                                        : 'bg:#d4c5b0 hover:bg:#8c6b4a dark:bg:#3d2b1f'
-                                                }`}
-                                            />
-                                        ))}
-                                    </div>
-                                </Card>
-                            </div>
-                            </>
                         </div>
                                         <div className="md:col-span-1 space-y-6">
                                             <div className="space-y-3">
