@@ -94,6 +94,12 @@ export default function HomeContainer() {
 
     React.useEffect(() => { userRef.current = user; }, [user]);
 
+    // TEMP: Shimming legacy in-file Legends block until full removal
+    const legends = [];
+    const currentLegend = null;
+    const nextLegend = () => {};
+    const prevLegend = () => {};
+
 
 
     /* Legends moved into LegendsCarousel component */
