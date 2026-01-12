@@ -81,6 +81,7 @@ export default function GameContainer() {
     const [isAiGame, setIsAiGame] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState('medium');
     const [isAiThinking, setIsAiThinking] = useState(false);
+    const wsLastReceivedRef = useRef(0);
     const { handleGameMessage } = useRealTime();
 
     const location = useLocation();
@@ -429,41 +430,50 @@ export default function GameContainer() {
     useEffect(() => {}, [id, game?.status, game?.last_move_at]);
 
     useEffect(() => {
-      let canceled = false;
-      let timer = null;
-      const backoffRef = { value: 1200 };
-      const inFlight = { value: false };
-      const shouldPoll = () => {
-        if (!id) return false;
-        if (typeof document !== 'undefined' && document.hidden) return false;
-        if (pausePolling) return false;
-        const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-        return !wsOpen || isPreview;
-      };
-      const loop = async () => {
-        if (canceled) return;
-        if (!shouldPoll()) { timer = setTimeout(loop, 1000); return; }
-        if (inFlight.value) { timer = setTimeout(loop, backoffRef.value); return; }
-        inFlight.value = true;
-        try {
-          const updated = await base44.entities.Game.get(id);
-          const changed = !!(updated && updated.updated_date !== game?.updated_date);
-          if (changed) {
-            setGame(updated);
-            backoffRef.value = 800;
-          } else {
-            backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 5000);
+        if (!id) return;
+        let canceled = false;
+        let timer = null;
+        const inFlight = { value: false };
+        const shouldPoll = () => {
+          if (!id) return false;
+          if (typeof document !== 'undefined' && document.hidden) return false;
+          if (pausePolling) return false;
+          const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
+          const lastWs = wsLastReceivedRef.current || 0;
+          const inactive = (Date.now() - lastWs) > 5000; // WS inactive >5s
+          return (!wsOpen || inactive);
+        };
+        const loop = async () => {
+          if (canceled) return;
+          if (!shouldPoll()) { timer = setTimeout(loop, 1000); return; }
+          if (inFlight.value) { timer = setTimeout(loop, 200); return; }
+          inFlight.value = true;
+          try {
+            const updated = await base44.entities.Game.get(id);
+            setGame(prev => {
+              if (!updated) return prev;
+              try {
+                const prevMoves = safeJSONParse(prev?.moves, []);
+                const nextMoves = safeJSONParse(updated?.moves, prevMoves);
+                const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
+                const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
+                const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
+                const nextBoard = typeof updated?.board_state === 'string' ? updated.board_state : JSON.stringify(updated?.board_state || '');
+                const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
+                const nextTs = updated?.updated_date ? new Date(updated.updated_date).getTime() : 0;
+                const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
+                return accept ? updated : prev;
+              } catch (_) { return updated; }
+            });
+          } catch (_) {
+          } finally {
+            inFlight.value = false;
+            if (!canceled) timer = setTimeout(loop, 2000); // poll every 2s when WS inactive
           }
-        } catch (e) {
-          backoffRef.value = Math.min(backoffRef.value * 2, 6000);
-        } finally {
-          inFlight.value = false;
-          if (!canceled) timer = setTimeout(loop, backoffRef.value);
-        }
-      };
-      loop();
-      return () => { canceled = true; if (timer) clearTimeout(timer); };
-    }, [id, isPreview, game?.updated_date, pausePolling]);
+        };
+        loop();
+        return () => { canceled = true; if (timer) clearTimeout(timer); };
+      }, [id, pausePolling]);
 
     useEffect(() => {
       if (!id) return;
@@ -564,6 +574,7 @@ export default function GameContainer() {
         reconnectAttempts: 50,
         heartbeatInterval: 10000,
         onMessage: (event, data) => {
+            wsLastReceivedRef.current = Date.now();
             if (!data) return;
             if (data.type === 'GAME_UPDATE') {
                 const payload = data.payload || {};
@@ -576,7 +587,22 @@ export default function GameContainer() {
                         moveTimingsRef.current.delete(k);
                     }
                 } catch (e) { logger.warn('[SILENT]', e); }
-                setGame(prev => ({ ...prev, ...payload }));
+                setGame(prev => {
+                    try {
+                        const prevMoves = safeJSONParse(prev?.moves, []);
+                        const nextMoves = safeJSONParse(payload?.moves, prevMoves);
+                        const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
+                        const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
+                        const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
+                        const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
+                        const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
+                        const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
+                        const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
+                        return accept ? { ...prev, ...payload } : prev;
+                    } catch (_) {
+                        return { ...prev, ...payload };
+                    }
+                });
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 if (payload.status === 'finished' && payload.winner_id && currentUser?.id && payload.winner_id === currentUser.id && payload.result === 'resignation') {
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
@@ -618,11 +644,24 @@ export default function GameContainer() {
             if (gameId !== id) return;
             const now = Date.now();
             if (gameNotifInFlightRef.current) return;
-            if (now - gameNotifRefetchAtRef.current < 2500) return;
+            if (now - gameNotifRefetchAtRef.current < 500) return;
             gameNotifRefetchAtRef.current = now;
             gameNotifInFlightRef.current = true;
             base44.entities.Game.get(id)
-              .then(g => { if (g) setGame(prev => ({ ...(prev || {}), ...g })); })
+              .then(g => { if (g) setGame(prev => {
+                try {
+                  const prevMoves = safeJSONParse(prev?.moves, []);
+                  const nextMoves = safeJSONParse(g?.moves, prevMoves);
+                  const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
+                  const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
+                  const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
+                  const nextBoard = typeof g?.board_state === 'string' ? g.board_state : JSON.stringify(g?.board_state || '');
+                  const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
+                  const nextTs = g?.updated_date ? new Date(g.updated_date).getTime() : 0;
+                  const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
+                  return accept ? g : prev;
+                } catch(_) { return g; }
+              }); })
               .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); })
               .finally(() => { gameNotifInFlightRef.current = false; });
         };
