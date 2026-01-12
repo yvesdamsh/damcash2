@@ -99,13 +99,7 @@ export default function HomeContainer() {
 
 
 
-    /* Legends moved into LegendsCarousel component */
-    
-
-    // Legends handled by LegendsCarousel
-    // Legends handled by LegendsCarousel
-
-
+    // Legends are handled by LegendsCarousel component
 
     const fetchData = React.useCallback(async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
