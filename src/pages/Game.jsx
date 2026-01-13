@@ -803,7 +803,7 @@ const gameNotifInFlightRef = useRef(false);
                               if (newLen > curr || (newLen === curr && gTs >= appliedTs)) {
                                 setGame(prev => ({ ...(prev||{}), ...g }));
                               } else {
-                                try { logger.log('[MOVE][SKIP] Refetched older state ignored'); } catch (_) {}
+                                         try { logger.log('[MOVE][SKIP] Refetched older state ignored'); } catch (_) {}
                               }
                             } catch (_) {}
                           })
@@ -861,6 +861,30 @@ const gameNotifInFlightRef = useRef(false);
     useEffect(() => {
         socketRef.current = robustSocket;
     }, [robustSocket]);
+
+    // Real-time DB subscription (low-latency, cross-instance)
+    useEffect(() => {
+      if (!id) return;
+      const unsubscribe = base44.entities.Game.subscribe((event) => {
+        try {
+          if (!event?.id || event.id !== id) return;
+          const g = event.data;
+          if (!g) return;
+          const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+          const curr = lastAppliedMoveCountRef.current || 0;
+          const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
+          const appliedTs = lastAppliedAtRef.current || 0;
+          if (newLen > curr || (newLen === curr && gTs >= appliedTs)) {
+            setGame(prev => ({ ...(prev||{}), ...g }));
+            lastAppliedMoveCountRef.current = Math.max(curr, newLen);
+            try { logger.log('[MOVE][ENTITY] Applied'); } catch (_) {}
+          } else {
+            try { logger.log('[MOVE][SKIP][ENTITY] Older ignored'); } catch (_) {}
+          }
+        } catch(_) {}
+      });
+      return () => { try { unsubscribe && unsubscribe(); } catch(_) {} };
+    }, [id]);
 
     // Listen for cross-channel game notifications (fallback when WS fanout used sendNotification)
     useEffect(() => {
@@ -2026,14 +2050,16 @@ const gameNotifInFlightRef = useRef(false);
             socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateDataWithId }));
         }
 
-        // Explicit backend broadcast to ensure delivery
-        base44.functions.invoke('gameSocket', { 
-            gameId: game.id, 
-            type: 'GAME_UPDATE', 
-            payload: updateDataWithId 
-        })
-        .then(() => logger.log('[MOVE][BROADCAST] Via gameSocket function success', updateDataWithId))
-        .catch((e) => logger.warn('[MOVE][BROADCAST] error', e?.response?.data || e?.message || e));
+        // Backend broadcast only if WS not connected (avoid cold-start lag)
+        if (!wsConnected) {
+          base44.functions.invoke('gameSocket', { 
+              gameId: game.id, 
+              type: 'GAME_UPDATE', 
+              payload: updateDataWithId 
+          })
+          .then(() => logger.log('[MOVE][BROADCAST] Via function (fallback) success', updateDataWithId))
+          .catch((e) => logger.warn('[MOVE][BROADCAST] fallback error', e?.response?.data || e?.message || e));
+        }
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {
