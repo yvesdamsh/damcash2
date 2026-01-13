@@ -51,6 +51,8 @@ export function RealTimeProvider({ children }) {
                 ));
 
             if (isInvitation) {
+                // Do not show a copy to the sender
+                try { if (data.senderId && user?.id && data.senderId === user.id) return; } catch (_) {}
                 console.log('[REALTIME] Invitation detected, dispatching event + updating store');
                 const invitationData = {
                   id: data.metadata?.id || data.metadata?.invitation_id || 'live-invite-' + Date.now(),

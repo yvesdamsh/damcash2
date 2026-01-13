@@ -721,7 +721,16 @@ const gameNotifInFlightRef = useRef(false);
                 if (hasMoves && Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen) > incomingMovesLen) {
                     return; // ignore clearly older state
                 }
-                setGame(prev => ({ ...prev, ...payload }));
+                setGame(prev => {
+                  try {
+                    const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
+                    const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
+                    const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
+                    const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
+                    const accept = (nextTs >= prevTs) || (incomingMovesLen >= Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen)) || (nextBoard && nextBoard !== prevBoard);
+                    return accept ? { ...prev, ...payload } : prev;
+                  } catch (_) { return { ...prev, ...payload }; }
+                });
                 if (hasMoves) {
                     const newCount = incomingMovesLen;
                     lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
