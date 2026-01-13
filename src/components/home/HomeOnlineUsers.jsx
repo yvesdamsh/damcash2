@@ -34,8 +34,6 @@ export default function HomeOnlineUsers() {
     fetchInFlightRef.current = true;
     setLoading(true);
     try {
-      const current = meRef.current || me;
-      if (!current) { setUsers([]); return; }
       let list = [];
       try {
         const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
@@ -50,9 +48,10 @@ export default function HomeOnlineUsers() {
       fetchInFlightRef.current = false;
       setLoading(false);
     }
-  }, [cfg.type, me, users]);
+  }, [cfg.type, users]);
 
   React.useEffect(() => {
+    // Try to load current user, but online list no longer depends on it
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
     setTimeout(() => fetchOnline(), 2000);
   }, [cfg.type, fetchOnline]);
@@ -74,27 +73,17 @@ export default function HomeOnlineUsers() {
   };
 
   const rows = (() => {
-    if (!me) return users;
+    if (!me) return users; // do not inject self if me is not known; still allow selection
     const exists = users.find((u) => u.id === me.id);
     if (exists) return users;
-
-    // Only include current user when their preferred/default game matches the current filter
     const pref = String(me?.default_game || me?.preferred_game_type || '').toLowerCase();
     const shouldIncludeMe = pref === cfg.type;
     if (!shouldIncludeMe) return users;
-
-    return [{
-      id: me.id,
-      username: me.username,
-      full_name: me.full_name,
-      email: me.email,
-      avatar_url: me.avatar_url,
-      last_seen: new Date().toISOString(),
-    }, ...users].slice(0, 20);
+    return [{ id: me.id, username: me.username, full_name: me.full_name, email: me.email, avatar_url: me.avatar_url, last_seen: new Date().toISOString() }, ...users].slice(0, 20);
   })();
 
   const openConfig = (u) => {
-    if (!me || (u && me && u.id === me.id)) return;
+    if (me && u && u.id === me.id) return; // allow selection even if me is not loaded yet
     setSelectedUser(u);
     setConfigOpen(true);
   };
