@@ -862,9 +862,10 @@ const gameNotifInFlightRef = useRef(false);
         socketRef.current = robustSocket;
     }, [robustSocket]);
 
-    // Real-time DB subscription (low-latency, cross-instance)
+    // Real-time DB subscription (low-latency, cross-instance) with small join grace
     useEffect(() => {
       if (!id) return;
+      const startAt = Date.now();
       const unsubscribe = base44.entities.Game.subscribe((event) => {
         try {
           if (!event?.id || event.id !== id) return;
@@ -874,7 +875,8 @@ const gameNotifInFlightRef = useRef(false);
           const curr = lastAppliedMoveCountRef.current || 0;
           const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
           const appliedTs = lastAppliedAtRef.current || 0;
-          if (newLen > curr || (newLen === curr && gTs >= appliedTs)) {
+          const withinJoinGrace = (Date.now() - startAt) < 5000;
+          if (newLen > curr || (newLen === curr && (gTs >= appliedTs || withinJoinGrace))) {
             setGame(prev => ({ ...(prev||{}), ...g }));
             lastAppliedMoveCountRef.current = Math.max(curr, newLen);
             try { logger.log('[MOVE][ENTITY] Applied'); } catch (_) {}
@@ -1934,8 +1936,26 @@ const gameNotifInFlightRef = useRef(false);
             lastAppliedBoardStateRef.current = newBoardState;
             lastAppliedAtRef.current = Date.now();
         } catch (_) {}
-        // Optimistic local update first
-        /* duplicate update removed to avoid re-apply (yo-yo) */
+        // Optimistic local update (no moves/time to avoid duplication)
+        setBoard(newBoard);
+        setChessState({ 
+            castlingRights: newCastling, 
+            lastMove: completedMove,
+            halfMoveClock: newHalfMoveClock,
+            positionHistory: newHistory
+        });
+        setGame(prev => ({
+            ...prev,
+            current_turn: nextTurn,
+            status,
+            winner_id: winnerId,
+            board_state: JSON.stringify(newStateObj)
+        }));
+        // Bump local applied count to ignore older echoes
+        try {
+          const curr = (() => { try { const m = game?.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+          lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, curr + 1);
+        } catch (_) {}
 
         // Persist/broadcast in background
         await updateGameOnMove(newStateObj, nextTurn, status, winnerId, {
@@ -2050,16 +2070,14 @@ const gameNotifInFlightRef = useRef(false);
             socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateDataWithId }));
         }
 
-        // Backend broadcast only if WS not connected (avoid cold-start lag)
-        if (!wsConnected) {
-          base44.functions.invoke('gameSocket', { 
-              gameId: game.id, 
-              type: 'GAME_UPDATE', 
-              payload: updateDataWithId 
-          })
-          .then(() => logger.log('[MOVE][BROADCAST] Via function (fallback) success', updateDataWithId))
-          .catch((e) => logger.warn('[MOVE][BROADCAST] fallback error', e?.response?.data || e?.message || e));
-        }
+        // Backend broadcast to ensure cross-instance delivery (in addition to WS)
+        base44.functions.invoke('gameSocket', { 
+            gameId: game.id, 
+            type: 'GAME_UPDATE', 
+            payload: updateDataWithId 
+        })
+        .then(() => logger.log('[MOVE][BROADCAST] Via function success', updateDataWithId))
+        .catch((e) => logger.warn('[MOVE][BROADCAST] function error', e?.response?.data || e?.message || e));
 
                       // Write to DB (authoritative) in background; retry once, then socket fallback
                       base44.entities.Game.update(game.id, updateData).catch(async (e) => {
