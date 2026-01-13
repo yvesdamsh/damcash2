@@ -730,6 +730,10 @@ const gameNotifInFlightRef = useRef(false);
                              reconnectInterval: 1000,
                              reconnectAttempts: 50,
                              heartbeatInterval: 10000,
+                            onOpen: () => {
+                              try { wsLastReceivedRef.current = Date.now(); } catch(_) {}
+                              try { safeFetchGame()?.then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }); } catch(_) {}
+                            },
                             onMessage: (event, data) => {
             try { wsLastReceivedRef.current = Date.now(); } catch (_) {}
             if (!data) return;
