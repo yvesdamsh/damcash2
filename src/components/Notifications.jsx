@@ -99,17 +99,15 @@ export default function Notifications() {
       return () => clearInterval(pollInterval);
     }, [userId]);
 
-    // Sync from realtime store, restricted to allowed types
+    // Sync only direct messages from realtime store (avoid duplicate live invites; invites trigger a DB reload via event)
     useEffect(() => {
-        const normalized = normalizeList(liveNotifications || []);
-        // If an invite arrives live, merge it into existing list instead of overwriting (prevents flicker)
+        const liveMsgs = (liveNotifications || []).filter(n => n && n.type === 'message');
         setNotifications(prev => {
             const byId = new Map(prev.map(n => [n.id, n]));
-            normalized.forEach(n => byId.set(n.id, n));
+            liveMsgs.forEach(n => byId.set(n.id, n));
             return Array.from(byId.values());
         });
-        const live = (normalized || []).filter(n => !n.read).length;
-        setUnreadCount(live);
+        // unread count recalculated from merged list in reloads; keep as-is here
     }, [liveNotifications]);
 
     useEffect(() => {
@@ -334,7 +332,7 @@ export default function Notifications() {
                                             )}
 
                                             <span className="text-[10px] text-gray-400 mt-2 block">
-                                                {formatRelative(notification.created_date)}
+                                                Reçue · {formatRelative(notification.created_date)}
                                             </span>
                                         </div>
                                         {!notification.read && (

@@ -70,7 +70,7 @@ export function RealTimeProvider({ children }) {
                 // 1) Push into in-memory notifications store with defaults
                 setNotifications(prev => [
                     {
-                        id: 'live-invite-' + Date.now(),
+                        id: invitationData.id || ('live-invite-' + Date.now()),
                         // Force invite type to ensure UI shows instantly even if backend sends a generic type
                         type: 'game_invite',
                         title: inviteTitle,
