@@ -1878,18 +1878,7 @@ const gameNotifInFlightRef = useRef(false);
             lastAppliedAtRef.current = Date.now();
         } catch (_) {}
         // Optimistic local update first
-        setBoard(newBoard);
-        setGame(prev => ({ 
-            ...prev, 
-            current_turn: nextTurn, 
-            status, 
-            winner_id: winnerId,
-            board_state: JSON.stringify(newStateObj)
-        }));
-        setChessState(newStateObj);
-        setSelectedSquare(null);
-        setValidMoves([]);
-        setPromotionPending(null);
+        /* duplicate update removed to avoid re-apply (yo-yo) */
 
         // Persist/broadcast in background
         await updateGameOnMove(newStateObj, nextTurn, status, winnerId, {
