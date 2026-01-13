@@ -1680,6 +1680,16 @@ const gameNotifInFlightRef = useRef(false);
         } else {
             // Normal Online Game
             const getNum = (r, c) => r * 5 + Math.floor(c / 2) + 1;
+            // Optimistic local update first
+            setBoard(newBoard);
+            setGame(prev => ({ 
+                ...prev, 
+                current_turn: nextTurn, 
+                status, 
+                winner_id: winnerId,
+                board_state: JSON.stringify(newBoard)
+            }));
+            // Persist/broadcast in background
             await updateGameOnMove(newBoard, nextTurn, status, winnerId, { 
                 type: 'checkers', from: move.from, to: move.to, 
                 captured: !!move.captured, board: JSON.stringify(newBoard),
@@ -1693,15 +1703,6 @@ const gameNotifInFlightRef = useRef(false);
                 });
                 base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
             }
-    
-            setBoard(newBoard);
-            setGame(prev => ({ 
-                ...prev, 
-                current_turn: nextTurn, 
-                status, 
-                winner_id: winnerId,
-                board_state: JSON.stringify(newBoard)
-            }));
         }
 
         if (mustContinue) {
@@ -1838,6 +1839,22 @@ const gameNotifInFlightRef = useRef(false);
             positionHistory: newHistory
         };
 
+        // Optimistic local update first
+        setBoard(newBoard);
+        setGame(prev => ({ 
+            ...prev, 
+            current_turn: nextTurn, 
+            status, 
+            winner_id: winnerId,
+            board_state: JSON.stringify(newStateObj)
+        }));
+        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch (_) {}
+        setChessState(newStateObj);
+        setSelectedSquare(null);
+        setValidMoves([]);
+        setPromotionPending(null);
+
+        // Persist/broadcast in background
         await updateGameOnMove(newStateObj, nextTurn, status, winnerId, {
             type: 'chess', from: completedMove.from, to: completedMove.to,
             piece: movedPiece, captured: !!completedMove.captured,

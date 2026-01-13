@@ -193,7 +193,7 @@ export default function FriendsManager() {
     };
 
     const handleSendChallenge = async () => {
-        if (!challengeTarget) return;
+        if (!challengeTarget || challengeTarget.id === currentUser?.id) return;
         
         try {
             const code = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -223,23 +223,28 @@ export default function FriendsManager() {
                 series_length: 1
             });
 
-            await base44.entities.Invitation.create({
+            const invitation = await base44.entities.Invitation.create({
                 from_user_id: currentUser.id,
                 from_user_name: currentUser.username || 'Ami',
+                to_user_id: challengeTarget.id,
                 to_user_email: challengeTarget.email,
                 game_type: challengeConfig.gameType,
                 game_id: game.id,
                 status: 'pending'
             });
 
-            await base44.functions.invoke('sendNotification', {
-                recipient_id: challengeTarget.id,
-                type: "game_invite",
-                title: "Défi reçu",
-                message: `${currentUser.username || 'Ami'} vous défie aux ${challengeConfig.gameType === 'chess' ? 'Échecs' : 'Dames'} (${challengeConfig.time}+${challengeConfig.increment})`,
-                link: `/Game?id=${game.id}&join=player`,
-                metadata: { gameId: game.id, kind: 'player' }
-            });
+            if (challengeTarget.id !== currentUser.id) {
+                await base44.functions.invoke('sendNotification', {
+                    recipient_id: challengeTarget.id,
+                    type: "game_invite",
+                    title: "Défi reçu",
+                    message: `${currentUser.username || 'Ami'} vous défie aux ${challengeConfig.gameType === 'chess' ? 'Échecs' : 'Dames'} (${challengeConfig.time}+${challengeConfig.increment})`,
+                    link: `/Game?id=${game.id}&join=player`,
+                    sender_id: currentUser.id,
+                    metadata: { gameId: game.id, invitationId: invitation.id, game_type: challengeConfig.gameType, time: challengeConfig.time, increment: challengeConfig.increment, kind: 'player' }
+                });
+                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: { id: invitation.id, game_id: game.id, to_user_id: challengeTarget.id, from_user_id: currentUser.id } })); } catch (_) {}
+            }
 
             toast.success(`Défi envoyé à ${challengeTarget.username}`);
             navigate(`/Game?id=${game.id}`);

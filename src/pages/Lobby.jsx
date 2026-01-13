@@ -205,27 +205,37 @@ export default function Lobby() {
                 current_turn: 'white',
                 board_state: initialBoard,
                 is_private: true,
-                access_code: Math.random().toString(36).substring(2, 8).toUpperCase()
+                access_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+                initial_time: 10,
+                increment: 0,
+                white_seconds_left: 10 * 60,
+                black_seconds_left: 10 * 60
             });
 
-            // Send Invite
-            await base44.entities.Invitation.create({
+            // Send Invite (include to_user_id for instant delivery)
+            const invitation = await base44.entities.Invitation.create({
                 from_user_id: currentUser.id,
                 from_user_name: currentUser.full_name || currentUser.email,
+                to_user_id: opponent.id,
                 to_user_email: opponent.email,
                 game_type: type,
                 game_id: newGame.id,
                 status: 'pending'
             });
 
-            // Send Real-time Notification
-            await base44.functions.invoke('sendNotification', {
-                recipient_id: opponent.id,
-                type: "game",
-                title: t('lobby.challenge_received'),
-                message: `${currentUser.full_name || t('common.player')} ${t('lobby.challenge_msg')} ${type === 'chess' ? t('game.chess') : t('game.checkers')}.`,
-                link: `/Game?id=${newGame.id}`
-            });
+            // Send Real-time Notification (instant and categorized)
+            if (opponent.id !== currentUser.id) {
+                await base44.functions.invoke('sendNotification', {
+                    recipient_id: opponent.id,
+                    type: "game_invite",
+                    title: t('lobby.challenge_received'),
+                    message: `${currentUser.full_name || t('common.player')} ${t('lobby.challenge_msg')} ${type === 'chess' ? t('game.chess') : t('game.checkers')} (10+0).`,
+                    link: `/Game?id=${newGame.id}&join=player`,
+                    sender_id: currentUser.id,
+                    metadata: { gameId: newGame.id, invitationId: invitation.id, game_type: type, time: 10, increment: 0, kind: 'player' }
+                });
+                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: { id: invitation.id, game_id: newGame.id, to_user_id: opponent.id, from_user_id: currentUser.id } })); } catch (_) {}
+            }
 
             toast.success(`${t('lobby.challenge_sent')} ${opponent.full_name || t('common.player')} !`);
             navigate(`/Game?id=${newGame.id}`);
