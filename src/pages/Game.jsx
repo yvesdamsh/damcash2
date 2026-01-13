@@ -290,7 +290,7 @@ const gameNotifInFlightRef = useRef(false);
                 currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
                 lastChessMove = parsed?.lastMove || null;
 
-                if (stateChanged) {
+                if (stateChanged && isNewerOrEqual) {
                     setBoard(currentBoard);
                     setChessState({ 
                         castlingRights: parsed?.castlingRights || {}, 
@@ -315,7 +315,7 @@ const gameNotifInFlightRef = useRef(false);
             try {
                 const parsed = safeJSONParse(game.board_state, []);
                 currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
-                if (stateChanged) {
+                if (stateChanged && isNewerOrEqual) {
                     setBoard(currentBoard);
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
                     lastAppliedAtRef.current = gameTs;
@@ -1932,19 +1932,7 @@ const gameNotifInFlightRef = useRef(false);
             base44.functions.invoke('leagueManager', { action: 'processLeagueMatch', gameId: game.id });
         }
 
-        setBoard(newBoard);
-        setGame(prev => ({ 
-            ...prev, 
-            current_turn: nextTurn, 
-            status, 
-            winner_id: winnerId,
-            board_state: JSON.stringify(newStateObj)
-        }));
-        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch (_) {}
-        setChessState(newStateObj);
-        setSelectedSquare(null);
-        setValidMoves([]);
-        setPromotionPending(null);
+
     };
 
     const handlePromotionSelect = (pieceType) => {
