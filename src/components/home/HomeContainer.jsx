@@ -294,6 +294,28 @@ export default function HomeContainer() {
 
             window.addEventListener('invitation-received', onInv);
 
+            // Realtime subscription to Invitations entity (instant updates)
+            const unsubscribe = base44.entities.Invitation.subscribe((event) => {
+                try {
+                    const inv = event?.data;
+                    if (!inv) return;
+                    const mine = (inv.to_user_id && inv.to_user_id === user.id) || (inv.to_user_email && user.email && inv.to_user_email.toLowerCase() === user.email.toLowerCase());
+                    if (!mine) return;
+                    if (event.type === 'create' || event.type === 'update') {
+                        if (inv.status === 'pending') {
+                            setInvitations((prev) => {
+                                const map = new Map(prev.map(i => [i.id, i]));
+                                map.set(inv.id, inv);
+                                return Array.from(map.values());
+                            });
+                        } else {
+                            setInvitations((prev) => prev.filter(i => i.id !== inv.id));
+                        }
+                    } else if (event.type === 'delete') {
+                        setInvitations((prev) => prev.filter(i => i.id !== inv.id));
+                    }
+                } catch (_) {}
+            });
 
             // Initial load
             refreshInvites();
@@ -303,7 +325,7 @@ export default function HomeContainer() {
 
             return () => {
                 window.removeEventListener('invitation-received', onInv);
-
+                try { unsubscribe && unsubscribe(); } catch (_) {}
                 clearInterval(intervalId);
             };
         }, [user?.id]);

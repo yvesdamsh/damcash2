@@ -579,13 +579,12 @@ const gameNotifInFlightRef = useRef(false);
             if (pausePolling) return; // skip if we just moved locally
             try {
               const updated = await safeFetchGame();
-              if (!updated) { backoffRef.value = Math.min(Math.floor(backoffRef.value * 1.5), 8000); return; }
               if (updated) setGame(updated);
             } catch (e) {}
           };
           window.addEventListener('game-move', handleMove);
           return () => window.removeEventListener('game-move', handleMove);
-        }, [id]);
+        }, [id, pausePolling, safeFetchGame]);
 
     // Preview-only lightweight fallback: if WebSocket is closed in iframe preview, do a rare direct GET.
     useEffect(() => {
@@ -725,9 +724,15 @@ const gameNotifInFlightRef = useRef(false);
                   try {
                     const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                     const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
+                    const appliedTs = lastAppliedAtRef.current || 0;
+                    const appliedCount = lastAppliedMoveCountRef.current || 0;
                     const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
                     const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
-                    const accept = (nextTs >= prevTs) || (incomingMovesLen >= Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen)) || (nextBoard && nextBoard !== prevBoard);
+                    const accept = (
+                      (nextTs >= appliedTs && incomingMovesLen >= appliedCount) ||
+                      (incomingMovesLen > appliedCount) ||
+                      (nextBoard && nextBoard !== prevBoard && nextTs >= appliedTs - 500)
+                    );
                     return accept ? { ...prev, ...payload } : prev;
                   } catch (_) { return { ...prev, ...payload }; }
                 });
