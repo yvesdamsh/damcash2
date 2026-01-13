@@ -1619,6 +1619,13 @@ const gameNotifInFlightRef = useRef(false);
     const executeCheckersMove = async (move) => {
         const { newBoard, promoted } = executeMove(board, [move.from.r, move.from.c], [move.to.r, move.to.c], move.captured);
         
+        // Sync guard: mark new board as applied BEFORE local state updates to avoid yo-yo
+        try {
+            const newBoardState = JSON.stringify(newBoard);
+            lastAppliedBoardStateRef.current = newBoardState;
+            lastAppliedAtRef.current = Date.now();
+        } catch (_) {}
+        
         let mustContinue = false;
         if (move.captured) {
             const { captures } = (await import('@/components/checkersLogic')).getMovesForPiece(newBoard, move.to.r, move.to.c, newBoard[move.to.r][move.to.c], true);
@@ -1839,6 +1846,12 @@ const gameNotifInFlightRef = useRef(false);
             positionHistory: newHistory
         };
 
+        // Sync guard: mark new board as applied BEFORE local state updates to avoid yo-yo
+        try {
+            const newBoardState = JSON.stringify(newStateObj);
+            lastAppliedBoardStateRef.current = newBoardState;
+            lastAppliedAtRef.current = Date.now();
+        } catch (_) {}
         // Optimistic local update first
         setBoard(newBoard);
         setGame(prev => ({ 
@@ -1848,7 +1861,6 @@ const gameNotifInFlightRef = useRef(false);
             winner_id: winnerId,
             board_state: JSON.stringify(newStateObj)
         }));
-        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch (_) {}
         setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
