@@ -130,18 +130,45 @@ export default function Notifications() {
       };
     }, []);
 
+    // Auto-clean read notifications older than 7 days (hourly)
+    useEffect(() => {
+      if (!userId) return;
+      const cleanupOldNotifications = async () => {
+        try {
+          const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+          const oldNotifications = await base44.entities.Notification.filter({
+            recipient_id: userId,
+            read: true,
+            created_date: { $lt: sevenDaysAgo }
+          });
+          if (Array.isArray(oldNotifications) && oldNotifications.length > 0) {
+            await Promise.all(oldNotifications.map(n => base44.entities.Notification.delete(n.id).catch(()=>{})));
+          }
+        } catch (_) {}
+      };
+      cleanupOldNotifications();
+      const iv = setInterval(cleanupOldNotifications, 60 * 60 * 1000);
+      return () => clearInterval(iv);
+    }, [userId]);
+
     const markAsRead = async (id) => {
-        try { await base44.entities.Notification.update(id, { read: true }); } catch (e) { /* ignore */ }
-        setNotifications(prev => prev.filter(n => n.id !== id || n.type !== 'game_invite')); // remove read invites entirely
+        try { await base44.entities.Notification.update(id, { read: true }); } catch (_) {}
+        // Remove immediately from UI (invites and messages)
+        setNotifications(prev => prev.filter(n => n.id !== id));
         setUnreadCount(prev => Math.max(0, prev - 1));
+        // Background delete to keep DB clean
+        setTimeout(() => { try { base44.entities.Notification.delete(id).catch(()=>{}); } catch(_) {} }, 2000);
     };
 
     const markAllAsRead = async () => {
         try {
             const unread = notifications.filter(n => !n.read);
             await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { read: true })));
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            // Clear UI immediately
+            setNotifications([]);
             setUnreadCount(0);
+            // Background cleanup
+            setTimeout(() => { try { Promise.all(unread.map(n => base44.entities.Notification.delete(n.id).catch(()=>{}))); } catch(_) {} }, 2000);
         } catch (e) {
             console.error("Error marking all as read", e);
         }

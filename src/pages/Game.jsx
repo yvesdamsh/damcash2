@@ -43,6 +43,31 @@ import ConnectionBadge from '@/components/game/ConnectionBadge';
 import ResignConfirmDialog from '@/components/game/ResignConfirmDialog';
 import SeriesScore from '@/components/game/SeriesScore';
 
+// Robust board comparison to avoid JSON string formatting false positives
+const boardsAreEqual = (board1, board2) => {
+  if (!board1 || !board2) return board1 === board2;
+  try {
+    const b1 = typeof board1 === 'string' ? JSON.parse(board1) : board1;
+    const b2 = typeof board2 === 'string' ? JSON.parse(board2) : board2;
+    const arr1 = Array.isArray(b1) ? b1 : (b1?.board || []);
+    const arr2 = Array.isArray(b2) ? b2 : (b2?.board || []);
+    if (!Array.isArray(arr1) || !Array.isArray(arr2)) return false;
+    if (arr1.length !== arr2.length) return false;
+    for (let i = 0; i < arr1.length; i++) {
+      const r1 = arr1[i]; const r2 = arr2[i];
+      if (!Array.isArray(r1) || !Array.isArray(r2) || r1.length !== r2.length) return false;
+      for (let j = 0; j < r1.length; j++) { if (r1[j] !== r2[j]) return false; }
+    }
+    return true;
+  } catch (e) {
+    try {
+      const s1 = typeof board1 === 'string' ? board1 : JSON.stringify(board1);
+      const s2 = typeof board2 === 'string' ? board2 : JSON.stringify(board2);
+      return s1 === s2;
+    } catch { return false; }
+  }
+};
+
 export default function Game() {
     const { t } = useLanguage();
     const [game, setGame] = useState(null);
@@ -256,7 +281,7 @@ const gameNotifInFlightRef = useRef(false);
 
         const currentBoardStateRaw = typeof game.board_state === 'string' ? game.board_state : JSON.stringify(game.board_state || '');
         const gameTs = new Date(game.updated_date || game.last_move_at || Date.now()).getTime();
-        const stateChanged = currentBoardStateRaw !== (lastAppliedBoardStateRef.current || null);
+        const stateChanged = !boardsAreEqual(currentBoardStateRaw, (lastAppliedBoardStateRef.current || null));
         const isNewerOrEqual = gameTs >= (lastAppliedAtRef.current || 0);
 
         if (game.game_type === 'chess') {
