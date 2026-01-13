@@ -775,9 +775,8 @@ const gameNotifInFlightRef = useRef(false);
                     const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
                     const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
                     const accept = (
-                      (nextTs >= appliedTs && incomingMovesLen >= appliedCount) ||
                       (incomingMovesLen > appliedCount) ||
-                      (nextBoard && nextBoard !== prevBoard && nextTs >= appliedTs - 500)
+                      (incomingMovesLen === appliedCount && nextTs >= appliedTs)
                     );
                     return accept ? { ...prev, ...payload } : prev;
                   } catch (_) { return { ...prev, ...payload }; }
@@ -794,7 +793,20 @@ const gameNotifInFlightRef = useRef(false);
                     if (now - (wsRefetchAtRef.current || 0) > 500) {
                         wsRefetchAtRef.current = now;
                         safeFetchGame()
-                          ?.then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); })
+                          ?.then(g => {
+                            if (!g) return;
+                            try {
+                              const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
+                              const curr = lastAppliedMoveCountRef.current || 0;
+                              const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
+                              const appliedTs = lastAppliedAtRef.current || 0;
+                              if (newLen > curr || (newLen === curr && gTs >= appliedTs)) {
+                                setGame(prev => ({ ...(prev||{}), ...g }));
+                              } else {
+                                try { logger.log('[MOVE][SKIP] Refetched older state ignored'); } catch (_) {}
+                              }
+                            } catch (_) {}
+                          })
                           .catch(() => {});
                     }
                 }
@@ -1992,6 +2004,8 @@ const gameNotifInFlightRef = useRef(false);
           lastAppliedAtRef.current = new Date(updateData.last_move_at || Date.now()).getTime();
         } catch (_) {}
 
+        // Bump applied move count immediately to ignore older echoes
+        try { lastAppliedMoveCountRef.current = Math.max((lastAppliedMoveCountRef.current || 0), (currentMoves.length + 1)); } catch (_) {}
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
