@@ -2329,17 +2329,19 @@ const gameNotifInFlightRef = useRef(false);
 
     const inviteSpectator = async (userToInvite) => {
         try {
-             await base44.entities.Notification.create({
+            const title = t('game.spectate_invite_title');
+            const message = t('game.spectate_invite_msg', { 
+                name: currentUser.username || t('common.anonymous'), 
+                game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') 
+            });
+            await base44.functions.invoke('sendNotification', {
                 recipient_id: userToInvite.id,
-                type: "info",
-                title: t('game.spectate_invite_title'),
-                message: t('game.spectate_invite_msg', { 
-                    name: currentUser.username || t('common.anonymous'), 
-                    game: game.game_type === 'chess' ? t('game.chess') : t('game.checkers') 
-                }),
+                type: 'game_invite',
+                title,
+                message,
                 link: `/Game?id=${game.id}`,
-                metadata: { game_id: game.id, kind: 'spectator' }
-                });
+                metadata: { game_id: game.id, kind: 'spectator', to_user_id: userToInvite.id, from_user_id: currentUser.id }
+            });
             toast.success(t('game.invite_sent', { name: (userToInvite.username || t('common.player') || 'Joueur') }) || `Invitation envoyée à ${(userToInvite.username || t('common.player') || 'Joueur')}`);
             setInviteOpen(false);
         } catch (e) {
