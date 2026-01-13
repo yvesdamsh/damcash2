@@ -68,6 +68,24 @@ const boardsAreEqual = (board1, board2) => {
   }
 };
 
+// Global in-memory user cache to avoid repeated User.get() and 429s
+const userCache = new Map();
+const USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+async function getCachedUser(userId) {
+  const now = Date.now();
+  const cached = userCache.get(userId);
+  if (cached && (now - cached.timestamp) < USER_CACHE_TTL) return cached.user;
+  try {
+    const user = await base44.entities.User.get(userId);
+    userCache.set(userId, { user, timestamp: now });
+    return user;
+  } catch (e) {
+    if (cached) { try { console.warn('[USER] Using expired cache due to rate limit'); } catch(_) {}
+      return cached.user; }
+    return null;
+  }
+}
+
 export default function Game() {
     const { t } = useLanguage();
     const [game, setGame] = useState(null);
@@ -465,27 +483,26 @@ const gameNotifInFlightRef = useRef(false);
             }
         }, [isPreview, isAuthed, id]);
 
-         // Fetch Players Info (ELO) - Refetch on game status change (for dynamic Elo updates)
+         // Fetch Players Info (ELO) - cached to avoid 429s
     useEffect(() => {
-        if (game) {
-            const fetchPlayers = async () => {
-                try {
-                    const safeGet = async (uid) => {
-                        if (!uid || uid === 'ai' || (typeof uid === 'string' && uid.startsWith('guest'))) return null;
-                        try { return await base44.entities.User.get(uid); } catch { return null; }
-                    };
-                    const [white, black] = await Promise.all([
-                        safeGet(game?.white_player_id),
-                        safeGet(game?.black_player_id)
-                    ]);
-                    setPlayersInfo({ white, black });
-                } catch (e) {
-                    logger.error("Error fetching players", e);
-                }
-            };
-            fetchPlayers();
-        }
-    }, [game?.white_player_id, game?.black_player_id, game?.status]);
+        if (!game) return;
+        const fetchPlayers = async () => {
+            try {
+                const get = async (uid) => {
+                    if (!uid || uid === 'ai' || (typeof uid === 'string' && uid.startsWith('guest'))) return null;
+                    return await getCachedUser(uid);
+                };
+                const [white, black] = await Promise.all([
+                    get(game?.white_player_id),
+                    get(game?.black_player_id)
+                ]);
+                setPlayersInfo({ white, black });
+            } catch (e) {
+                logger.warn('[PLAYERS] fetch skipped/error', e);
+            }
+        };
+        fetchPlayers();
+    }, [game?.white_player_id, game?.black_player_id]);
 
     // One-shot initial load for online games to avoid infinite spinner until first WS message
     useEffect(() => {
