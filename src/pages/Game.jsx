@@ -743,6 +743,7 @@ const gameNotifInFlightRef = useRef(false);
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
                 if (hasMoves && Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen) > incomingMovesLen) {
+                    try { logger.log('[MOVE][SKIP] Duplicate/older update ignored', { incomingMovesLen, currentMovesLen, appliedCount: lastAppliedMoveCountRef.current, updated: payload?.updated_date }); } catch (_) {}
                     return; // ignore clearly older state
                 }
                 setGame(prev => {
