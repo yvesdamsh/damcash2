@@ -259,7 +259,7 @@ export default function HomeContainer() {
             const refreshInvites = async () => {
                 console.log('[HOME] Refreshing invitations for:', user.email);
                 const now = Date.now();
-                if (invInFlightRef.current || now < invNextAllowedRef.current) return;
+                if (invInFlightRef.current || now < invNextAllowedRef.current) { console.log('[HOME] Refresh skipped (throttled)'); return; }
                 invInFlightRef.current = true;
                 try {
                     const pendingById = await base44.entities.Invitation.filter({ 
@@ -283,7 +283,7 @@ export default function HomeContainer() {
                     console.error('[HOME] Error loading invitations:', e);
                 } finally {
                     invInFlightRef.current = false;
-                    invNextAllowedRef.current = Date.now() + 10000;
+                    invNextAllowedRef.current = Date.now() + 30000;
                 }
             };
 
@@ -321,7 +321,7 @@ export default function HomeContainer() {
             refreshInvites();
 
             // Fallback polling as safety net when WS fails
-            const intervalId = setInterval(refreshInvites, 30000);
+            const intervalId = setInterval(refreshInvites, 60000);
 
             return () => {
                 window.removeEventListener('invitation-received', onInv);

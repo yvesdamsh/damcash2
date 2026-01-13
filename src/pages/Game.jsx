@@ -70,6 +70,7 @@ const boardsAreEqual = (board1, board2) => {
 
 // Global in-memory user cache to avoid repeated User.get() and 429s
 const userCache = new Map();
+try { window.userCache = userCache; } catch (_) {}
 const USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 async function getCachedUser(userId) {
   const now = Date.now();
