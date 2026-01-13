@@ -87,6 +87,8 @@ async function getCachedUser(userId) {
   }
 }
 
+try { window.boardsAreEqual = boardsAreEqual; } catch (_) {}
+
 export default function Game() {
     const { t } = useLanguage();
     const [game, setGame] = useState(null);
