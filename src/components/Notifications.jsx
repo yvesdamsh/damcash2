@@ -93,7 +93,7 @@ export default function Notifications() {
       // Polling plus doux et uniquement quand l’onglet est visible
       const pollInterval = setInterval(() => {
         if (!document.hidden) reloadUnread();
-      }, 60000);
+      }, 5000);
       
       // Cleanup
       return () => clearInterval(pollInterval);
