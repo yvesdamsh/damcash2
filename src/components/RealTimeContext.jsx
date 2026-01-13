@@ -7,6 +7,10 @@ import { useNavigate } from 'react-router-dom';
 const RealTimeContext = createContext(null);
 
 export function RealTimeProvider({ children }) {
+    // helper to compute relative time labels if needed elsewhere
+    const rel = (iso) => {
+        try { const d = new Date(iso); const mins = Math.floor((Date.now()-d.getTime())/60000); return mins <= 0 ? 'à l’instant' : `il y a ${mins} min`; } catch { return ''; }
+    };
     const [user, setUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [chatByGame, setChatByGame] = useState({});
