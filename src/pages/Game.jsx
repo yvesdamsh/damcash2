@@ -2080,24 +2080,22 @@ const gameNotifInFlightRef = useRef(false);
           .catch((e) => logger.warn('[MOVE][BROADCAST] fallback error', e?.response?.data || e?.message || e));
         }
 
-                      // Persist only if WS not connected; otherwise server WS persists
-                      if (!wsConnected) {
-                        base44.entities.Game.update(game.id, updateData).catch(async (e) => {
-                            logger.error("Move save error", e);
-                            try {
-                                await base44.entities.Game.update(game.id, updateData);
-                                logger.log("Move save retry succeeded");
-                            } catch (retryError) {
-                                logger.error("Move save retry failed", retryError);
-                                if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                                    socketRef.current.send(JSON.stringify({
-                                        type: 'FORCE_SAVE_MOVE',
-                                        payload: { gameId: game.id, updateData }
-                                    }));
-                                }
-                            }
-                        });
-                      }
+                      // Persist to DB always to ensure cross-client delivery and avoid missed moves
+                      base44.entities.Game.update(game.id, updateData).catch(async (e) => {
+                          logger.error("Move save error", e);
+                          try {
+                              await base44.entities.Game.update(game.id, updateData);
+                              logger.log("Move save retry succeeded");
+                          } catch (retryError) {
+                              logger.error("Move save retry failed", retryError);
+                              if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                                  socketRef.current.send(JSON.stringify({
+                                      type: 'FORCE_SAVE_MOVE',
+                                      payload: { gameId: game.id, updateData }
+                                  }));
+                              }
+                          }
+                      });
                       };
 
         // Manual join helper for spectators
