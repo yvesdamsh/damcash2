@@ -247,6 +247,7 @@ const gameNotifInFlightRef = useRef(false);
     const prevGameRef = useRef();
     const moveTimingsRef = useRef(new Map());
     const lastAppliedMoveCountRef = useRef(0);
+  const isUpdatingRef = useRef(false);
     const wsLastReceivedRef = useRef(Date.now());
     const wsRefetchAtRef = useRef(0);
     const gameFetchInFlightRef = useRef(null);
@@ -578,11 +579,10 @@ const gameNotifInFlightRef = useRef(false);
             if (!id) return false;
             if (typeof document !== 'undefined' && document.hidden) return false;
             if (pausePolling) return false;
+            if (isUpdatingRef.current) return false;
             const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-            // Poll when preview, or socket not open, or WS has been silent >30s
-            const lastWs = wsLastReceivedRef.current || 0;
-            const silent = (Date.now() - lastWs) > 30000;
-            return isPreview || !wsOpen || silent;
+            // WebSocket is the single source of truth; poll only if WS not open or in preview
+            return isPreview || !wsOpen;
           };
 
           const loop = async () => {
@@ -729,7 +729,14 @@ const gameNotifInFlightRef = useRef(false);
                              heartbeatInterval: 10000,
                             onOpen: () => {
                               try { wsLastReceivedRef.current = Date.now(); } catch(_) {}
-                              try { safeFetchGame()?.then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }); } catch(_) {}
+                              // Request current state immediately via WebSocket (single source)
+                              setTimeout(() => {
+                                try {
+                                  if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                                    socketRef.current.send(JSON.stringify({ type: 'STATE_REQUEST', payload: { gameId: id } }));
+                                  }
+                                } catch (_) {}
+                              }, 50);
                             },
                             onMessage: (event, data) => {
             try { wsLastReceivedRef.current = Date.now(); } catch (_) {}
@@ -756,6 +763,7 @@ const gameNotifInFlightRef = useRef(false);
                         return lastAppliedMoveCountRef.current || 0;
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
+                const incomingMoveCount = typeof payload.move_count === 'number' ? payload.move_count : incomingMovesLen;
                 const currentMovesLen = (() => {
                     try {
                         if (Array.isArray(game?.moves)) return game.moves.length;
@@ -763,32 +771,30 @@ const gameNotifInFlightRef = useRef(false);
                         return lastAppliedMoveCountRef.current || 0;
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
-                if (hasMoves && Math.max(lastAppliedMoveCountRef.current || 0, currentMovesLen) > incomingMovesLen) {
-                    try { logger.log('[MOVE][SKIP] Duplicate/older update ignored', { incomingMovesLen, currentMovesLen, appliedCount: lastAppliedMoveCountRef.current, updated: payload?.updated_date }); } catch (_) {}
-                    return; // ignore clearly older state
+                if (hasMoves) {
+                  const localCount = lastAppliedMoveCountRef.current || 0;
+                  if (incomingMoveCount <= localCount) {
+                    try { logger.log('[MOVE][SKIP] Stale/duplicate by move_count', { incomingMoveCount, localCount }); } catch (_) {}
+                    return;
+                  }
                 }
                 setGame(prev => {
                   try {
-                    const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
-                    const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
-                    const appliedTs = lastAppliedAtRef.current || 0;
                     const appliedCount = lastAppliedMoveCountRef.current || 0;
-                    const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
-                    const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
-                    const turnChanged = payload?.current_turn && payload.current_turn !== prev?.current_turn;
-                    // Strict anti-yoyo: accept only strictly newer states (more moves)
-                    const accept = (incomingMovesLen > appliedCount);
+                    // Strict anti-yoyo: accept only strictly newer states (by move_count)
+                    const accept = (incomingMoveCount > appliedCount);
                     return accept ? { ...prev, ...payload } : prev;
                   } catch (_) { return { ...prev, ...payload }; }
                 });
+                isUpdatingRef.current = false;
                 if (hasMoves) {
-                    const newCount = incomingMovesLen;
+                    const newCount = incomingMoveCount;
                     lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
                 const missingBoardOrMoves = !Object.prototype.hasOwnProperty.call(payload, 'board_state') || !hasMoves;
-                if (missingBoardOrMoves && id) {
+                if (missingBoardOrMoves && id && (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)) {
                     const now = Date.now();
                     if (now - (wsRefetchAtRef.current || 0) > 500) {
                         wsRefetchAtRef.current = now;
@@ -815,6 +821,7 @@ const gameNotifInFlightRef = useRef(false);
                 }
             } else if (data.type === 'MOVE_ACK' && data.moveId) {
                 pendingMovesRef.current.delete(data.moveId);
+                isUpdatingRef.current = false;
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'DRAW_OFFER') {
@@ -871,6 +878,7 @@ const gameNotifInFlightRef = useRef(false);
           if (!event?.id || event.id !== id) return;
           const g = event.data;
           if (!g) return;
+          if (isUpdatingRef.current) { try { logger.log('[ENTITY][SKIP] isUpdating'); } catch(_) {} return; }
           const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
           const curr = lastAppliedMoveCountRef.current || 0;
           const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
@@ -2018,13 +2026,16 @@ const gameNotifInFlightRef = useRef(false);
         }
 
         // Calculate time deduction
+        const nextCount = Math.max(lastAppliedMoveCountRef.current || 0, currentMoves.length) + 1;
         let updateData = {
             board_state: JSON.stringify(boardStateObj),
             current_turn: nextTurn,
             status: normalizedStatus,
             winner_id: winnerId,
             moves: JSON.stringify([...currentMoves, moveData]),
-            last_move_at: now
+            last_move_at: now,
+            move_count: nextCount,
+            client_ts: now
         };
 
         // Increment Logic
@@ -2050,12 +2061,16 @@ const gameNotifInFlightRef = useRef(false);
 
         // Bump applied move count immediately to ignore older echoes
         try { lastAppliedMoveCountRef.current = Math.max((lastAppliedMoveCountRef.current || 0), (currentMoves.length + 1)); } catch (_) {}
+        // Mark updating to disable competing sources
+        isUpdatingRef.current = true;
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
         // Removed: no immediate refetch after optimistic update to avoid yoyo
         // Resume polling after a short settle time to avoid yo-yo
         setTimeout(() => setPausePolling(false), 1000);
+        // Failsafe: clear updating flag if no ACK arrives
+        setTimeout(() => { isUpdatingRef.current = false; }, 1500);
 
         if (game.id === 'local-ai') return;
 
@@ -2080,22 +2095,24 @@ const gameNotifInFlightRef = useRef(false);
           .catch((e) => logger.warn('[MOVE][BROADCAST] fallback error', e?.response?.data || e?.message || e));
         }
 
-                      // Persist to DB always to ensure cross-client delivery and avoid missed moves
-                      base44.entities.Game.update(game.id, updateData).catch(async (e) => {
-                          logger.error("Move save error", e);
-                          try {
-                              await base44.entities.Game.update(game.id, updateData);
-                              logger.log("Move save retry succeeded");
-                          } catch (retryError) {
-                              logger.error("Move save retry failed", retryError);
-                              if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                                  socketRef.current.send(JSON.stringify({
-                                      type: 'FORCE_SAVE_MOVE',
-                                      payload: { gameId: game.id, updateData }
-                                  }));
-                              }
-                          }
-                      });
+                      // Persist only if WS not connected; otherwise server WS persists
+                      if (!wsConnected) {
+                        base44.entities.Game.update(game.id, updateData).catch(async (e) => {
+                            logger.error("Move save error", e);
+                            try {
+                                await base44.entities.Game.update(game.id, updateData);
+                                logger.log("Move save retry succeeded");
+                            } catch (retryError) {
+                                logger.error("Move save retry failed", retryError);
+                                if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                                    socketRef.current.send(JSON.stringify({
+                                        type: 'FORCE_SAVE_MOVE',
+                                        payload: { gameId: game.id, updateData }
+                                    }));
+                                }
+                            }
+                        });
+                      }
                       };
 
         // Manual join helper for spectators
