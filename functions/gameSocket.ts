@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
     return response;
 });
 
-function broadcast(gameId, message, senderSocket = null) {
+function broadcast(gameId, message, sender = null) {
     const gameConns = connections.get(gameId);
     if (gameConns) {
         const msgString = JSON.stringify(message);
