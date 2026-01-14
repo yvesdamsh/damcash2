@@ -33,6 +33,17 @@ Deno.serve(async (req) => {
                     gameUpdates.postMessage({ gameId, type });
                     broadcast(gameId, { type }, null);
                 }
+
+                // Persist state on HTTP fallback too so all instances and subscribers receive updates
+                try {
+                    if (type === 'GAME_UPDATE' && payload) {
+                        const base44 = createClientFromRequest(req);
+                        await base44.asServiceRole.entities.Game.update(gameId, payload);
+                    }
+                } catch (e) {
+                    console.error('HTTP fallback persist failed', e);
+                }
+
                 // If coming via HTTP, also trigger finish notifications (resign/draw) like WS path
                 try {
                     if (type === 'GAME_UPDATE' && payload?.status === 'finished') {
