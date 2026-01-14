@@ -800,11 +800,11 @@ const gameNotifInFlightRef = useRef(false);
                               const curr = lastAppliedMoveCountRef.current || 0;
                               const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
                               const appliedTs = lastAppliedAtRef.current || 0;
-                              if (newLen > curr || (newLen === curr && gTs >= appliedTs)) {
-                                setGame(prev => ({ ...(prev||{}), ...g }));
-                              } else {
-                                         try { logger.log('[MOVE][SKIP] Refetched older state ignored'); } catch (_) {}
-                              }
+                              if (newLen > curr) {
+                                 setGame(prev => ({ ...(prev||{}), ...g }));
+                               } else {
+                                 try { logger.log('[MOVE][SKIP] Refetched older/equal state ignored'); } catch (_) {}
+                               }
                             } catch (_) {}
                           })
                           .catch(() => {});
@@ -848,7 +848,7 @@ const gameNotifInFlightRef = useRef(false);
                   try {
                     const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
                     const currLen = lastAppliedMoveCountRef.current || 0;
-                    if (newLen >= currLen) {
+                    if (newLen > currLen) {
                       lastAppliedMoveCountRef.current = Math.max(currLen, newLen);
                       setGame(prev => ({ ...(prev||{}), ...g }));
                     }
@@ -876,7 +876,7 @@ const gameNotifInFlightRef = useRef(false);
           const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
           const appliedTs = lastAppliedAtRef.current || 0;
           const withinJoinGrace = (Date.now() - startAt) < 5000;
-          if (newLen > curr || (newLen === curr && (gTs >= appliedTs || withinJoinGrace))) {
+          if (newLen > curr || (withinJoinGrace && newLen === curr && gTs >= appliedTs)) {
             setGame(prev => ({ ...(prev||{}), ...g }));
             lastAppliedMoveCountRef.current = Math.max(curr, newLen);
             try { logger.log('[MOVE][ENTITY] Applied'); } catch (_) {}
