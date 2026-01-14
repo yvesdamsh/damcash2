@@ -282,6 +282,20 @@ function LayoutContent({ children }) {
     // Filter items based on auth state to save space
     const navItems = [
         { label: t('nav.home'), path: '/Home', icon: Home, public: true },
+        { label: t('nav.lobby'), path: '/Lobby', icon: Users, public: true },
+        { label: t('nav.leagues'), path: '/Leagues', icon: Shield, public: true },
+        { label: t('nav.tournaments'), path: '/Tournaments', icon: Flag, public: true },
+        { label: t('nav.leaderboard'), path: '/Leaderboard', icon: Trophy, public: true },
+        { label: t('nav.shop'), path: '/Shop', icon: ShoppingBag, public: true },
+        { label: t('nav.academy'), path: '/Academy', icon: Brain, public: true },
+        // Private items
+        { label: t('nav.history'), path: '/GameHistory', icon: History, public: false },
+        { label: t('nav.teams'), path: '/Teams', icon: Users, public: false },
+        { label: t('nav.profile'), path: '/Profile', icon: User, public: false },
+        { label: t('nav.preferences'), path: '/Preferences', icon: Settings, public: false },
+        ...(user?.role === 'admin' ? [{ label: t('nav.admin'), path: '/AdminDashboard', icon: Shield, public: false }] : []),
+        ].filter(item => user || item.public);
+        { label: t('nav.home'), path: '/Home', icon: Home, public: true },
         
         { label: t('nav.lobby'), path: '/Lobby', icon: Users, public: true },
         { label: t('nav.leagues'), path: '/Leagues', icon: Shield, public: true },
