@@ -341,8 +341,9 @@ function broadcast(gameId, message, sender = null) {
     if (gameConns) {
         const msgString = JSON.stringify(message);
         for (const sock of gameConns) {
-            if (sock !== senderSocket && sock.readyState === WebSocket.OPEN) {
-                sock.send(msgString);
+            // Always broadcast to ALL sockets; do not exclude the sender
+            if (sock && sock.readyState === WebSocket.OPEN) {
+                try { sock.send(msgString); } catch (_) {}
             }
         }
     }
