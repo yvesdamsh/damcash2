@@ -621,13 +621,8 @@ const gameNotifInFlightRef = useRef(false);
         useEffect(() => {
           if (!id) return;
           const handleMove = async () => {
-            if (pausePolling) return; // skip if we just moved locally
-            const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
-            if (wsOpen) return; // WS is primary: avoid refetch on local game-move
-            try {
-              const updated = await safeFetchGame();
-              if (updated) setGame(updated);
-            } catch (e) {}
+            // Disabled while WS is primary to prevent refetch-induced yoyo
+            return;
           };
           window.addEventListener('game-move', handleMove);
           return () => window.removeEventListener('game-move', handleMove);
