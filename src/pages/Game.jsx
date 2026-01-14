@@ -596,7 +596,7 @@ const gameNotifInFlightRef = useRef(false);
               const incomingLen = (() => { try { const m = updated?.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
               const currentLen = lastAppliedMoveCountRef.current || 0;
               const changed = !!(updated && updated.updated_date !== game?.updated_date);
-              if (changed && incomingLen >= currentLen) {
+              if (changed && incomingLen > currentLen) {
                 setGame(updated);
                 lastAppliedMoveCountRef.current = Math.max(currentLen, incomingLen);
                 backoffRef.value = 2000; // briefly faster after change
@@ -622,6 +622,8 @@ const gameNotifInFlightRef = useRef(false);
           if (!id) return;
           const handleMove = async () => {
             if (pausePolling) return; // skip if we just moved locally
+            const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
+            if (wsOpen) return; // WS is primary: avoid refetch on local game-move
             try {
               const updated = await safeFetchGame();
               if (updated) setGame(updated);
@@ -2058,8 +2060,7 @@ const gameNotifInFlightRef = useRef(false);
         // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
-        // Dispatch local event to trigger immediate refetch listeners
-        try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
+        // Removed: no immediate refetch after optimistic update to avoid yoyo
         // Resume polling after a short settle time to avoid yo-yo
         setTimeout(() => setPausePolling(false), 1000);
 
