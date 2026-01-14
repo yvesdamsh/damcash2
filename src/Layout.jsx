@@ -187,22 +187,19 @@ function LayoutContent({ children }) {
         return () => window.removeEventListener('gameModeChanged', handleStorageChange);
     }, [gameMode]);
 
-    // Heartbeat for Online Status
+    // Heartbeat for Online Status (reduced frequency + visibility/network guard)
     React.useEffect(() => {
-        if (!user) return; // Only run heartbeat if we have a user in state
+        if (!user) return;
 
         const heartbeat = async () => {
             try {
-                // Double check with API to be safe
-                const me = await base44.auth.me();
-                if (me) {
-                    await base44.auth.updateMe({ last_seen: new Date().toISOString() });
-                    // Also notify friends at most every 5 minutes to avoid rate limits
-                    const now = Date.now();
-                    if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
-                        lastNotifyRef.current = now;
-                        base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
-                    }
+                if (document.hidden || !navigator.onLine) return;
+                await base44.auth.updateMe({ last_seen: new Date().toISOString() });
+                // Also notify friends at most every 5 minutes to avoid rate limits
+                const now = Date.now();
+                if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
+                    lastNotifyRef.current = now;
+                    base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
                 }
             } catch (e) {
                 console.error('Heartbeat update failed', e);
@@ -210,7 +207,7 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 45000);
+        const interval = setInterval(heartbeat, 120000);
         return () => clearInterval(interval);
     }, [user]);
 

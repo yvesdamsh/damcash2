@@ -88,6 +88,7 @@ export default function HomeContainer() {
 
     const fetchInFlightRef = React.useRef(false);
     const lastFetchAtRef = React.useRef(0);
+    const rateLimitedUntilRef = React.useRef(0);
     const userRef = React.useRef(null);
     const invInFlightRef = React.useRef(false);
     const invNextAllowedRef = React.useRef(0);
@@ -104,7 +105,7 @@ export default function HomeContainer() {
     const fetchData = React.useCallback(async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
         const nowTs = Date.now();
-        if (fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 10000)) { return; }
+        if (document.hidden || nowTs < rateLimitedUntilRef.current || fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 10000)) { return; }
         fetchInFlightRef.current = true;
         try {
             // Parallel fetching for games
@@ -178,6 +179,9 @@ export default function HomeContainer() {
 
         } catch(e) {
             console.error("Refresh error", e);
+            if (String(e?.message || e).toLowerCase().includes('rate limit')) {
+                rateLimitedUntilRef.current = Date.now() + 60 * 1000; // 1 min cooldown
+            }
         } finally {
             fetchInFlightRef.current = false;
             lastFetchAtRef.current = Date.now();
@@ -230,9 +234,10 @@ export default function HomeContainer() {
 
                 // Start polling only if authenticated
                 intervalId = setInterval(() => {
+                    if (document.hidden) return;
                     const u = userRef.current;
                     if (u) throttledFetchData(u, false);
-                }, 60000);
+                }, 120000);
 
                 } catch (e) {
                     console.error("Home init error:", e);
@@ -470,6 +475,7 @@ export default function HomeContainer() {
                     }, 1000);
 
                     const tick = async () => {
+                        if (document.hidden) return;
                         // 1) Try to join a compatible existing waiting game (not mine)
                         const waitingGames = await base44.entities.Game.filter({ status: 'waiting', is_private: false }, '-created_date', 20);
                         // Update visible lists
@@ -553,7 +559,7 @@ export default function HomeContainer() {
 
                     // Start polling
                     if (mmPollRef.current) clearInterval(mmPollRef.current);
-                    mmPollRef.current = setInterval(tick, 5000);
+                    mmPollRef.current = setInterval(tick, 10000);
                     // Run first immediately
                     tick();
                 }
