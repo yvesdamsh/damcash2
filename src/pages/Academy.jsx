@@ -11,6 +11,7 @@ import { Link, useNavigate } from 'react-router-dom';
 export default function Academy() {
     const { t, language } = useLanguage();
     const navigate = useNavigate();
+    useEffect(() => { navigate('/Training', { replace: true }); }, []);
     const [lessons, setLessons] = useState([]);
     const [puzzles, setPuzzles] = useState([]);
     const [activeTab, setActiveTab] = useState('lessons');
