@@ -96,7 +96,7 @@ function InteractiveCheckersBoard({ puzzle, initialBoard, theme, pieceDesign }) 
   );
 }
 
-export default function DailyCheckersPuzzle({ puzzle, board }) {
+export default function DailyCheckersPuzzle({ puzzle, board }) { /* responsive container fixes */
   const { t, formatDate } = useLanguage();
   const tf = (k, f) => (t(k) === k ? f : t(k));
   const created = puzzle?.created_date ? new Date(puzzle.created_date) : null;
