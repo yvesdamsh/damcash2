@@ -108,9 +108,9 @@ export default function PuzzleEditor({ gameType = 'checkers', onSaved }) {
           {tf('home.propose_puzzle', 'Proposer un puzzle (24h)')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 items-start xl:grid-cols-[1fr_360px]">
-          <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full md:max-w-[600px] aspect-square z-0 mx-auto">
+      <CardContent className="space-y-4 overflow-hidden">
+        <div className="grid gap-4 items-start 2xl:grid-cols-[1fr_360px]">
+          <div className="relative md:shadow-2xl rounded-none md:rounded-lg w-full max-w-[360px] sm:max-w-[420px] lg:max-w-[480px] xl:max-w-[520px] 2xl:max-w-[600px] aspect-square z-0 mx-auto">
             {gameType === 'chess' ? (
               <ChessBoard 
                 board={chessBoard}

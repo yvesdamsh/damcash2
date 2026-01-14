@@ -38,7 +38,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
   }, [gameType]);
 
   return (
-    <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#d4c5b0] dark:border-[#3d2b1f] shadow-xl h-full">
+    <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#d4c5b0] dark:border-[#3d2b1f] shadow-xl h-full overflow-hidden">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-[#4a3728] dark:text-[#e8dcc5]">
           <Puzzle className="w-5 h-5" /> {tf('home.daily_puzzle', 'Puzzle du jour')}
