@@ -781,10 +781,8 @@ const gameNotifInFlightRef = useRef(false);
                     const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
                     const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
                     const turnChanged = payload?.current_turn && payload.current_turn !== prev?.current_turn;
-                    const accept = (
-                      (incomingMovesLen > appliedCount) ||
-                      (incomingMovesLen === appliedCount && (nextTs >= appliedTs || turnChanged || (nextBoard && nextBoard !== prevBoard)))
-                    );
+                    // Strict anti-yoyo: accept only strictly newer states (more moves)
+                    const accept = (incomingMovesLen > appliedCount);
                     return accept ? { ...prev, ...payload } : prev;
                   } catch (_) { return { ...prev, ...payload }; }
                 });
