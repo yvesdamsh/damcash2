@@ -764,6 +764,12 @@ const gameNotifInFlightRef = useRef(false);
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
                 const incomingMoveCount = typeof payload.move_count === 'number' ? payload.move_count : incomingMovesLen;
+const incomingTs = (() => { try { return new Date(payload.updated_date || payload.last_move_at || Date.now()).getTime(); } catch { return Date.now(); } })();
+const prevTs = lastAppliedAtRef.current || 0;
+const boardStateRaw = Object.prototype.hasOwnProperty.call(payload, 'board_state')
+  ? (typeof payload.board_state === 'string' ? payload.board_state : JSON.stringify(payload.board_state))
+  : null;
+const boardChanged = !!(boardStateRaw && boardStateRaw !== (lastAppliedBoardStateRef.current || null));
                 const currentMovesLen = (() => {
                     try {
                         if (Array.isArray(game?.moves)) return game.moves.length;
@@ -801,6 +807,13 @@ const gameNotifInFlightRef = useRef(false);
                 if (hasMoves) {
                     const newCount = incomingMoveCount;
                     lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
+                }
+                // Track last applied board/timestamp to avoid stale overwrites
+                if (boardChanged) {
+                  lastAppliedBoardStateRef.current = boardStateRaw;
+                  lastAppliedAtRef.current = incomingTs;
+                } else if (incomingTs > (lastAppliedAtRef.current || 0)) {
+                  lastAppliedAtRef.current = incomingTs;
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)

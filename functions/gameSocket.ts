@@ -5,8 +5,9 @@ const channel = new BroadcastChannel('notifications');
 const gameUpdates = new BroadcastChannel('game_updates');
 
 gameUpdates.onmessage = (event) => {
-    const { gameId, type, payload, senderId } = event.data;
-    broadcast(gameId, { type, payload }, senderId);
+    const { gameId, type, payload } = event.data;
+    // Fanout to all sockets in this instance
+    broadcast(gameId, { type, payload });
 };
 
 Deno.serve(async (req) => {
