@@ -25,6 +25,15 @@ export default function Notifications() {
     );
     const [userId, setUserId] = useState(null);
 
+    // Auto-request browser notification permission by default
+    useEffect(() => {
+        try {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                Notification.requestPermission().catch(() => {});
+            }
+        } catch (_) {}
+    }, []);
+
     // Centralized reload to keep UI in sync without page refresh
     const reloadUnread = useCallback(async () => {
         if (!userId) return;
@@ -157,7 +166,7 @@ export default function Notifications() {
         setNotifications(prev => prev.filter(n => n.id !== id));
         setUnreadCount(prev => Math.max(0, prev - 1));
         // Background delete to keep DB clean
-        setTimeout(() => { try { base44.entities.Notification.delete(id).catch(()=>{}); } catch(_) {} }, 2000);
+        setTimeout(() => { try { base44.entities.Notification.delete(id).catch(()=>{}); } catch(_) {} }, 20000);
     };
 
     const markAllAsRead = async () => {
@@ -168,7 +177,7 @@ export default function Notifications() {
             setNotifications([]);
             setUnreadCount(0);
             // Background cleanup
-            setTimeout(() => { try { Promise.all(unread.map(n => base44.entities.Notification.delete(n.id).catch(()=>{}))); } catch(_) {} }, 2000);
+            setTimeout(() => { try { Promise.all(unread.map(n => base44.entities.Notification.delete(n.id).catch(()=>{}))); } catch(_) {} }, 20000);
         } catch (e) {
             console.error("Error marking all as read", e);
         }
@@ -269,11 +278,7 @@ export default function Notifications() {
                 <div className="flex items-center justify-between p-4 border-b border-[#d4c5b0] dark:border-[#3d2b1f] bg-[#4a3728] dark:bg-[#1a120b] text-[#e8dcc5]">
                     <h4 className="font-bold">Notifications</h4>
                     <div className="flex gap-2">
-                        {!pushEnabled && (
-                            <Button variant="ghost" size="sm" onClick={requestPushPermission} className="h-auto p-0 text-xs text-yellow-400 hover:text-yellow-300 hover:bg-transparent" title="Activer les notifications navigateur">
-                                Activer Push
-                            </Button>
-                        )}
+
                         {unreadCount > 0 && (
                             <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-auto p-0 text-xs text-[#d4c5b0] hover:text-white hover:bg-transparent">
                                 Tout lu
