@@ -932,7 +932,7 @@ export default function HomeContainer() {
                                         {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} {t('home.play_now_btn')}
                                     </Button>
                                     
-                                    <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
+                                    <div className="space-y-2 bg-white/50 dark:bg-white/10 p-3 rounded-lg border border-[#e8dcc5]/20">
                                         <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">{t('home.solo_mode')}</div>
                                         <div className="flex gap-2">
                                             <Select value={aiLevel} onValueChange={setAiLevel}>
@@ -947,7 +947,7 @@ export default function HomeContainer() {
                                             </Select>
                                             <Button 
                                                 onClick={() => navigate(`/Game?id=local-ai&difficulty=${aiLevel}&type=${gameType}`)}
-                                                className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold h-10"
+                                                className="flex-1 md:flex-none md:w-48 bg-[#6B8E4E] text-white hover:bg-[#5a7a40] font-bold h-10"
                                             >
                                                 {t('home.play_vs_ai')}
                                             </Button>
@@ -1015,7 +1015,7 @@ export default function HomeContainer() {
                                             }
                                         }}
                                     />
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.or_join')}</span></div></div>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-[#1e1814] px-2 text-gray-500">{t('home.or_join')}</span></div></div>
                                     <form onSubmit={handleJoinByCode} className="flex gap-2">
                                         <Input placeholder={t('home.code_placeholder')} value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
                                         <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
