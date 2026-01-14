@@ -71,12 +71,6 @@ Deno.serve(async (req) => {
 
     // Hint clients running in sandboxed iframes to use HTTP fallback
     try { socket.send(JSON.stringify({ type: 'WS_READY' })); } catch (_) {}
-    // On connect, nudge only the requester with the latest state for immediate sync
-    try {
-      const base44Client = createClientFromRequest(req);
-      const g = await base44Client.asServiceRole.entities.Game.get(gameId);
-      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {} }
-    } catch (_) {}
 
     // Store socket info
     socket.gameId = gameId;
@@ -151,28 +145,7 @@ Deno.serve(async (req) => {
             else if (data.type === 'MOVE_NOTIFY') {
                  // Ignored in WebSocket-first mode
             } 
-            else if (data.type === 'STATE_REQUEST') {
-                 try {
-                     const g = await base44.asServiceRole.entities.Game.get(gameId);
-                     if (g) {
-                         // Send full state back to requester only
-                         try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {}
-                     }
-                 } catch (e) {
-                     try { socket.send(JSON.stringify({ type: 'ERROR', message: 'STATE_REQUEST_FAILED' })); } catch (_) {}
-                 }
-             }
-             else if (data.type === 'STATE_REQUEST') {
-                 try {
-                     const g = await base44.asServiceRole.entities.Game.get(gameId);
-                     if (g) {
-                         try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {}
-                     }
-                 } catch (e) {
-                     try { socket.send(JSON.stringify({ type: 'ERROR', message: 'STATE_REQUEST_FAILED' })); } catch (_) {}
-                 }
-             }
-             else if (data.type === 'STATE_UPDATE') {
+            else if (data.type === 'STATE_UPDATE') {
                  // Back-compat: accept STATE_UPDATE, stamp server time, persist and broadcast as GAME_UPDATE
                  const { payload } = data;
                  const outPayload = { ...payload, updated_date: new Date().toISOString() };
@@ -352,13 +325,14 @@ Deno.serve(async (req) => {
     return response;
 });
 
-function broadcast(gameId, message) {
+function broadcast(gameId, message, senderSocket = null) {
     const gameConns = connections.get(gameId);
-    if (!gameConns) return;
-    const msgString = JSON.stringify(message);
-    for (const sock of gameConns) {
-        if (sock.readyState === WebSocket.OPEN) {
-            try { sock.send(msgString); } catch (_) {}
+    if (gameConns) {
+        const msgString = JSON.stringify(message);
+        for (const sock of gameConns) {
+            if (sock !== senderSocket && sock.readyState === WebSocket.OPEN) {
+                sock.send(msgString);
+            }
         }
     }
 }
