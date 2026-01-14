@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
                  const { payload } = data;
                  const outPayload = { ...payload, updated_date: new Date().toISOString() };
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
+                 // Broadcast to ALL clients (including sender)
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
                  broadcast(gameId, { type: 'GAME_REFETCH' }, null);
