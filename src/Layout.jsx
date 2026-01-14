@@ -54,6 +54,13 @@ function LayoutContent({ children }) {
     const [gameMode, setGameMode] = React.useState(() => { try { return localStorage.getItem('gameMode') || 'checkers'; } catch (_) { return 'checkers'; } });
     const location = useLocation();
     const navigate = useNavigate();
+    // Immediate guard to avoid editor preview 404 on /login
+    if (typeof window !== 'undefined') {
+      const p = (window.location.pathname || '').toLowerCase();
+      if (p === '/login' || p.endsWith('/login') || p.includes('/preview/login')) {
+        try { window.history.replaceState(null, '', '/Home'); } catch (_) {}
+      }
+    }
     const [user, setUser] = React.useState(null);
     const [showIntro, setShowIntro] = React.useState(() => {
         try {
