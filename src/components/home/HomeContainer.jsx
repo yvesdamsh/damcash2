@@ -914,12 +914,12 @@ export default function HomeContainer() {
                                 <CardTitle className="flex items-center gap-3 text-2xl"><Sword className="w-8 h-8" /> {t('home.quick_match')}</CardTitle>
                                 <div className="flex gap-2 w-full md:w-auto">
                                     <Link to="/Tournaments" className="flex-1 md:flex-none">
-                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text:white border border-[#e8dcc5]/30">
+                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
                                             <Trophy className="w-4 h-4 mr-2" /> {t('tournaments.title')}
                                         </Button>
                                     </Link>
                                     <Link to="/GameHistory" className="flex-1 md:flex-none">
-                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text:white border border-[#e8dcc5]/30">
+                                        <Button size="sm" variant="ghost" className="w-full text-[#e8dcc5] hover:bg-[#5c4430] hover:text-white border border-[#e8dcc5]/30">
                                             <History className="w-4 h-4 mr-2" /> {t('nav.history')}
                                         </Button>
                                     </Link>
@@ -928,7 +928,7 @@ export default function HomeContainer() {
                             <CardContent className="space-y-6">
                                 <p className="opacity-90">{t('home.quick_match_desc')}</p>
                                 <div className="flex flex-col gap-3">
-                                    <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg:white text-lg font-bold h-12 shadow-lg">
+                                    <Button onClick={handleQuickMatch} disabled={isCreating} className="w-full bg-[#e8dcc5] text-[#4a3728] hover:bg-white text-lg font-bold h-12 shadow-lg">
                                         {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} {t('home.play_now_btn')}
                                     </Button>
                                     
@@ -936,7 +936,7 @@ export default function HomeContainer() {
                                         <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">{t('home.solo_mode')}</div>
                                         <div className="flex gap-2">
                                             <Select value={aiLevel} onValueChange={setAiLevel}>
-                                                <SelectTrigger className="h-10 bg-white text-[#4a3728] border-none font-bold">
+                                                <SelectTrigger className="h-10 bg-white text-[#4a3728] border-none font-bold w-40 md:w-56">
                                                     <SelectValue placeholder={t('home.level_placeholder')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -961,7 +961,7 @@ export default function HomeContainer() {
                         </Card>
 
                         <div className="space-y-6">
-                            <Card className="bg:white/80 dark:bg-[#1e1814]/80 backdrop-blur border:#d4c5b0 dark:border:#3d2b1f shadow-lg">
+                            <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
                                 <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728] dark:text-[#e8dcc5]"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
                                     <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white dark:border-[#b09a85] dark:text-[#b09a85] dark:hover:bg-[#b09a85] dark:hover:text-[#1e1814]">{t('home.create_private')}</Button>
@@ -1020,13 +1020,13 @@ export default function HomeContainer() {
                                         <Input placeholder={t('home.code_placeholder')} value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
                                         <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
                                     </form>
-                                    <p className="text-[10px] text:gray-500 text-center">{t('home.ask_code')}</p>
+                                    <p className="text-[10px] text-gray-500 text-center">{t('home.ask_code')}</p>
                                 </CardContent>
                             </Card>
                             
                             {/* Following Activity Feed */}
                             {followingActivity.length > 0 && (
-                                <Card className="bg:white/80 dark:bg-[#1e1814]/80 backdrop-blur border:#d4c5b0 dark:border:#3d2b1f shadow-lg">
+                                <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-sm font-bold uppercase text-gray-500 flex items-center gap-2">
                                             <Users className="w-4 h-4" /> {t('home.friends_activity')}
@@ -1082,9 +1082,9 @@ export default function HomeContainer() {
                                                     </CardHeader>
                                                     <CardContent className="space-y-2 max-h-60 overflow-y-auto">
                                                         {invitations.map(inv => (
-                                                            <div key={inv.id} className="flex justify-between items-center p-3 bg:#f0f7eb dark:bg:#2a201a rounded-lg border border:#dde6d5 dark:border:#3d2b1f">
+                                                            <div key={inv.id} className="flex justify-between items-center p-3 bg-[#f0f7eb] dark:bg-[#2a201a] rounded-lg border border-[#dde6d5] dark:border-[#3d2b1f]">
                                                                 <div>
-                                                                    <div className="font-bold text:#3d2b1f dark:text:#e8dcc5">{inv.from_user_name}</div>
+                                                                    <div className="font-bold text-[#3d2b1f] dark:text-[#e8dcc5]">{inv.from_user_name}</div>
                                                                     <div className="text-xs text:#5c6e46 dark:text:#a8907a">{t('home.invite_from')} {inv.game_type === 'chess' ? t('game.chess') : t('game.checkers')}</div>
                                                                 </div>
                                                                 <div className="flex gap-2">
