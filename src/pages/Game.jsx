@@ -851,6 +851,12 @@ const gameNotifInFlightRef = useRef(false);
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
+                // Prefer WS to request current state; HTTP fallback only if socket not open
+                const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
+                if (wsOpen) {
+                  try { socketRef.current.send(JSON.stringify({ type: 'STATE_REQUEST', payload: { gameId: id } })); } catch (_) {}
+                  return;
+                }
                 safeFetchGame()?.then(g => { if (g) {
                   try {
                     const newLen = (() => { try { const m = g.moves; if (Array.isArray(m)) return m.length; if (typeof m === 'string') { const a = JSON.parse(m); return Array.isArray(a) ? a.length : 0; } return 0; } catch { return 0; } })();
