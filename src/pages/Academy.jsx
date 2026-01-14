@@ -5,8 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { BookOpen, Puzzle, Swords, Brain, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
+import { BookOpen, Puzzle, Swords, Brain, CheckCircle2, ChevronRight, Lock, Search, BarChart2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import PuzzleMode from '@/components/training/PuzzleMode';
+import FreeTrainingMode from '@/components/training/FreeTrainingMode';
+import AnalysisMode from '@/components/training/AnalysisMode';
+import PerformanceStats from '@/components/training/PerformanceStats';
 
 export default function Academy() {
     const { t, language } = useLanguage();
@@ -74,7 +78,7 @@ export default function Academy() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-[#e8dcc5]">
+                <TabsList className="grid w-full grid-cols-6 bg-[#e8dcc5]">
                     <TabsTrigger value="lessons" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
                         <BookOpen className="w-4 h-4 mr-2" /> {t('academy.lessons')}
                     </TabsTrigger>
@@ -83,6 +87,15 @@ export default function Academy() {
                     </TabsTrigger>
                     <TabsTrigger value="practice" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
                         <Swords className="w-4 h-4 mr-2" /> {t('academy.practice')}
+                    </TabsTrigger>
+                    <TabsTrigger value="free" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <Brain className="w-4 h-4 mr-2" /> {t('academy.free_training') || 'Free Training'}
+                    </TabsTrigger>
+                    <TabsTrigger value="analysis" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <Search className="w-4 h-4 mr-2" /> {t('tv.review')}
+                    </TabsTrigger>
+                    <TabsTrigger value="stats" className="data-[state=active]:bg-[#4a3728] data-[state=active]:text-[#e8dcc5]">
+                        <BarChart2 className="w-4 h-4 mr-2" /> Stats
                     </TabsTrigger>
                 </TabsList>
 
@@ -118,26 +131,7 @@ export default function Academy() {
                 </TabsContent>
 
                 <TabsContent value="puzzles" className="mt-6">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {puzzles.length > 0 ? puzzles.map(puzzle => (
-                            <Card key={puzzle.id} className="border-[#d4c5b0] hover:shadow-md transition-all bg-white cursor-pointer" onClick={() => navigate(`/Puzzle?id=${puzzle.id}`)}>
-                                <CardContent className="p-4 flex flex-col items-center text-center">
-                                    <Puzzle className="w-8 h-8 text-[#b8860b] mb-3" />
-                                    <h3 className="font-bold text-[#4a3728] mb-1">{puzzle.title || t('academy.puzzle_default_title')}</h3>
-                                    <div className="text-xs text-[#6b5138] mb-3">{puzzle.theme}</div>
-                                    <div className="flex gap-2 text-xs">
-                                        <Badge className="bg-[#f0e6d2] text-[#6b5138]">{puzzle.rating}</Badge>
-                                        <Badge variant="outline">{puzzle.difficulty}</Badge>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )) : (
-                            <div className="col-span-full text-center py-12 text-gray-500">
-                                <Puzzle className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                <p>{t('academy.no_puzzles')}</p>
-                            </div>
-                        )}
-                    </div>
+                    <PuzzleMode />
                 </TabsContent>
 
                 <TabsContent value="practice" className="mt-6">
@@ -161,6 +155,15 @@ export default function Academy() {
                             </CardContent>
                         </Card>
                     </div>
+                </TabsContent>
+                <TabsContent value="free" className="mt-6">
+                    <FreeTrainingMode />
+                </TabsContent>
+                <TabsContent value="analysis" className="mt-6">
+                    <AnalysisMode />
+                </TabsContent>
+                <TabsContent value="stats" className="mt-6">
+                    <PerformanceStats />
                 </TabsContent>
             </Tabs>
         </div>
