@@ -83,6 +83,9 @@ export default function GameContainer() {
     const [isAiThinking, setIsAiThinking] = useState(false);
     const wsLastReceivedRef = useRef(0);
     const { handleGameMessage } = useRealTime();
+    // Real-time move lock state and anti-yoyo counter
+    const [isMoveInProgress, setIsMoveInProgress] = useState(false); // set true when a local move starts; reset on server confirm
+    const lastAppliedMoveCountRef = useRef(0); // highest moves.length applied to local state
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -458,11 +461,18 @@ export default function GameContainer() {
                 const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
                 const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
                 const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
-                const nextBoard = typeof updated?.board_state === 'string' ? updated.board_state : JSON.stringify(updated?.board_state || '');
                 const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                 const nextTs = updated?.updated_date ? new Date(updated.updated_date).getTime() : 0;
-                const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
-                return accept ? updated : prev;
+
+                // Apply only if strictly newer move count
+                if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                  lastAppliedMoveCountRef.current = nextCount;
+                  setIsMoveInProgress(false);
+                  return updated;
+                }
+                // Otherwise keep local board/moves to prevent rewind; still merge meta/time
+                if (nextTs > prevTs) setIsMoveInProgress(false);
+                return { ...prev, ...updated, board_state: prevBoard, moves: prev.moves };
               } catch (_) { return updated; }
             });
           } catch (_) {
@@ -594,13 +604,24 @@ export default function GameContainer() {
                         const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
                         const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
                         const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
-                        const nextBoard = typeof payload?.board_state === 'string' ? payload.board_state : JSON.stringify(payload?.board_state || '');
                         const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                         const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
-                        const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
-                        return accept ? { ...prev, ...payload } : prev;
+
+                        // Anti-yoyo: only apply board if strictly newer moveCount
+                        if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                            lastAppliedMoveCountRef.current = nextCount;
+                            setIsMoveInProgress(false); // server confirmed the move
+                            return { ...prev, ...payload };
+                        }
+
+                        // Meta/time update: clear lock but keep optimistic board/moves
+                        if (nextTs > prevTs) {
+                            setIsMoveInProgress(false);
+                        }
+                        return { ...prev, ...payload, board_state: prevBoard, moves: prev.moves };
                     } catch (_) {
-                        return { ...prev, ...payload };
+                        // On parse error, avoid board rewind while a move is in progress
+                        return isMoveInProgress ? { ...prev, ...payload, board_state: prev?.board_state, moves: prev?.moves } : { ...prev, ...payload };
                     }
                 });
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
@@ -609,6 +630,7 @@ export default function GameContainer() {
                 }
             } else if (data.type === 'MOVE_ACK' && data.moveId) {
                 pendingMovesRef.current.delete(data.moveId);
+                setIsMoveInProgress(false); // server acknowledged our move
             } else if (data.type === 'GAME_REACTION') {
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'DRAW_OFFER') {
@@ -655,11 +677,16 @@ export default function GameContainer() {
                   const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
                   const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
                   const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
-                  const nextBoard = typeof g?.board_state === 'string' ? g.board_state : JSON.stringify(g?.board_state || '');
                   const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                   const nextTs = g?.updated_date ? new Date(g.updated_date).getTime() : 0;
-                  const accept = (nextTs > prevTs) || (nextCount > prevCount) || (nextBoard && nextBoard !== prevBoard);
-                  return accept ? g : prev;
+
+                  if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                    lastAppliedMoveCountRef.current = nextCount;
+                    setIsMoveInProgress(false);
+                    return g;
+                  }
+                  if (nextTs > prevTs) setIsMoveInProgress(false);
+                  return { ...prev, ...g, board_state: prevBoard, moves: prev.moves };
                 } catch(_) { return g; }
               }); })
               .catch((e) => { logger.warn('[GAME_NOTIF] refetch error', e); })
@@ -1617,10 +1644,13 @@ export default function GameContainer() {
           lastAppliedBoardStateRef.current = updateData.board_state;
           lastAppliedAtRef.current = new Date(updateData.last_move_at || Date.now()).getTime();
         } catch (_) {}
+        // Where polling is temporarily paused to prevent yoyo
         setPausePolling(true);
+        // Optimistic local apply of the move (UI moves instantly)
         setGame(prev => ({ ...prev, ...updateData }));
         try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
-        setTimeout(() => setPausePolling(false), 1000);
+        // Resume polling shortly after (500–1000ms) to validate with server
+        setTimeout(() => setPausePolling(false), 800);
         if (game.id === 'local-ai') return;
         const moveId = Date.now().toString();
         const updateDataWithId = { ...updateData, moveId };
@@ -1960,6 +1990,13 @@ export default function GameContainer() {
     };
 
     const movesList = useMemo(() => safeJSONParse(game?.moves, []), [game?.moves]);
+    // Update lastAppliedMoveCount whenever our local move list grows (source of truth)
+    useEffect(() => {
+        const cnt = Array.isArray(movesList) ? movesList.length : 0;
+        if (cnt > (lastAppliedMoveCountRef.current || 0)) {
+            lastAppliedMoveCountRef.current = cnt;
+        }
+    }, [movesList]);
 
     useEffect(() => {
         if (!game || !isReviewMode) return;
