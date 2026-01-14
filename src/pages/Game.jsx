@@ -2075,31 +2075,35 @@ const gameNotifInFlightRef = useRef(false);
             socketRef.current.send(JSON.stringify({ type: 'GAME_UPDATE', payload: updateDataWithId }));
         }
 
-        // Backend broadcast to ensure cross-instance delivery (in addition to WS)
-        base44.functions.invoke('gameSocket', { 
-            gameId: game.id, 
-            type: 'GAME_UPDATE', 
-            payload: updateDataWithId 
-        })
-        .then(() => logger.log('[MOVE][BROADCAST] Via function success', updateDataWithId))
-        .catch((e) => logger.warn('[MOVE][BROADCAST] function error', e?.response?.data || e?.message || e));
+        // Backend broadcast only if WS not connected (fallback)
+        if (!wsConnected) {
+          base44.functions.invoke('gameSocket', { 
+              gameId: game.id, 
+              type: 'GAME_UPDATE', 
+              payload: updateDataWithId 
+          })
+          .then(() => logger.log('[MOVE][BROADCAST] Via function (fallback) success', updateDataWithId))
+          .catch((e) => logger.warn('[MOVE][BROADCAST] fallback error', e?.response?.data || e?.message || e));
+        }
 
-                      // Write to DB (authoritative) in background; retry once, then socket fallback
-                      base44.entities.Game.update(game.id, updateData).catch(async (e) => {
-                          logger.error("Move save error", e);
-                          try {
-                              await base44.entities.Game.update(game.id, updateData);
-                              logger.log("Move save retry succeeded");
-                          } catch (retryError) {
-                              logger.error("Move save retry failed", retryError);
-                              if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                                  socketRef.current.send(JSON.stringify({
-                                      type: 'FORCE_SAVE_MOVE',
-                                      payload: { gameId: game.id, updateData }
-                                  }));
-                              }
-                          }
-                      });
+                      // Persist only if WS not connected; otherwise server WS persists
+                      if (!wsConnected) {
+                        base44.entities.Game.update(game.id, updateData).catch(async (e) => {
+                            logger.error("Move save error", e);
+                            try {
+                                await base44.entities.Game.update(game.id, updateData);
+                                logger.log("Move save retry succeeded");
+                            } catch (retryError) {
+                                logger.error("Move save retry failed", retryError);
+                                if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                                    socketRef.current.send(JSON.stringify({
+                                        type: 'FORCE_SAVE_MOVE',
+                                        payload: { gameId: game.id, updateData }
+                                    }));
+                                }
+                            }
+                        });
+                      }
                       };
 
         // Manual join helper for spectators
