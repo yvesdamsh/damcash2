@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
                     updateData.updated_date = new Date().toISOString();
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
+                    // Broadcast to ALL clients (including sender)
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
 
