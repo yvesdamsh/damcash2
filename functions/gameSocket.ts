@@ -145,7 +145,18 @@ Deno.serve(async (req) => {
             else if (data.type === 'MOVE_NOTIFY') {
                  // Ignored in WebSocket-first mode
             } 
-            else if (data.type === 'STATE_UPDATE') {
+            else if (data.type === 'STATE_REQUEST') {
+                 try {
+                     const g = await base44.asServiceRole.entities.Game.get(gameId);
+                     if (g) {
+                         // Send full state back to requester only
+                         try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {}
+                     }
+                 } catch (e) {
+                     try { socket.send(JSON.stringify({ type: 'ERROR', message: 'STATE_REQUEST_FAILED' })); } catch (_) {}
+                 }
+             }
+             else if (data.type === 'STATE_UPDATE') {
                  // Back-compat: accept STATE_UPDATE, stamp server time, persist and broadcast as GAME_UPDATE
                  const { payload } = data;
                  const outPayload = { ...payload, updated_date: new Date().toISOString() };
