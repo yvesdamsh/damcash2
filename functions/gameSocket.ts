@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
                  if (moveId) delete outPayload.moveId; // do not persist custom fields
                  outPayload.updated_date = new Date().toISOString();
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
+                 // Broadcast to ALL clients (including sender)
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
                  // Acknowledge move back to sender only
