@@ -33,17 +33,6 @@ Deno.serve(async (req) => {
                     gameUpdates.postMessage({ gameId, type });
                     broadcast(gameId, { type }, null);
                 }
-
-                // Persist state on HTTP fallback too so all instances and subscribers receive updates
-                try {
-                    if (type === 'GAME_UPDATE' && payload) {
-                        const base44 = createClientFromRequest(req);
-                        await base44.asServiceRole.entities.Game.update(gameId, payload);
-                    }
-                } catch (e) {
-                    console.error('HTTP fallback persist failed', e);
-                }
-
                 // If coming via HTTP, also trigger finish notifications (resign/draw) like WS path
                 try {
                     if (type === 'GAME_UPDATE' && payload?.status === 'finished') {
@@ -82,6 +71,12 @@ Deno.serve(async (req) => {
 
     // Hint clients running in sandboxed iframes to use HTTP fallback
     try { socket.send(JSON.stringify({ type: 'WS_READY' })); } catch (_) {}
+    // On connect, nudge only the requester with the latest state for immediate sync
+    try {
+      const base44Client = createClientFromRequest(req);
+      const g = await base44Client.asServiceRole.entities.Game.get(gameId);
+      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {} }
+    } catch (_) {}
 
     // Store socket info
     socket.gameId = gameId;
@@ -131,7 +126,6 @@ Deno.serve(async (req) => {
                     updateData.updated_date = new Date().toISOString();
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
-                    // Broadcast to ALL clients (including sender)
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
 
@@ -157,12 +151,32 @@ Deno.serve(async (req) => {
             else if (data.type === 'MOVE_NOTIFY') {
                  // Ignored in WebSocket-first mode
             } 
-            else if (data.type === 'STATE_UPDATE') {
+            else if (data.type === 'STATE_REQUEST') {
+                 try {
+                     const g = await base44.asServiceRole.entities.Game.get(gameId);
+                     if (g) {
+                         // Send full state back to requester only
+                         try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {}
+                     }
+                 } catch (e) {
+                     try { socket.send(JSON.stringify({ type: 'ERROR', message: 'STATE_REQUEST_FAILED' })); } catch (_) {}
+                 }
+             }
+             else if (data.type === 'STATE_REQUEST') {
+                 try {
+                     const g = await base44.asServiceRole.entities.Game.get(gameId);
+                     if (g) {
+                         try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {}
+                     }
+                 } catch (e) {
+                     try { socket.send(JSON.stringify({ type: 'ERROR', message: 'STATE_REQUEST_FAILED' })); } catch (_) {}
+                 }
+             }
+             else if (data.type === 'STATE_UPDATE') {
                  // Back-compat: accept STATE_UPDATE, stamp server time, persist and broadcast as GAME_UPDATE
                  const { payload } = data;
                  const outPayload = { ...payload, updated_date: new Date().toISOString() };
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
-                 // Broadcast to ALL clients (including sender)
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
                  broadcast(gameId, { type: 'GAME_REFETCH' }, null);
@@ -275,7 +289,6 @@ Deno.serve(async (req) => {
                  if (moveId) delete outPayload.moveId; // do not persist custom fields
                  outPayload.updated_date = new Date().toISOString();
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
-                 // Broadcast to ALL clients (including sender)
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
                  // Acknowledge move back to sender only
@@ -339,15 +352,13 @@ Deno.serve(async (req) => {
     return response;
 });
 
-function broadcast(gameId, message, sender = null) {
+function broadcast(gameId, message) {
     const gameConns = connections.get(gameId);
-    if (gameConns) {
-        const msgString = JSON.stringify(message);
-        for (const sock of gameConns) {
-            // Always broadcast to ALL sockets; do not exclude the sender
-            if (sock && sock.readyState === WebSocket.OPEN) {
-                try { sock.send(msgString); } catch (_) {}
-            }
+    if (!gameConns) return;
+    const msgString = JSON.stringify(message);
+    for (const sock of gameConns) {
+        if (sock.readyState === WebSocket.OPEN) {
+            try { sock.send(msgString); } catch (_) {}
         }
     }
 }

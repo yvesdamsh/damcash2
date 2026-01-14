@@ -773,17 +773,28 @@ const gameNotifInFlightRef = useRef(false);
                 })();
                 if (hasMoves) {
                   const localCount = lastAppliedMoveCountRef.current || 0;
-                  if (incomingMoveCount <= localCount) {
-                    try { logger.log('[MOVE][SKIP] Stale/duplicate by move_count', { incomingMoveCount, localCount }); } catch (_) {}
+                  const boardsDiffer = (() => {
+                    try {
+                      const prevState = lastAppliedBoardStateRef.current;
+                      const nextState = payload?.board_state;
+                      if (!nextState) return false;
+                      return !boardsAreEqual(prevState, nextState);
+                    } catch { return false; }
+                  })();
+                  if (incomingMoveCount <= localCount && !boardsDiffer) {
+                    try { logger.log('[MOVE][SKIP] Stale/duplicate by move_count', { incomingMoveCount, localCount, boardsDiffer }); } catch (_) {}
                     return;
                   }
                 }
                 setGame(prev => {
                   try {
                     const appliedCount = lastAppliedMoveCountRef.current || 0;
-                    // Strict anti-yoyo: accept only strictly newer states (by move_count)
-                    const accept = (incomingMoveCount > appliedCount);
-                    return accept ? { ...prev, ...payload } : prev;
+                    // Accept if move_count increased OR board actually changed
+                    const changedBoard = payload?.board_state && !boardsAreEqual(lastAppliedBoardStateRef.current, payload.board_state);
+                    const accept = (incomingMoveCount > appliedCount) || changedBoard;
+                    if (!accept) return prev;
+                    try { if (payload?.board_state) { lastAppliedBoardStateRef.current = payload.board_state; lastAppliedAtRef.current = Date.now(); } } catch (_) {}
+                    return { ...prev, ...payload };
                   } catch (_) { return { ...prev, ...payload }; }
                 });
                 isUpdatingRef.current = false;
