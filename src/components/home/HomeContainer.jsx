@@ -105,16 +105,16 @@ export default function HomeContainer() {
     const fetchData = React.useCallback(async (currentUser, checkRejoin = false) => {
         if (!currentUser) return;
         const nowTs = Date.now();
-        if (document.hidden || nowTs < rateLimitedUntilRef.current || fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 10000)) { return; }
+        if (document.hidden || nowTs < rateLimitedUntilRef.current || fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 60000)) { return; }
         fetchInFlightRef.current = true;
         try {
             // Parallel fetching for games
             let myGamesWhite = await base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' });
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 800));
             let myGamesBlack = await base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' });
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 800));
             let myInvites = await base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' });
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 800));
             let topGames = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 10);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
@@ -180,7 +180,7 @@ export default function HomeContainer() {
         } catch(e) {
             console.error("Refresh error", e);
             if (String(e?.message || e).toLowerCase().includes('rate limit')) {
-                rateLimitedUntilRef.current = Date.now() + 60 * 1000; // 1 min cooldown
+                rateLimitedUntilRef.current = Date.now() + 180000 + Math.floor(Math.random()*30000); // ~3m + jitter
             }
         } finally {
             fetchInFlightRef.current = false;
@@ -188,7 +188,7 @@ export default function HomeContainer() {
         }
     }, [hasShownRejoin]);
 
-     const throttledFetchData = React.useMemo(() => throttle(fetchData, 30000), [fetchData]);
+     const throttledFetchData = React.useMemo(() => throttle(fetchData, 60000), [fetchData]);
 
         useEffect(() => {
             let intervalId;
@@ -288,7 +288,7 @@ export default function HomeContainer() {
                     console.error('[HOME] Error loading invitations:', e);
                 } finally {
                     invInFlightRef.current = false;
-                    invNextAllowedRef.current = Date.now() + 30000;
+                    invNextAllowedRef.current = Date.now() + 60000;
                 }
             };
 
@@ -326,7 +326,7 @@ export default function HomeContainer() {
             refreshInvites();
 
             // Fallback polling as safety net when WS fails
-            const intervalId = setInterval(refreshInvites, 60000);
+            const intervalId = setInterval(refreshInvites, 90000);
 
             return () => {
                 window.removeEventListener('invitation-received', onInv);
@@ -559,7 +559,7 @@ export default function HomeContainer() {
 
                     // Start polling
                     if (mmPollRef.current) clearInterval(mmPollRef.current);
-                    mmPollRef.current = setInterval(tick, 10000);
+                    mmPollRef.current = setInterval(tick, 15000);
                     // Run first immediately
                     tick();
                 }
