@@ -49,8 +49,9 @@ export function useRobustWebSocket(url, options = {}) {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const host = window.location.host;
         const isFramed = (()=>{ try { return window.self !== window.top; } catch(_) { return true; }})();
-        if (isFramed && host.includes('preview-sandbox')) {
-            logger.warn('[WS] Skipping WebSocket in preview sandbox iframe');
+        // In Base44 editor preview, websockets are flaky and add latency. Disable entirely.
+        if (host.includes('preview-sandbox')) {
+            logger.warn('[WS] Disabled WebSocket in preview-sandbox; using polling fallbacks');
             return;
         }
         const path = url.startsWith('http') || url.startsWith('ws') ? url : `${protocol}//${host}${url.startsWith('/') ? '' : '/'}${url}`;
