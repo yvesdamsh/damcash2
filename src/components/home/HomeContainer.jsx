@@ -842,7 +842,7 @@ export default function HomeContainer() {
 
             <NextTournamentBanner />
 
-            <div className="flex justify-center gap-4 mb-8">
+            <div className="flex justify-center gap-6 mb-10 md:gap-10">
                 <button onClick={() => saveGameTypePref('checkers')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'checkers' ? 'bg-[#6b5138] text-white shadow-lg ring-2 ring-[#4a3728]' : 'bg-[#e8dcc5] text-[#6b5138] hover:bg-[#d4c5b0]'}`}>⚪ {t('game.checkers')}</button>
                 <button onClick={() => saveGameTypePref('chess')} className={`px-6 py-3 rounded-full text-lg font-bold transition-all transform hover:scale-105 ${gameType === 'chess' ? 'bg-[#6B8E4E] text-white shadow-lg ring-2 ring-[#3d2b1f]' : 'bg-[#e8dcc5] text-[#6B8E4E] hover:bg-[#d4c5b0]'}`}>♟️ {t('game.chess')}</button>
             </div>
@@ -932,11 +932,11 @@ export default function HomeContainer() {
                                         {isCreating ? <Loader2 className="animate-spin mr-2" /> : <PlayCircle className="mr-2" />} {t('home.play_now_btn')}
                                     </Button>
                                     
-                                    <div className="space-y-2 bg:black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
+                                    <div className="space-y-2 bg-black/20 p-3 rounded-lg border border-[#e8dcc5]/20">
                                         <div className="text-xs text-[#e8dcc5]/80 font-bold uppercase tracking-wider mb-1">{t('home.solo_mode')}</div>
                                         <div className="flex gap-2">
                                             <Select value={aiLevel} onValueChange={setAiLevel}>
-                                                <SelectTrigger className="h-10 bg:white text-[#4a3728] border:none font-bold">
+                                                <SelectTrigger className="h-10 bg-white text-[#4a3728] border-none font-bold">
                                                     <SelectValue placeholder={t('home.level_placeholder')} />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -947,13 +947,13 @@ export default function HomeContainer() {
                                             </Select>
                                             <Button 
                                                 onClick={() => navigate(`/Game?id=local-ai&difficulty=${aiLevel}&type=${gameType}`)}
-                                                className="flex-1 bg:#e8dcc5 text-[#4a3728] hover:bg:white font-bold h-10"
+                                                className="flex-1 bg-[#e8dcc5] text-[#4a3728] hover:bg-white font-bold h-10"
                                             >
                                                 {t('home.play_vs_ai')}
                                             </Button>
                                         </div>
                                     </div>
-                                    <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full bg:white border:#e8dcc5 text-[#4a3728] hover:bg:#e8dcc5 hover:text-[#4a3728] h-10 font-bold">
+                                    <Button onClick={handleSoloMode} disabled={isCreating} variant="outline" className="w-full bg-white border-[#e8dcc5] text-[#4a3728] hover:bg-[#e8dcc5] hover:text-[#4a3728] h-10 font-bold">
                                         <Users className="w-4 h-4 mr-2" /> {t('home.train_solo')}
                                     </Button>
                                 </div>
@@ -962,11 +962,11 @@ export default function HomeContainer() {
 
                         <div className="space-y-6">
                             <Card className="bg:white/80 dark:bg-[#1e1814]/80 backdrop-blur border:#d4c5b0 dark:border:#3d2b1f shadow-lg">
-                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728] dark:text:#e8dcc5"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="flex items-center gap-3 text-[#4a3728] dark:text-[#e8dcc5]"><Users className="w-6 h-6" /> {t('home.play_friend')}</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border:#6b5138 text:#6b5138 hover:bg:#6b5138 hover:text:white dark:border:#b09a85 dark:text:#b09a85 dark:hover:bg:#b09a85 dark:hover:text:#1e1814">{t('home.create_private')}</Button>
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border:gray-300 dark:border:#3d2b1f" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg:white dark:bg:#1e1814 px-2 text:gray-500">{t('home.invite_friend')}</span></div></div>
-                                    <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg:#4a3728 hover:bg:#2c1e12 text:white dark:bg:#b8860b dark:hover:bg:#d97706 dark:text:white">
+                                    <Button onClick={handleCreatePrivate} variant="outline" className="w-full border-[#6b5138] text-[#6b5138] hover:bg-[#6b5138] hover:text-white dark:border-[#b09a85] dark:text-[#b09a85] dark:hover:bg-[#b09a85] dark:hover:text-[#1e1814]">{t('home.create_private')}</Button>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300 dark:border-[#3d2b1f]" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white dark:bg-[#1e1814] px-2 text-gray-500">{t('home.invite_friend')}</span></div></div>
+                                    <Button onClick={() => setInviteDialogOpen(true)} className="w-full bg-[#4a3728] hover:bg-[#2c1e12] text-white dark:bg-[#b8860b] dark:hover:bg-[#d97706] dark:text-white">
                                         <Users className="w-4 h-4 mr-2" /> {t('home.search_invite')}
                                     </Button>
                                     <UserSearchDialog 
@@ -1015,10 +1015,10 @@ export default function HomeContainer() {
                                             }
                                         }}
                                     />
-                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border:gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg:white px-2 text:gray-500">{t('home.or_join')}</span></div></div>
+                                    <div className="relative"><div className="absolute inset-0 flex items-center"><span className="w-full border-t border-gray-300" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-500">{t('home.or_join')}</span></div></div>
                                     <form onSubmit={handleJoinByCode} className="flex gap-2">
                                         <Input placeholder={t('home.code_placeholder')} value={joinCode} onChange={e => setJoinCode(e.target.value)} className="uppercase font-mono" />
-                                        <Button type="submit" className="bg:#4a3728 hover:bg:#2c1e12"><ArrowRight className="w-4 h-4" /></Button>
+                                        <Button type="submit" className="bg-[#4a3728] hover:bg-[#2c1e12]"><ArrowRight className="w-4 h-4" /></Button>
                                     </form>
                                     <p className="text-[10px] text:gray-500 text-center">{t('home.ask_code')}</p>
                                 </CardContent>
@@ -1028,19 +1028,19 @@ export default function HomeContainer() {
                             {followingActivity.length > 0 && (
                                 <Card className="bg:white/80 dark:bg-[#1e1814]/80 backdrop-blur border:#d4c5b0 dark:border:#3d2b1f shadow-lg">
                                     <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm font-bold uppercase text:gray-500 flex items-center gap-2">
+                                        <CardTitle className="text-sm font-bold uppercase text-gray-500 flex items-center gap-2">
                                             <Users className="w-4 h-4" /> {t('home.friends_activity')}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-3">
                                         {followingActivity.map((act, i) => (
-                                            <div key={i} className="flex items-center gap-3 text-sm p-2 bg:#fdfbf7 dark:bg:#2c241b rounded border border:#e8dcc5 dark:border:#3d2b1f">
-                                                <div className="w-8 h-8 rounded-full bg:#d4c5b0 flex items-center justify-center text:#4a3728 font-bold text-xs">
+                                            <div key={i} className="flex items-center gap-3 text-sm p-2 bg-[#fdfbf7] dark:bg-[#2c241b] rounded border border-[#e8dcc5] dark:border-[#3d2b1f]">
+                                                <div className="w-8 h-8 rounded-full bg-[#d4c5b0] flex items-center justify-center text-[#4a3728] font-bold text-xs">
                                                     {act.friendName?.[0]}
                                                 </div>
                                                 <div className="flex-1">
-                                                    <span className="font-bold text:#4a3728 dark:text:#e8dcc5">{act.friendName}</span>
-                                                    <span className="text:gray-500 dark:text:gray-400 text-xs block">{act.desc}</span>
+                                                    <span className="font-bold text-[#4a3728] dark:text-[#e8dcc5]">{act.friendName}</span>
+                                                    <span className="text-gray-500 dark:text-gray-400 text-xs block">{act.desc}</span>
                                                 </div>
                                                 <Link to={`/Game?id=${act.id}`}>
                                                     <Button size="icon" variant="ghost" className="h-6 w-6"><Eye className="w-3 h-3" /></Button>
@@ -1051,7 +1051,7 @@ export default function HomeContainer() {
                                 </Card>
                             )}
 
-                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text:#6b5138 hover:bg:#e8dcc5"><HelpCircle className="w-5 h-5 mr-2" /> {t('home.learn_play')}</Button>
+                            <Button variant="ghost" onClick={() => setShowTutorial(true)} className="w-full text-[#6b5138] hover:bg-[#e8dcc5]"><HelpCircle className="w-5 h-5 mr-2" /> {t('home.learn_play')}</Button>
                         </div>
                     </div>
 
@@ -1074,9 +1074,9 @@ export default function HomeContainer() {
                                                 </div>
                                             </div>
                                             {invitations.length > 0 && (
-                                                <Card className="bg:white/90 dark:bg:#1e1814/90 border:#6B8E4E dark:border:#3d2b1f shadow-lg">
+                                                <Card className="bg-white/90 dark:bg-[#1e1814]/90 border-[#6B8E4E] dark:border-[#3d2b1f] shadow-lg">
                                                     <CardHeader className="pb-2">
-                                                        <CardTitle className="text-lg text:#3d2b1f dark:text:#e8dcc5 flex items-center gap-2">
+                                                        <CardTitle className="text-lg text-[#3d2b1f] dark:text-[#e8dcc5] flex items-center gap-2">
                                                             <Users className="w-5 h-5" /> {t('home.invitations')}
                                                         </CardTitle>
                                                     </CardHeader>
