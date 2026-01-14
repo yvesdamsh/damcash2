@@ -75,6 +75,7 @@ function LayoutContent({ children }) {
     const [isFramed, setIsFramed] = React.useState(false);
     const [isAuthed, setIsAuthed] = React.useState(false);
     const lastNotifyRef = React.useRef(0);
+    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
     React.useEffect(() => {
         const hide = () => setShowIntro(false);
@@ -122,6 +123,32 @@ function LayoutContent({ children }) {
 
     // Sound is handled inside IntroAnimation with strict single-play guard
     React.useEffect(() => {}, [showIntro]);
+
+    // Inactivity-based session control: only auto-logout after 30 days of no activity
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        try {
+            const now = Date.now();
+            const last = parseInt(localStorage.getItem('last_active_at') || '0', 10);
+            if (!last) {
+                localStorage.setItem('last_active_at', String(now));
+            } else if (now - last > ONE_MONTH_MS) {
+                // Hard logout if more than 30 days without activity
+                base44.auth.logout(window.location.origin);
+                return;
+            }
+        } catch (_) {}
+
+        const update = () => { try { localStorage.setItem('last_active_at', String(Date.now())); } catch (_) {} };
+        const events = ['click','keydown','touchstart','mousemove','visibilitychange','focus'];
+        events.forEach(ev => window.addEventListener(ev, update, { passive: true }));
+        // background heartbeat every minute to keep timestamp fresh during long sessions
+        const interval = setInterval(update, 60 * 1000);
+        return () => {
+            events.forEach(ev => window.removeEventListener(ev, update));
+            clearInterval(interval);
+        };
+    }, []);
 
     // Save last location for persistent navigation (excluding Profile)
     React.useEffect(() => {

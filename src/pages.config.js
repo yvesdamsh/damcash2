@@ -1,3 +1,4 @@
+import Academy from './pages/Academy';
 import ActiveGames from './pages/ActiveGames';
 import AdminDashboard from './pages/AdminDashboard';
 import CreatePuzzle from './pages/CreatePuzzle';
@@ -21,15 +22,15 @@ import TeamDetail from './pages/TeamDetail';
 import Teams from './pages/Teams';
 import TournamentDetail from './pages/TournamentDetail';
 import Tournaments from './pages/Tournaments';
+import Training from './pages/Training';
 import Wallet from './pages/Wallet';
 import game from './pages/game';
 import index from './pages/index';
-import Training from './pages/Training';
-import Academy from './pages/Academy';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "Academy": Academy,
     "ActiveGames": ActiveGames,
     "AdminDashboard": AdminDashboard,
     "CreatePuzzle": CreatePuzzle,
@@ -53,11 +54,10 @@ export const PAGES = {
     "Teams": Teams,
     "TournamentDetail": TournamentDetail,
     "Tournaments": Tournaments,
+    "Training": Training,
     "Wallet": Wallet,
     "game": game,
     "index": index,
-    "Training": Training,
-    "Academy": Academy,
 }
 
 export const pagesConfig = {
