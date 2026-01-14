@@ -128,6 +128,9 @@ Deno.serve(async (req) => {
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
+                    // Nudge all participants to request current state (prevents asymmetry)
+                    broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                    gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
 
                     // Then write to DB (authoritative)
                     await base44.asServiceRole.entities.Game.update(gameId, updateData);
