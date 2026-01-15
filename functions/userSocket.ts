@@ -88,22 +88,13 @@ Deno.serve(async (req) => {
         const set = connections.get(socket.userId);
         if (!set.has(socket)) set.add(socket);
         try { console.log('[USERWS] open (registered)', socket.userId, 'total:', set.size); } catch (_) {}
-        // Stamp presence on connect
-        try { await base44.asServiceRole.entities.User.update(socket.userId, { last_seen: new Date().toISOString() }); } catch (_) {}
-    ;
+    };
 
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
             if (data.type === 'PING') {
-                try { socket.send(JSON.stringify({ type: 'PONG' })); } catch (_) {}
-                const uid = socket.userId;
-                if (uid) {
-                    try {
-                        const nowIso = new Date().toISOString();
-                        base44.asServiceRole.entities.User.update(uid, { last_seen: nowIso }).catch(() => {});
-                    } catch (_) {}
-                }
+                socket.send(JSON.stringify({ type: 'PONG' }));
             }
             // Allow clients to register a specific user id explicitly (fallback when auth fails)
             if (data.type === 'REGISTER' && data.userId) {
@@ -116,8 +107,6 @@ Deno.serve(async (req) => {
                 socket.userId = data.userId;
                 if (!connections.has(socket.userId)) connections.set(socket.userId, new Set());
                 connections.get(socket.userId).add(socket);
-                // Stamp presence when client registers explicitly
-                try { base44.asServiceRole.entities.User.update(socket.userId, { last_seen: new Date().toISOString() }).catch(() => {}); } catch (_) {}
             }
         } catch (e) {}
     };

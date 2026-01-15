@@ -17,13 +17,8 @@ export function RealTimeProvider({ children }) {
     const navigate = useNavigate();
 
     useEffect(() => {
-            base44.auth.me().then(setUser).catch(() => setUser(null));
-        }, []);
-
-        // Stamp presence on mount (extra safety)
-        useEffect(() => {
-            base44.auth.updateMe({ last_seen: new Date().toISOString() }).catch(() => {});
-        }, []);
+        base44.auth.me().then(setUser).catch(() => setUser(null));
+    }, []);
 
     // Global User Socket (Notifications)
     const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
@@ -31,11 +26,7 @@ export function RealTimeProvider({ children }) {
         reconnectAttempts: 50,
         reconnectInterval: 1000,
         onOpen: () => {
-            try {
-                if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id }));
-                // Mark presence immediately on socket open
-                base44.auth.updateMe({ last_seen: new Date().toISOString() }).catch(() => {});
-            } catch (_) {}
+            try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
         },
         onMessage: (event, data) => {
             console.log('[WS] RAW MESSAGE:', data?.type, data);

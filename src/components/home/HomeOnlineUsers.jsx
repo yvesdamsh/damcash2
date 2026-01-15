@@ -1,6 +1,5 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { safeInvoke } from '@/components/utils/safeInvoke';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, RefreshCw } from 'lucide-react';
@@ -29,11 +28,6 @@ export default function HomeOnlineUsers() {
     type: (localStorage.getItem('gameMode') || 'checkers')
   });
 
-  // Debug traces
-  React.useEffect(() => { console.log('[HomeOnlineUsers] state:init', { cfg }); }, []);
-  React.useEffect(() => { console.log('[HomeOnlineUsers] configOpen changed:', configOpen); }, [configOpen]);
-  React.useEffect(() => { if (selectedUser) console.log('[HomeOnlineUsers] selectedUser:', selectedUser?.id, selectedUser?.username || selectedUser?.full_name); }, [selectedUser]);
-
   const fetchOnline = React.useCallback(async () => {
     const now = Date.now();
     if (fetchInFlightRef.current || now - lastFetchRef.current < 30000) return;
@@ -42,13 +36,10 @@ export default function HomeOnlineUsers() {
     try {
       let list = [];
       try {
-        const result = await safeInvoke('listOnlineUsers', { limit: 20 }, {
-          fallbackData: users,
-          retries: 2,
-          logErrors: false
-        });
-        list = result?.data?.users || result?.data || [];
+        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
+        list = res?.data?.users || [];
       } catch (e) {
+        // On rate limit or other error, keep current list and back off silently
         list = users;
       }
       setUsers(list);
@@ -62,8 +53,7 @@ export default function HomeOnlineUsers() {
   React.useEffect(() => {
     // Try to load current user, but online list no longer depends on it
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
-    // Fetch quickly on mount; if function fails, UI stays empty but won’t block
-    setTimeout(() => fetchOnline(), 200);
+    setTimeout(() => fetchOnline(), 2000);
   }, [cfg.type, fetchOnline]);
 
   React.useEffect(() => {
@@ -79,18 +69,21 @@ export default function HomeOnlineUsers() {
 
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
-    try { return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000; } catch { return false; }
+    return Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
   };
 
   const rows = (() => {
-    // Always show server list directly; do not inject self to avoid duplicates/confusion
-    return users;
+    if (!me) return users; // do not inject self if me is not known; still allow selection
+    const exists = users.find((u) => u.id === me.id);
+    if (exists) return users;
+    const pref = String(me?.default_game || me?.preferred_game_type || '').toLowerCase();
+    const shouldIncludeMe = pref === cfg.type;
+    if (!shouldIncludeMe) return users;
+    return [{ id: me.id, username: me.username, full_name: me.full_name, email: me.email, avatar_url: me.avatar_url, last_seen: new Date().toISOString() }, ...users].slice(0, 20);
   })();
 
   const openConfig = (u) => {
-    const isSelf = !!(me && u && u.id === me.id);
-    console.log('[HomeOnlineUsers] openConfig()', { clickedId: u?.id, name: u?.username || u?.full_name, isSelf, meId: me?.id });
-    if (isSelf) return;
+    if (me && u && u.id === me.id) return; // allow selection even if me is not loaded yet
     setSelectedUser(u);
     setConfigOpen(true);
   };
@@ -139,7 +132,7 @@ export default function HomeOnlineUsers() {
       setConfigOpen(false);
 
       // Ensure Invitation is persisted before navigating (prevents lost invites)
-      const inv = await base44.entities.Invitation.create({
+      await base44.entities.Invitation.create({
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
         to_user_email: (selectedUser.email || '').toLowerCase(),
@@ -158,8 +151,8 @@ export default function HomeOnlineUsers() {
         type: 'game_invite',
         title: t('home.invite_friend'),
         message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
-        link: `/Game?id=${newGame.id}&join=player`,
-        metadata: { gameId: newGame.id, invitationId: inv.id }
+        link: `/Game?id=${newGame.id}`,
+        metadata: { gameId: newGame.id }
       }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
     } finally {
       setCreating(false);
@@ -168,18 +161,43 @@ export default function HomeOnlineUsers() {
 
   return (
     <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
-      <Dialog open={configOpen} onOpenChange={(v) => { console.log('[HomeOnlineUsers] onOpenChange', v); setConfigOpen(v); }}>
-        <DialogContent className="sm:max-w-[420px]" onOpenAutoFocus={() => console.log('[HomeOnlineUsers] Dialog open') }>
+      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+        <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]">
           <DialogHeader>
-            <DialogTitle>Défier {selectedUser?.username || selectedUser?.full_name || 'joueur'}</DialogTitle>
+            <DialogTitle className="text-[#4a3728]">{t('home.configure_match') || 'Configurer la partie'}</DialogTitle>
           </DialogHeader>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { console.log('[HomeOnlineUsers] cancel'); setConfigOpen(false); }}>
-              {t('common.cancel') || 'Annuler'}
-            </Button>
-            <Button onClick={() => { console.log('[HomeOnlineUsers] Defier click'); handleConfirmInvite(); }} disabled={creating}>
-              {creating ? '...' : 'Défier'}
-            </Button>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              {[{l:'1+0', t:1, i:0},{l:'3+2', t:3, i:2},{l:'5+0', t:5, i:0},{l:'10+0', t:10, i:0},{l:'15+10', t:15, i:10}].map(p => (
+                <Button key={p.l} variant={cfg.time===p.t && cfg.increment===p.i ? 'default':'outline'} onClick={() => setCfg({...cfg, time:p.t, increment:p.i})} className={cfg.time===p.t && cfg.increment===p.i ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white' : 'border-[#d4c5b0] text-[#6b5138]'}>
+                  {p.l}
+                </Button>
+              ))}
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {[1,3,7,9,20].map(s => (
+                <Button key={s} variant={cfg.series===s ? 'default':'outline'} onClick={() => setCfg({...cfg, series:s})} className={cfg.series===s ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white':'border-[#d4c5b0] text-[#6b5138]'}>
+                  {s===1 ? 'Unique' : s}
+                </Button>
+              ))}
+            </div>
+            <div className="grid grid-cols-5 gap-2">
+              {[0,10,50,100,500].map(s => (
+                <Button key={s} variant={cfg.stake===s ? 'default':'outline'} onClick={() => setCfg({...cfg, stake:s})} className={cfg.stake===s ? 'bg-yellow-600 hover:bg-yellow-700 text-white':'border-[#d4c5b0] text-[#6b5138]'}>
+                  {s===0 ? 'Gratuit' : `D$ ${s}`}
+                </Button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant={cfg.type==='checkers' ? 'default':'outline'} onClick={() => setCfg({...cfg, type:'checkers'})} className={cfg.type==='checkers' ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white':'border-[#d4c5b0] text-[#6b5138]'}>⚪ Dames</Button>
+              <Button variant={cfg.type==='chess' ? 'default':'outline'} onClick={() => setCfg({...cfg, type:'chess'})} className={cfg.type==='chess' ? 'bg-[#6B8E4E] hover:bg-[#5a7a40] text-white':'border-[#d4c5b0] text-[#6B8E4E]'}>♟️ Échecs</Button>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setConfigOpen(false)} className="border-[#d4c5b0] text-[#6b5138]">{t('common.cancel') || 'Annuler'}</Button>
+              <Button onClick={handleConfirmInvite} disabled={creating} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+                {creating ? '...' : (t('home.send_invite') || "Envoyer l'invitation")}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -200,7 +218,7 @@ export default function HomeOnlineUsers() {
           const online = isOnline(u.last_seen);
           const isMe = me && u.id === me.id;
           return (
-            <div key={u.id} onClick={() => { console.log('[HomeOnlineUsers] user row clicked', u.id, u.username || u.full_name); if (!isMe) openConfig(u); }} className={`group flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); console.log('[HomeOnlineUsers] user row keydown', e.key, u.id); if (!isMe) openConfig(u); } }}>
+            <div key={u.id} className="flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a]">
               <div className="relative">
                 <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                   {u.avatar_url ? (
@@ -212,9 +230,9 @@ export default function HomeOnlineUsers() {
                 <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? 'bg-green-500' : 'bg-gray-300'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 group-hover:underline truncate">
+                <button onClick={() => !isMe && openConfig(u)} disabled={isMe} className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 hover:underline truncate disabled:opacity-60">
                   {u.username || u.full_name || (isMe ? (t('lobby.me') || 'Me') : (t('common.player') || 'Player'))}
-                </div>
+                </button>
                 <div className="text-[10px] text-gray-500 truncate">
                   {online ? (t('home.status_online') || 'En ligne') : (t('home.status_recent') || 'Récemment')}
                 </div>

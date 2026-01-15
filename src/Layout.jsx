@@ -33,7 +33,6 @@ import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 import { toast } from 'sonner';
-import { safeInvoke } from '@/components/utils/safeInvoke';
 
 export default function Layout({ children }) {
     return (
@@ -195,12 +194,12 @@ function LayoutContent({ children }) {
         const heartbeat = async () => {
             try {
                 if (document.hidden || !navigator.onLine) return;
-                await base44.auth.updateMe({ last_seen: new Date().toISOString(), is_online: true });
+                await base44.auth.updateMe({ last_seen: new Date().toISOString() });
                 // Also notify friends at most every 5 minutes to avoid rate limits
                 const now = Date.now();
                 if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
                     lastNotifyRef.current = now;
-                    safeInvoke('notifyFriendsOnline', {}, { fallbackData: { notified: 0 }, retries: 1, logErrors: false });
+                    base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
                 }
             } catch (e) {
                 console.error('Heartbeat update failed', e);
@@ -208,15 +207,8 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 30000);
-        const onVisible = () => { if (!document.hidden) heartbeat(); };
-        window.addEventListener('visibilitychange', onVisible);
-        window.addEventListener('focus', onVisible);
-        return () => { 
-          clearInterval(interval);
-          window.removeEventListener('visibilitychange', onVisible);
-          window.removeEventListener('focus', onVisible);
-        };
+        const interval = setInterval(heartbeat, 120000);
+        return () => clearInterval(interval);
     }, [user]);
 
     // Sync with SoundManager on mount
@@ -251,7 +243,6 @@ function LayoutContent({ children }) {
             try {
                 const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
-                try { await base44.auth.updateMe({ last_seen: new Date().toISOString(), is_online: true }); } catch (_) {}
                 // Notify friends on first login in this session
                 try {
                   if (currentUser && !sessionStorage.getItem('online_notified_v1')) {
@@ -339,16 +330,14 @@ function LayoutContent({ children }) {
         ].filter(item => user || item.public);
 
     const handleLogout = async () => {
-                  try {
-                      // Mark offline then logout
-                      try { await base44.auth.updateMe({ is_online: false, last_seen: new Date().toISOString() }); } catch (_) {}
-                      // Use absolute URL to ensure correct redirection
-                      await base44.auth.logout(window.location.origin);
-                  } catch (e) {
-                      console.error("Logout error", e);
-                      window.location.href = '/';
-                  }
-              };
+        try {
+            // Use absolute URL to ensure correct redirection
+            await base44.auth.logout(window.location.origin);
+        } catch (e) {
+            console.error("Logout error", e);
+            window.location.href = '/';
+        }
+    };
 
     const handleLogin = () => {
         // Redirect to platform login

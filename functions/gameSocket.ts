@@ -8,19 +8,6 @@ const gameUpdates = new BroadcastChannel('game_updates');
 const entitySubscriptions = new Map(); // gameId -> unsubscribe fn
 const gameConnCounts = new Map(); // gameId -> number of open sockets
 
-// Deduplicate GAME_UPDATE bursts to avoid client yo-yo
-const lastGameUpdate = new Map(); // gameId -> { key, ts }
-function shouldSendGameUpdate(gameId, payload) {
-  try {
-    const key = JSON.stringify({ b: payload?.board_state, m: payload?.moves, t: payload?.current_turn, s: payload?.status });
-    const prev = lastGameUpdate.get(gameId);
-    const now = Date.now();
-    if (prev && prev.key === key && (now - prev.ts) < 2000) return false; // 2s window
-    lastGameUpdate.set(gameId, { key, ts: now });
-  } catch (_) {}
-  return true;
-}
-
 gameUpdates.onmessage = (event) => {
     const { gameId, type, payload } = event.data;
     try { console.log('[WS] game_updates fanout', { gameId, type, hasPayload: !!payload }); } catch (_) {}
@@ -46,16 +33,8 @@ Deno.serve(async (req) => {
 
                 // Cross-instance fanout + local broadcast (if any sockets on this instance)
                 if (payload) {
-                    if (type === 'GAME_UPDATE') {
-                        const hasWs = (connections.get(gameId)?.size || 0) > 0;
-                        if (!hasWs && shouldSendGameUpdate(gameId, payload)) {
-                            gameUpdates.postMessage({ gameId, type, payload });
-                            broadcast(gameId, { type, payload }, null);
-                        }
-                    } else {
-                        gameUpdates.postMessage({ gameId, type, payload });
-                        broadcast(gameId, { type, payload }, null);
-                    }
+                    gameUpdates.postMessage({ gameId, type, payload });
+                    broadcast(gameId, { type, payload }, null);
                 } else {
                     gameUpdates.postMessage({ gameId, type });
                     broadcast(gameId, { type }, null);
@@ -68,6 +47,11 @@ Deno.serve(async (req) => {
                         const outPayload = { ...payload, updated_date: new Date().toISOString() };
                         await base44Http.asServiceRole.entities.Game.update(gameId, outPayload);
                         try { console.log('[HTTP] GAME_UPDATE persisted for', gameId); } catch (_) {}
+                        // Mirror WS path: nudge all clients to refetch immediately
+                        try {
+                            gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+                            broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                        } catch (_) {}
                     }
                 } catch (e) {
                     try { console.warn('[HTTP] Persist failed', gameId, e?.message); } catch (_) {}
@@ -136,9 +120,7 @@ Deno.serve(async (req) => {
                         try {
                             if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
                                 console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
-                                if (shouldSendGameUpdate(gameId, event.data || {})) {
-                                      broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
-                                  }
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
                             }
                         } catch (err) {
                             console.error('[SUBSCRIBE] handler error', err);
@@ -177,9 +159,7 @@ Deno.serve(async (req) => {
                         try {
                             if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
                                 console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
-                                if (shouldSendGameUpdate(gameId, event.data || {})) {
-                                      broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
-                                  }
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
                             }
                         } catch (err) {
                             console.error('[SUBSCRIBE] handler error', err);
@@ -243,10 +223,11 @@ console.log('[WS] parsed type', data?.type);
                     updateData.updated_date = new Date().toISOString();
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
-                    if (shouldSendGameUpdate(gameId, updateData)) {
-                        broadcast(gameId, msg, null);
-                        gameUpdates.postMessage({ gameId, ...msg });
-                    }
+                    broadcast(gameId, msg, null);
+                    gameUpdates.postMessage({ gameId, ...msg });
+                    // Nudge all participants to request current state (prevents asymmetry)
+                    broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                    gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
 
                     // Then write to DB (authoritative) and mirror GAME_UPDATE event payload with move_count if possible
                     try {
@@ -354,10 +335,8 @@ console.log('[WS] parsed type', data?.type);
                         const updateData = { status: 'finished', winner_id: null, updated_date: new Date().toISOString(), draw_offer_by: null };
                         await base44.asServiceRole.entities.Game.update(gameId, updateData);
                         const msg = { type: 'GAME_UPDATE', payload: updateData };
-                        if (shouldSendGameUpdate(gameId, updateData)) {
-                            broadcast(gameId, msg, null);
-                            gameUpdates.postMessage({ gameId, ...msg });
-                        }
+                        broadcast(gameId, msg, null);
+                        gameUpdates.postMessage({ gameId, ...msg });
                         // Notify both players of draw
                         if (g.white_player_id) channel.postMessage({ recipientId: g.white_player_id, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${gameId}` });
                         if (g.black_player_id) channel.postMessage({ recipientId: g.black_player_id, type: 'game', title: 'Partie nulle', message: 'La proposition de nulle a été acceptée', link: `/Game?id=${gameId}` });
@@ -465,10 +444,8 @@ console.log('[WS] parsed type', data?.type);
                     if (gid && updateData) {
                         await base44.asServiceRole.entities.Game.update(gid, updateData);
                         const msg = { type: 'GAME_UPDATE', payload: updateData };
-                        if (shouldSendGameUpdate(gid, updateData)) {
-                            broadcast(gid, msg, null);
-                            gameUpdates.postMessage({ gameId: gid, ...msg });
-                        }
+                        broadcast(gid, msg, null);
+                        gameUpdates.postMessage({ gameId: gid, ...msg });
                     }
                 } catch (e) {
                     console.error('FORCE_SAVE_MOVE failed:', e);
@@ -507,7 +484,7 @@ socket.onclose = () => {
 });
 
 function broadcast(gameId, message) {
-          const gameConns = connections.get(gameId);
+    const gameConns = connections.get(gameId);
     if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
     try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
     const msgString = JSON.stringify(message);

@@ -815,9 +815,9 @@ const gameNotifInFlightRef = useRef(false);
                    } catch (_) {}
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
-                // Skip auto-refetch here to avoid yo-yo; rely on authoritative GAME_UPDATE/ENTITY only
-                const missingBoardOrMoves = false;
-                if (false) {
+                // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
+                const missingBoardOrMoves = false; // Always accept server GAME_UPDATE; refetch only if explicit GAME_REFETCH arrives
+                if (missingBoardOrMoves && id && (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)) {
                     const now = Date.now();
                     if (now - (wsRefetchAtRef.current || 0) > 500) {
                         wsRefetchAtRef.current = now;
@@ -914,7 +914,7 @@ const gameNotifInFlightRef = useRef(false);
           const appliedTs = lastAppliedAtRef.current || 0;
           const withinJoinGrace = (Date.now() - startAt) < 5000;
           const changedBoard = (() => { try { return !!g.board_state && !boardsAreEqual(lastAppliedBoardStateRef.current, g.board_state); } catch { return true; } })();
-          if (newLen > curr || changedBoard) {
+          if (newLen > curr || changedBoard || (newLen === curr && gTs > appliedTs) || (withinJoinGrace && newLen === curr && gTs >= appliedTs)) {
             setGame(prev => ({ ...(prev||{}), ...g }));
             lastAppliedMoveCountRef.current = Math.max(curr, newLen);
             try { logger.log('[MOVE][ENTITY] Applied'); } catch (_) {}
@@ -2093,13 +2093,14 @@ const gameNotifInFlightRef = useRef(false);
         try { lastAppliedMoveCountRef.current = Math.max((lastAppliedMoveCountRef.current || 0), (currentMoves.length + 1)); } catch (_) {}
         // Mark updating to disable competing sources
         isUpdatingRef.current = true;
-        // OPTIMISTIC UPDATE
+        // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
         setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
-        // Keep polling paused a bit longer to avoid yo-yo with entity echo
-        setTimeout(() => setPausePolling(false), 2200);
-        // Failsafe: clear updating flag after server echo window
-        setTimeout(() => { isUpdatingRef.current = false; }, 2200);
+        // Removed: no immediate refetch after optimistic update to avoid yoyo
+        // Resume polling after a short settle time to avoid yo-yo
+        setTimeout(() => setPausePolling(false), 1000);
+        // Failsafe: clear updating flag if no ACK arrives
+        setTimeout(() => { isUpdatingRef.current = false; }, 1500);
 
         if (game.id === 'local-ai') return;
 

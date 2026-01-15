@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { safeInvoke } from '@/components/utils/safeInvoke';
 import { Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -35,12 +34,8 @@ let __balanceCache = { value: null, ts: 0, pending: null };
 
                 // Issue a single request and share the promise
                 const p = (async () => {
-                    const result = await safeInvoke('walletManager', { action: 'get_balance' }, {
-                      fallbackData: { balance: 0 },
-                      retries: 2,
-                      logErrors: false
-                    });
-                    return { balance: (result?.data?.balance ?? 0), ts: Date.now() };
+                    const res = await base44.functions.invoke('walletManager', { action: 'get_balance' });
+                    return { balance: res.data.balance, ts: Date.now() };
                 })();
                 __balanceCache.pending = p;
                 const { balance: b, ts } = await p;
