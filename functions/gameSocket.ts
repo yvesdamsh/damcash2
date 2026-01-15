@@ -403,9 +403,29 @@ function broadcast(gameId, message) {
     if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
     try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
     const msgString = JSON.stringify(message);
+    let sentCount = 0, failCount = 0, skipped = 0;
+    let idx = 0;
     for (const sock of gameConns) {
+        idx++;
+        const info = {
+            id: sock?.user?.id || null,
+            name: sock?.user?.full_name || sock?.user?.username || null,
+            readyState: sock?.readyState
+        };
+        try { console.log('[WS] target', idx, gameId, info); } catch (_) {}
         if (sock.readyState === WebSocket.OPEN) {
-            try { sock.send(msgString); } catch (_) {}
+            try {
+                sock.send(msgString);
+                sentCount++;
+                try { console.log('[WS] sent ok to', info.id || 'anon'); } catch (_) {}
+            } catch (e) {
+                failCount++;
+                try { console.warn('[WS] send failed to', info, e?.message); } catch (_) {}
+            }
+        } else {
+            skipped++;
+            try { console.warn('[WS] skipped (state!=OPEN)', info); } catch (_) {}
         }
     }
+    try { console.log('[WS] broadcast result', { gameId, type: message?.type, total: gameConns.size, sent: sentCount, failed: failCount, skipped }); } catch (_) {}
 }
