@@ -803,8 +803,16 @@ const gameNotifInFlightRef = useRef(false);
                 });
                 isUpdatingRef.current = false;
                 if (hasMoves) {
-                    const newCount = incomingMoveCount;
-                    lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
+                   const newCount = incomingMoveCount;
+                   lastAppliedMoveCountRef.current = Math.max(lastAppliedMoveCountRef.current || 0, newCount);
+                }
+                // If board_state present, ensure we render it immediately (prevents sound-without-visual)
+                if (payload?.board_state) {
+                   try {
+                       const parsed = typeof payload.board_state === 'string' ? JSON.parse(payload.board_state) : payload.board_state;
+                       const b = Array.isArray(parsed) ? parsed : (parsed?.board || []);
+                       if (Array.isArray(b) && b.length) setBoard(b);
+                   } catch (_) {}
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
                 // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
