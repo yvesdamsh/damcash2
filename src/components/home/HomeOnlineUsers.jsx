@@ -41,7 +41,7 @@ export default function HomeOnlineUsers() {
     try {
       let list = [];
       try {
-        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
+        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20, gameType: cfg.type });
         list = res?.data?.users || [];
       } catch (e) {
         // On rate limit or other error, keep current list and back off silently

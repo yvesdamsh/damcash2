@@ -14,8 +14,18 @@ Deno.serve(async (req) => {
 
     const sinceMs = Date.now() - 10 * 60 * 1000; // last 10 minutes
 
-    // Fetch recent users sorted by updated_date (last_seen may not be sortable)
-    const recentUsers = await base44.asServiceRole.entities.User.list('-updated_date', 500);
+    // Fetch recent users with robust fallback
+    let recentUsers = [];
+    try {
+      recentUsers = await base44.asServiceRole.entities.User.list('-updated_date', 500);
+    } catch (e) {
+      try {
+        recentUsers = await base44.asServiceRole.entities.User.list();
+      } catch (e2) {
+        console.error('[listOnlineUsers] failed to list users', e?.message, e2?.message);
+        return Response.json({ users: [] });
+      }
+    }
     const lcSearch = String(search || '').toLowerCase();
     let filtered = (recentUsers || [])
       .filter(u => { try { return u?.last_seen && new Date(u.last_seen).getTime() >= sinceMs; } catch { return false; } })
