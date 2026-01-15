@@ -47,11 +47,6 @@ Deno.serve(async (req) => {
                         const outPayload = { ...payload, updated_date: new Date().toISOString() };
                         await base44Http.asServiceRole.entities.Game.update(gameId, outPayload);
                         try { console.log('[HTTP] GAME_UPDATE persisted for', gameId); } catch (_) {}
-                        // Mirror WS path: nudge all clients to refetch immediately
-                        try {
-                            gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
-                            broadcast(gameId, { type: 'GAME_REFETCH' }, null);
-                        } catch (_) {}
                     }
                 } catch (e) {
                     try { console.warn('[HTTP] Persist failed', gameId, e?.message); } catch (_) {}
@@ -225,9 +220,6 @@ console.log('[WS] parsed type', data?.type);
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
                     broadcast(gameId, msg, null);
                     gameUpdates.postMessage({ gameId, ...msg });
-                    // Nudge all participants to request current state (prevents asymmetry)
-                    broadcast(gameId, { type: 'GAME_REFETCH' }, null);
-                    gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
 
                     // Then write to DB (authoritative) and mirror GAME_UPDATE event payload with move_count if possible
                     try {
