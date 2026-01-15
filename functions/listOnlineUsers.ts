@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     try { payload = await req.json(); } catch { payload = {}; }
     const { limit = 20, search = '', gameType } = payload || {};
 
-    const sinceMs = Date.now() - 7 * 60 * 1000; // last ~7 minutes
+    const sinceMs = Date.now() - 10 * 60 * 1000; // last 10 minutes
 
     // Fetch recent users with robust fallback
     let recentUsers = [];
