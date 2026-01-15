@@ -503,6 +503,15 @@ socket.onclose = () => {
 });
 
 function broadcast(gameId, message) {
+          // Dedup guard to avoid burst echoes
+          try {
+            if (message && message.type === 'GAME_UPDATE') {
+              if (!shouldSendGameUpdate(gameId, message.payload || {})) {
+                try { console.log('[WS] broadcast dedup GAME_UPDATE skipped', gameId); } catch (_) {}
+                return;
+              }
+            }
+          } catch (_) {}
     const gameConns = connections.get(gameId);
     if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
     try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
