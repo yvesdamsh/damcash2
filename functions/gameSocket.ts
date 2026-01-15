@@ -123,7 +123,20 @@ Deno.serve(async (req) => {
                 console.error('[SUBSCRIBE] Failed to start for', gameId, e?.message);
             }
         }
-        // Initial sync can be client-driven
+        // Determine side for detailed logging
+    try {
+        const gSnap = await base44.asServiceRole.entities.Game.get(gameId);
+        if (socket.user && gSnap) {
+            if (socket.user.id === gSnap.white_player_id) socket.side = 'white';
+            else if (socket.user.id === gSnap.black_player_id) socket.side = 'black';
+            else socket.side = 'spectator';
+        } else {
+            socket.side = socket.user ? 'spectator' : 'anon';
+        }
+        console.log('[WS] join details', { gameId, user: socket.user?.id || null, side: socket.side });
+    } catch (e) { console.warn('[WS] side detection failed', gameId, e?.message); }
+
+    // Initial sync can be client-driven
     };
 
     socket.onmessage = async (event) => {
@@ -138,6 +151,7 @@ const data = JSON.parse(event.data);
 console.log('[WS] parsed type', data?.type);
             
             if (data.type === 'MOVE') {
+                console.log('[WS] MOVE received', { gameId, fromUser: socket.user?.id || null, side: socket.side });
                 // Security: Only players can move
                 if (!socket.user) {
                      // Ignore or send error
@@ -151,6 +165,7 @@ console.log('[WS] parsed type', data?.type);
                 
                 // Persist Move (socket-first)
                 const { updateData } = data.payload;
+                try { console.log('[WS] MOVE apply', { nextTurn: updateData?.current_turn, status: updateData?.status, movesLen: (updateData?.moves || '').length }); } catch (_) {}
                 if (updateData) {
                     // Override with server timestamp for consistency
                     updateData.last_move_at = new Date().toISOString();
@@ -373,7 +388,9 @@ console.log('[WS] parsed type', data?.type);
             }
             };
 
-    socket.onclose = () => {
+    socket.onerror = (ev) => { try { console.error('[WS] error', gameId, ev?.message || ev?.type || ev); } catch (_) {} };
+
+socket.onclose = () => {
         const gameConns = connections.get(gameId);
         if (gameConns) {
             gameConns.delete(socket);
@@ -410,7 +427,8 @@ function broadcast(gameId, message) {
         const info = {
             id: sock?.user?.id || null,
             name: sock?.user?.full_name || sock?.user?.username || null,
-            readyState: sock?.readyState
+            readyState: sock?.readyState,
+            side: sock?.side || 'unknown'
         };
         try { console.log('[WS] target', idx, gameId, info); } catch (_) {}
         if (sock.readyState === WebSocket.OPEN) {
