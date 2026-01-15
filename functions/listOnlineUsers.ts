@@ -35,13 +35,7 @@ Deno.serve(async (req) => {
         return hay.includes(lcSearch);
       });
 
-    // Optional filtering by game type preference (default_game or preferred_game_type)
-    if (gameType === 'checkers' || gameType === 'chess') {
-      filtered = filtered.filter(u => {
-        const pref = String(u.default_game || u.preferred_game_type || '').toLowerCase();
-        return pref === gameType;
-      });
-    }
+    // Removed gameType filtering to always return all recently active users
 
     // Sort by last_seen desc client-side, then slice to limit
     filtered = filtered.sort((a,b) => {
