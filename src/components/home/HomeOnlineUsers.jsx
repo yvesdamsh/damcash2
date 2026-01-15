@@ -28,6 +28,11 @@ export default function HomeOnlineUsers() {
     type: (localStorage.getItem('gameMode') || 'checkers')
   });
 
+  // Debug traces
+  React.useEffect(() => { console.log('[HomeOnlineUsers] state:init', { cfg }); }, []);
+  React.useEffect(() => { console.log('[HomeOnlineUsers] configOpen changed:', configOpen); }, [configOpen]);
+  React.useEffect(() => { if (selectedUser) console.log('[HomeOnlineUsers] selectedUser:', selectedUser?.id, selectedUser?.username || selectedUser?.full_name); }, [selectedUser]);
+
   const fetchOnline = React.useCallback(async () => {
     const now = Date.now();
     if (fetchInFlightRef.current || now - lastFetchRef.current < 30000) return;
@@ -83,7 +88,9 @@ export default function HomeOnlineUsers() {
   })();
 
   const openConfig = (u) => {
-    if (me && u && u.id === me.id) return; // allow selection even if me is not loaded yet
+    const isSelf = !!(me && u && u.id === me.id);
+    console.log('[HomeOnlineUsers] openConfig()', { clickedId: u?.id, name: u?.username || u?.full_name, isSelf, meId: me?.id });
+    if (isSelf) return;
     setSelectedUser(u);
     setConfigOpen(true);
   };
@@ -161,8 +168,8 @@ export default function HomeOnlineUsers() {
 
   return (
     <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
-      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]">
+      <Dialog open={configOpen} onOpenChange={(v) => { console.log('[HomeOnlineUsers] onOpenChange', v); setConfigOpen(v); }}>
+        <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]" onOpenAutoFocus={() => console.log('[HomeOnlineUsers] DialogContent mounted')}>
           <DialogHeader>
             <DialogTitle className="text-[#4a3728]">Défier {selectedUser?.username || selectedUser?.full_name || 'joueur'}</DialogTitle>
           </DialogHeader>
@@ -194,7 +201,7 @@ export default function HomeOnlineUsers() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setConfigOpen(false)} className="border-[#d4c5b0] text-[#6b5138]">{t('common.cancel') || 'Annuler'}</Button>
-              <Button onClick={handleConfirmInvite} disabled={creating} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
+              <Button onClick={() => { console.log('[HomeOnlineUsers] Defier click'); handleConfirmInvite(); }} disabled={creating} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
                 {creating ? '...' : 'Défier'}
               </Button>
             </div>
@@ -218,7 +225,7 @@ export default function HomeOnlineUsers() {
           const online = isOnline(u.last_seen);
           const isMe = me && u.id === me.id;
           return (
-            <div key={u.id} onClick={() => !isMe && openConfig(u)} className={`group flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isMe && openConfig(u); } }}>
+            <div key={u.id} onClick={() => { console.log('[HomeOnlineUsers] user row clicked', u.id, u.username || u.full_name); if (!isMe) openConfig(u); }} className={`group flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); console.log('[HomeOnlineUsers] user row keydown', e.key, u.id); if (!isMe) openConfig(u); } }}>
               <div className="relative">
                 <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                   {u.avatar_url ? (
