@@ -58,6 +58,21 @@ Deno.serve(async (req) => {
     const { socket, response } = Deno.upgradeWebSocket(req);
     socket.userId = null;
 
+    // Immediate registration using ?uid= to avoid onopen race (Deno may open instantly)
+    try {
+        const url = new URL(req.url);
+        const uid = url.searchParams.get('uid');
+        if (uid && uid !== 'anon') {
+            socket.userId = uid;
+            if (!connections.has(uid)) connections.set(uid, new Set());
+            const set = connections.get(uid);
+            if (!set.has(socket)) set.add(socket);
+            try { console.log('[USERWS] Socket added immediately', uid, 'total:', set.size); } catch (_) {}
+        }
+    } catch (_) {}
+
+    socket.onerror = (ev) => { try { console.error('[USERWS] error', ev?.message || ev?.type || ev); } catch (_) {} };
+
     socket.onopen = async () => {
         try {
             const me = await base44.auth.me();
@@ -69,10 +84,10 @@ Deno.serve(async (req) => {
             // Anonymous connection: keep socket open but don't register for targeted notifications
             return;
         }
-        if (!connections.has(socket.userId)) {
-            connections.set(socket.userId, new Set());
-        }
-        connections.get(socket.userId).add(socket);
+        if (!connections.has(socket.userId)) connections.set(socket.userId, new Set());
+        const set = connections.get(socket.userId);
+        if (!set.has(socket)) set.add(socket);
+        try { console.log('[USERWS] open (registered)', socket.userId, 'total:', set.size); } catch (_) {}
     };
 
     socket.onmessage = (event) => {
