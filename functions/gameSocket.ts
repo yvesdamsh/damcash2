@@ -4,8 +4,13 @@ const connections = new Map(); // gameId -> Set<WebSocket>
 const channel = new BroadcastChannel('notifications');
 const gameUpdates = new BroadcastChannel('game_updates');
 
+// Fallback: entity subscription to ensure real-time sync even if WS misses an event
+const entitySubscriptions = new Map(); // gameId -> unsubscribe fn
+const gameConnCounts = new Map(); // gameId -> number of open sockets
+
 gameUpdates.onmessage = (event) => {
     const { gameId, type, payload } = event.data;
+    try { console.log('[WS] game_updates fanout', { gameId, type, hasPayload: !!payload }); } catch (_) {}
     // Fanout to all sockets in this instance
     broadcast(gameId, { type, payload });
 };
@@ -71,17 +76,47 @@ Deno.serve(async (req) => {
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     // Hint clients running in sandboxed iframes to use HTTP fallback
-    try { socket.send(JSON.stringify({ type: 'WS_READY' })); } catch (_) {}
+    try { socket.send(JSON.stringify({ type: 'WS_READY' })); console.log('[WS] WS_READY sent', gameId); } catch (_) {}
     // On connect, nudge only the requester with the latest state for immediate sync
     try {
       const base44Client = createClientFromRequest(req);
       const g = await base44Client.asServiceRole.entities.Game.get(gameId);
-      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {} }
-    } catch (_) {}
+      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); console.log('[WS] initial PLAYER_JOINED sent', gameId); } catch (_) {} }
+    } catch (e) { try { console.warn('[WS] initial state fetch failed', gameId, e?.message); } catch(_) {} }
 
     // Store socket info
     socket.gameId = gameId;
     socket.user = null;
+
+    // Immediate registration to avoid missing onopen race (Deno often opens immediately)
+    try {
+        if (!connections.has(gameId)) connections.set(gameId, new Set());
+        const set = connections.get(gameId);
+        if (!set.has(socket)) {
+            set.add(socket);
+            try { console.log('[WS] Socket added immediately', gameId, 'total clients:', set.size); } catch (_) {}
+            const prev = gameConnCounts.get(gameId) || 0;
+            gameConnCounts.set(gameId, prev + 1);
+            if (prev === 0 && !entitySubscriptions.has(gameId)) {
+                try {
+                    const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
+                        try {
+                            if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
+                                console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                            }
+                        } catch (err) {
+                            console.error('[SUBSCRIBE] handler error', err);
+                        }
+                    });
+                    entitySubscriptions.set(gameId, unsub);
+                    console.log('[SUBSCRIBE] Started Game.subscribe for', gameId, '(immediate)');
+                } catch (e) {
+                    console.error('[SUBSCRIBE] Failed to start (immediate) for', gameId, e?.message);
+                }
+            }
+        }
+    } catch (e) { try { console.error('[WS] Immediate registration failed', gameId, e?.message); } catch (_) {} }
 
     socket.onopen = async () => {
         try {
@@ -90,12 +125,52 @@ Deno.serve(async (req) => {
             socket.user = null;
         }
 
-        // Autoriser spectateurs
+        // Autoriser spectateurs (onopen)
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
         }
-        connections.get(gameId).add(socket);
-        // Initial sync can be client-driven
+        const set = connections.get(gameId);
+        if (!set.has(socket)) {
+            set.add(socket);
+            try { console.log('[WS] open (registered)', gameId, 'total clients:', set.size); } catch (_) {}
+            // Start entity subscribe fallback when first client connects
+            const prev = gameConnCounts.get(gameId) || 0;
+            gameConnCounts.set(gameId, prev + 1);
+            if (prev === 0 && !entitySubscriptions.has(gameId)) {
+                try {
+                    const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
+                        try {
+                            if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
+                                console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                            }
+                        } catch (err) {
+                            console.error('[SUBSCRIBE] handler error', err);
+                        }
+                    });
+                    entitySubscriptions.set(gameId, unsub);
+                    console.log('[SUBSCRIBE] Started Game.subscribe for', gameId, '(onopen)');
+                } catch (e) {
+                    console.error('[SUBSCRIBE] Failed to start (onopen) for', gameId, e?.message);
+                }
+            }
+        } else {
+            try { console.log('[WS] open (already registered)', gameId); } catch (_) {}
+        }
+        // Determine side for detailed logging
+    try {
+        const gSnap = await base44.asServiceRole.entities.Game.get(gameId);
+        if (socket.user && gSnap) {
+            if (socket.user.id === gSnap.white_player_id) socket.side = 'white';
+            else if (socket.user.id === gSnap.black_player_id) socket.side = 'black';
+            else socket.side = 'spectator';
+        } else {
+            socket.side = socket.user ? 'spectator' : 'anon';
+        }
+        console.log('[WS] join details', { gameId, user: socket.user?.id || null, side: socket.side });
+    } catch (e) { console.warn('[WS] side detection failed', gameId, e?.message); }
+
+    // Initial sync can be client-driven
     };
 
     socket.onmessage = async (event) => {
@@ -105,9 +180,12 @@ Deno.serve(async (req) => {
                 base44.asServiceRole.entities.User.update(socket.user.id, { last_seen: new Date().toISOString() }).catch(console.error);
             }
 
-            const data = JSON.parse(event.data);
+            console.log('[WS] msg in', gameId, typeof event.data, (typeof event.data === 'string' ? event.data.slice(0,200) : 'non-string'));
+const data = JSON.parse(event.data);
+console.log('[WS] parsed type', data?.type);
             
             if (data.type === 'MOVE') {
+                console.log('[WS] MOVE received', { gameId, fromUser: socket.user?.id || null, side: socket.side });
                 // Security: Only players can move
                 if (!socket.user) {
                      // Ignore or send error
@@ -121,6 +199,7 @@ Deno.serve(async (req) => {
                 
                 // Persist Move (socket-first)
                 const { updateData } = data.payload;
+                try { console.log('[WS] MOVE apply', { nextTurn: updateData?.current_turn, status: updateData?.status, movesLen: (updateData?.moves || '').length }); } catch (_) {}
                 if (updateData) {
                     // Override with server timestamp for consistency
                     updateData.last_move_at = new Date().toISOString();
@@ -343,13 +422,27 @@ Deno.serve(async (req) => {
             }
             };
 
-    socket.onclose = () => {
+    socket.onerror = (ev) => { try { console.error('[WS] error', gameId, ev?.message || ev?.type || ev); } catch (_) {} };
+
+socket.onclose = () => {
         const gameConns = connections.get(gameId);
         if (gameConns) {
             gameConns.delete(socket);
+            try { console.log('[WS] close', gameId, 'remaining clients:', gameConns.size); } catch (_) {}
             if (gameConns.size === 0) {
                 connections.delete(gameId);
             }
+        }
+        const cnt = (gameConnCounts.get(gameId) || 1) - 1;
+        if (cnt <= 0) {
+            gameConnCounts.delete(gameId);
+            const unsub = entitySubscriptions.get(gameId);
+            if (typeof unsub === 'function') {
+                try { unsub(); console.log('[SUBSCRIBE] Stopped Game.subscribe for', gameId); } catch (_) {}
+            }
+            entitySubscriptions.delete(gameId);
+        } else {
+            gameConnCounts.set(gameId, cnt);
         }
     };
 
@@ -358,11 +451,33 @@ Deno.serve(async (req) => {
 
 function broadcast(gameId, message) {
     const gameConns = connections.get(gameId);
-    if (!gameConns) return;
+    if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
+    try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
     const msgString = JSON.stringify(message);
+    let sentCount = 0, failCount = 0, skipped = 0;
+    let idx = 0;
     for (const sock of gameConns) {
+        idx++;
+        const info = {
+            id: sock?.user?.id || null,
+            name: sock?.user?.full_name || sock?.user?.username || null,
+            readyState: sock?.readyState,
+            side: sock?.side || 'unknown'
+        };
+        try { console.log('[WS] target', idx, gameId, info); } catch (_) {}
         if (sock.readyState === WebSocket.OPEN) {
-            try { sock.send(msgString); } catch (_) {}
+            try {
+                sock.send(msgString);
+                sentCount++;
+                try { console.log('[WS] sent ok to', info.id || 'anon'); } catch (_) {}
+            } catch (e) {
+                failCount++;
+                try { console.warn('[WS] send failed to', info, e?.message); } catch (_) {}
+            }
+        } else {
+            skipped++;
+            try { console.warn('[WS] skipped (state!=OPEN)', info); } catch (_) {}
         }
     }
+    try { console.log('[WS] broadcast result', { gameId, type: message?.type, total: gameConns.size, sent: sentCount, failed: failCount, skipped }); } catch (_) {}
 }
