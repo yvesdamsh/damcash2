@@ -218,7 +218,7 @@ export default function HomeOnlineUsers() {
           const online = isOnline(u.last_seen);
           const isMe = me && u.id === me.id;
           return (
-            <div key={u.id} onClick={() => !isMe && openConfig(u)} className={`flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isMe && openConfig(u); } }}>
+            <div key={u.id} onClick={() => !isMe && openConfig(u)} className={`group flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isMe && openConfig(u); } }}>
               <div className="relative">
                 <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                   {u.avatar_url ? (
