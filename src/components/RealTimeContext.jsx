@@ -26,7 +26,11 @@ export function RealTimeProvider({ children }) {
         reconnectAttempts: 50,
         reconnectInterval: 1000,
         onOpen: () => {
-            try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
+            try {
+                if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id }));
+                // Mark presence immediately on socket open
+                base44.auth.updateMe({ last_seen: new Date().toISOString() }).catch(() => {});
+            } catch (_) {}
         },
         onMessage: (event, data) => {
             console.log('[WS] RAW MESSAGE:', data?.type, data);

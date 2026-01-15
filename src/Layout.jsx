@@ -207,8 +207,15 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 120000);
-        return () => clearInterval(interval);
+        const interval = setInterval(heartbeat, 60000);
+        const onVisible = () => { if (!document.hidden) heartbeat(); };
+        window.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onVisible);
+        return () => { 
+          clearInterval(interval);
+          window.removeEventListener('visibilitychange', onVisible);
+          window.removeEventListener('focus', onVisible);
+        };
     }, [user]);
 
     // Sync with SoundManager on mount

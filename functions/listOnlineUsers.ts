@@ -12,13 +12,13 @@ Deno.serve(async (req) => {
     try { payload = await req.json(); } catch { payload = {}; }
     const { limit = 20, search = '', gameType } = payload || {};
 
-    const since = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // last 5 minutes
+    const sinceMs = Date.now() - 5 * 60 * 1000; // last 5 minutes
 
     // Fetch recent users and filter client-side to avoid unsupported operators
     const recentUsers = await base44.asServiceRole.entities.User.list('-last_seen', 200);
     const lcSearch = String(search || '').toLowerCase();
     let filtered = (recentUsers || [])
-      .filter(u => u?.last_seen && u.last_seen >= since)
+      .filter(u => { try { return u?.last_seen && new Date(u.last_seen).getTime() >= sinceMs; } catch { return false; } })
       .filter(u => {
         if (!lcSearch) return true;
         const hay = `${u?.username||''} ${u?.full_name||''} ${u?.email||''}`.toLowerCase();
