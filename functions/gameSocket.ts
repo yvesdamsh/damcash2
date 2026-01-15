@@ -39,6 +39,18 @@ Deno.serve(async (req) => {
                     gameUpdates.postMessage({ gameId, type });
                     broadcast(gameId, { type }, null);
                 }
+
+                // Persist on HTTP fallback for GAME_UPDATE to trigger entity subscriptions
+                try {
+                    if (type === 'GAME_UPDATE' && payload) {
+                        const base44Http = createClientFromRequest(req);
+                        const outPayload = { ...payload, updated_date: new Date().toISOString() };
+                        await base44Http.asServiceRole.entities.Game.update(gameId, outPayload);
+                        try { console.log('[HTTP] GAME_UPDATE persisted for', gameId); } catch (_) {}
+                    }
+                } catch (e) {
+                    try { console.warn('[HTTP] Persist failed', gameId, e?.message); } catch (_) {}
+                }
                 // If coming via HTTP, also trigger finish notifications (resign/draw) like WS path
                 try {
                     if (type === 'GAME_UPDATE' && payload?.status === 'finished') {
