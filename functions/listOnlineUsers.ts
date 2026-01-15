@@ -27,20 +27,31 @@ Deno.serve(async (req) => {
       }
     }
     const lcSearch = String(search || '').toLowerCase();
-    let filtered = (recentUsers || [])
-      .filter(u => { try { return u?.last_seen && new Date(u.last_seen).getTime() >= sinceMs; } catch { return false; } })
-      .filter(u => {
-        if (!lcSearch) return true;
-        const hay = `${u?.username||''} ${u?.full_name||''} ${u?.email||''}`.toLowerCase();
-        return hay.includes(lcSearch);
-      });
+    const now = Date.now();
+  const windowMs = 10 * 60 * 1000; // 10 minutes
+  let filtered = (recentUsers || [])
+    .filter(u => {
+      try {
+        const last = u?.last_seen ? new Date(u.last_seen).getTime() : null;
+        const updated = u?.updated_date ? new Date(u.updated_date).getTime() : null;
+        const onlineFlag = u?.is_online === true;
+        return onlineFlag || (last && now - last <= windowMs) || (updated && now - updated <= windowMs);
+      } catch {
+        return false;
+      }
+    })
+    .filter(u => {
+      if (!lcSearch) return true;
+      const hay = `${u?.username||''} ${u?.full_name||''} ${u?.email||''}`.toLowerCase();
+      return hay.includes(lcSearch);
+    });
 
     // Removed gameType filtering to always return all recently active users
 
     // Sort by last_seen desc client-side, then slice to limit
     filtered = filtered.sort((a,b) => {
-      const ta = a?.last_seen ? new Date(a.last_seen).getTime() : 0;
-      const tb = b?.last_seen ? new Date(b.last_seen).getTime() : 0;
+      const ta = a?.last_seen ? new Date(a.last_seen).getTime() : (a?.updated_date ? new Date(a.updated_date).getTime() : 0);
+      const tb = b?.last_seen ? new Date(b.last_seen).getTime() : (b?.updated_date ? new Date(b.updated_date).getTime() : 0);
       return tb - ta;
     }).slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
     const users = filtered;
@@ -52,7 +63,7 @@ Deno.serve(async (req) => {
       full_name: u.full_name,
       email: u.email,
       avatar_url: u.avatar_url,
-      last_seen: u.last_seen,
+      last_seen: u.last_seen || u.updated_date,
       elo_checkers: u.elo_checkers ?? 1200,
       elo_chess: u.elo_chess ?? 1200,
       default_game: u.default_game || (u.preferred_game_type || ''),

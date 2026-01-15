@@ -194,7 +194,7 @@ function LayoutContent({ children }) {
         const heartbeat = async () => {
             try {
                 if (document.hidden || !navigator.onLine) return;
-                await base44.auth.updateMe({ last_seen: new Date().toISOString() });
+                await base44.auth.updateMe({ last_seen: new Date().toISOString(), is_online: true });
                 // Also notify friends at most every 5 minutes to avoid rate limits
                 const now = Date.now();
                 if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
@@ -250,7 +250,7 @@ function LayoutContent({ children }) {
             try {
                 const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
-                try { await base44.auth.updateMe({ last_seen: new Date().toISOString() }); } catch (_) {}
+                try { await base44.auth.updateMe({ last_seen: new Date().toISOString(), is_online: true }); } catch (_) {}
                 // Notify friends on first login in this session
                 try {
                   if (currentUser && !sessionStorage.getItem('online_notified_v1')) {
