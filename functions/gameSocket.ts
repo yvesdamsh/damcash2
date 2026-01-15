@@ -229,8 +229,25 @@ console.log('[WS] parsed type', data?.type);
                     broadcast(gameId, { type: 'GAME_REFETCH' }, null);
                     gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
 
-                    // Then write to DB (authoritative)
-                    await base44.asServiceRole.entities.Game.update(gameId, updateData);
+                    // Then write to DB (authoritative) and mirror GAME_UPDATE event payload with move_count if possible
+                    try {
+                        const nextCount = (() => {
+                            try {
+                                if (typeof updateData.move_count === 'number') return updateData.move_count;
+                                const m = updateData.moves;
+                                if (Array.isArray(m)) return m.length;
+                                if (typeof m === 'string') { const arr = JSON.parse(m); return Array.isArray(arr) ? arr.length : undefined; }
+                            } catch {}
+                            return undefined;
+                        })();
+                        if (typeof nextCount === 'number') {
+                            await base44.asServiceRole.entities.Game.update(gameId, { ...updateData, move_count: nextCount });
+                        } else {
+                            await base44.asServiceRole.entities.Game.update(gameId, updateData);
+                        }
+                    } catch (e) {
+                        console.error('[WS] Persist error (MOVE)', e);
+                    }
 
                     // Notify next player it's their turn
                     try {
