@@ -2098,8 +2098,8 @@ const gameNotifInFlightRef = useRef(false);
         setGame(prev => ({ ...prev, ...updateData }));
         // Keep polling paused a bit longer to avoid yo-yo with entity echo
         setTimeout(() => setPausePolling(false), 2200);
-        // Failsafe: clear updating flag if no ACK arrives
-        setTimeout(() => { isUpdatingRef.current = false; }, 1500);
+        // Failsafe: clear updating flag after server echo window
+        setTimeout(() => { isUpdatingRef.current = false; }, 2200);
 
         if (game.id === 'local-ai') return;
 
