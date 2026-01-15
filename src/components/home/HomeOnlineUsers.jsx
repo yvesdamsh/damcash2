@@ -1,6 +1,6 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { safeInvoke } from '@/utils/safeInvoke';
+import { safeInvoke } from '@/components/utils/safeInvoke';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, RefreshCw } from 'lucide-react';

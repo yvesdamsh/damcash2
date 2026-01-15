@@ -33,7 +33,7 @@ import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 import { toast } from 'sonner';
-import { safeInvoke } from '@/utils/safeInvoke';
+import { safeInvoke } from '@/components/utils/safeInvoke';
 
 export default function Layout({ children }) {
     return (

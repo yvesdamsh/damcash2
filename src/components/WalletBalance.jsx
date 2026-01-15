@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { safeInvoke } from '@/utils/safeInvoke';
+import { safeInvoke } from '@/components/utils/safeInvoke';
 import { Coins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
