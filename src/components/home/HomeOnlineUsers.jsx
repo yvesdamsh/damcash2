@@ -7,6 +7,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { withRateLimitRetry } from '@/components/utils/retryClient';
 
 export default function HomeOnlineUsers() {
   const { t } = useLanguage();
@@ -36,7 +37,7 @@ export default function HomeOnlineUsers() {
     try {
       let list = [];
       try {
-        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
+        const res = await withRateLimitRetry(() => base44.functions.invoke('listOnlineUsers', { limit: 20 }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
         list = res?.data?.users || [];
       } catch (e) {
         // On rate limit or other error, keep current list and back off silently

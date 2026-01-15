@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Coins, TrendingUp, AlertCircle, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { withRateLimitRetry } from '@/components/utils/retryClient';
 
 export default function BettingPanel({ game, currentUser }) {
     const [amount, setAmount] = useState(10);
@@ -19,10 +20,11 @@ export default function BettingPanel({ game, currentUser }) {
         const load = async () => {
             if (!game) return;
             try {
-                const res = await base44.functions.invoke('betsManager', { action: 'get_odds', gameId: game.id });
+                const res = await withRateLimitRetry(() => base44.functions.invoke('betsManager', { action: 'get_odds', gameId: game.id }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
                 if (res.data?.odds) setOdds(res.data.odds);
                 if (currentUser) {
-                    base44.entities.Bet.filter({ game_id: game.id, user_id: currentUser.id }).then(setMyBets);
+                    const bets = await withRateLimitRetry(() => base44.entities.Bet.filter({ game_id: game.id, user_id: currentUser.id }), { retries: 2, baseDelay: 800, maxDelay: 6000 });
+                    setMyBets(bets);
                 }
             } catch (_) {}
         };
@@ -74,7 +76,7 @@ export default function BettingPanel({ game, currentUser }) {
         if (legs.length < 2) return toast.error('Ajoutez au moins 2 sélections');
         setLoading(true);
         try {
-            const res = await base44.functions.invoke('betsManager', { action: 'place_parlay', legs, amount: parseFloat(amount) });
+            const res = await withRateLimitRetry(() => base44.functions.invoke('betsManager', { action: 'place_parlay', legs, amount: parseFloat(amount) }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
             if (res.data?.error) toast.error(res.data.error);
             else { toast.success('Combiné placé !'); setParlay([]); }
         } catch (_) { toast.error('Erreur technique'); } finally { setLoading(false); }

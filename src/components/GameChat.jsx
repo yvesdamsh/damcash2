@@ -7,6 +7,7 @@ import { Send, MessageSquare, Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { useRealTime } from '@/components/RealTimeContext';
+import { withRateLimitRetry } from '@/components/utils/retryClient';
 
 const EMOJIS = ["😀", "😂", "😍", "😎", "🤔", "😅", "😭", "😡", "👍", "👎", "👏", "🔥", "❤️", "💔", "👋"];
 
@@ -42,7 +43,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
     if (messages.length > 0) return;
     (async () => {
       try {
-        const history = await base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 30);
+        const history = await withRateLimitRetry(() => base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 30), { retries: 3, baseDelay: 700, maxDelay: 6000 });
         setMessages(history || []);
       } catch (_) {}
     })();
@@ -71,7 +72,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
         if (hidden || wsOpen) {
           interval = Math.min(Math.floor(interval * 1.5), 60000);
         } else {
-          const list = await base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 50);
+          const list = await withRateLimitRetry(() => base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 50), { retries: 2, baseDelay: 800, maxDelay: 6000 });
           const prev = msgsRef.current || [];
           const prevLast = prev.length ? prev[prev.length - 1].id : null;
           const nextLast = list && list.length ? list[list.length - 1].id : null;
