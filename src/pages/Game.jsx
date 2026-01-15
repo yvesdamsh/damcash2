@@ -815,9 +815,9 @@ const gameNotifInFlightRef = useRef(false);
                    } catch (_) {}
                 }
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
-                // If server sent a partial update (no board_state or moves), quickly refetch once (throttled)
-                const missingBoardOrMoves = false; // Always accept server GAME_UPDATE; refetch only if explicit GAME_REFETCH arrives
-                if (missingBoardOrMoves && id && (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN)) {
+                // Skip auto-refetch here to avoid yo-yo; rely on authoritative GAME_UPDATE/ENTITY only
+                const missingBoardOrMoves = false;
+                if (false) {
                     const now = Date.now();
                     if (now - (wsRefetchAtRef.current || 0) > 500) {
                         wsRefetchAtRef.current = now;
