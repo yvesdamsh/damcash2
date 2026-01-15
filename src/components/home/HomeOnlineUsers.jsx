@@ -218,7 +218,7 @@ export default function HomeOnlineUsers() {
           const online = isOnline(u.last_seen);
           const isMe = me && u.id === me.id;
           return (
-            <div key={u.id} className="flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a]">
+            <div key={u.id} onClick={() => !isMe && openConfig(u)} className={`flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a] ${!isMe ? 'cursor-pointer hover:bg-[#f6efe4]' : 'opacity-60 cursor-not-allowed'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !isMe && openConfig(u); } }}>
               <div className="relative">
                 <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                   {u.avatar_url ? (
@@ -230,9 +230,9 @@ export default function HomeOnlineUsers() {
                 <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? 'bg-green-500' : 'bg-gray-300'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <button onClick={() => !isMe && openConfig(u)} disabled={isMe} className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 hover:underline truncate disabled:opacity-60">
+                <div className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 group-hover:underline truncate">
                   {u.username || u.full_name || (isMe ? (t('lobby.me') || 'Me') : (t('common.player') || 'Player'))}
-                </button>
+                </div>
                 <div className="text-[10px] text-gray-500 truncate">
                   {online ? (t('home.status_online') || 'En ligne') : (t('home.status_recent') || 'Récemment')}
                 </div>
