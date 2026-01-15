@@ -88,6 +88,36 @@ Deno.serve(async (req) => {
     socket.gameId = gameId;
     socket.user = null;
 
+    // Immediate registration to avoid missing onopen race (Deno often opens immediately)
+    try {
+        if (!connections.has(gameId)) connections.set(gameId, new Set());
+        const set = connections.get(gameId);
+        if (!set.has(socket)) {
+            set.add(socket);
+            try { console.log('[WS] Socket added immediately', gameId, 'total clients:', set.size); } catch (_) {}
+            const prev = gameConnCounts.get(gameId) || 0;
+            gameConnCounts.set(gameId, prev + 1);
+            if (prev === 0 && !entitySubscriptions.has(gameId)) {
+                try {
+                    const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
+                        try {
+                            if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
+                                console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                            }
+                        } catch (err) {
+                            console.error('[SUBSCRIBE] handler error', err);
+                        }
+                    });
+                    entitySubscriptions.set(gameId, unsub);
+                    console.log('[SUBSCRIBE] Started Game.subscribe for', gameId, '(immediate)');
+                } catch (e) {
+                    console.error('[SUBSCRIBE] Failed to start (immediate) for', gameId, e?.message);
+                }
+            }
+        }
+    } catch (e) { try { console.error('[WS] Immediate registration failed', gameId, e?.message); } catch (_) {} }
+
     socket.onopen = async () => {
         try {
             socket.user = await base44.auth.me();
