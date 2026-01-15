@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     try { payload = await req.json(); } catch { payload = {}; }
     const { limit = 20, search = '', gameType } = payload || {};
 
-    const sinceMs = Date.now() - 5 * 60 * 1000; // last 5 minutes
+    const sinceMs = Date.now() - 10 * 60 * 1000; // last 10 minutes
 
     // Fetch recent users and filter client-side to avoid unsupported operators
     const recentUsers = await base44.asServiceRole.entities.User.list('-last_seen', 200);

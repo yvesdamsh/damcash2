@@ -207,7 +207,7 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        const interval = setInterval(heartbeat, 60000);
+        const interval = setInterval(heartbeat, 30000);
         const onVisible = () => { if (!document.hidden) heartbeat(); };
         window.addEventListener('visibilitychange', onVisible);
         window.addEventListener('focus', onVisible);
@@ -250,6 +250,7 @@ function LayoutContent({ children }) {
             try {
                 const currentUser = await base44.auth.me().catch(() => null);
                 setUser(currentUser);
+                try { await base44.auth.updateMe({ last_seen: new Date().toISOString() }); } catch (_) {}
                 // Notify friends on first login in this session
                 try {
                   if (currentUser && !sessionStorage.getItem('online_notified_v1')) {

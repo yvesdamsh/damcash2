@@ -17,8 +17,13 @@ export function RealTimeProvider({ children }) {
     const navigate = useNavigate();
 
     useEffect(() => {
-        base44.auth.me().then(setUser).catch(() => setUser(null));
-    }, []);
+            base44.auth.me().then(setUser).catch(() => setUser(null));
+        }, []);
+
+        // Stamp presence on mount (extra safety)
+        useEffect(() => {
+            base44.auth.updateMe({ last_seen: new Date().toISOString() }).catch(() => {});
+        }, []);
 
     // Global User Socket (Notifications)
     const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
