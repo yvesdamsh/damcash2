@@ -312,7 +312,7 @@ const gameNotifInFlightRef = useRef(false);
                 currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
                 lastChessMove = parsed?.lastMove || null;
 
-                if (stateChanged && isNewerOrEqual) {
+                if (stateChanged) {
                     setBoard(currentBoard);
                     setChessState({ 
                         castlingRights: parsed?.castlingRights || {}, 
@@ -321,7 +321,7 @@ const gameNotifInFlightRef = useRef(false);
                         positionHistory: parsed?.positionHistory || {}
                     });
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
-                    lastAppliedAtRef.current = gameTs;
+                    lastAppliedAtRef.current = Math.max(gameTs || 0, lastAppliedAtRef.current || 0);
                 } else {
                     // Keep chess state metadata in sync even if board not reapplied
                     setChessState(prev => ({
@@ -331,6 +331,8 @@ const gameNotifInFlightRef = useRef(false);
                         halfMoveClock: (parsed?.halfMoveClock !== undefined) ? parsed.halfMoveClock : (prev.halfMoveClock ?? 0),
                         positionHistory: parsed?.positionHistory || prev.positionHistory || {}
                     }));
+                    // If timestamp is newer, record it to avoid mis-ordering later
+                    if (isNewerOrEqual) { try { lastAppliedAtRef.current = gameTs; } catch (_) {} }
                 }
             } catch (e) { handleAsyncError(e, 'Game board parsing (chess)'); /* do not setBoard([]) to avoid flicker */ }
         } else {
