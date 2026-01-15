@@ -75,7 +75,7 @@ export default function HomeOnlineUsers() {
 
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
-    try { return (Date.now() - new Date(lastSeen).getTime()) < 10 * 60 * 1000; } catch { return false; }
+    try { return (Date.now() - new Date(lastSeen).getTime()) < 5 * 60 * 1000; } catch { return false; }
   };
 
   const rows = (() => {
