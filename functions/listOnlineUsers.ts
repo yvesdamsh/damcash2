@@ -14,8 +14,8 @@ Deno.serve(async (req) => {
 
     const sinceMs = Date.now() - 10 * 60 * 1000; // last 10 minutes
 
-    // Fetch recent users and filter client-side to avoid unsupported operators
-    const recentUsers = await base44.asServiceRole.entities.User.list('-last_seen', 200);
+    // Fetch recent users sorted by updated_date (last_seen may not be sortable)
+    const recentUsers = await base44.asServiceRole.entities.User.list('-updated_date', 500);
     const lcSearch = String(search || '').toLowerCase();
     let filtered = (recentUsers || [])
       .filter(u => { try { return u?.last_seen && new Date(u.last_seen).getTime() >= sinceMs; } catch { return false; } })
@@ -33,7 +33,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    filtered = filtered.slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
+    // Sort by last_seen desc client-side, then slice to limit
+    filtered = filtered.sort((a,b) => {
+      const ta = a?.last_seen ? new Date(a.last_seen).getTime() : 0;
+      const tb = b?.last_seen ? new Date(b.last_seen).getTime() : 0;
+      return tb - ta;
+    }).slice(0, Math.min(50, Math.max(1, Number(limit)||20)));
     const users = filtered;
 
     // Return only needed fields
