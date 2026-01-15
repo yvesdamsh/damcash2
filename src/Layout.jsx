@@ -33,6 +33,7 @@ import { RealTimeProvider } from '@/components/RealTimeContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import UsernameSetupDialog from '@/components/UsernameSetupDialog';
 import { toast } from 'sonner';
+import { safeInvoke } from '@/utils/safeInvoke';
 
 export default function Layout({ children }) {
     return (
@@ -199,7 +200,7 @@ function LayoutContent({ children }) {
                 const now = Date.now();
                 if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
                     lastNotifyRef.current = now;
-                    base44.functions.invoke('notifyFriendsOnline', {}).catch(() => {});
+                    safeInvoke('notifyFriendsOnline', {}, { fallbackData: { notified: 0 }, retries: 1, logErrors: false });
                 }
             } catch (e) {
                 console.error('Heartbeat update failed', e);

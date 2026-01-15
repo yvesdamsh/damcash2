@@ -1,5 +1,6 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
+import { safeInvoke } from '@/utils/safeInvoke';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, RefreshCw } from 'lucide-react';
@@ -41,10 +42,13 @@ export default function HomeOnlineUsers() {
     try {
       let list = [];
       try {
-        const res = await base44.functions.invoke('listOnlineUsers', { limit: 20 });
-        list = res?.data?.users || [];
+        const result = await safeInvoke('listOnlineUsers', { limit: 20 }, {
+          fallbackData: users,
+          retries: 2,
+          logErrors: false
+        });
+        list = result?.data?.users || result?.data || [];
       } catch (e) {
-        // On rate limit or other error, keep current list and back off silently
         list = users;
       }
       setUsers(list);
