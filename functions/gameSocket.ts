@@ -4,8 +4,13 @@ const connections = new Map(); // gameId -> Set<WebSocket>
 const channel = new BroadcastChannel('notifications');
 const gameUpdates = new BroadcastChannel('game_updates');
 
+// Fallback: entity subscription to ensure real-time sync even if WS misses an event
+const entitySubscriptions = new Map(); // gameId -> unsubscribe fn
+const gameConnCounts = new Map(); // gameId -> number of open sockets
+
 gameUpdates.onmessage = (event) => {
     const { gameId, type, payload } = event.data;
+    try { console.log('[WS] game_updates fanout', { gameId, type, hasPayload: !!payload }); } catch (_) {}
     // Fanout to all sockets in this instance
     broadcast(gameId, { type, payload });
 };
@@ -71,13 +76,13 @@ Deno.serve(async (req) => {
     const { socket, response } = Deno.upgradeWebSocket(req);
 
     // Hint clients running in sandboxed iframes to use HTTP fallback
-    try { socket.send(JSON.stringify({ type: 'WS_READY' })); } catch (_) {}
+    try { socket.send(JSON.stringify({ type: 'WS_READY' })); console.log('[WS] WS_READY sent', gameId); } catch (_) {}
     // On connect, nudge only the requester with the latest state for immediate sync
     try {
       const base44Client = createClientFromRequest(req);
       const g = await base44Client.asServiceRole.entities.Game.get(gameId);
-      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); } catch (_) {} }
-    } catch (_) {}
+      if (g) { try { socket.send(JSON.stringify({ type: 'PLAYER_JOINED', payload: g })); console.log('[WS] initial PLAYER_JOINED sent', gameId); } catch (_) {} }
+    } catch (e) { try { console.warn('[WS] initial state fetch failed', gameId, e?.message); } catch(_) {} }
 
     // Store socket info
     socket.gameId = gameId;
@@ -95,6 +100,29 @@ Deno.serve(async (req) => {
             connections.set(gameId, new Set());
         }
         connections.get(gameId).add(socket);
+        try { console.log('[WS] open', gameId, 'total clients:', connections.get(gameId)?.size || 0); } catch (_) {}
+
+        // Start entity subscribe fallback when first client connects
+        const cnt = (gameConnCounts.get(gameId) || 0) + 1;
+        gameConnCounts.set(gameId, cnt);
+        if (cnt === 1) {
+            try {
+                const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
+                    try {
+                        if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
+                            console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
+                            broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                        }
+                    } catch (err) {
+                        console.error('[SUBSCRIBE] handler error', err);
+                    }
+                });
+                entitySubscriptions.set(gameId, unsub);
+                console.log('[SUBSCRIBE] Started Game.subscribe for', gameId);
+            } catch (e) {
+                console.error('[SUBSCRIBE] Failed to start for', gameId, e?.message);
+            }
+        }
         // Initial sync can be client-driven
     };
 
@@ -105,7 +133,9 @@ Deno.serve(async (req) => {
                 base44.asServiceRole.entities.User.update(socket.user.id, { last_seen: new Date().toISOString() }).catch(console.error);
             }
 
-            const data = JSON.parse(event.data);
+            console.log('[WS] msg in', gameId, typeof event.data, (typeof event.data === 'string' ? event.data.slice(0,200) : 'non-string'));
+const data = JSON.parse(event.data);
+console.log('[WS] parsed type', data?.type);
             
             if (data.type === 'MOVE') {
                 // Security: Only players can move
@@ -347,9 +377,21 @@ Deno.serve(async (req) => {
         const gameConns = connections.get(gameId);
         if (gameConns) {
             gameConns.delete(socket);
+            try { console.log('[WS] close', gameId, 'remaining clients:', gameConns.size); } catch (_) {}
             if (gameConns.size === 0) {
                 connections.delete(gameId);
             }
+        }
+        const cnt = (gameConnCounts.get(gameId) || 1) - 1;
+        if (cnt <= 0) {
+            gameConnCounts.delete(gameId);
+            const unsub = entitySubscriptions.get(gameId);
+            if (typeof unsub === 'function') {
+                try { unsub(); console.log('[SUBSCRIBE] Stopped Game.subscribe for', gameId); } catch (_) {}
+            }
+            entitySubscriptions.delete(gameId);
+        } else {
+            gameConnCounts.set(gameId, cnt);
         }
     };
 
@@ -358,7 +400,8 @@ Deno.serve(async (req) => {
 
 function broadcast(gameId, message) {
     const gameConns = connections.get(gameId);
-    if (!gameConns) return;
+    if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
+    try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
     const msgString = JSON.stringify(message);
     for (const sock of gameConns) {
         if (sock.readyState === WebSocket.OPEN) {
