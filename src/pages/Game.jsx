@@ -339,10 +339,10 @@ const gameNotifInFlightRef = useRef(false);
             try {
                 const parsed = safeJSONParse(game.board_state, []);
                 currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
-                if (stateChanged && isNewerOrEqual) {
+                if (stateChanged) {
                     setBoard(currentBoard);
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
-                    lastAppliedAtRef.current = gameTs;
+                    lastAppliedAtRef.current = Math.max(gameTs || 0, lastAppliedAtRef.current || 0);
                 }
             } catch (e) { handleAsyncError(e, 'Game board parsing (checkers)'); /* do not setBoard([]) to avoid flicker */ }
         }
