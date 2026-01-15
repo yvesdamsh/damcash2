@@ -2093,12 +2093,11 @@ const gameNotifInFlightRef = useRef(false);
         try { lastAppliedMoveCountRef.current = Math.max((lastAppliedMoveCountRef.current || 0), (currentMoves.length + 1)); } catch (_) {}
         // Mark updating to disable competing sources
         isUpdatingRef.current = true;
-        // OPTIMISTIC UPDATE (Critical for responsiveness and preventing "jump back")
+        // OPTIMISTIC UPDATE
         setPausePolling(true);
         setGame(prev => ({ ...prev, ...updateData }));
-        // Removed: no immediate refetch after optimistic update to avoid yoyo
-        // Resume polling after a short settle time to avoid yo-yo
-        setTimeout(() => setPausePolling(false), 1000);
+        // Keep polling paused a bit longer to avoid yo-yo with entity echo
+        setTimeout(() => setPausePolling(false), 2200);
         // Failsafe: clear updating flag if no ACK arrives
         setTimeout(() => { isUpdatingRef.current = false; }, 1500);
 
