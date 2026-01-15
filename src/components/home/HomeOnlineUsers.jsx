@@ -132,7 +132,7 @@ export default function HomeOnlineUsers() {
       setConfigOpen(false);
 
       // Ensure Invitation is persisted before navigating (prevents lost invites)
-      await base44.entities.Invitation.create({
+      const inv = await base44.entities.Invitation.create({
         from_user_id: current.id,
         from_user_name: current.username || `Joueur ${current.id.substring(0,4)}`,
         to_user_email: (selectedUser.email || '').toLowerCase(),
@@ -151,8 +151,8 @@ export default function HomeOnlineUsers() {
         type: 'game_invite',
         title: t('home.invite_friend'),
         message: (t('home.invite_from') || 'Invitation de') + ` ${current.username || t('common.anonymous')}`,
-        link: `/Game?id=${newGame.id}`,
-        metadata: { gameId: newGame.id }
+        link: `/Game?id=${newGame.id}&join=player`,
+        metadata: { gameId: newGame.id, invitationId: inv.id }
       }).catch(e => console.warn('[INVITE] Notification failed:', e?.message || e));
     } finally {
       setCreating(false);
@@ -164,7 +164,7 @@ export default function HomeOnlineUsers() {
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]">
           <DialogHeader>
-            <DialogTitle className="text-[#4a3728]">{t('home.configure_match') || 'Configurer la partie'}</DialogTitle>
+            <DialogTitle className="text-[#4a3728]">Défier {selectedUser?.username || selectedUser?.full_name || 'joueur'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
@@ -195,7 +195,7 @@ export default function HomeOnlineUsers() {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setConfigOpen(false)} className="border-[#d4c5b0] text-[#6b5138]">{t('common.cancel') || 'Annuler'}</Button>
               <Button onClick={handleConfirmInvite} disabled={creating} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
-                {creating ? '...' : (t('home.send_invite') || "Envoyer l'invitation")}
+                {creating ? '...' : 'Défier'}
               </Button>
             </div>
           </div>
