@@ -903,7 +903,8 @@ const gameNotifInFlightRef = useRef(false);
           const gTs = g.updated_date ? new Date(g.updated_date).getTime() : 0;
           const appliedTs = lastAppliedAtRef.current || 0;
           const withinJoinGrace = (Date.now() - startAt) < 5000;
-          if (newLen > curr || (withinJoinGrace && newLen === curr && gTs >= appliedTs)) {
+          const changedBoard = (() => { try { return !!g.board_state && !boardsAreEqual(lastAppliedBoardStateRef.current, g.board_state); } catch { return true; } })();
+          if (newLen > curr || changedBoard || (newLen === curr && gTs > appliedTs) || (withinJoinGrace && newLen === curr && gTs >= appliedTs)) {
             setGame(prev => ({ ...(prev||{}), ...g }));
             lastAppliedMoveCountRef.current = Math.max(curr, newLen);
             try { logger.log('[MOVE][ENTITY] Applied'); } catch (_) {}

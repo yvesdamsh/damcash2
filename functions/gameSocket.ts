@@ -47,6 +47,11 @@ Deno.serve(async (req) => {
                         const outPayload = { ...payload, updated_date: new Date().toISOString() };
                         await base44Http.asServiceRole.entities.Game.update(gameId, outPayload);
                         try { console.log('[HTTP] GAME_UPDATE persisted for', gameId); } catch (_) {}
+                        // Mirror WS path: nudge all clients to refetch immediately
+                        try {
+                            gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
+                            broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                        } catch (_) {}
                     }
                 } catch (e) {
                     try { console.warn('[HTTP] Persist failed', gameId, e?.message); } catch (_) {}
