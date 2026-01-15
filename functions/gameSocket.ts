@@ -136,7 +136,9 @@ Deno.serve(async (req) => {
                         try {
                             if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
                                 console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
-                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                                if (shouldSendGameUpdate(gameId, event.data || {})) {
+                                      broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                                  }
                             }
                         } catch (err) {
                             console.error('[SUBSCRIBE] handler error', err);
@@ -175,7 +177,9 @@ Deno.serve(async (req) => {
                         try {
                             if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
                                 console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
-                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                                if (shouldSendGameUpdate(gameId, event.data || {})) {
+                                      broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                                  }
                             }
                         } catch (err) {
                             console.error('[SUBSCRIBE] handler error', err);
@@ -503,16 +507,7 @@ socket.onclose = () => {
 });
 
 function broadcast(gameId, message) {
-          // Dedup guard to avoid burst echoes
-          try {
-            if (message && message.type === 'GAME_UPDATE') {
-              if (!shouldSendGameUpdate(gameId, message.payload || {})) {
-                try { console.log('[WS] broadcast dedup GAME_UPDATE skipped', gameId); } catch (_) {}
-                return;
-              }
-            }
-          } catch (_) {}
-    const gameConns = connections.get(gameId);
+          const gameConns = connections.get(gameId);
     if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
     try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
     const msgString = JSON.stringify(message);
