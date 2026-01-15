@@ -58,7 +58,8 @@ export default function HomeOnlineUsers() {
   React.useEffect(() => {
     // Try to load current user, but online list no longer depends on it
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
-    setTimeout(() => fetchOnline(), 2000);
+    // Fetch quickly on mount; if function fails, UI stays empty but won’t block
+    setTimeout(() => fetchOnline(), 200);
   }, [cfg.type, fetchOnline]);
 
   React.useEffect(() => {
