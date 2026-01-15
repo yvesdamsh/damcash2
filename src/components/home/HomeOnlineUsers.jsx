@@ -169,42 +169,17 @@ export default function HomeOnlineUsers() {
   return (
     <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
       <Dialog open={configOpen} onOpenChange={(v) => { console.log('[HomeOnlineUsers] onOpenChange', v); setConfigOpen(v); }}>
-        <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]" onOpenAutoFocus={() => console.log('[HomeOnlineUsers] DialogContent mounted')}>
+        <DialogContent className="sm:max-w-[420px]" onOpenAutoFocus={() => console.log('[HomeOnlineUsers] Dialog open') }>
           <DialogHeader>
-            <DialogTitle className="text-[#4a3728]">Défier {selectedUser?.username || selectedUser?.full_name || 'joueur'}</DialogTitle>
+            <DialogTitle>Défier {selectedUser?.username || selectedUser?.full_name || 'joueur'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              {[{l:'1+0', t:1, i:0},{l:'3+2', t:3, i:2},{l:'5+0', t:5, i:0},{l:'10+0', t:10, i:0},{l:'15+10', t:15, i:10}].map(p => (
-                <Button key={p.l} variant={cfg.time===p.t && cfg.increment===p.i ? 'default':'outline'} onClick={() => setCfg({...cfg, time:p.t, increment:p.i})} className={cfg.time===p.t && cfg.increment===p.i ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white' : 'border-[#d4c5b0] text-[#6b5138]'}>
-                  {p.l}
-                </Button>
-              ))}
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {[1,3,7,9,20].map(s => (
-                <Button key={s} variant={cfg.series===s ? 'default':'outline'} onClick={() => setCfg({...cfg, series:s})} className={cfg.series===s ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white':'border-[#d4c5b0] text-[#6b5138]'}>
-                  {s===1 ? 'Unique' : s}
-                </Button>
-              ))}
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {[0,10,50,100,500].map(s => (
-                <Button key={s} variant={cfg.stake===s ? 'default':'outline'} onClick={() => setCfg({...cfg, stake:s})} className={cfg.stake===s ? 'bg-yellow-600 hover:bg-yellow-700 text-white':'border-[#d4c5b0] text-[#6b5138]'}>
-                  {s===0 ? 'Gratuit' : `D$ ${s}`}
-                </Button>
-              ))}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant={cfg.type==='checkers' ? 'default':'outline'} onClick={() => setCfg({...cfg, type:'checkers'})} className={cfg.type==='checkers' ? 'bg-[#6b5138] hover:bg-[#5c4430] text-white':'border-[#d4c5b0] text-[#6b5138]'}>⚪ Dames</Button>
-              <Button variant={cfg.type==='chess' ? 'default':'outline'} onClick={() => setCfg({...cfg, type:'chess'})} className={cfg.type==='chess' ? 'bg-[#6B8E4E] hover:bg-[#5a7a40] text-white':'border-[#d4c5b0] text-[#6B8E4E]'}>♟️ Échecs</Button>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setConfigOpen(false)} className="border-[#d4c5b0] text-[#6b5138]">{t('common.cancel') || 'Annuler'}</Button>
-              <Button onClick={() => { console.log('[HomeOnlineUsers] Defier click'); handleConfirmInvite(); }} disabled={creating} className="bg-[#4a3728] hover:bg-[#2c1e12] text-white">
-                {creating ? '...' : 'Défier'}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => { console.log('[HomeOnlineUsers] cancel'); setConfigOpen(false); }}>
+              {t('common.cancel') || 'Annuler'}
+            </Button>
+            <Button onClick={() => { console.log('[HomeOnlineUsers] Defier click'); handleConfirmInvite(); }} disabled={creating}>
+              {creating ? '...' : 'Défier'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
