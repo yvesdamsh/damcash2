@@ -39,13 +39,13 @@ export default function BettingPanel({ game, currentUser }) {
         if (!currentUser) return toast.error("Connectez-vous pour parier");
         setLoading(true);
         try {
-            const res = await base44.functions.invoke('betsManager', {
+            const res = await withRateLimitRetry(() => base44.functions.invoke('betsManager', {
                 action: 'place_bet_single',
                 gameId: game.id,
                 amount: parseFloat(amount),
                 pick,
                 live: game.status === 'playing'
-            });
+            }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
             if (res.data?.error) toast.error(res.data.error);
             else {
                 toast.success("Pari placé ! Bonne chance !");
