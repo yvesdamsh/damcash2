@@ -125,33 +125,37 @@ Deno.serve(async (req) => {
             socket.user = null;
         }
 
-        // Autoriser spectateurs
+        // Autoriser spectateurs (onopen)
         if (!connections.has(gameId)) {
             connections.set(gameId, new Set());
         }
-        connections.get(gameId).add(socket);
-        try { console.log('[WS] open', gameId, 'total clients:', connections.get(gameId)?.size || 0); } catch (_) {}
-
-        // Start entity subscribe fallback when first client connects
-        const cnt = (gameConnCounts.get(gameId) || 0) + 1;
-        gameConnCounts.set(gameId, cnt);
-        if (cnt === 1) {
-            try {
-                const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
-                    try {
-                        if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
-                            console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
-                            broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+        const set = connections.get(gameId);
+        if (!set.has(socket)) {
+            set.add(socket);
+            try { console.log('[WS] open (registered)', gameId, 'total clients:', set.size); } catch (_) {}
+            // Start entity subscribe fallback when first client connects
+            const prev = gameConnCounts.get(gameId) || 0;
+            gameConnCounts.set(gameId, prev + 1);
+            if (prev === 0 && !entitySubscriptions.has(gameId)) {
+                try {
+                    const unsub = base44.asServiceRole.entities.Game.subscribe((event) => {
+                        try {
+                            if (event?.id === gameId && (event.type === 'update' || event.type === 'create' || event.type === 'delete')) {
+                                console.log('[SUBSCRIBE] Game event', event.type, 'for', gameId);
+                                broadcast(gameId, { type: 'GAME_UPDATE', payload: event.data || {} });
+                            }
+                        } catch (err) {
+                            console.error('[SUBSCRIBE] handler error', err);
                         }
-                    } catch (err) {
-                        console.error('[SUBSCRIBE] handler error', err);
-                    }
-                });
-                entitySubscriptions.set(gameId, unsub);
-                console.log('[SUBSCRIBE] Started Game.subscribe for', gameId);
-            } catch (e) {
-                console.error('[SUBSCRIBE] Failed to start for', gameId, e?.message);
+                    });
+                    entitySubscriptions.set(gameId, unsub);
+                    console.log('[SUBSCRIBE] Started Game.subscribe for', gameId, '(onopen)');
+                } catch (e) {
+                    console.error('[SUBSCRIBE] Failed to start (onopen) for', gameId, e?.message);
+                }
             }
+        } else {
+            try { console.log('[WS] open (already registered)', gameId); } catch (_) {}
         }
         // Determine side for detailed logging
     try {
