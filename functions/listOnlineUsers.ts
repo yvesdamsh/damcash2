@@ -53,9 +53,9 @@ Deno.serve(async (req) => {
       email: u.email,
       avatar_url: u.avatar_url,
       last_seen: u.last_seen,
-      elo_checkers: u.elo_checkers,
-      elo_chess: u.elo_chess,
-      default_game: u.default_game,
+      elo_checkers: u.elo_checkers ?? 1200,
+      elo_chess: u.elo_chess ?? 1200,
+      default_game: u.default_game || (u.preferred_game_type || ''),
     }));
 
     return Response.json({ users: sanitized });

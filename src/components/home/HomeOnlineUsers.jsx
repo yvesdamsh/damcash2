@@ -75,17 +75,12 @@ export default function HomeOnlineUsers() {
 
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
-    return Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
+    try { return (Date.now() - new Date(lastSeen).getTime()) < 10 * 60 * 1000; } catch { return false; }
   };
 
   const rows = (() => {
-    if (!me) return users; // do not inject self if me is not known; still allow selection
-    const exists = users.find((u) => u.id === me.id);
-    if (exists) return users;
-    const pref = String(me?.default_game || me?.preferred_game_type || '').toLowerCase();
-    const shouldIncludeMe = pref === cfg.type;
-    if (!shouldIncludeMe) return users;
-    return [{ id: me.id, username: me.username, full_name: me.full_name, email: me.email, avatar_url: me.avatar_url, last_seen: new Date().toISOString() }, ...users].slice(0, 20);
+    // Always show server list directly; do not inject self to avoid duplicates/confusion
+    return users;
   })();
 
   const openConfig = (u) => {
