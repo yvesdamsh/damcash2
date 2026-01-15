@@ -338,14 +338,16 @@ function LayoutContent({ children }) {
         ].filter(item => user || item.public);
 
     const handleLogout = async () => {
-        try {
-            // Use absolute URL to ensure correct redirection
-            await base44.auth.logout(window.location.origin);
-        } catch (e) {
-            console.error("Logout error", e);
-            window.location.href = '/';
-        }
-    };
+                  try {
+                      // Mark offline then logout
+                      try { await base44.auth.updateMe({ is_online: false, last_seen: new Date().toISOString() }); } catch (_) {}
+                      // Use absolute URL to ensure correct redirection
+                      await base44.auth.logout(window.location.origin);
+                  } catch (e) {
+                      console.error("Logout error", e);
+                      window.location.href = '/';
+                  }
+              };
 
     const handleLogin = () => {
         // Redirect to platform login

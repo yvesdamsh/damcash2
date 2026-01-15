@@ -34,8 +34,7 @@ Deno.serve(async (req) => {
       try {
         const last = u?.last_seen ? new Date(u.last_seen).getTime() : null;
         const updated = u?.updated_date ? new Date(u.updated_date).getTime() : null;
-        const onlineFlag = u?.is_online === true;
-        return onlineFlag || (last && now - last <= windowMs) || (updated && now - updated <= windowMs);
+        return (last && now - last <= windowMs) || (updated && now - updated <= windowMs);
       } catch {
         return false;
       }
@@ -64,6 +63,7 @@ Deno.serve(async (req) => {
       email: u.email,
       avatar_url: u.avatar_url,
       last_seen: u.last_seen || u.updated_date,
+      updated_date: u.updated_date,
       elo_checkers: u.elo_checkers ?? 1200,
       elo_chess: u.elo_chess ?? 1200,
       default_game: u.default_game || (u.preferred_game_type || ''),
