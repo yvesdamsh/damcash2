@@ -194,7 +194,7 @@ function LayoutContent({ children }) {
         const heartbeat = async () => {
             try {
                 if (document.hidden || !navigator.onLine) return;
-                await base44.auth.updateMe({ last_seen: new Date().toISOString() });
+                await base44.entities.User.update(user.id, { last_seen: new Date().toISOString() });
                 // Also notify friends at most every 5 minutes to avoid rate limits
                 const now = Date.now();
                 if (now - (lastNotifyRef.current || 0) > 5 * 60 * 1000) {
