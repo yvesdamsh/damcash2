@@ -60,10 +60,9 @@ export default function HomeOnlineUsers() {
   }, [users]);
 
   React.useEffect(() => {
-    // Try to load current user, but online list no longer depends on it
     base44.auth.me().then(u => { setMe(u); meRef.current = u; }).catch(() => { setMe(null); meRef.current = null; });
     setTimeout(() => fetchOnline(), 2000);
-  }, [cfg.type, fetchOnline]);
+  }, [fetchOnline]);
 
   React.useEffect(() => {
     const onMode = () => setCfg(prev => ({ ...prev, type: (localStorage.getItem('gameMode') || 'checkers') }));
