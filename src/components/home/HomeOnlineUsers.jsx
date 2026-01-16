@@ -37,10 +37,18 @@ export default function HomeOnlineUsers() {
     try {
       let list = [];
       try {
-        const res = await withRateLimitRetry(() => base44.functions.invoke('listOnlineUsers', { limit: 20 }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
-        list = res?.data?.users || [];
+        const resp = await withRateLimitRetry(
+          () => base44.entities.User.list('-updated_date', 300),
+          { retries: 3, baseDelay: 800, maxDelay: 6000 }
+        );
+        const all = Array.isArray(resp) ? resp : (resp?.data || resp) || [];
+        const nowMs = Date.now();
+        list = all
+          .filter(u => u && u.last_seen && (nowMs - new Date(u.last_seen).getTime()) < 5 * 60 * 1000)
+          .sort((a, b) => (new Date(b.last_seen).getTime() || 0) - (new Date(a.last_seen).getTime() || 0))
+          .slice(0, 20);
       } catch (e) {
-        // On rate limit or other error, keep current list and back off silently
+        // On error (permissions/rate limit), keep current list silently
         list = users;
       }
       setUsers(list);
