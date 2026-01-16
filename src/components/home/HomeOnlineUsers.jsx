@@ -57,7 +57,7 @@ export default function HomeOnlineUsers() {
       fetchInFlightRef.current = false;
       setLoading(false);
     }
-  }, [cfg.type, users]);
+  }, [users]);
 
   React.useEffect(() => {
     // Try to load current user, but online list no longer depends on it
