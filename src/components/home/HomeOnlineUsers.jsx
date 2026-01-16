@@ -77,9 +77,7 @@ export default function HomeOnlineUsers() {
     if (!me) return users; // do not inject self if me is not known; still allow selection
     const exists = users.find((u) => u.id === me.id);
     if (exists) return users;
-    const pref = String(me?.default_game || me?.preferred_game_type || '').toLowerCase();
-    const shouldIncludeMe = pref === cfg.type;
-    if (!shouldIncludeMe) return users;
+    // Always include the current user at top so they can invite others even if their preference differs
     return [{ id: me.id, username: me.username, full_name: me.full_name, email: me.email, avatar_url: me.avatar_url, last_seen: new Date().toISOString() }, ...users].slice(0, 20);
   })();
 
