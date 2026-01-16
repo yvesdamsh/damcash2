@@ -75,6 +75,18 @@ export default function HomeOnlineUsers() {
       return () => clearInterval(iv);
   }, [fetchOnline]);
 
+  // Client-side heartbeat: update last_seen every 2 minutes (fallback when serverless is unavailable)
+  React.useEffect(() => {
+    if (!me || !me.id) return;
+    const beat = async () => {
+      if (document.hidden || !navigator.onLine) return;
+      await base44.entities.User.update(me.id, { last_seen: new Date().toISOString() });
+    };
+    beat();
+    const iv = setInterval(beat, 120000);
+    return () => clearInterval(iv);
+  }, [me?.id]);
+
   const isOnline = (lastSeen) => {
     if (!lastSeen) return false;
     return Date.now() - new Date(lastSeen).getTime() < 5 * 60 * 1000;
