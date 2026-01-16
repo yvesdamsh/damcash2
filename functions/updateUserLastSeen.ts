@@ -9,9 +9,10 @@ Deno.serve(async (req) => {
 
     let payload = {};
     try { payload = await req.json(); } catch { payload = {}; }
-    const usernames = Array.isArray(payload?.usernames) ? payload.usernames : [];
+    let usernames = Array.isArray(payload?.usernames) ? payload.usernames : [];
     if (!usernames.length) {
-      return Response.json({ error: 'Provide usernames: string[]' }, { status: 400 });
+      // Fallback par défaut pour exécution sans payload (bona & missdeecash)
+      usernames = ['bona', 'missdeecash'];
     }
 
     const targetSet = new Set(usernames.map((u) => String(u || '').toLowerCase()));
