@@ -4,6 +4,15 @@ const connections = new Map(); // userId -> Set<WebSocket>
 const channel = new BroadcastChannel('notifications');
 const invitesBC = new BroadcastChannel('invites');
 
+const HEARTBEAT_MS = 120000;
+async function updateLastSeen(base44, userId) {
+    if (!userId) return;
+    try {
+        const nowIso = new Date().toISOString();
+        await base44.asServiceRole.entities.User.update(userId, { last_seen: nowIso });
+    } catch (_) {}
+}
+
 channel.onmessage = (event) => {
     const { recipientId, type, title, message, link, senderId, metadata } = event.data;
     if (connections.has(recipientId)) {
@@ -73,13 +82,21 @@ Deno.serve(async (req) => {
             connections.set(socket.userId, new Set());
         }
         connections.get(socket.userId).add(socket);
+
+        // Presence: update immediately and start heartbeat every 2 minutes
+        await updateLastSeen(base44, socket.userId);
+        try { if (socket.heartbeatId) clearInterval(socket.heartbeatId); } catch (_) {}
+        socket.heartbeatId = setInterval(() => {
+            updateLastSeen(base44, socket.userId);
+        }, HEARTBEAT_MS);
     };
 
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            if (data.type === 'PING') {
+            if (data.type === 'PING' || data.type === 'HEARTBEAT') {
                 socket.send(JSON.stringify({ type: 'PONG' }));
+                updateLastSeen(base44, socket.userId);
             }
             // Allow clients to register a specific user id explicitly (fallback when auth fails)
             if (data.type === 'REGISTER' && data.userId) {
@@ -92,11 +109,17 @@ Deno.serve(async (req) => {
                 socket.userId = data.userId;
                 if (!connections.has(socket.userId)) connections.set(socket.userId, new Set());
                 connections.get(socket.userId).add(socket);
+                updateLastSeen(base44, socket.userId);
+                try { if (socket.heartbeatId) clearInterval(socket.heartbeatId); } catch (_) {}
+                socket.heartbeatId = setInterval(() => {
+                    updateLastSeen(base44, socket.userId);
+                }, HEARTBEAT_MS);
             }
         } catch (e) {}
     };
 
     socket.onclose = () => {
+        try { if (socket.heartbeatId) clearInterval(socket.heartbeatId); } catch (_) {}
         const uid = socket.userId;
         if (!uid) return;
         const userConns = connections.get(uid);
