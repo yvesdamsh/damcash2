@@ -107,13 +107,13 @@ export default function HomeContainer() {
         if (document.hidden || nowTs < rateLimitedUntilRef.current || fetchInFlightRef.current || (nowTs - lastFetchAtRef.current < 60000)) { return; }
         fetchInFlightRef.current = true;
         try {
-            // Parallel fetching for games
+            // Sequential fetching with increased delays to avoid rate limits
             let myGamesWhite = await base44.entities.Game.filter({ white_player_id: currentUser.id, status: 'playing' });
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 1500));
             let myGamesBlack = await base44.entities.Game.filter({ black_player_id: currentUser.id, status: 'playing' });
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 1500));
             let myInvites = await base44.entities.Invitation.filter({ to_user_id: currentUser.id, status: 'pending' });
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 1500));
             let topGames = await base44.entities.Game.filter({ status: 'playing', is_private: false }, '-updated_date', 10);
 
             // Feature logic: Sort by ELO, but prioritize recently updated if ELO is similar?
@@ -556,9 +556,9 @@ export default function HomeContainer() {
                         } catch {}
                     };
 
-                    // Start polling
+                    // Start polling with increased interval to avoid rate limits
                     if (mmPollRef.current) clearInterval(mmPollRef.current);
-                    mmPollRef.current = setInterval(tick, 15000);
+                    mmPollRef.current = setInterval(tick, 30000);
                     // Run first immediately
                     tick();
                 }

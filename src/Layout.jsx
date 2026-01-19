@@ -204,8 +204,8 @@ function LayoutContent({ children }) {
         };
 
         heartbeat();
-        // Reduced from 120s to 30s for faster online status visibility
-        const interval = setInterval(heartbeat, 30000);
+        // Balanced interval: 60s to avoid rate limits while keeping status fresh
+        const interval = setInterval(heartbeat, 60000);
         return () => clearInterval(interval);
     }, [user]);
 
