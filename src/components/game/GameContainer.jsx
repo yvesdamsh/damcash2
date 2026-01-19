@@ -640,25 +640,36 @@ export default function GameContainer() {
                         const nextMoves = safeJSONParse(payload?.moves, prevMoves);
                         const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
                         const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
-                        const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
                         const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                         const nextTs = payload?.updated_date ? new Date(payload.updated_date).getTime() : 0;
 
-                        // Anti-yoyo: only apply board if strictly newer moveCount
-                        if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
-                            lastAppliedMoveCountRef.current = nextCount;
-                            setIsMoveInProgress(false); // server confirmed the move
+                        // Check if this is a new move from opponent (not our own move bouncing back)
+                        const currentTurnChanged = prev?.current_turn !== payload?.current_turn;
+                        const hasNewerMoves = nextCount > prevCount;
+                        const hasNewerTimestamp = nextTs > prevTs;
+
+                        // Accept update if: new moves OR turn changed OR timestamp is newer
+                        if (hasNewerMoves || currentTurnChanged || (hasNewerTimestamp && !isMoveInProgress)) {
+                            // Update the ref to track what we've applied
+                            if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                                lastAppliedMoveCountRef.current = nextCount;
+                            }
+                            setIsMoveInProgress(false);
+                            logger.log('[GAME_UPDATE] Applied:', { prevCount, nextCount, currentTurnChanged, hasNewerTimestamp });
                             return { ...prev, ...payload };
                         }
 
-                        // Meta/time update: clear lock but keep optimistic board/moves
-                        if (nextTs > prevTs) {
-                            setIsMoveInProgress(false);
+                        // If we're in progress of our own move, keep our optimistic state
+                        if (isMoveInProgress) {
+                            const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
+                            return { ...prev, ...payload, board_state: prevBoard, moves: prev.moves };
                         }
-                        return { ...prev, ...payload, board_state: prevBoard, moves: prev.moves };
+
+                        // Otherwise accept the update
+                        return { ...prev, ...payload };
                     } catch {
-                        // On parse error, avoid board rewind while a move is in progress
-                        return isMoveInProgress ? { ...prev, ...payload, board_state: prev?.board_state, moves: prev?.moves } : { ...prev, ...payload };
+                        // On parse error, accept the update unless we're mid-move
+                        return isMoveInProgress ? prev : { ...prev, ...payload };
                     }
                 });
                 try { logger.log('[MOVE][RECEIVE]', payload); } catch (e) { logger.warn('[SILENT]', e); }
@@ -687,25 +698,20 @@ export default function GameContainer() {
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
-                // Force sync from server to ensure both players see the same state
+                // Force sync from server - unconditional update to fix asymmetric sync
+                logger.log('[WS][GAME_REFETCH] Forcing full sync from server');
                 base44.entities.Game.get(id).then(g => { 
                     if (!g) return;
-                    setGame(prev => {
-                        try {
-                            const prevMoves = safeJSONParse(prev?.moves, []);
-                            const nextMoves = safeJSONParse(g?.moves, prevMoves);
-                            const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
-                            const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
-                            // Always apply if newer move count (sync safety)
-                            if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
-                                lastAppliedMoveCountRef.current = nextCount;
-                                setIsMoveInProgress(false);
-                                return g;
-                            }
-                            // Merge meta/time but keep local board if same move count
-                            return { ...prev, ...g, board_state: prev?.board_state, moves: prev?.moves };
-                        } catch { return g; }
-                    }); 
+                    // Update the move count ref unconditionally
+                    const nextMoves = safeJSONParse(g?.moves, []);
+                    const nextCount = Array.isArray(nextMoves) ? nextMoves.length : 0;
+                    if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                        lastAppliedMoveCountRef.current = nextCount;
+                    }
+                    setIsMoveInProgress(false);
+                    // Force full game state update - no conditions
+                    setGame(g);
+                    logger.log('[WS][GAME_REFETCH] Applied:', { moveCount: nextCount, turn: g.current_turn });
                 }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
             }
         }
