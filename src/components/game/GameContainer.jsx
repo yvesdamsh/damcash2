@@ -434,11 +434,13 @@ export default function GameContainer() {
         const shouldPoll = () => {
           if (!id) return false;
           if (typeof document !== 'undefined' && document.hidden) return false;
-          if (pausePolling) return false;
+          // Always poll if WS is inactive, even during pausePolling (for sync safety)
           const wsOpen = socketRef.current && socketRef.current.readyState === WebSocket.OPEN;
           const lastWs = wsLastReceivedRef.current || 0;
-          const inactive = (Date.now() - lastWs) > 5000; // WS inactive >5s
-          return (!wsOpen || inactive);
+          const inactive = (Date.now() - lastWs) > 3000; // WS inactive >3s (reduced from 5s)
+          // Poll if WS inactive OR if pausePolling is false
+          if (pausePolling && wsOpen && !inactive) return false;
+          return (!wsOpen || inactive || !pausePolling);
         };
         const loop = async () => {
           if (canceled) return;
@@ -644,7 +646,26 @@ export default function GameContainer() {
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }
                 setSyncedMessages(prev => [...prev, data.payload]);
             } else if (data.type === 'GAME_REFETCH') {
-                base44.entities.Game.get(id).then(g => { if (g) setGame(prev => ({ ...(prev||{}), ...g })); }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
+                // Force sync from server to ensure both players see the same state
+                base44.entities.Game.get(id).then(g => { 
+                    if (!g) return;
+                    setGame(prev => {
+                        try {
+                            const prevMoves = safeJSONParse(prev?.moves, []);
+                            const nextMoves = safeJSONParse(g?.moves, prevMoves);
+                            const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
+                            const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
+                            // Always apply if newer move count (sync safety)
+                            if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                                lastAppliedMoveCountRef.current = nextCount;
+                                setIsMoveInProgress(false);
+                                return g;
+                            }
+                            // Merge meta/time but keep local board if same move count
+                            return { ...prev, ...g, board_state: prev?.board_state, moves: prev?.moves };
+                        } catch { return g; }
+                    }); 
+                }).catch((e)=>{ logger.warn('[WS][REFETCH] error', e); });
             }
         }
     });
