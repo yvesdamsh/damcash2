@@ -1118,6 +1118,8 @@ const gameNotifInFlightRef = useRef(false);
     // -----------------------------------------------------------------------
     // AI Logic
     // -----------------------------------------------------------------------
+    // Debug: log every current_turn change (and game id)
+    useEffect(() => { if (game) console.log('[AI][DEBUG] current_turn changed:', game.current_turn, 'id:', id); }, [game?.current_turn, id]);
     useEffect(() => {
         // Determine AI presence even before game object is fully ready
         const aiPresentNow = (id === 'local-ai') || (!!game && (
@@ -1155,21 +1157,22 @@ const gameNotifInFlightRef = useRef(false);
         const aiIsBlack = (id === 'local-ai') ? true : blackIsAI;
         const isAiTurn = (id === 'local-ai') ? (game.current_turn === 'black') : (game.current_turn === 'white' ? whiteIsAI : blackIsAI);
         logger.log('[AI] Turn check', { aiIsBlack, whiteIsAI, blackIsAI, current_turn: game.current_turn, isAiTurn });
+        try { console.log('[AI] isAiTurn=', isAiTurn, 'aiJobRef=', aiJobRef.current, 'turn=', game.current_turn, 'id=', id); } catch (_) {}
 
         const aiColor = game.current_turn; // If it is AI turn, then AI color is current turn
 
         if (isAiTurn) {
             const delay = id === 'local-ai' ? 350 : 700; // small human-like delay
-            const makeAiMove = async () => {
+            const makeAiMove = async () => { console.log('[AI] makeAiMove fired (start)', { aiJobRef: aiJobRef.current });
                     // Debounce if a new turn arrives too fast
                     // allow scheduling even if previous job is thinking; aiJobRef prevents duplicates
                 // Guard: ensure it's truly AI's turn
-                if (!game) { aiJobRef.current = false; return; }
+                if (!game) { aiJobRef.current = false; console.log('[AI] abort: no game; aiJobRef -> false'); return; }
                 const whiteIsAI = game?.white_player_id === 'ai';
                 const blackIsAI = game?.black_player_id === 'ai';
                 const aiTurnCheck = (game.current_turn === 'white' ? whiteIsAI : blackIsAI) || (id === 'local-ai' && game.current_turn === 'black');
-                if (!aiTurnCheck) { logger.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game?.white_player_id, blackId: game?.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; return; }
-                if (!isActive) return;
+                if (!aiTurnCheck) { logger.log('[AI] Guard failed: not AI turn or IDs mismatch', { current_turn: game.current_turn, whiteId: game?.white_player_id, blackId: game?.black_player_id, whiteName: game.white_player_name, blackName: game.black_player_name }); aiJobRef.current = false; console.log('[AI] guard not AI turn: aiJobRef -> false'); return; }
+                if (!isActive) { console.log('[AI] makeAiMove aborted: effect not active'); aiJobRef.current = false; return; }
                 setIsAiThinking(true);
                 const aiFunctionName = game.game_type === 'chess' ? 'chessAI' : 'checkersAI';
                 logger.log('[AI] Starting turn', { gameId: id, gameType: game.game_type, aiFunctionName, aiColor, difficulty: aiDifficulty, isLocal: id === 'local-ai', activePiece: mustContinueWith, timeLeft: getTimeLeft(aiColor) });
@@ -1632,19 +1635,21 @@ const gameNotifInFlightRef = useRef(false);
                     // Always reset thinking flag to avoid getting stuck after state changes
                     setIsAiThinking(false);
                     aiJobRef.current = false;
+                    console.log('[AI] aiJobRef -> false; finished turn');
                 }
             };
             // Small think time to keep UX natural
-            if (aiJobRef.current) return;
-            aiJobRef.current = true;
+            if (aiJobRef.current) { console.log('[AI] blocked: aiJobRef still true; skipping schedule'); return; }
+            aiJobRef.current = true; console.log('[AI] aiJobRef -> true; scheduling makeAiMove in', delay, 'ms');
             timer = setTimeout(makeAiMove, delay);
         }
 
         return () => {
             isActive = false;
             if (timer) clearTimeout(timer);
+            if (aiJobRef.current) { aiJobRef.current = false; console.log('[AI] cleanup: aiJobRef -> false'); }
         };
-    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser]);
+    }, [isAiGame, game?.current_turn, board, isAiThinking, aiDifficulty, chessState, mustContinueWith, currentUser, id]);
 
     const handlePieceDrop = async (fromR, fromC, toR, toC) => {
         if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game?.white_player_id && game?.black_player_id))) return;
