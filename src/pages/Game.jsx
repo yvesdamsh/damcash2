@@ -741,6 +741,7 @@ const gameNotifInFlightRef = useRef(false);
                             onMessage: (event, data) => {
             try { wsLastReceivedRef.current = Date.now(); } catch (_) {}
             if (!data) return;
+            try { console.log('[WS][CLIENT] msg', data.type); } catch (_) {}
             if (data.type === 'GAME_UPDATE') {
                 const payload = data.payload || {};
                 try {
@@ -771,6 +772,20 @@ const gameNotifInFlightRef = useRef(false);
                         return lastAppliedMoveCountRef.current || 0;
                     } catch { return lastAppliedMoveCountRef.current || 0; }
                 })();
+                // Debug metrics for asymmetry
+                try {
+                  const boardsDifferNow = (() => {
+                    try {
+                      const prevState = lastAppliedBoardStateRef.current;
+                      const nextState = payload?.board_state;
+                      if (!nextState) return false;
+                      return !boardsAreEqual(prevState, nextState);
+                    } catch { return false; }
+                  })();
+                  const incomingTsDbg = (() => { try { return new Date(payload.updated_date || payload.last_move_at || Date.now()).getTime(); } catch { return 0; } })();
+                  const prevTsDbg = (lastAppliedAtRef.current || 0);
+                  console.log('[WS][CLIENT] GAME_UPDATE metrics', { incomingMoveCount, currentMovesLen, boardsDiffer: boardsDifferNow, incomingTs: incomingTsDbg, prevTs: prevTsDbg });
+                } catch (_) {}
                 if (hasMoves) {
                   const localCount = lastAppliedMoveCountRef.current || 0;
                   const boardsDiffer = (() => {
@@ -784,7 +799,7 @@ const gameNotifInFlightRef = useRef(false);
                   const prevTs = lastAppliedAtRef.current || 0;
                   const incomingTs = (() => { try { return new Date(payload.updated_date || payload.last_move_at || Date.now()).getTime(); } catch { return Date.now(); } })();
                   if (incomingMoveCount <= localCount && !boardsDiffer && incomingTs <= prevTs) {
-                    try { logger.log('[MOVE][SKIP] Not newer (count/board/time)', { incomingMoveCount, localCount, boardsDiffer, incomingTs, prevTs }); } catch (_) {}
+                    try { console.log('[WS][CLIENT][SKIP] Not newer (count/board/time)', { incomingMoveCount, localCount, boardsDiffer, incomingTs, prevTs }); } catch (_) {}
                     return;
                   }
                 }
@@ -796,8 +811,9 @@ const gameNotifInFlightRef = useRef(false);
                     const accept = (incomingMoveCount > appliedCount) || changedBoard;
                     if (!accept) return prev;
                     try { if (payload?.board_state) { lastAppliedBoardStateRef.current = payload.board_state; lastAppliedAtRef.current = Date.now(); } } catch (_) {}
+                    console.log('[WS][CLIENT] APPLY GAME_UPDATE');
                     return { ...prev, ...payload };
-                  } catch (_) { return { ...prev, ...payload }; }
+                  } catch (_) { console.log('[WS][CLIENT] APPLY (fallback)'); return { ...prev, ...payload }; }
                 });
                 isUpdatingRef.current = false;
                 if (hasMoves) {
@@ -833,9 +849,11 @@ const gameNotifInFlightRef = useRef(false);
                     toast.success(t('game.resign_victory') || 'Vous avez gagné par abandon');
                 }
             } else if (data.type === 'MOVE_ACK' && data.moveId) {
+                try { console.log('[WS][CLIENT] MOVE_ACK', data.moveId); } catch (_) {}
                 pendingMovesRef.current.delete(data.moveId);
                 isUpdatingRef.current = false;
             } else if (data.type === 'GAME_REACTION') {
+                try { console.log('[WS][CLIENT] GAME_REACTION'); } catch (_) {}
                 handleIncomingReaction(data.payload);
             } else if (data.type === 'DRAW_OFFER') {
                 setGame(prev => ({ ...prev, draw_offer_by: data.payload?.by || '__unknown__' }));
@@ -859,6 +877,7 @@ const gameNotifInFlightRef = useRef(false);
                 } else if (data.type === 'SIGNAL') {
                 // handled in VideoChat
             } else if (data.type === 'CHAT_UPDATE') {
+                try { console.log('[WS][CLIENT] CHAT_UPDATE'); } catch (_) {}
                 // Forward to shared chat store (RealTimeContext will consume via window event if needed)
                 try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId: id, message: data.payload } })); } catch (e) { logger.warn('[SILENT]', e); }
                 try { handleGameMessage(id, data.payload); } catch (e) { logger.warn('[SILENT]', e); }

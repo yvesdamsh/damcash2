@@ -204,6 +204,17 @@ console.log('[WS] parsed type', data?.type);
                     // Override with server timestamp for consistency
                     updateData.last_move_at = new Date().toISOString();
                     updateData.updated_date = new Date().toISOString();
+                    // Ensure authoritative move_count for fanout
+                    try {
+                        const m = updateData.moves;
+                        let cnt = 0;
+                        if (Array.isArray(m)) cnt = m.length;
+                        else if (typeof m === 'string') {
+                            try { const arr = JSON.parse(m); cnt = Array.isArray(arr) ? arr.length : 0; } catch { cnt = 0; }
+                        }
+                        updateData.move_count = cnt;
+                    } catch (_) {}
+                    try { console.log('[WS][MOVE] broadcasting GAME_UPDATE', { gameId, move_count: updateData.move_count }); } catch (_) {}
 
                     const msg = { type: 'GAME_UPDATE', payload: updateData };
                     broadcast(gameId, msg, null);
@@ -371,6 +382,15 @@ console.log('[WS] parsed type', data?.type);
                  const outPayload = { ...payload };
                  if (moveId) delete outPayload.moveId; // do not persist custom fields
                  outPayload.updated_date = new Date().toISOString();
+                 // Ensure authoritative move_count for fanout regardless of client
+                 try {
+                     const m = outPayload.moves;
+                     let cnt = 0;
+                     if (Array.isArray(m)) cnt = m.length;
+                     else if (typeof m === 'string') { try { const arr = JSON.parse(m); cnt = Array.isArray(arr) ? arr.length : 0; } catch { cnt = 0; } }
+                     outPayload.move_count = cnt;
+                 } catch (_) {}
+                 try { console.log('[WS][GAME_UPDATE] fanout', { gameId, move_count: outPayload.move_count }); } catch (_) {}
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
@@ -453,6 +473,7 @@ socket.onclose = () => {
 });
 
 function broadcast(gameId, message) {
+    try { console.log('[WS][broadcast] start', { gameId, type: message?.type }); } catch (_) {}
     const gameConns = connections.get(gameId);
     if (!gameConns) { try { console.log('[WS] broadcast skipped (no clients)', gameId, message?.type); } catch (_) {} return; }
     try { console.log('[WS] broadcast', message?.type, 'to', gameConns.size, 'clients for', gameId); } catch (_) {}
