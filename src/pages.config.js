@@ -13,6 +13,7 @@ import Lobby from './pages/Lobby';
 import Messages from './pages/Messages';
 import Notifications from './pages/Notifications';
 import Preferences from './pages/Preferences';
+import PresenceHotfix from './pages/PresenceHotfix';
 import Profile from './pages/Profile';
 import QAReport from './pages/QAReport';
 import ReplayCenter from './pages/ReplayCenter';
@@ -26,7 +27,6 @@ import Training from './pages/Training';
 import Wallet from './pages/Wallet';
 import game from './pages/game';
 import index from './pages/index';
-import PresenceHotfix from './pages/PresenceHotfix';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +46,7 @@ export const PAGES = {
     "Messages": Messages,
     "Notifications": Notifications,
     "Preferences": Preferences,
+    "PresenceHotfix": PresenceHotfix,
     "Profile": Profile,
     "QAReport": QAReport,
     "ReplayCenter": ReplayCenter,
@@ -59,7 +60,6 @@ export const PAGES = {
     "Wallet": Wallet,
     "game": game,
     "index": index,
-    "PresenceHotfix": PresenceHotfix,
 }
 
 export const pagesConfig = {

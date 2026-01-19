@@ -2,7 +2,7 @@ import React from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, RefreshCw } from 'lucide-react';
+import { User, RefreshCw, Sword } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -168,7 +168,7 @@ export default function HomeOnlineUsers() {
   };
 
   return (
-    <Card className="bg-white/80 dark:bg-[#1e1814]/80 backdrop-blur border-[#d4c5b0] dark:border-[#3d2b1f] shadow-lg">
+    <Card className="backdrop-blur-md">
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
         <DialogContent className="sm:max-w-[480px] bg-[#fdfbf7]">
           <DialogHeader>
@@ -228,14 +228,15 @@ export default function HomeOnlineUsers() {
           return (
             <div key={u.id} className="flex items-center gap-3 p-2 rounded border border-[#e8dcc5] dark:border-[#3d2b1f] bg-[#fdfbf7] dark:bg-[#2a201a]">
               <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
+                {online && <div className="absolute -inset-1 rounded-full border-2 border-[#FFD700] opacity-80 animate-pulse pointer-events-none" />}
+                <div className="relative w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border border-white shadow-sm">
                   {u.avatar_url ? (
                     <img src={u.avatar_url} alt={u.username || u.full_name} className="w-full h-full object-cover" />
                   ) : (
                     <User className="w-5 h-5 text-gray-500" />
                   )}
                 </div>
-                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <button onClick={() => !isMe && openConfig(u)} disabled={isMe} className="text-left text-sm font-bold text-[#4a3728] dark:text-[#e8dcc5] underline-offset-2 hover:underline truncate disabled:opacity-60">
@@ -246,9 +247,14 @@ export default function HomeOnlineUsers() {
                 </div>
                 <div className="text-[10px] text-gray-500 truncate">
                   ELO: {(u.elo_checkers ?? 1200)} (Dames) • {(u.elo_chess ?? 1200)} (Échecs)
-                </div>
-              </div>
-            </div>
+                  </div>
+                  </div>
+                  {!isMe && (
+                  <Button variant="outline" size="sm" onClick={() => openConfig(u)} className="ml-auto border-[rgba(255,215,0,0.35)]">
+                  <Sword className="w-4 h-4 mr-1" /> {t('home.challenge') || 'Défier'}
+                  </Button>
+                  )}
+                  </div>
           );
         })}
       </CardContent>

@@ -642,11 +642,22 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                             <UsernameSetupDialog user={user} onUpdate={() => window.location.reload()} />
                             {user && <NotificationCenter />}
                             {user && (
-                              <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
-                                {user.username || ('Joueur ' + user.id.substring(0,4))}
-                              </div>
-                            )}
-                            <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
+                                                                <>
+                                                                  <div className="hidden md:flex items-center text-sm font-bold text-[hsl(var(--foreground))] mr-2">
+                                                                    {user.username || ('Joueur ' + user.id.substring(0,4))}
+                                                                  </div>
+                                                                  <Link to="/Profile" className="mx-1">
+                                                                    <div className="h-9 w-9 rounded-full overflow-hidden border-2" style={{ borderColor: '#FFD700' }}>
+                                                                      {user.avatar_url ? (
+                                                                        <img src={user.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                                                                      ) : (
+                                                                        <User className="w-5 h-5 m-2 text-[var(--nav-fg)]" />
+                                                                      )}
+                                                                    </div>
+                                                                  </Link>
+                                                                </>
+                                                              )}
+                                                              <SettingsMenu user={user} currentTheme={appTheme} onThemeChange={handleThemeChange} />
                             
                             <button
                                 onClick={toggleMenu}
@@ -793,7 +804,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                       const Icon = tab.icon;
                       return (
                         <Link key={tab.path} to={tab.path} className="flex flex-col items-center justify-center gap-1 transition-all ease-out">
-                          <Icon className={`h-5 w-5 ${active ? 'text-[#FFD700]' : 'text-[hsl(var(--foreground))]/70'}`} />
+                          <Icon className={`h-5 w-5 transition-transform ${active ? 'text-[#FFD700] scale-110' : 'text-[hsl(var(--foreground))]/70'}`} />
                           <span className={`text-[11px] font-semibold ${active ? 'text-[#FFD700]' : 'text-[hsl(var(--foreground))]/70'}`}>{tab.label}</span>
                         </Link>
                       );
