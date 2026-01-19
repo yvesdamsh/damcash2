@@ -21,25 +21,25 @@ const CheckerPiece = memo(({ type, isSelected, animateFrom, design = 'standard',
             : '0 3px 0 ' + (isWhite ? '#555' : '#111') + ', 0 4px 4px rgba(0,0,0,0.3)'
     };
 
-    // Animation settings
-    const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 };
+    // Animation settings - reduced spring effect to prevent yoyo bounce
+    const initial = animateFrom ? { x: animateFrom.x, y: animateFrom.y, scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 };
     const animate = { x: 0, y: 0, scale: 1, opacity: 1 };
 
     return (
         <motion.div
-            layout
+            layout="position"
             drag={canDrag}
             dragMomentum={false}
-            dragElastic={0.1}
+            dragElastic={0}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onTap={onPieceClick}
-            whileDrag={{ scale: 1.2, zIndex: 100, cursor: 'grabbing' }}
+            whileDrag={{ scale: 1.15, zIndex: 100, cursor: 'grabbing' }}
             dragSnapToOrigin
             initial={initial}
             animate={animate}
-            exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.15 } }}
+            transition={{ type: "tween", duration: 0.15, ease: "easeOut" }}
             className={`checker-piece relative w-[85%] h-[85%] m-auto rounded-full z-10 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
             style={{ 
                 touchAction: 'none', 

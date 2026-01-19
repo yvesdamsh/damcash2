@@ -31,7 +31,8 @@ export default function HomeOnlineUsers() {
 
   const fetchOnline = React.useCallback(async () => {
     const now = Date.now();
-    if (fetchInFlightRef.current || now - lastFetchRef.current < 30000) return;
+    // Reduced cooldown from 30s to 15s for faster refresh
+    if (fetchInFlightRef.current || now - lastFetchRef.current < 15000) return;
     fetchInFlightRef.current = true;
     setLoading(true);
     try {
@@ -71,7 +72,8 @@ export default function HomeOnlineUsers() {
   }, []);
 
   React.useEffect(() => {
-      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 120000);
+      // Refresh online users every 30 seconds for better real-time visibility
+      const iv = setInterval(() => { if (!document.hidden) fetchOnline(); }, 30000);
       return () => clearInterval(iv);
   }, [fetchOnline]);
 
