@@ -905,7 +905,28 @@ const gameNotifInFlightRef = useRef(false);
 
     useEffect(() => {
         socketRef.current = robustSocket;
-    }, [robustSocket]);
+      }, [robustSocket]);
+
+      // WS heartbeat to ensure connection stays alive
+      useEffect(() => {
+        if (!id) return;
+        const iv = setInterval(() => {
+          try {
+            const s = socketRef.current;
+            if (s && s.readyState === WebSocket.OPEN) {
+              s.send(JSON.stringify({ type: 'PING' }));
+              // Debug heartbeat
+              console.log('[WS][CLIENT] PING');
+            }
+          } catch (e) { console.warn('[WS][HEARTBEAT][ERROR]', e?.message || e); }
+        }, 10000);
+        return () => clearInterval(iv);
+      }, [id]);
+
+      // Log state changes for visibility
+      useEffect(() => {
+        console.log('[WS][CLIENT] readyState', wsReadyState);
+      }, [wsReadyState]);
 
     // Real-time DB subscription (low-latency, cross-instance) with small join grace
     useEffect(() => {
@@ -1693,7 +1714,9 @@ const gameNotifInFlightRef = useRef(false);
     const isSoloMode = game?.white_player_id === game?.black_player_id;
 
     const handleSquareClick = async (r, c) => {
-        if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game?.white_player_id && game?.black_player_id)) || replayIndex !== -1) return;
+        try {
+            console.log('[CLICK] square', { r, c, status: game?.status, turn: game?.current_turn });
+            if (!game || !((game.status === 'playing') || (game.status === 'waiting' && game?.white_player_id && game?.black_player_id)) || replayIndex !== -1) return;
         
         const isMyTurn = isSoloMode || (game.current_turn === 'white' && currentUser?.id === game?.white_player_id) ||
                                        (game.current_turn === 'black' && currentUser?.id === game?.black_player_id);
@@ -1719,6 +1742,7 @@ const gameNotifInFlightRef = useRef(false);
             if (selectedSquare && selectedSquare[0] === mustContinueWith.r && selectedSquare[1] === mustContinueWith.c) {
                 const move = validMoves.find(m => m.to.r === r && m.to.c === c);
                 if (move) {
+                    console.log('[CLICK] move chosen', { from: selectedSquare, to: { r, c } });
                     setLastDragMove(null);
                     executeCheckersMove(move);
                 }
@@ -1735,6 +1759,7 @@ const gameNotifInFlightRef = useRef(false);
             setSelectedSquare([r, c]);
             const moves = (await import('@/components/checkersLogic')).getValidMoves(board, playerColor);
             const pieceMoves = moves.filter(m => m.from.r === r && m.from.c === c);
+            console.log('[CLICK] piece selected', { r, c, available: pieceMoves.length });
             setValidMoves(pieceMoves);
         } else if (selectedSquare) {
             const move = validMoves.find(m => m.to.r === r && m.to.c === c);
@@ -1744,6 +1769,7 @@ const gameNotifInFlightRef = useRef(false);
             }
             else { setSelectedSquare(null); setValidMoves([]); }
         }
+    } catch (e) { console.error('[CLICK][ERROR]', e); }
     };
 
     const executeCheckersMove = async (move) => {

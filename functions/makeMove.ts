@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
     if (!v.success) return Response.json({ error: 'Invalid input', details: v.error.flatten() }, { status: 400 });
 
     const { gameId, move } = v.data;
+    try { console.log('[MAKE_MOVE][IN]', { gameId, move }); } catch (_) {}
 
     // Load game
     const game = await base44.asServiceRole.entities.Game.get(gameId);
@@ -117,13 +118,15 @@ Deno.serve(async (req) => {
         status,
         winner_id: winnerId || null,
         moves: JSON.stringify(history),
+        move_count: history.length,
         last_move_at: nowIso,
         white_seconds_left: whiteLeft,
         black_seconds_left: blackLeft
       };
 
       await base44.asServiceRole.entities.Game.update(gameId, updateData);
-      try { await base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updateData }); } catch (_) {}
+      try { await base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updateData }); } catch (e) { try { console.warn('[MAKE_MOVE][SOCKET_FANOUT][ERR]', e?.message || e); } catch(_) {} }
+      try { console.log('[MAKE_MOVE][OUT][CHESS]', { nextTurn: updateData.current_turn, move_count: updateData.move_count }); } catch (_) {}
 
       return Response.json({ success: true, newBoard: newState, nextTurn: updateData.current_turn, gameStatus: status });
     }
@@ -163,16 +166,19 @@ Deno.serve(async (req) => {
       status,
       winner_id: winnerId || null,
       moves: JSON.stringify(history),
+      move_count: history.length,
       last_move_at: nowIso,
       white_seconds_left: whiteLeft,
       black_seconds_left: blackLeft
     };
 
     await base44.asServiceRole.entities.Game.update(gameId, updateData);
-    try { await base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updateData }); } catch (_) {}
+    try { await base44.asServiceRole.functions.invoke('gameSocket', { gameId, type: 'GAME_UPDATE', payload: updateData }); } catch (e) { try { console.warn('[MAKE_MOVE][SOCKET_FANOUT][ERR]', e?.message || e); } catch(_) {} }
+    try { console.log('[MAKE_MOVE][OUT][CHECKERS]', { nextTurn: updateData.current_turn, move_count: updateData.move_count }); } catch (_) {}
 
     return Response.json({ success: true, newBoard, nextTurn: updateData.current_turn, gameStatus: status });
   } catch (e) {
+    try { console.error('[MAKE_MOVE][ERR]', e?.message || e); } catch(_) {}
     return Response.json({ error: e.message }, { status: 500 });
   }
 });
