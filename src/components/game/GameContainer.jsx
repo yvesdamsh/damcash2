@@ -209,12 +209,20 @@ export default function GameContainer() {
         const gameTs = new Date(game.updated_date || game.last_move_at || Date.now()).getTime();
         const stateChanged = currentBoardStateRaw !== (lastAppliedBoardStateRef.current || null);
         const isNewerOrEqual = gameTs >= (lastAppliedAtRef.current || 0);
+        
+        // FIX: Also check if turn changed - if turn changed, we MUST update the board
+        const prevTurn = prevGameRef.current?.current_turn;
+        const turnChanged = prevTurn && prevTurn !== game.current_turn;
+        // Force update if state changed, timestamp newer, OR turn changed
+        const shouldUpdate = (stateChanged && isNewerOrEqual) || turnChanged || stateChanged;
+        
         if (game.game_type === 'chess') {
             try {
                 const parsed = safeJSONParse(game.board_state, { board: [], castlingRights: {}, lastMove: null, halfMoveClock: 0, positionHistory: {} });
                 currentBoard = Array.isArray(parsed?.board) ? parsed.board : [];
                 lastChessMove = parsed?.lastMove || null;
-                if (stateChanged && isNewerOrEqual) {
+                if (shouldUpdate) {
+                    logger.log('[BOARD] Updating chess board:', { stateChanged, isNewerOrEqual, turnChanged });
                     setBoard(currentBoard);
                     setChessState({ 
                         castlingRights: parsed?.castlingRights || {}, 
@@ -238,7 +246,8 @@ export default function GameContainer() {
             try {
                 const parsed = safeJSONParse(game.board_state, []);
                 currentBoard = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.board) ? parsed.board : []);
-                if (stateChanged && isNewerOrEqual) {
+                if (shouldUpdate) {
+                    logger.log('[BOARD] Updating checkers board:', { stateChanged, isNewerOrEqual, turnChanged });
                     setBoard(currentBoard);
                     lastAppliedBoardStateRef.current = currentBoardStateRaw;
                     lastAppliedAtRef.current = gameTs;
