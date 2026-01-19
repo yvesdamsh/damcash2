@@ -251,7 +251,7 @@ export default function HomeOnlineUsers() {
                   </div>
                   {!isMe && (
                   <Button variant="outline" size="sm" onClick={() => openConfig(u)} className="ml-auto border-[rgba(255,215,0,0.35)]">
-                  <Sword className="w-4 h-4 mr-1" /> {t('home.challenge') || 'Défier'}
+                  <Swords className="w-4 h-4 mr-1" /> {t('home.challenge') || 'Défier'}
                   </Button>
                   )}
                   </div>
