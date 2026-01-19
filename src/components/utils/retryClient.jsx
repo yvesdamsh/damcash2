@@ -29,7 +29,7 @@ export async function withRateLimitRetry(promiseFactory, opts = {}) {
       const backoff = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
       const jitter = Math.floor(backoff * (0.2 + Math.random() * 0.3)); // 20%-50% jitter
       if (typeof onRetry === 'function') {
-        try { onRetry({ attempt, delay: jitter, error: e }); } catch (_) {}
+        try { onRetry({ attempt, delay: jitter, error: e }); } catch {}
       }
       await sleep(jitter);
     }

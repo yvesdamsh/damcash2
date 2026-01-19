@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Bell, Check, Trash2, ExternalLink, MessageSquare, Gamepad2, Info, ThumbsUp, Swords, Trophy, UserPlus } from 'lucide-react';
+import { Bell, Trash2, MessageSquare, Gamepad2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 // import { ScrollArea } from '@/components/ui/scroll-area'; // Replaced with native scroll for better reliability
@@ -20,9 +20,6 @@ export default function Notifications() {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('invites');
-    const [pushEnabled, setPushEnabled] = useState(
-        typeof Notification !== 'undefined' && Notification.permission === 'granted'
-    );
     const [userId, setUserId] = useState(null);
 
     // Auto-request browser notification permission by default
@@ -31,7 +28,7 @@ export default function Notifications() {
             if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
                 Notification.requestPermission().catch(() => {});
             }
-        } catch (_) {}
+        } catch {}
     }, []);
 
     // Centralized reload to keep UI in sync without page refresh
@@ -49,7 +46,7 @@ export default function Notifications() {
                 setNotifications(processed);
                 const unread = processed.filter(n => !n.read).length;
                 setUnreadCount(unread);
-            } catch (_) {
+            } catch {
                 // back off harder on failure to avoid spamming backend
                 __notifCache.cooldownUntil = Date.now() + 3000;
             } finally {
@@ -67,14 +64,6 @@ export default function Notifications() {
         // Do not keep history for invites: show only unread invites
         .filter(n => !(n.type === 'game_invite' && n.read));
 
-    const requestPushPermission = async () => {
-        if (typeof Notification === 'undefined') return;
-        const permission = await Notification.requestPermission();
-        setPushEnabled(permission === 'granted');
-        if (permission === 'granted') {
-            new Notification("Notifications activées", { body: "Vous recevrez désormais les alertes." });
-        }
-    };
 
 
 
@@ -153,7 +142,7 @@ export default function Notifications() {
           if (Array.isArray(oldNotifications) && oldNotifications.length > 0) {
             await Promise.all(oldNotifications.map(n => base44.entities.Notification.delete(n.id).catch(()=>{})));
           }
-        } catch (_) {}
+        } catch {}
       };
       cleanupOldNotifications();
       const iv = setInterval(cleanupOldNotifications, 60 * 60 * 1000);
@@ -161,7 +150,7 @@ export default function Notifications() {
     }, [userId]);
 
     const markAsRead = async (id) => {
-        try { await base44.entities.Notification.update(id, { read: true }); } catch (_) {}
+        try { await base44.entities.Notification.update(id, { read: true }); } catch {}
         // Remove immediately from UI (invites and messages)
         setNotifications(prev => prev.filter(n => n.id !== id));
         setUnreadCount(prev => Math.max(0, prev - 1));
@@ -225,7 +214,7 @@ export default function Notifications() {
                                     base44.functions.invoke('gameSocket', { gameId, type: 'PLAYER_JOINED', payload: g }).catch(() => {});
                                 }
                             }
-                        } catch (_) {}
+                        } catch {}
                         let link = n.link || (gameId ? `/Game?id=${gameId}` : null);
                         if (link && !link.includes('join=')) link += (link.includes('?') ? '&' : '?') + 'join=player';
                         if (link) navigate(link);
@@ -349,7 +338,7 @@ export default function Notifications() {
                                                             </span>
                                                         </div>
                                                     );
-                                                } catch (_) { return null; }
+                                                } catch { return null; }
                                             })()}
 
                                             {(notification.type === 'game_invite' || notification.type === 'team_challenge' || (()=>{ try { const m = typeof notification.metadata === 'string' ? JSON.parse(notification.metadata) : (notification.metadata||{}); return !!(m.gameId || m.invitationId); } catch(_) { return false; } })()) && (

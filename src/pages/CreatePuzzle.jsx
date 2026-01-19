@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Brain, Save, Play, RotateCcw, Check, Plus } from 'lucide-react';
+import { Save, Play, RotateCcw, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import { initializeBoard } from '@/components/checkersLogic';
 import { executeMove } from '@/components/checkersLogic';
-import { executeChessMove, getValidChessMoves } from '@/components/chessLogic';
+import { executeChessMove } from '@/components/chessLogic';
 
 export default function CreatePuzzle() {
     const [gameType, setGameType] = useState('checkers');

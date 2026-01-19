@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { base44 } from '@/api/base44Client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { User, Circle, Swords, Crown, Gamepad2, Search, MessagesSquare, Users, Play, Filter, Eye } from 'lucide-react';
+import { User, Circle, Swords, Crown, Gamepad2, Search, MessagesSquare, Users, Play, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { initializeBoard } from '@/components/checkersLogic';

@@ -28,7 +28,7 @@ export default function DailyChessPuzzle({ puzzle, board: initialBoard }) {
     try {
       const arr = JSON.parse(puzzle?.solution_moves || '[]');
       return Array.isArray(arr) ? arr.map(String) : [];
-    } catch (_) { return []; }
+    } catch { return []; }
   }, [puzzle?.solution_moves]);
 
   const handleSquareClick = (r, c) => {

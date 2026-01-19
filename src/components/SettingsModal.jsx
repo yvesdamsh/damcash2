@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
     Dialog, 
     DialogContent, 
@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { 
     Settings, 
     Monitor, 
@@ -21,8 +20,6 @@ import {
     User, 
     ShieldAlert, 
     Trash2,
-    Volume2,
-    VolumeX,
     Globe
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';

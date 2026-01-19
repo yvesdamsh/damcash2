@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, User, Loader2, Circle, Sword, Eye, Gamepad2 } from 'lucide-react';
+import { Search, User, Loader2, Sword, Eye, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
@@ -44,7 +44,7 @@ export default function PlayerSearchBar() {
                 // Fetch active games for these users
                 const gamesMap = {};
                 await Promise.all(filtered.map(async (u) => {
-                    const games = await base44.entities.Game.filter({ 
+                    const _games = await base44.entities.Game.filter({ 
                         status: 'playing', 
                         $or: [{white_player_id: u.id}, {black_player_id: u.id}] 
                     });

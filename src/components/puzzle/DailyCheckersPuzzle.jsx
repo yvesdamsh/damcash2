@@ -113,7 +113,7 @@ export default function DailyCheckersPuzzle({ puzzle, board }) { /* responsive c
           setCheckersTheme(prefs.checkers_theme);
           setCheckersPieces(prefs.checkers_pieces);
         }
-      } catch (_) {}
+      } catch {}
     })();
   }, []);
 

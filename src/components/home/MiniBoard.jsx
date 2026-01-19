@@ -1,4 +1,3 @@
-import React from "react";
 
 export default function MiniBoard({ type = 'chess', className = '', board = null, onSquareClick, lastMove = null }) {
   const n = Array.isArray(board) && board.length ? board.length : (type === 'chess' ? 8 : 10);

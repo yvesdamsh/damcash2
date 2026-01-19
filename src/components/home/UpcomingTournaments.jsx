@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Flag, Loader2, MapPin, Clock, Megaphone } from "lucide-react";
+import { Calendar, Flag, Loader2, Clock, Megaphone } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";

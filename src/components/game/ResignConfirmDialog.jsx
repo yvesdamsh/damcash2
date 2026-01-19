@@ -1,4 +1,3 @@
-import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/LanguageContext";

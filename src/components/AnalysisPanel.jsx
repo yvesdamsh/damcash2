@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,8 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
         try {
             const res = await base44.functions.invoke('analyzeGame', { gameId });
             setAnalysis(res.data);
-        } catch (e) {
-            console.error(e);
+        } catch {
+            console.error('Analysis failed');
         } finally {
             setLoading(false);
         }
@@ -46,7 +46,7 @@ export default function AnalysisPanel({ gameId, onJumpToMove }) {
             });
 
             toast.success("Analyse partagée sur le forum !");
-        } catch (e) {
+        } catch {
             toast.error("Erreur lors du partage");
         } finally {
             setSharing(false);

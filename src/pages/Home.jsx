@@ -1,4 +1,3 @@
-import React from 'react';
 import HomeContainer from '@/components/home/HomeContainer.jsx';
 
 export default function Home() {

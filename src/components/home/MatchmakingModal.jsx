@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Eye, Loader2, Sword, Users, Clock, Volume2, VolumeX } from 'lucide-react';
+import { Eye, Loader2, Sword, Clock, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import ChessBoard from '@/components/ChessBoard';
 import CheckerBoard from '@/components/CheckerBoard';
@@ -40,9 +40,9 @@ export default function MatchmakingModal({ open, seconds = 0, waitingGames = [],
             const parsed = JSON.parse(g.board_state || '[]');
             if (g.game_type === 'chess') setPreviewBoard(parsed.board || []);
             else setPreviewBoard(parsed);
-          } catch (_) {}
+          } catch {}
         }
-      } catch (_) {}
+      } catch {}
     }, 2000);
     return () => clearInterval(timer);
   }, [open, selectedLiveId]);

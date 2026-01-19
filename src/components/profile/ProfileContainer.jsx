@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
-import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, MapPin, Globe, Crown, Palette, Medal, Award, Clock, Layout, MessageSquare, TrendingUp, Calendar as CalendarIcon, ShoppingBag, LogOut, Share2 } from 'lucide-react';
+import { User, Activity, Shield, Edit, Camera, History, Save, Trophy, Star, Globe, Crown, Palette, Award, Clock, Layout, MessageSquare, Calendar as CalendarIcon, ShoppingBag, LogOut, Share2 } from 'lucide-react';
 import GameSettings from '@/components/GameSettings';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -13,8 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import PlayerSearchBar from '@/components/PlayerSearchBar';
 
 export default function ProfileContainer() {

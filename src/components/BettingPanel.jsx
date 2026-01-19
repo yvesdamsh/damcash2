@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Coins, TrendingUp, AlertCircle, Check } from 'lucide-react';
+import { Coins, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { withRateLimitRetry } from '@/components/utils/retryClient';
 
@@ -26,7 +26,7 @@ export default function BettingPanel({ game, currentUser }) {
                     const bets = await withRateLimitRetry(() => base44.entities.Bet.filter({ game_id: game.id, user_id: currentUser.id }), { retries: 2, baseDelay: 800, maxDelay: 6000 });
                     setMyBets(bets);
                 }
-            } catch (_) {}
+            } catch {}
         };
         load();
         // refresh every 5s for live odds
@@ -51,7 +51,7 @@ export default function BettingPanel({ game, currentUser }) {
                 toast.success("Pari placé ! Bonne chance !");
                 if (res.data.bet) setMyBets([...myBets, res.data.bet]);
             }
-        } catch (_) {
+        } catch {
             toast.error("Erreur technique");
         } finally { setLoading(false); }
     };
@@ -79,7 +79,7 @@ export default function BettingPanel({ game, currentUser }) {
             const res = await withRateLimitRetry(() => base44.functions.invoke('betsManager', { action: 'place_parlay', legs, amount: parseFloat(amount) }), { retries: 3, baseDelay: 800, maxDelay: 6000 });
             if (res.data?.error) toast.error(res.data.error);
             else { toast.success('Combiné placé !'); setParlay([]); }
-        } catch (_) { toast.error('Erreur technique'); } finally { setLoading(false); }
+        } catch { toast.error('Erreur technique'); } finally { setLoading(false); }
     };
 
     if (!game || game.status !== 'playing') {

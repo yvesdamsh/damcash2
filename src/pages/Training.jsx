@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Swords, BarChart2, Search, PlusCircle, BookOpen, Puzzle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Brain, Swords, BarChart2, Search, PlusCircle, BookOpen, CheckCircle2, ChevronRight } from 'lucide-react';
 import PuzzleMode from '@/components/training/PuzzleMode';
 import FreeTrainingMode from '@/components/training/FreeTrainingMode';
 import AnalysisMode from '@/components/training/AnalysisMode';

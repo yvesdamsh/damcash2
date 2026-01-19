@@ -80,15 +80,6 @@ export default function LeagueMatchmaking({ league, currentUser }) {
     }
   };
 
-  const grouped = React.useMemo(() => {
-    const map = new Map();
-    for (const g of waiting) {
-      const key = g.white_player_id || 'unknown';
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return map;
-  }, [waiting]);
-
   return (
     <Card className="border-[#d4c5b0]">
       <CardHeader>

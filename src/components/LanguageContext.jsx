@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { translations } from './AppTranslations'; // Import translations
 import { format, formatDistanceToNow } from 'date-fns';
 import { enUS, ru, de, zhCN, nl, fr } from 'date-fns/locale';

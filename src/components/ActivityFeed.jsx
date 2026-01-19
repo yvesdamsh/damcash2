@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Activity, Trophy, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -10,7 +9,6 @@ import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 
 export default function ActivityFeed() {
     const [activities, setActivities] = useState([]);
-    const [currentUser, setCurrentUser] = useState(null);
 
     // Real-time updates moved to top-level of component body to follow rules of hooks
     useRobustWebSocket('/functions/realtimeSocket?channelId=activity', {

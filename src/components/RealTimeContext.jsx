@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
@@ -7,10 +7,6 @@ import { useNavigate } from 'react-router-dom';
 const RealTimeContext = createContext(null);
 
 export function RealTimeProvider({ children }) {
-    // helper to compute relative time labels if needed elsewhere
-    const rel = (iso) => {
-        try { const d = new Date(iso); const mins = Math.floor((Date.now()-d.getTime())/60000); return mins <= 0 ? 'à l’instant' : `il y a ${mins} min`; } catch { return ''; }
-    };
     const [user, setUser] = useState(null);
     const [notifications, setNotifications] = useState([]);
     const [chatByGame, setChatByGame] = useState({});
@@ -21,12 +17,12 @@ export function RealTimeProvider({ children }) {
     }, []);
 
     // Global User Socket (Notifications)
-    const { sendMessage: sendUserMessage, lastMessage: lastUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
+    const { sendMessage: sendUserMessage } = useRobustWebSocket(`/functions/userSocket?uid=${user?.id || 'anon'}`, {
         autoConnect: true,
         reconnectAttempts: 50,
         reconnectInterval: 1000,
         onOpen: () => {
-            try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
+            try { if (user?.id) sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch {}
         },
         onMessage: (event, data) => {
             console.log('[WS] RAW MESSAGE:', data?.type, data);
@@ -56,7 +52,7 @@ export function RealTimeProvider({ children }) {
 
             if (isInvitation) {
                 // Do not show a copy to the sender
-                try { if (data.senderId && user?.id && data.senderId === user.id) return; } catch (_) {}
+                try { if (data.senderId && user?.id && data.senderId === user.id) return; } catch {}
                 console.log('[REALTIME] Invitation detected, dispatching event + updating store');
                 const invitationData = {
                   id: data.metadata?.id || data.metadata?.invitation_id || 'live-invite-' + Date.now(),
@@ -94,7 +90,7 @@ export function RealTimeProvider({ children }) {
                         description: inviteMessage,
                         action: inviteLink ? { label: 'Voir', onClick: () => navigate(inviteLink) } : undefined,
                     });
-                } catch (_) {}
+                } catch {}
 
                 // 3) System notification (if allowed and tab not focused)
                 try {
@@ -102,16 +98,16 @@ export function RealTimeProvider({ children }) {
                         const n = new Notification(inviteTitle, { body: inviteMessage, icon: '/favicon.ico' });
                         n.onclick = () => { window.focus(); if (inviteLink) navigate(inviteLink); };
                     }
-                } catch (_) {}
+                } catch {}
 
                 // 4) Fire events to update UI counters immediately
-                try { window.dispatchEvent(new CustomEvent('notification-update')); } catch (_) {}
-                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: invitationData })); } catch (_) {}
+                try { window.dispatchEvent(new CustomEvent('notification-update')); } catch {}
+                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: invitationData })); } catch {}
             }
 
             // Direct messages -> event bus for DirectChat
             if (data.type === 'message') {
-                try { window.dispatchEvent(new CustomEvent('direct-message', { detail: { senderId: data.senderId, content: data.message, link: data.link } })); } catch (_) {}
+                try { window.dispatchEvent(new CustomEvent('direct-message', { detail: { senderId: data.senderId, content: data.message, link: data.link } })); } catch {}
             }
 
             if (data.title && data.message) {
@@ -170,7 +166,7 @@ export function RealTimeProvider({ children }) {
                                 metadata: data.metadata
                             }
                         }));
-                    } catch (_) {}
+                    } catch {}
                 }
                 window.dispatchEvent(new CustomEvent('notification-update'));
             } else {
@@ -208,7 +204,7 @@ export function RealTimeProvider({ children }) {
     // Ensure registration even if the socket opened before user was loaded
     useEffect(() => {
         if (user?.id) {
-            try { sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch (_) {}
+            try { sendUserMessage(JSON.stringify({ type: 'REGISTER', userId: user.id })); } catch {}
         }
     }, [user?.id]);
 
@@ -237,7 +233,7 @@ export function RealTimeProvider({ children }) {
                 if (filtered.some(m => m.id === data.payload.id)) return prev;
                 return { ...prev, [gameId]: [...filtered, data.payload] };
             });
-            try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId, message: data.payload } })); } catch (_) {}
+            try { window.dispatchEvent(new CustomEvent('game-chat', { detail: { gameId, message: data.payload } })); } catch {}
         }
     };
 
@@ -263,7 +259,7 @@ export function RealTimeProvider({ children }) {
                     }
                 }));
                 return;
-            } catch (_) {}
+            } catch {}
         }
         try {
             const message = await base44.entities.ChatMessage.create({
@@ -274,7 +270,7 @@ export function RealTimeProvider({ children }) {
             });
             setChatByGame(prev => ({ ...prev, [gameId]: [ ...(prev[gameId]||[]), message ] }));
             base44.functions.invoke('gameSocket', { gameId, type: 'CHAT_UPDATE', payload: message }).catch(() => {});
-        } catch (_) {}
+        } catch {}
     };
 
     return (

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Users, UserPlus, Search, Check, X, MessageSquare, Gamepad2, Circle, Settings2 } from 'lucide-react';
+import { Users, UserPlus, Search, Check, X, MessageSquare, Gamepad2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -35,7 +35,7 @@ export default function FriendsManager() {
                 const sp = new URLSearchParams(url.search || location.search);
                 return sp.get('id');
             }
-        } catch (_) {}
+        } catch {}
         return null;
     }, [location]);
 
@@ -113,8 +113,8 @@ export default function FriendsManager() {
             }));
             setRequests(enrichedRequests.filter(Boolean));
 
-        } catch (e) {
-            console.error("Error loading friends", e);
+        } catch {
+            console.error("Error loading friends");
         }
     };
 
@@ -134,8 +134,8 @@ export default function FriendsManager() {
                  (u.email && u.email.toLowerCase().includes(searchQuery.toLowerCase())))
             );
             setSearchResults(filtered.slice(0, 5));
-        } catch (e) {
-            console.error(e);
+        } catch {
+            console.error('Operation failed');
         }
     };
 
@@ -149,7 +149,7 @@ export default function FriendsManager() {
 
             toast.success("Demande envoyée");
             setSearchResults(prev => prev.filter(u => u.id !== targetId));
-        } catch (e) {
+        } catch {
             toast.error("Erreur lors de l'envoi");
         }
     };
@@ -168,7 +168,7 @@ export default function FriendsManager() {
             });
 
             loadData();
-        } catch (e) {
+        } catch {
             toast.error("Erreur");
         }
     };
@@ -243,15 +243,15 @@ export default function FriendsManager() {
                     sender_id: currentUser.id,
                     metadata: { gameId: game.id, invitationId: invitation.id, game_type: challengeConfig.gameType, time: challengeConfig.time, increment: challengeConfig.increment, kind: 'player' }
                 });
-                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: { id: invitation.id, game_id: game.id, to_user_id: challengeTarget.id, from_user_id: currentUser.id } })); } catch (_) {}
+                try { window.dispatchEvent(new CustomEvent('invitation-received', { detail: { id: invitation.id, game_id: game.id, to_user_id: challengeTarget.id, from_user_id: currentUser.id } })); } catch {}
             }
 
             toast.success(`Défi envoyé à ${challengeTarget.username}`);
             navigate(`/Game?id=${game.id}`);
             setChallengeConfigOpen(false);
             setChallengeTarget(null);
-        } catch (e) {
-            console.error(e);
+        } catch {
+            console.error('Operation failed');
             toast.error("Erreur lors du défi");
         }
     };
@@ -312,7 +312,7 @@ export default function FriendsManager() {
                                         });
                                         toast.success('Invitation spectateur envoyée');
                                         setInviteDialogOpen(false);
-                                    } catch (e) { toast.error('Erreur lors de l\'invitation'); }
+                                    } catch { toast.error('Erreur lors de l\'invitation'); }
                                 }}
                             >
                                 Inviter comme spectateur
@@ -332,7 +332,7 @@ export default function FriendsManager() {
                                                                             });
                                         toast.success('Invitation joueur envoyée');
                                         setInviteDialogOpen(false);
-                                    } catch (e) { toast.error('Erreur lors de l\'invitation'); }
+                                    } catch { toast.error('Erreur lors de l\'invitation'); }
                                 }}
                             >
                                 Inviter comme joueur

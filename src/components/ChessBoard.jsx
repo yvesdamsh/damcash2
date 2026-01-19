@@ -1,4 +1,4 @@
-import React, { memo, useRef, useMemo } from 'react';
+import { memo, useRef, useMemo } from 'react';
 import ChessPiece from './ChessPiece';
 import { AnimatePresence } from 'framer-motion';
 import { isInCheck } from '@/components/chessLogic';

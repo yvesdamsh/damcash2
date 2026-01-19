@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Crown, Shield, ChevronRight, Star, Info, Calendar, Medal, Plus } from 'lucide-react';
+import { Trophy, Crown, Shield, ChevronRight, Calendar, Medal, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';

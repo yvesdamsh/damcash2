@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
@@ -50,7 +49,7 @@ export default function GameSettings({ user, onUpdate }) {
                     setOwnedThemes(themes);
                     setOwnedPieces(pieces);
                 }
-            } catch (e) {}
+            } catch {}
         };
         init();
     }, [user]);
@@ -60,7 +59,7 @@ export default function GameSettings({ user, onUpdate }) {
             await base44.auth.updateMe({ preferences: prefs });
             toast.success("Préférences sauvegardées !");
             if (onUpdate) onUpdate();
-        } catch (e) {
+        } catch {
             toast.error("Erreur lors de la sauvegarde");
         }
     };

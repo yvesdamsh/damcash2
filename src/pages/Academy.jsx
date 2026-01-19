@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { BookOpen, Puzzle, Swords, Brain, CheckCircle2, ChevronRight, Lock } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { BookOpen, Puzzle, Swords, Brain, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Academy() {
     const { t, language } = useLanguage();

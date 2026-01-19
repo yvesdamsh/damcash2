@@ -13,7 +13,7 @@ export default function SplashScreen({ onPlayAsGuest }) {
             const small = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
             const reduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             setMobileSafe(!!(small || reduced));
-        } catch (_) {}
+        } catch {}
     }, []);
     const playOnce = () => {
         try {

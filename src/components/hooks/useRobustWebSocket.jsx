@@ -73,7 +73,7 @@ export function useRobustWebSocket(url, options = {}) {
                         logger.warn('[WS][HEARTBEAT] PONG missed', missedPongsRef.current);
                         if (missedPongsRef.current >= 3) {
                             logger.error('[WS][HEARTBEAT] Connection unresponsive, forcing reconnect');
-                            try { ws.close(); } catch (_) {}
+                            try { ws.close(); } catch {}
                             return;
                         }
                     }

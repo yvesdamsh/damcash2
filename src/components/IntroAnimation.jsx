@@ -9,26 +9,25 @@ export default function IntroAnimation() {
       const isAndroid = /android/i.test(navigator.userAgent || '');
       if (isAndroid) {
         const t = setTimeout(() => {
-          try { window.hasShownIntro = true; } catch (_) {}
+          try { window.hasShownIntro = true; } catch {}
           const ev = new Event('intro:hide');
           window.dispatchEvent(ev);
         }, 1500);
         return () => clearTimeout(t);
       }
-    } catch (_) {}
+    } catch {}
   }, []);
     useEffect(() => {
         // Respect user preference and browser autoplay policies
         if (typeof window !== 'undefined') {
             const enabled = localStorage.getItem('soundEnabled') !== 'false';
-            const hasUserGesture = sessionStorage.getItem('audio_unlocked') === 'true';
             if (enabled) {
                 const tryPlay = () => {
                     try {
                         if (sessionStorage.getItem('start_sound_played') === 'true') return;
                         soundManager.play('start');
                         sessionStorage.setItem('start_sound_played', 'true');
-                    } catch (_) {}
+                    } catch {}
                 };
                 // Attempt immediately; if blocked, SoundManager will attach unlock handlers and retry
                 tryPlay();

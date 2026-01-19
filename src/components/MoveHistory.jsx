@@ -1,11 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLanguage } from '@/components/LanguageContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Play, Pause, SkipBack, SkipForward, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function MoveHistory({ moves, currentIndex, onSelectMove, gameType, isPlaying }) {
+export default function MoveHistory({ moves, currentIndex, onSelectMove, gameType, isPlaying: _isPlaying }) {
     const { t } = useLanguage();
     const scrollRef = useRef(null);
 
@@ -17,7 +15,7 @@ export default function MoveHistory({ moves, currentIndex, onSelectMove, gameTyp
         }
     }, [currentIndex]);
 
-    const formatMove = (move, index) => {
+    const formatMove = (move, _index) => {
         // Use pre-calculated notation if available
         if (move.notation) return move.notation;
 

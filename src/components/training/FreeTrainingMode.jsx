@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RotateCcw, Trash2, Hand, Eraser } from 'lucide-react';
+import { RotateCcw, Trash2, Eraser } from 'lucide-react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
-import { initializeBoard, executeMove } from '@/components/checkersLogic';
-import { initializeChessBoard, executeChessMove } from '@/components/chessLogic';
+import { initializeBoard } from '@/components/checkersLogic';
+import { initializeChessBoard } from '@/components/chessLogic';
 
 export default function FreeTrainingMode() {
     const [gameType, setGameType] = useState('checkers');

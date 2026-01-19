@@ -1,27 +1,21 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Loader2, User, Trophy, Flag, Copy, Check, ChevronLeft, ChevronRight, SkipBack, SkipForward, MessageSquare, Handshake, X, Play, RotateCcw, Undo2, ThumbsUp, ThumbsDown, Coins, Smile, UserPlus, Search, Star, Eye as EyeIcon, Wifi, WifiOff, RefreshCw, ArrowUpDown, Video, Phone } from 'lucide-react';
+import { Loader2, Trophy, Copy, Check, ChevronLeft, MessageSquare, Coins, Smile, UserPlus, Star, Eye as EyeIcon, ArrowUpDown, Video, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
-import CheckerBoard from '@/components/CheckerBoard';
-import ChessBoard from '@/components/ChessBoard';
 import GameBoard from '@/components/game/GameBoard';
 import UserSearchDialog from '@/components/UserSearchDialog';
 import GameChat from '@/components/GameChat';
 import VideoChat from '@/components/VideoChat';
-import GameTimer from '@/components/GameTimer';
 import MoveHistory from '@/components/MoveHistory';
 import AnalysisPanel from '@/components/AnalysisPanel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { executeMove, checkWinner } from '@/components/checkersLogic';
 import { getValidMoves as getCheckersValidMoves } from '@/components/checkersLogic';
 import { getValidChessMoves, executeChessMove, checkChessStatus, isInCheck } from '@/components/chessLogic';
@@ -387,7 +381,7 @@ export default function GameContainer() {
             try {
                 const g = await base44.entities.Game.get(id);
                 if (!cancelled && g) setGame(prev => prev || g);
-            } catch (_) {
+            } catch {
             } finally {
                 if (!cancelled) setLoadingKey('game', false);
             }
@@ -473,9 +467,9 @@ export default function GameContainer() {
                 // Otherwise keep local board/moves to prevent rewind; still merge meta/time
                 if (nextTs > prevTs) setIsMoveInProgress(false);
                 return { ...prev, ...updated, board_state: prevBoard, moves: prev.moves };
-              } catch (_) { return updated; }
+              } catch { return updated; }
             });
-          } catch (_) {
+          } catch {
           } finally {
             inFlight.value = false;
             if (!canceled) timer = setTimeout(loop, 2000); // poll every 2s when WS inactive
@@ -619,7 +613,7 @@ export default function GameContainer() {
                             setIsMoveInProgress(false);
                         }
                         return { ...prev, ...payload, board_state: prevBoard, moves: prev.moves };
-                    } catch (_) {
+                    } catch {
                         // On parse error, avoid board rewind while a move is in progress
                         return isMoveInProgress ? { ...prev, ...payload, board_state: prev?.board_state, moves: prev?.moves } : { ...prev, ...payload };
                     }
@@ -1546,7 +1540,7 @@ export default function GameContainer() {
                     if (whiteId) base44.functions.invoke('sendNotification', { recipient_id: whiteId, type: 'game', title: 'Échec', message: 'Votre roi est en échec ou vous venez de mettre échec.', link, metadata: { game_id: game.id } });
                     if (blackId && blackId !== whiteId) base44.functions.invoke('sendNotification', { recipient_id: blackId, type: 'game', title: 'Échec', message: 'Votre roi est en échec ou vous venez de mettre échec.', link, metadata: { game_id: game.id } });
                   }
-                } catch (_) {}
+                } catch {}
             }
         }
         const newStateObj = { 
@@ -1601,7 +1595,7 @@ export default function GameContainer() {
             winner_id: winnerId,
             board_state: JSON.stringify(newStateObj)
         }));
-        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch (_) {}
+        try { lastAppliedBoardStateRef.current = JSON.stringify(newStateObj); lastAppliedAtRef.current = Date.now(); } catch {}
         setChessState(newStateObj);
         setSelectedSquare(null);
         setValidMoves([]);
@@ -1643,12 +1637,12 @@ export default function GameContainer() {
         try {
           lastAppliedBoardStateRef.current = updateData.board_state;
           lastAppliedAtRef.current = new Date(updateData.last_move_at || Date.now()).getTime();
-        } catch (_) {}
+        } catch {}
         // Where polling is temporarily paused to prevent yoyo
         setPausePolling(true);
         // Optimistic local apply of the move (UI moves instantly)
         setGame(prev => ({ ...prev, ...updateData }));
-        try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch (_) {}
+        try { window.dispatchEvent(new CustomEvent('game-move', { detail: { gameId: game.id } })); } catch {}
         // Resume polling shortly after (500–1000ms) to validate with server
         setTimeout(() => setPausePolling(false), 800);
         if (game.id === 'local-ai') return;

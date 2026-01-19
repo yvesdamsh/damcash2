@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, BookOpen, Eye, ChevronLeft, ChevronRight, Clock, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, PlayCircle, Users, Sword, ArrowRight, Loader2, HelpCircle, History, Eye, Clock, User } from 'lucide-react';
 import { initializeBoard } from '@/components/checkersLogic';
 import { initializeChessBoard } from '@/components/chessLogic';
 import TutorialOverlay from '@/components/TutorialOverlay';
@@ -281,7 +280,7 @@ export default function HomeContainer() {
                             });
                             merged = pendingByEmail;
                         }
-                    } catch (_) {}
+                    } catch {}
                     console.log('[HOME] Invitations loaded:', merged.length);
                     setInvitations(merged);
                 } catch (e) {
@@ -319,7 +318,7 @@ export default function HomeContainer() {
                     } else if (event.type === 'delete') {
                         setInvitations((prev) => prev.filter(i => i.id !== inv.id));
                     }
-                } catch (_) {}
+                } catch {}
             });
 
             // Initial load
@@ -330,7 +329,7 @@ export default function HomeContainer() {
 
             return () => {
                 window.removeEventListener('invitation-received', onInv);
-                try { unsubscribe && unsubscribe(); } catch (_) {}
+                try { unsubscribe && unsubscribe(); } catch {}
                 clearInterval(intervalId);
             };
         }, [user?.id]);
@@ -347,7 +346,7 @@ export default function HomeContainer() {
                         // Broadcast immediate join with full payload
                         base44.functions.invoke('gameSocket', { gameId: res.data.gameId, type: 'PLAYER_JOINED', payload: g }).catch(() => {});
                     }
-                } catch (_) {}
+                } catch {}
                 navigate(`/Game?id=${res.data.gameId}&join=player`);
                 } else {
                     alert(t('home.invite_expired_or_full'));
@@ -528,7 +527,7 @@ export default function HomeContainer() {
                                 setMmOpen(false);
                                 navigate(`/Game?id=${match.id}`);
                                 return;
-                            } catch (_) {
+                            } catch {
                                 // If race, we'll retry next tick
                             }
                         }
@@ -554,7 +553,7 @@ export default function HomeContainer() {
                                 navigate(`/Game?id=${g.id}`);
                                 return;
                             }
-                        } catch (_) {}
+                        } catch {}
                     };
 
                     // Start polling
@@ -583,7 +582,7 @@ export default function HomeContainer() {
                     await base44.entities.Game.delete(mmCreatedGameIdRef.current);
                 }
             }
-        } catch (_) {}
+        } catch {}
         mmStartAtRef.current = null;
         mmCreatedGameIdRef.current = null;
         setMmCreatedGameId(null);

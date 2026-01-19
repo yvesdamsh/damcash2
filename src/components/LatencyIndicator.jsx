@@ -1,4 +1,3 @@
-import React from 'react';
 
 export default function LatencyIndicator({ latencyMs, connected, isOnline = true }) {
   const val = typeof latencyMs === 'number' ? latencyMs : null;

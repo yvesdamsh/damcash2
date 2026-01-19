@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { User, Calendar, ChevronRight, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Calendar, ChevronRight, ArrowLeft } from 'lucide-react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 import MoveHistory from '@/components/MoveHistory';

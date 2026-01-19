@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, X, Minimize2, Maximize2, Paperclip, Image as ImageIcon, Smile, MoreVertical, Reply, Pin, FileText, Trash2, Loader2, Download } from 'lucide-react';
+import { Send, X, Minimize2, Maximize2, Paperclip, Smile, Reply, Pin, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Trophy, Medal, User, Crown, Calendar, Timer, Swords, Star, UserPlus, Check } from 'lucide-react';
+import { Trophy, Medal, Crown, UserPlus, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -45,9 +45,9 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
       try {
         const history = await withRateLimitRetry(() => base44.entities.ChatMessage.filter({ game_id: gameId }, 'created_date', 30), { retries: 3, baseDelay: 700, maxDelay: 6000 });
         setMessages(history || []);
-      } catch (_) {}
+      } catch {}
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [gameId]);
 
   // Auto-scroll to bottom on update
@@ -84,7 +84,7 @@ export default function GameChat({ gameId, currentUser, socket, players, externa
             interval = Math.min(Math.floor(interval * 1.5), 60000);
           }
         }
-      } catch (_) {
+      } catch {
         interval = Math.min(Math.floor(interval * 2), 60000);
       } finally {
         if (!canceled) timer = setTimeout(loop, interval);

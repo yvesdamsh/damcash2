@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle, XCircle, HelpCircle, Play, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, HelpCircle, RefreshCw } from 'lucide-react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
-import { executeMove, initializeBoard } from '@/components/checkersLogic';
+import { initializeBoard } from '@/components/checkersLogic';
 import { executeChessMove, getValidChessMoves, initializeChessBoard } from '@/components/chessLogic';
 import { toast } from 'sonner';
 

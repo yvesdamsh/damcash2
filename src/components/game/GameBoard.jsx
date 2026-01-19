@@ -1,4 +1,3 @@
-import React from 'react';
 import CheckerBoard from '@/components/CheckerBoard';
 import ChessBoard from '@/components/ChessBoard';
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Clock } from 'lucide-react';
 
 export default function GameTimer({ initialSeconds, isActive, onTimeout }) {

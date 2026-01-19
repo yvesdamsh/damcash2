@@ -1,4 +1,3 @@
-import React from 'react';
 import TournamentsContainer from '@/components/tournaments/TournamentsContainer.jsx';
 
 export default function Tournaments() {

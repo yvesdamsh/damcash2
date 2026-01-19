@@ -5,18 +5,16 @@ import { base44 } from '@/api/base44Client';
 import IntroAnimation from '@/components/IntroAnimation';
 import { LanguageProvider, useLanguage } from '@/components/LanguageContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { 
-  Trophy, 
-  User, 
-  Gamepad2, 
-  LogOut, 
-  Menu, 
+import {
+  Trophy,
+  User,
+  LogOut,
+  Menu,
   X,
   Volume2,
   VolumeX,
   Home,
   Flag,
-  Eye as EyeIcon,
   Brain,
   Shield,
   Users,
@@ -47,18 +45,18 @@ export default function Layout({ children }) {
 }
 
 function LayoutContent({ children }) {
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [soundEnabled, setSoundEnabled] = React.useState(true);
-    const [appTheme, setAppTheme] = React.useState(() => { try { return localStorage.getItem('appTheme') || 'light'; } catch (_) { return 'light'; } });
-    const [gameMode, setGameMode] = React.useState(() => { try { return localStorage.getItem('gameMode') || 'checkers'; } catch (_) { return 'checkers'; } });
+    const [appTheme, setAppTheme] = React.useState(() => { try { return localStorage.getItem('appTheme') || 'light'; } catch { return 'light'; } });
+    const [gameMode, setGameMode] = React.useState(() => { try { return localStorage.getItem('gameMode') || 'checkers'; } catch { return 'checkers'; } });
     const location = useLocation();
     const navigate = useNavigate();
     // Immediate guard to avoid editor preview 404 on /login
     if (typeof window !== 'undefined') {
       const p = (window.location.pathname || '').toLowerCase();
       if (p === '/login' || p.endsWith('/login') || p.includes('/preview/login')) {
-        try { window.history.replaceState(null, '', '/Home'); } catch (_) {}
+        try { window.history.replaceState(null, '', '/Home'); } catch {}
       }
     }
     const [user, setUser] = React.useState(null);
@@ -68,7 +66,7 @@ function LayoutContent({ children }) {
             const safe = params.get('safe') === '1';
             const isAndroid = /android/i.test(navigator.userAgent || '');
             return !window.hasShownIntro && !safe && !isAndroid;
-        } catch (_) {
+        } catch {
             return !window.hasShownIntro;
         }
     });
@@ -100,7 +98,6 @@ function LayoutContent({ children }) {
             return () => { clearTimeout(timer); window.removeEventListener('intro:hide', hide); };
         } else {
              // Subsequent navigations
-             const path = location.pathname.toLowerCase();
              return () => window.removeEventListener('intro:hide', hide);
         }
     }, []); // Run once on mount to handle initial load state correctly
@@ -118,7 +115,7 @@ function LayoutContent({ children }) {
                       if (path.includes('/login')) {
                           navigate('/Home', { replace: true });
                       }
-                  } catch (_) {}
+                  } catch {}
               }, [location.search, location.pathname]);
 
     // Sound is handled inside IntroAnimation with strict single-play guard
@@ -137,9 +134,9 @@ function LayoutContent({ children }) {
                 base44.auth.logout(window.location.origin);
                 return;
             }
-        } catch (_) {}
+        } catch {}
 
-        const update = () => { try { localStorage.setItem('last_active_at', String(Date.now())); } catch (_) {} };
+        const update = () => { try { localStorage.setItem('last_active_at', String(Date.now())); } catch {} };
         const events = ['click','keydown','touchstart','mousemove','visibilitychange','focus'];
         events.forEach(ev => window.addEventListener(ev, update, { passive: true }));
         // background heartbeat every minute to keep timestamp fresh during long sessions
@@ -156,7 +153,7 @@ function LayoutContent({ children }) {
         // If we are on Profile, DO NOT save it.
         // If we are on Home, Lobby, etc., save it.
         if (location.pathname !== '/' && !path.includes('login') && !path.includes('profile') && !path.includes('game')) {
-             try { localStorage.setItem('damcash_last_path', location.pathname); } catch (_) {}
+             try { localStorage.setItem('damcash_last_path', location.pathname); } catch {}
         } else if (path.includes('profile') || path.includes('game')) {
              // If user navigates to profile, do not update the last path (keep the previous one, e.g. Home)
              // Or forcingly set it to Home to be safe?
@@ -165,7 +162,7 @@ function LayoutContent({ children }) {
                  if (!localStorage.getItem('damcash_last_path')) {
                      localStorage.setItem('damcash_last_path', '/Home');
                  }
-             } catch (_) {}
+             } catch {}
         }
     }, [location]);
 
@@ -173,14 +170,14 @@ function LayoutContent({ children }) {
     const toggleGameMode = () => {
         const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
         setGameMode(newMode);
-        try { localStorage.setItem('gameMode', newMode); } catch (_) {}
+        try { localStorage.setItem('gameMode', newMode); } catch {}
         window.dispatchEvent(new Event('gameModeChanged'));
     };
 
     // Listen for external changes to game mode
     React.useEffect(() => {
         const handleStorageChange = () => {
-            let mode = null; try { mode = localStorage.getItem('gameMode'); } catch (_) {}
+            let mode = null; try { mode = localStorage.getItem('gameMode'); } catch {}
             if (mode && mode !== gameMode) setGameMode(mode);
         };
         window.addEventListener('gameModeChanged', handleStorageChange);
@@ -215,14 +212,14 @@ function LayoutContent({ children }) {
     React.useEffect(() => {
         // Import dynamically or assume global if we could, but better to use the file logic
         // For now we just init state from localStorage logic which SoundManager uses
-        let saved = null; try { saved = localStorage.getItem('soundEnabled'); } catch (_) {}
+        let saved = null; try { saved = localStorage.getItem('soundEnabled'); } catch {}
         setSoundEnabled(saved !== 'false');
     }, []);
 
     // Theme Management
     const handleThemeChange = (newTheme) => {
         setAppTheme(newTheme);
-        try { localStorage.setItem('appTheme', newTheme); } catch (_) {}
+        try { localStorage.setItem('appTheme', newTheme); } catch {}
     };
 
     // Apply global theme class
@@ -237,7 +234,7 @@ function LayoutContent({ children }) {
 
     React.useEffect(() => {
         setIsFramed(() => {
-            try { return window.self !== window.top; } catch (_) { return true; }
+            try { return window.self !== window.top; } catch { return true; }
         });
         const checkUser = async () => {
             try {
@@ -270,13 +267,13 @@ function LayoutContent({ children }) {
                         if (!localStorage.getItem('welcome_shown_v1')) {
                           const title = t('welcome.title') || 'Welcome to Damcash!';
                           const body = t('welcome.guest') || 'Create a free account to play and chat.';
-                          try { toast.info(`${title}\n${body}`); } catch (_) {}
+                          try { toast.info(`${title}\n${body}`); } catch {}
                           localStorage.setItem('welcome_shown_v1', '1');
                         }
-                      } catch (_) {}
+                      } catch {}
                     }
                   }
-                } catch (_) {}
+                } catch {}
             } catch (e) {
                 console.error("Auth check failed", e);
             } finally {
@@ -290,11 +287,11 @@ function LayoutContent({ children }) {
     // If the app is embedded (iframe) and user isn't authenticated, force open in top window
     React.useEffect(() => {
         const canNavigateTop = (() => {
-            try { return window.top && window.top.location && window.top.location.origin === window.location.origin; } catch (_) { return false; }
+            try { return window.top && window.top.location && window.top.location.origin === window.location.origin; } catch { return false; }
         })();
         if (isFramed && !isAuthed && canNavigateTop) {
             const t = setTimeout(() => {
-                try { window.top.location.href = window.location.href; } catch (_) {}
+                try { window.top.location.href = window.location.href; } catch {}
             }, 800);
             return () => clearTimeout(t);
         }
@@ -356,7 +353,7 @@ function LayoutContent({ children }) {
                 } else {
                     navigate('/Messages');
                 }
-            } catch (_) {}
+            } catch {}
         };
         window.addEventListener('open-chat', handler);
         return () => window.removeEventListener('open-chat', handler);
@@ -373,7 +370,7 @@ function LayoutContent({ children }) {
             }
             // Avoid zoom-locks that crash some older Android WebViews
             meta.content = "width=device-width, initial-scale=1, viewport-fit=cover";
-        } catch (_) {}
+        } catch {}
     }, []);
 
     // Elegant dark mode palette
@@ -381,20 +378,10 @@ function LayoutContent({ children }) {
 
     // Theme classes and dynamic colors based on game mode
     const themeClass = gameMode === 'chess' ? 'theme-chess' : 'theme-checkers';
-    const appBgClass = gameMode === 'chess'
-        ? (isDark ? 'bg-[#0b2e16] text-[#e8f5e9]' : 'bg-[#eaf5ea] text-[#0b2e16]')
-        : (isDark ? 'bg-[#0f0a06] text-[#e8dcc5]' : 'bg-[#e8dcc5] text-slate-900');
     const bgFilter = gameMode === 'chess'
         ? (isDark ? 'hue-rotate(80deg) saturate(1.2) contrast(1.1)' : 'hue-rotate(80deg) saturate(1.4) sepia(0.1) contrast(1.1)')
         : (isDark ? 'grayscale(0.5) contrast(1.2)' : 'sepia(0.3) contrast(1.1)');
 
-    const activeNavTheme = gameMode === 'chess'
-        ? (isDark 
-            ? "bg-[#0f3d1a] text-[#e8f5e9] border-[#166534]" 
-            : "bg-[#1f4d2e] text-[#e8f5e9] border-[#14532d]")
-        : (isDark 
-            ? "bg-[#1a120b] text-[#e8dcc5] border-[#3d2b1f]" 
-            : "bg-[#4a3728] text-[#e8dcc5] border-[#2c1e12]");
 
     return (
         <div className={`min-h-screen font-sans relative transition-colors duration-300 bg-[hsl(var(--background))] text-[hsl(var(--foreground))] ${themeClass}`}>

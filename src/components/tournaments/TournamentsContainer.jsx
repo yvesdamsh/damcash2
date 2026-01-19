@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, Filter, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Search, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { toast } from 'sonner';
 import { useRobustWebSocket } from '@/components/hooks/useRobustWebSocket';

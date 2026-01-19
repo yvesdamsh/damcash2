@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ export default function PublicForum() {
             try {
                 const u = await base44.auth.me();
                 setUser(u);
-            } catch(e) {}
+            } catch {}
             fetchPosts();
         };
         init();

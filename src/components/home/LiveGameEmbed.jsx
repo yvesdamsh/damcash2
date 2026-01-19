@@ -1,6 +1,3 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Eye, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LiveGameEmbed({ game }) {

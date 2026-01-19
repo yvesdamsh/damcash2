@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLanguage } from '@/components/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -50,7 +50,7 @@ export default function VideoChat({ gameId, currentUser, opponentId, socket, ext
     useEffect(() => {
         window.__videochat_open = async () => { setOpen(true); await initLocalPreview(); };
         window.__videochat_call = async () => { setOpen(true); await startCall(); };
-        return () => { try { delete window.__videochat_open; delete window.__videochat_call; } catch (_) {} };
+        return () => { try { delete window.__videochat_open; delete window.__videochat_call; } catch {} };
     }, []);
 
     useEffect(() => {

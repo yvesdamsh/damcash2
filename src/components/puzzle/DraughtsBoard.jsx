@@ -1,4 +1,3 @@
-import React from "react";
 import MiniBoard from "@/components/home/MiniBoard";
 
 export default function DraughtsBoard({ board, className = "", size = 520 }) {

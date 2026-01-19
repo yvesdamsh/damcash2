@@ -29,7 +29,7 @@ export default function LiveGameCard({ game }) {
       try {
         const res = await base44.functions.invoke('gameSocket', { type: 'SPECTATORS', gameId: game.id });
         if (!stop) setSpectators(res.data?.spectators || 0);
-      } catch (_) {}
+      } catch {}
     };
     fetchSpectators();
     const iv = setInterval(fetchSpectators, 60000);
@@ -47,18 +47,18 @@ export default function LiveGameCard({ game }) {
     if (type === "chess") {
       let parsed = game.board_state;
       if (typeof parsed === "string") {
-        try { parsed = JSON.parse(parsed); } catch (_) {}
+        try { parsed = JSON.parse(parsed); } catch {}
       }
       if (parsed && parsed.board) board = parsed.board;
       if (parsed && parsed.lastMove) lastMove = parsed.lastMove;
     } else {
       let parsed = game.board_state;
       if (typeof parsed === "string") {
-        try { parsed = JSON.parse(parsed); } catch (_) {}
+        try { parsed = JSON.parse(parsed); } catch {}
       }
       if (Array.isArray(parsed)) board = parsed;
     }
-  } catch (_) {}
+  } catch {}
 
   if (!lastMove && game.moves) {
     try {
@@ -67,7 +67,7 @@ export default function LiveGameCard({ game }) {
         const lm = moves[moves.length - 1];
         if (lm && lm.from && lm.to) lastMove = { from: lm.from, to: lm.to };
       }
-    } catch (_) {}
+    } catch {}
   }
 
   const currentTurn = game.current_turn || "white";

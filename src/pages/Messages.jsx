@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, Search, MessageSquare, ArrowLeft, Loader2 } from 'lucide-react';
+import { Send, MessageSquare, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Messages() {

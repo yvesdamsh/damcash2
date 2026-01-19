@@ -1,5 +1,4 @@
-import React from 'react';
-import { User, Trophy, ChevronRight, Circle } from 'lucide-react';
+import { User, Trophy } from 'lucide-react';
 
 export default function TournamentBracket({ matches, players, currentRound }) {
     // Group matches by round

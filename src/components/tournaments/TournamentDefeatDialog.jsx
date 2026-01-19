@@ -1,7 +1,6 @@
-import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Medal, ArrowRight, Activity } from 'lucide-react';
+import { Medal } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function TournamentDefeatDialog({ open, onOpenChange, tournament, stats, rank }) {

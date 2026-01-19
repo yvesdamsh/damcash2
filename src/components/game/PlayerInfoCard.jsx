@@ -1,4 +1,3 @@
-import React from 'react';
 import { User, Trophy } from 'lucide-react';
 import GameTimer from '@/components/GameTimer';
 

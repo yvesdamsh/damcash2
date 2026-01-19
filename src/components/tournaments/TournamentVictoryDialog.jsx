@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Trophy, Share2, Star } from 'lucide-react';
+import { Trophy, Share2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { useLanguage } from '@/components/LanguageContext';

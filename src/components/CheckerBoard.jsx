@@ -1,8 +1,7 @@
-import React, { memo, useRef, useMemo } from 'react';
+import { memo, useRef, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import CheckerPiece from './CheckerPiece';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getValidMoves as getCheckersMoves } from '@/components/checkersLogic';
 
 // Sub-component memoized for performance
 const CheckerSquare = memo(({ 

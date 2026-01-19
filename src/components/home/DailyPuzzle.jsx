@@ -6,7 +6,6 @@ import { Loader2, Puzzle, Brain } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useLanguage } from "@/components/LanguageContext";
 import { Link } from "react-router-dom";
-import ChessBoard from "@/components/ChessBoard";
 import DailyChessPuzzle from "@/components/puzzle/DailyChessPuzzle";
 import PuzzleEditor from "@/components/home/PuzzleEditor";
 import DailyCheckersPuzzle from "@/components/puzzle/DailyCheckersPuzzle";
@@ -62,7 +61,7 @@ export default function DailyPuzzle({ gameType: propGameType }) {
               try {
                 const parsed = JSON.parse(puzzle.board_state);
                 board = gameType === 'chess' ? (parsed?.board || null) : (Array.isArray(parsed) ? parsed : null);
-              } catch (_) {
+              } catch {
                 // If chess and board_state is FEN, convert to 2D array
                 if (gameType === 'chess' && typeof puzzle.board_state === 'string') {
                   const fenPart = puzzle.board_state.split(' ')[0];

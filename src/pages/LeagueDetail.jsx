@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Trophy, Medal, Crown, Shield, User, ArrowUpCircle, ArrowDownCircle, ChevronLeft, Sword, Loader2, UserPlus, LogIn } from 'lucide-react';
+import { Trophy, Medal, Crown, Shield, User, ChevronLeft, Loader2, UserPlus, LogIn } from 'lucide-react';
 import LeagueMatchmaking from '@/components/LeagueMatchmaking';
 import LeagueStatsCard from '@/components/LeagueStatsCard';
 import LeagueSeasonBanner from '@/components/LeagueSeasonBanner';

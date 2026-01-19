@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { Trophy, Calendar, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function NextTournamentBanner() {
