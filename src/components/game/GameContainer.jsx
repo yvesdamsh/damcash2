@@ -456,25 +456,28 @@ export default function GameContainer() {
                 const nextMoves = safeJSONParse(updated?.moves, prevMoves);
                 const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
                 const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
-                const prevBoard = typeof prev?.board_state === 'string' ? prev.board_state : JSON.stringify(prev?.board_state || '');
                 const prevTs = prev?.updated_date ? new Date(prev.updated_date).getTime() : 0;
                 const nextTs = updated?.updated_date ? new Date(updated.updated_date).getTime() : 0;
+                
+                // Force update if: more moves, turn changed, board different, or newer timestamp
+                const turnChanged = prev?.current_turn !== updated?.current_turn;
+                const hasMoreMoves = nextCount > prevCount;
+                const boardDifferent = JSON.stringify(prev?.board_state) !== JSON.stringify(updated?.board_state);
 
-                // Apply only if strictly newer move count
-                if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
-                  lastAppliedMoveCountRef.current = nextCount;
+                if (hasMoreMoves || turnChanged || boardDifferent || nextTs > prevTs) {
+                  if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                    lastAppliedMoveCountRef.current = nextCount;
+                  }
                   setIsMoveInProgress(false);
                   return updated;
                 }
-                // Otherwise keep local board/moves to prevent rewind; still merge meta/time
-                if (nextTs > prevTs) setIsMoveInProgress(false);
-                return { ...prev, ...updated, board_state: prevBoard, moves: prev.moves };
+                return prev;
               } catch { return updated; }
             });
           } catch {
           } finally {
             inFlight.value = false;
-            if (!canceled) timer = setTimeout(loop, 2000); // poll every 2s when WS inactive
+            if (!canceled) timer = setTimeout(loop, 1500); // poll every 1.5s when WS inactive
           }
         };
         loop();
@@ -517,8 +520,17 @@ export default function GameContainer() {
             const nextMoves = safeJSONParse(updated?.moves, prevMoves);
             const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
             const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
-            if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
-              lastAppliedMoveCountRef.current = nextCount;
+            
+            // Force update if: more moves, OR turn changed, OR board state is different
+            const turnChanged = prev?.current_turn !== updated?.current_turn;
+            const hasMoreMoves = nextCount > prevCount;
+            const boardDifferent = JSON.stringify(prev?.board_state) !== JSON.stringify(updated?.board_state);
+            
+            if (hasMoreMoves || turnChanged || boardDifferent) {
+              logger.log('[POLL][SYNC] Forced update:', { hasMoreMoves, turnChanged, boardDifferent, prevCount, nextCount });
+              if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+                lastAppliedMoveCountRef.current = nextCount;
+              }
               setIsMoveInProgress(false);
               return updated;
             }
@@ -527,8 +539,8 @@ export default function GameContainer() {
         } catch {}
       };
       
-      // Poll every 2 seconds when waiting for opponent
-      const intervalId = setInterval(syncFromServer, 2000);
+      // Poll every 1 second when waiting for opponent (faster sync)
+      const intervalId = setInterval(syncFromServer, 1000);
       // Also run immediately
       syncFromServer();
       
