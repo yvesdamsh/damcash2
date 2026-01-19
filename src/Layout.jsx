@@ -21,7 +21,9 @@ import {
   ShoppingBag,
   History,
   LogIn,
-  Settings
+  Settings,
+  Play,
+  MessageCircle
   } from 'lucide-react';
 import NotificationCenter from '@/components/NotificationCenter';
 import SettingsMenu from '@/components/SettingsMenu';
@@ -167,12 +169,19 @@ function LayoutContent({ children }) {
     }, [location]);
 
     // Sync Game Mode
-    const toggleGameMode = () => {
-        const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
-        setGameMode(newMode);
-        try { localStorage.setItem('gameMode', newMode); } catch {}
-        window.dispatchEvent(new Event('gameModeChanged'));
-    };
+        const toggleGameMode = () => {
+            const newMode = gameMode === 'checkers' ? 'chess' : 'checkers';
+            setGameMode(newMode);
+            try { localStorage.setItem('gameMode', newMode); } catch {}
+            window.dispatchEvent(new Event('gameModeChanged'));
+        };
+
+        const setGameModeExplicit = (mode) => {
+            if (mode === gameMode) return;
+            setGameMode(mode);
+            try { localStorage.setItem('gameMode', mode); } catch {}
+            window.dispatchEvent(new Event('gameModeChanged'));
+        };
 
     // Listen for external changes to game mode
     React.useEffect(() => {
@@ -311,7 +320,7 @@ function LayoutContent({ children }) {
     // Filter items based on auth state to save space
     const navItems = [
         { label: t('nav.home'), path: '/Home', icon: Home, public: true },
-        
+
         { label: t('nav.lobby'), path: '/Lobby', icon: Users, public: true },
         { label: t('nav.leagues'), path: '/Leagues', icon: Shield, public: true },
         { label: t('nav.tournaments'), path: '/Tournaments', icon: Flag, public: true },
@@ -326,6 +335,15 @@ function LayoutContent({ children }) {
         { label: t('nav.preferences'), path: '/Preferences', icon: Settings, public: false },
         ...(user?.role === 'admin' ? [{ label: t('nav.admin'), path: '/AdminDashboard', icon: Shield, public: false }] : []),
         ].filter(item => user || item.public);
+
+    // Bottom tabs for mobile
+    const bottomTabs = [
+      { label: t('nav.home') || 'Accueil', path: '/Home', icon: Home },
+      { label: t('nav.lobby') || 'Jouer', path: '/Lobby', icon: Play },
+      { label: t('nav.tournaments') || 'Tournois', path: '/Tournaments', icon: Trophy },
+      { label: t('nav.messages') || 'Messages', path: '/Messages', icon: MessageCircle },
+      { label: t('nav.profile') || 'Profil', path: '/Profile', icon: User }
+    ];
 
     const handleLogout = async () => {
         try {
@@ -539,7 +557,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             />
 
             {/* Navbar */}
-            <nav className="relative z-[100] shadow-lg border-b-4 transition-colors duration-300 bg-[var(--nav-bg)] text-[var(--nav-fg)] border-[var(--nav-border)]">
+            <nav className="sticky top-0 z-[150] shadow-lg transition-colors duration-300 backdrop-blur-xl text-[var(--nav-fg)]" style={{ background: 'rgba(30,20,10,0.9)', borderBottom: '1px solid rgba(255,215,0,0.25)' }}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
@@ -551,7 +569,7 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                                       className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[var(--nav-fg)] to-[var(--gold-accent)] drop-shadow-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                                <span className="font-black text-xl lg:text-2xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-[var(--nav-fg)] to-[var(--gold-accent)] drop-shadow-sm" style={{ fontFamily: 'Georgia, serif', textShadow: '0 0 20px rgba(255,215,0,0.5)' }}>
                                     DAMCASH
                                 </span>
                             </Link>
@@ -560,23 +578,21 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
                         {/* Desktop Actions (Nav items moved to hamburger) */}
                         <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
                               <LanguageSwitcher />
-                              {/* Game Mode Toggle */}
+                              {/* Game Mode Segmented Toggle */}
+                              <div className="flex items-center p-1 rounded-2xl backdrop-blur-md border border-[rgba(255,215,0,0.3)] bg-[rgba(255,255,255,0.06)]">
                                 <button
-                                    onClick={toggleGameMode}
-                                    className={
-                                        "px-3 py-2 rounded-md text-sm font-bold transition-all border flex items-center gap-2 shadow-sm " +
-                                        (gameMode === 'chess'
-                                            ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--border)] hover:brightness-110'
-                                            : 'bg-[hsl(var(--background))] text-[hsl(var(--foreground))] border-[var(--border)] hover:brightness-105'
-                                        )
-                                    }
+                                  onClick={() => setGameModeExplicit('checkers')}
+                                  className={`px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${gameMode==='checkers' ? 'bg-[linear-gradient(135deg,#FFD700,#B8860B,#DAA520)] text-white shadow-[0_8px_24px_rgba(255,215,0,0.35)]' : 'text-[hsl(var(--foreground))] hover:scale-[1.02]'}`}
                                 >
-                                    {gameMode === 'chess' ? (
-                                        <><span aria-hidden="true">♟️</span> {t('game.chess')}</>
-                                    ) : (
-                                        <><span aria-hidden="true">⚪</span> {t('game.checkers')}</>
-                                    )}
+                                  <span aria-hidden="true">⚪</span> {t('game.checkers')}
                                 </button>
+                                <button
+                                  onClick={() => setGameModeExplicit('chess')}
+                                  className={`ml-1 px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${gameMode==='chess' ? 'bg-[linear-gradient(135deg,#FFD700,#B8860B,#DAA520)] text-white shadow-[0_8px_24px_rgba(255,215,0,0.35)]' : 'text-[hsl(var(--foreground))] hover:scale-[1.02]'}`}
+                                >
+                                  <span aria-hidden="true">♟️</span> {t('game.chess')}
+                                </button>
+                              </div>
 
                                 {user && (
                                   <>
@@ -752,12 +768,40 @@ button, a, [role="button"] { min-height: 44px; min-width: 44px; }
             {/* Main Content */}
             <main
               className={
-                "relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 pb-40 " +
+                "relative z-10 max-w-7xl mx-auto sm:px-6 lg:px-8 py-8 " +
                 (location.pathname.toLowerCase().startsWith('/game') ? "px-0" : "px-4")
               }
+              style={{ paddingBottom: 'calc(90px + env(safe-area-inset-bottom))' }}
             >
                 {children}
             </main>
-        </div>
-    );
-}
+
+            {/* Fixed Bottom Tab Bar */}
+            <div className="fixed bottom-0 left-0 right-0 z-[120] md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <div className="mx-auto max-w-7xl">
+                <div
+                  className="mx-3 mb-[env(safe-area-inset-bottom)] h-[70px] rounded-t-[24px] border"
+                  style={{
+                    background: 'rgba(30,20,10,0.85)',
+                    backdropFilter: 'blur(20px)',
+                    borderColor: 'rgba(255,215,0,0.25)'
+                  }}
+                >
+                  <div className="grid grid-cols-5 h-full">
+                    {bottomTabs.map((tab) => {
+                      const active = (location.pathname || '').startsWith(tab.path);
+                      const Icon = tab.icon;
+                      return (
+                        <Link key={tab.path} to={tab.path} className="flex flex-col items-center justify-center gap-1 transition-all ease-out">
+                          <Icon className={`h-5 w-5 ${active ? 'text-[#FFD700]' : 'text-[hsl(var(--foreground))]/70'}`} />
+                          <span className={`text-[11px] font-semibold ${active ? 'text-[#FFD700]' : 'text-[hsl(var(--foreground))]/70'}`}>{tab.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+            );
+            }
