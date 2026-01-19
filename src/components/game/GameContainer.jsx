@@ -494,6 +494,47 @@ export default function GameContainer() {
       return () => window.removeEventListener('game-move', handleMove);
     }, [id]);
 
+    // Aggressive sync polling: when it's NOT our turn, poll frequently to catch opponent moves
+    useEffect(() => {
+      if (!id || id === 'local-ai') return;
+      if (!game || game.status !== 'playing') return;
+      
+      // Determine if it's our turn
+      const isMyTurn = (game.current_turn === 'white' && currentUser?.id === game.white_player_id) ||
+                       (game.current_turn === 'black' && currentUser?.id === game.black_player_id);
+      
+      // If it's NOT our turn, we're waiting for opponent - poll aggressively
+      if (isMyTurn) return;
+      
+      let canceled = false;
+      const syncFromServer = async () => {
+        if (canceled || document.hidden) return;
+        try {
+          const updated = await base44.entities.Game.get(id);
+          if (!updated || canceled) return;
+          setGame(prev => {
+            const prevMoves = safeJSONParse(prev?.moves, []);
+            const nextMoves = safeJSONParse(updated?.moves, prevMoves);
+            const prevCount = Array.isArray(prevMoves) ? prevMoves.length : 0;
+            const nextCount = Array.isArray(nextMoves) ? nextMoves.length : prevCount;
+            if (nextCount > (lastAppliedMoveCountRef.current || 0)) {
+              lastAppliedMoveCountRef.current = nextCount;
+              setIsMoveInProgress(false);
+              return updated;
+            }
+            return prev;
+          });
+        } catch {}
+      };
+      
+      // Poll every 2 seconds when waiting for opponent
+      const intervalId = setInterval(syncFromServer, 2000);
+      // Also run immediately
+      syncFromServer();
+      
+      return () => { canceled = true; clearInterval(intervalId); };
+    }, [id, game?.current_turn, game?.status, currentUser?.id, game?.white_player_id, game?.black_player_id]);
+
     useEffect(() => {
         if (!id || id === 'local-ai') return;
         if (!isPreview) return;

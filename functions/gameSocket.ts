@@ -374,6 +374,9 @@ console.log('[WS] parsed type', data?.type);
                  const msg = { type: 'GAME_UPDATE', payload: outPayload };
                  broadcast(gameId, msg, null);
                  gameUpdates.postMessage({ gameId, ...msg });
+                 // Also send GAME_REFETCH to force sync on all clients (fixes asymmetric updates)
+                 broadcast(gameId, { type: 'GAME_REFETCH' }, null);
+                 gameUpdates.postMessage({ gameId, type: 'GAME_REFETCH' });
                  // Acknowledge move back to sender only
                  try { if (moveId) socket.send(JSON.stringify({ type: 'MOVE_ACK', moveId })); } catch (_) {}
                  try {
