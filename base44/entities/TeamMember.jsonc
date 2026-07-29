@@ -1,0 +1,43 @@
+{
+  "name": "TeamMember",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_avatar": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "leader",
+        "member"
+      ],
+      "default": "member"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "invited"
+      ],
+      "default": "pending"
+    },
+    "joined_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "team_id",
+    "user_id"
+  ]
+}

@@ -1,0 +1,151 @@
+{
+  "name": "Game",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "waiting",
+        "playing",
+        "finished",
+        "aborted"
+      ],
+      "default": "waiting",
+      "description": "State of the game"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ],
+      "default": "checkers",
+      "description": "Type of game"
+    },
+    "white_player_id": {
+      "type": "string"
+    },
+    "white_player_name": {
+      "type": "string"
+    },
+    "white_player_elo": {
+      "type": "number",
+      "description": "Cached ELO for matchmaking"
+    },
+    "black_player_id": {
+      "type": "string"
+    },
+    "black_player_name": {
+      "type": "string"
+    },
+    "black_player_elo": {
+      "type": "number",
+      "description": "Cached ELO for matchmaking"
+    },
+    "current_turn": {
+      "type": "string",
+      "enum": [
+        "white",
+        "black"
+      ],
+      "default": "white"
+    },
+    "board_state": {
+      "type": "string"
+    },
+    "moves": {
+      "type": "string"
+    },
+    "winner_id": {
+      "type": "string"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": false
+    },
+    "access_code": {
+      "type": "string"
+    },
+    "white_seconds_left": {
+      "type": "number",
+      "default": 600
+    },
+    "black_seconds_left": {
+      "type": "number",
+      "default": 600
+    },
+    "initial_time": {
+      "type": "number",
+      "default": 10
+    },
+    "increment": {
+      "type": "number",
+      "default": 0
+    },
+    "series_length": {
+      "type": "number",
+      "default": 1
+    },
+    "series_score_white": {
+      "type": "number",
+      "default": 0
+    },
+    "series_score_black": {
+      "type": "number",
+      "default": 0
+    },
+    "last_move_at": {
+      "type": "string"
+    },
+    "draw_offer_by": {
+      "type": "string"
+    },
+    "takeback_requested_by": {
+      "type": "string"
+    },
+    "tournament_id": {
+      "type": "string"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "ID of the league if this game is part of a league"
+    },
+    "tournament_round": {
+      "type": "number"
+    },
+    "next_match_id": {
+      "type": "string"
+    },
+    "elo_processed": {
+      "type": "boolean",
+      "default": false
+    },
+    "opening_name": {
+      "type": "string",
+      "description": "Name of the opening played (e.g. Sicilian Defense)"
+    },
+    "entry_fee": {
+      "type": "number",
+      "default": 0,
+      "description": "Amount required to join this game"
+    },
+    "prize_pool": {
+      "type": "number",
+      "default": 0,
+      "description": "Total prize money for this game"
+    },
+    "white_berserk": {
+      "type": "boolean",
+      "default": false
+    },
+    "black_berserk": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "status",
+    "board_state",
+    "game_type"
+  ]
+}

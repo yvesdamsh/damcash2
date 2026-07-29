@@ -1,0 +1,40 @@
+{
+  "name": "SignalMessage",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "ID of the game"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "ID of the user sending the signal"
+    },
+    "recipient_id": {
+      "type": "string",
+      "description": "ID of the target user"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "offer",
+        "answer",
+        "candidate",
+        "request_call",
+        "reject",
+        "hangup"
+      ],
+      "description": "Type of signaling message"
+    },
+    "data": {
+      "type": "string",
+      "description": "JSON stringified data (SDP, candidate, or empty)"
+    }
+  },
+  "required": [
+    "game_id",
+    "sender_id",
+    "type",
+    "data"
+  ]
+}

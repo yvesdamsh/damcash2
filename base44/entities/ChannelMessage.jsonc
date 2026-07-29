@@ -1,0 +1,31 @@
+{
+  "name": "ChannelMessage",
+  "type": "object",
+  "properties": {
+    "channel_id": {
+      "type": "string",
+      "description": "ID of the channel (e.g., 'global', 'lobby', or team_id)"
+    },
+    "sender_id": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "sender_avatar": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "channel_id",
+    "sender_id",
+    "content"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "Lesson",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the lesson"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ],
+      "default": "checkers"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "opening",
+        "midgame",
+        "endgame",
+        "tactics",
+        "strategy"
+      ],
+      "default": "strategy"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "beginner",
+        "intermediate",
+        "advanced",
+        "master"
+      ],
+      "default": "beginner"
+    },
+    "description": {
+      "type": "string"
+    },
+    "content_markdown": {
+      "type": "string",
+      "description": "Markdown content for the lesson text"
+    },
+    "steps": {
+      "type": "string",
+      "description": "JSON array of steps: [{ fen: string, instruction: string, correct_moves: string[] }]"
+    },
+    "order": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "game_type",
+    "category"
+  ]
+}

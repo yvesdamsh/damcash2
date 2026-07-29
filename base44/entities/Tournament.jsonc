@@ -1,0 +1,171 @@
+{
+  "name": "Tournament",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "series_id": {
+      "type": "string",
+      "description": "ID of the series this tournament belongs to"
+    },
+    "prizes": {
+      "type": "string"
+    },
+    "entry_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "prize_pool": {
+      "type": "number",
+      "default": 0
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "ongoing",
+        "finished"
+      ],
+      "default": "open"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ]
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "bracket",
+        "arena",
+        "swiss",
+        "hybrid"
+      ],
+      "default": "bracket"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "groups",
+        "knockout"
+      ],
+      "default": "knockout"
+    },
+    "rounds": {
+      "type": "number",
+      "default": 3
+    },
+    "group_size": {
+      "type": "number",
+      "default": 4
+    },
+    "time_control": {
+      "type": "string",
+      "default": "5+0"
+    },
+    "max_players": {
+      "type": "number",
+      "default": 8
+    },
+    "current_round": {
+      "type": "number",
+      "default": 0
+    },
+    "winner_id": {
+      "type": "string"
+    },
+    "winner_team_id": {
+      "type": "string",
+      "description": "ID of the winning team if team mode"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": false
+    },
+    "access_code": {
+      "type": "string"
+    },
+    "created_by_user_id": {
+      "type": "string"
+    },
+    "rewards": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string"
+        },
+        "second": {
+          "type": "string"
+        },
+        "third": {
+          "type": "string"
+        }
+      }
+    },
+    "prize_distribution": {
+      "type": "string",
+      "description": "JSON string of prize distribution percentages e.g. {'1': 0.5, '2': 0.3}"
+    },
+    "team_mode": {
+      "type": "boolean",
+      "default": false
+    },
+    "custom_rules": {
+      "type": "string"
+    },
+    "recurrence": {
+      "type": "string",
+      "enum": [
+        "none",
+        "daily",
+        "weekly"
+      ],
+      "default": "none"
+    },
+    "tie_breaker": {
+      "type": "string",
+      "enum": [
+        "buchholz",
+        "sonneborn_berger",
+        "head_to_head",
+        "wins"
+      ],
+      "default": "buchholz"
+    },
+    "elo_min": {
+      "type": "number",
+      "default": 0
+    },
+    "elo_max": {
+      "type": "number",
+      "default": 3000
+    },
+    "badge_name": {
+      "type": "string",
+      "description": "Name of the badge awarded to the winner"
+    },
+    "badge_icon": {
+      "type": "string",
+      "description": "Icon of the badge awarded to the winner"
+    }
+  },
+  "required": [
+    "name",
+    "start_date",
+    "game_type"
+  ]
+}

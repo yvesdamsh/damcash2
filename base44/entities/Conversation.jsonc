@@ -1,0 +1,24 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of user IDs in the conversation"
+    },
+    "last_message_at": {
+      "type": "string",
+      "description": "Timestamp of the last message"
+    },
+    "last_message_preview": {
+      "type": "string",
+      "description": "Preview of the last message"
+    }
+  },
+  "required": [
+    "participants"
+  ]
+}

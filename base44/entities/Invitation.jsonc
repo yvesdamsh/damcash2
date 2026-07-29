@@ -1,0 +1,42 @@
+{
+  "name": "Invitation",
+  "type": "object",
+  "properties": {
+    "from_user_id": {
+      "type": "string"
+    },
+    "from_user_name": {
+      "type": "string"
+    },
+    "to_user_email": {
+      "type": "string"
+    },
+    "to_user_id": {
+      "type": "string"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending"
+    },
+    "game_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_user_id",
+    "to_user_email",
+    "game_type"
+  ]
+}

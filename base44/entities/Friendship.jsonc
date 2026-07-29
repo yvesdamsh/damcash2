@@ -1,0 +1,28 @@
+{
+  "name": "Friendship",
+  "type": "object",
+  "properties": {
+    "requester_id": {
+      "type": "string",
+      "description": "ID de l'utilisateur qui demande"
+    },
+    "recipient_id": {
+      "type": "string",
+      "description": "ID de l'utilisateur qui re\u00e7oit"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "blocked"
+      ],
+      "default": "pending",
+      "description": "Statut de l'amiti\u00e9"
+    }
+  },
+  "required": [
+    "requester_id",
+    "recipient_id"
+  ]
+}

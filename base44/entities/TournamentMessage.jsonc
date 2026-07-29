@@ -1,0 +1,31 @@
+{
+  "name": "TournamentMessage",
+  "type": "object",
+  "properties": {
+    "tournament_id": {
+      "type": "string",
+      "description": "ID of the tournament"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "ID of the sender"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Name of the sender"
+    },
+    "sender_avatar": {
+      "type": "string",
+      "description": "Avatar URL of the sender"
+    },
+    "content": {
+      "type": "string",
+      "description": "Message content"
+    }
+  },
+  "required": [
+    "tournament_id",
+    "sender_id",
+    "content"
+  ]
+}

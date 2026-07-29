@@ -1,0 +1,52 @@
+{
+  "name": "EloHistory",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the player"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ],
+      "description": "Type of game"
+    },
+    "old_elo": {
+      "type": "number",
+      "description": "Elo before the change"
+    },
+    "new_elo": {
+      "type": "number",
+      "description": "Elo after the change"
+    },
+    "change_amount": {
+      "type": "number",
+      "description": "Amount of points gained or lost"
+    },
+    "game_id": {
+      "type": "string",
+      "description": "ID of the game related to this change"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "game_win",
+        "game_loss",
+        "game_draw",
+        "admin_adjustment",
+        "decay"
+      ],
+      "default": "game_win"
+    }
+  },
+  "required": [
+    "user_id",
+    "game_type",
+    "old_elo",
+    "new_elo",
+    "change_amount"
+  ]
+}

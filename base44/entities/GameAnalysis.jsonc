@@ -1,0 +1,21 @@
+{
+  "name": "GameAnalysis",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "ID of the analyzed game"
+    },
+    "summary": {
+      "type": "string",
+      "description": "General summary of the game"
+    },
+    "analysis_data": {
+      "type": "string",
+      "description": "JSON stringified detailed analysis (move comments, key moments)"
+    }
+  },
+  "required": [
+    "game_id"
+  ]
+}

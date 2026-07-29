@@ -1,0 +1,68 @@
+{
+  "name": "League",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the league (e.g. 'Spring Season 2025')"
+    },
+    "description": {
+      "type": "string"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "chess",
+        "checkers"
+      ]
+    },
+    "season": {
+      "type": "number",
+      "default": 1
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "upcoming",
+        "active",
+        "completed"
+      ],
+      "default": "upcoming"
+    },
+    "rules_summary": {
+      "type": "string",
+      "description": "Short rules text"
+    },
+    "rewards": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "string"
+        },
+        "second": {
+          "type": "string"
+        },
+        "third": {
+          "type": "string"
+        },
+        "tier_promotion": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "game_type",
+    "start_date",
+    "end_date"
+  ]
+}

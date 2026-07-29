@@ -1,0 +1,33 @@
+{
+  "name": "ForumPost",
+  "type": "object",
+  "properties": {
+    "author_id": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "author_avatar": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    },
+    "liked_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "author_id",
+    "content"
+  ]
+}

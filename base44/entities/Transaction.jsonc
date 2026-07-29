@@ -1,0 +1,47 @@
+{
+  "name": "Transaction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "deposit",
+        "withdrawal",
+        "entry_fee",
+        "prize",
+        "refund",
+        "purchase",
+        "bet_placed",
+        "bet_won",
+        "reward",
+        "commission"
+      ]
+    },
+    "amount": {
+      "type": "number"
+    },
+    "game_id": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ],
+      "default": "completed"
+    }
+  },
+  "required": [
+    "user_id",
+    "type",
+    "amount"
+  ]
+}

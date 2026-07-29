@@ -1,0 +1,60 @@
+{
+  "name": "TournamentParticipant",
+  "type": "object",
+  "properties": {
+    "tournament_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User ID (if individual) or Team Leader ID (if team)"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Team ID if team mode"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Player Name or Team Name"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "eliminated",
+        "winner",
+        "withdrawn"
+      ],
+      "default": "active"
+    },
+    "score": {
+      "type": "number",
+      "default": 0
+    },
+    "streak": {
+      "type": "number",
+      "default": 0
+    },
+    "games_played": {
+      "type": "number",
+      "default": 0
+    },
+    "current_game_id": {
+      "type": "string"
+    },
+    "group_id": {
+      "type": "string"
+    },
+    "group_points": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "tournament_id",
+    "user_id"
+  ]
+}

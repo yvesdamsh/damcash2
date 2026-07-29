@@ -1,0 +1,59 @@
+{
+  "name": "TournamentSeries",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "checkers",
+        "chess"
+      ]
+    },
+    "organizer_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed"
+      ],
+      "default": "active"
+    },
+    "points_system": {
+      "type": "object",
+      "properties": {
+        "first": {
+          "type": "number",
+          "default": 10
+        },
+        "second": {
+          "type": "number",
+          "default": 6
+        },
+        "third": {
+          "type": "number",
+          "default": 4
+        },
+        "participation": {
+          "type": "number",
+          "default": 1
+        }
+      }
+    },
+    "standings": {
+      "type": "string",
+      "description": "JSON string of standings: { userId: { name, score, wins, ... } }"
+    }
+  },
+  "required": [
+    "name",
+    "game_type"
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "username": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "banner_url": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string"
+    },
+    "level": {
+      "type": "number",
+      "default": 1
+    },
+    "xp": {
+      "type": "number",
+      "default": 0
+    },
+    "elo_chess": {
+      "type": "number",
+      "default": 1200
+    },
+    "elo_checkers": {
+      "type": "number",
+      "default": 1200
+    },
+    "wins_chess": {
+      "type": "number",
+      "default": 0
+    },
+    "losses_chess": {
+      "type": "number",
+      "default": 0
+    },
+    "wins_checkers": {
+      "type": "number",
+      "default": 0
+    },
+    "losses_checkers": {
+      "type": "number",
+      "default": 0
+    },
+    "games_played": {
+      "type": "number",
+      "default": 0
+    },
+    "profile_theme": {
+      "type": "string",
+      "default": "default"
+    },
+    "avatar_frame": {
+      "type": "string",
+      "default": "none"
+    },
+    "favorite_games": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "checkers_theme": {
+          "type": "string",
+          "default": "classic"
+        },
+        "chess_theme": {
+          "type": "string",
+          "default": "classic"
+        },
+        "checkers_pieces": {
+          "type": "string",
+          "default": "standard"
+        },
+        "chess_pieces": {
+          "type": "string",
+          "default": "standard"
+        },
+        "sound_move": {
+          "type": "boolean",
+          "default": true
+        },
+        "sound_capture": {
+          "type": "boolean",
+          "default": true
+        },
+        "sound_notify": {
+          "type": "boolean",
+          "default": true
+        },
+        "notifications_browser": {
+          "type": "boolean",
+          "default": true
+        },
+        "notify_tournament": {
+          "type": "boolean",
+          "default": true,
+          "description": "Receive tournament status updates (start/end)"
+        },
+        "notify_match": {
+          "type": "boolean",
+          "default": true,
+          "description": "Receive match ready/start notifications"
+        },
+        "notify_invite": {
+          "type": "boolean",
+          "default": true,
+          "description": "Receive direct game invitations"
+        }
+      },
+      "default": {}
+    }
+  },
+  "required": [
+    "username",
+    "bio",
+    "avatar_url",
+    "banner_url",
+    "country",
+    "favorite_games"
+  ]
+}

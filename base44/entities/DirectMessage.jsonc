@@ -1,0 +1,77 @@
+{
+  "name": "DirectMessage",
+  "type": "object",
+  "properties": {
+    "conversation_id": {
+      "type": "string",
+      "description": "ID of the conversation"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "ID of the user sending the message"
+    },
+    "content": {
+      "type": "string",
+      "description": "Content of the message"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "If the message has been read"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "file",
+              "audio"
+            ]
+          },
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "reactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "reply_to_id": {
+      "type": "string",
+      "description": "ID of the message this is a reply to"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "conversation_id",
+    "sender_id"
+  ]
+}

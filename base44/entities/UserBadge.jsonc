@@ -1,0 +1,31 @@
+{
+  "name": "UserBadge",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user"
+    },
+    "tournament_id": {
+      "type": "string",
+      "description": "ID of the tournament won"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the badge"
+    },
+    "icon": {
+      "type": "string",
+      "description": "Icon name (lucide) or emoji"
+    },
+    "awarded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it was awarded"
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ]
+}

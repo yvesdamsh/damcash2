@@ -1,0 +1,58 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_id": {
+      "type": "string",
+      "description": "ID de l'utilisateur destinataire"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "info",
+        "success",
+        "warning",
+        "game",
+        "tournament",
+        "message",
+        "forum",
+        "game_invite",
+        "team_challenge",
+        "tournament_update",
+        "team_request"
+      ],
+      "default": "info",
+      "description": "Type de notification"
+    },
+    "title": {
+      "type": "string",
+      "description": "Titre de la notification"
+    },
+    "message": {
+      "type": "string",
+      "description": "Contenu du message"
+    },
+    "link": {
+      "type": "string",
+      "description": "Lien de redirection optionnel"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "ID de l'\u00e9metteur pour les actions rapides"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si la notification a \u00e9t\u00e9 lue"
+    },
+    "metadata": {
+      "type": "string",
+      "description": "Donn\u00e9es additionnelles (JSON stringified) pour les actions"
+    }
+  },
+  "required": [
+    "recipient_id",
+    "title",
+    "message"
+  ]
+}

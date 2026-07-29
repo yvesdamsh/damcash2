@@ -1,0 +1,47 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the team"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of the team"
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "URL for team logo"
+    },
+    "leader_id": {
+      "type": "string",
+      "description": "User ID of the team creator/leader"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "wins": {
+          "type": "number",
+          "default": 0
+        },
+        "losses": {
+          "type": "number",
+          "default": 0
+        },
+        "tournament_wins": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "leader_id"
+  ]
+}

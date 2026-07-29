@@ -1,0 +1,26 @@
+{
+  "name": "UserItem",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_type": {
+      "type": "string"
+    },
+    "purchased_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "price_paid": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_id",
+    "product_id"
+  ]
+}

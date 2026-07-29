@@ -1,0 +1,47 @@
+{
+  "name": "Puzzle",
+  "type": "object",
+  "properties": {
+    "game_type": {
+      "type": "string",
+      "enum": [
+        "chess",
+        "checkers"
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "board_state": {
+      "type": "string",
+      "description": "JSON string of board array or FEN"
+    },
+    "solution_moves": {
+      "type": "string",
+      "description": "JSON array of expected moves (SAN for chess, from-to for checkers)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "rating": {
+      "type": "number",
+      "default": 1200
+    },
+    "theme": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "game_type",
+    "board_state",
+    "solution_moves"
+  ]
+}

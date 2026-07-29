@@ -1,0 +1,26 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "ID de la partie li\u00e9e"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "ID de l'envoyeur"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Nom affich\u00e9 de l'envoyeur"
+    },
+    "content": {
+      "type": "string",
+      "description": "Contenu du message"
+    }
+  },
+  "required": [
+    "game_id",
+    "content"
+  ]
+}

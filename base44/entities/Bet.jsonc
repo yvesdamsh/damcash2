@@ -1,0 +1,113 @@
+{
+  "name": "Bet",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user placing the bet"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "single",
+        "parlay"
+      ],
+      "default": "single",
+      "description": "Bet type"
+    },
+    "game_id": {
+      "type": "string",
+      "description": "ID of the game (for single bets)"
+    },
+    "pick": {
+      "type": "string",
+      "enum": [
+        "white",
+        "black",
+        "draw"
+      ],
+      "description": "Outcome for single bet"
+    },
+    "legs": {
+      "type": "array",
+      "description": "Parlay legs for combined bets",
+      "items": {
+        "type": "object",
+        "properties": {
+          "game_id": {
+            "type": "string"
+          },
+          "pick": {
+            "type": "string",
+            "enum": [
+              "white",
+              "black",
+              "draw"
+            ]
+          },
+          "odds": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "won",
+              "lost"
+            ],
+            "default": "pending"
+          }
+        },
+        "required": [
+          "game_id",
+          "pick"
+        ]
+      },
+      "default": []
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount wagered"
+    },
+    "odds": {
+      "type": "number",
+      "description": "Decimal odds for single bet"
+    },
+    "combined_odds": {
+      "type": "number",
+      "description": "Combined odds for parlay"
+    },
+    "potential_payout": {
+      "type": "number",
+      "description": "Potential win amount"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "won",
+        "lost",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "live": {
+      "type": "boolean",
+      "default": false,
+      "description": "Placed during in-play"
+    },
+    "odds_snapshot": {
+      "type": "string",
+      "description": "JSON string snapshot of odds at placement"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "amount",
+    "type"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "TournamentFollow",
+  "type": "object",
+  "properties": {
+    "tournament_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "tournament_id",
+    "user_id"
+  ]
+}

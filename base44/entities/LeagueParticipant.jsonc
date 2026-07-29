@@ -1,0 +1,53 @@
+{
+  "name": "LeagueParticipant",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "points": {
+      "type": "number",
+      "default": 0
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "losses": {
+      "type": "number",
+      "default": 0
+    },
+    "draws": {
+      "type": "number",
+      "default": 0
+    },
+    "rank_tier": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "diamond",
+        "master"
+      ],
+      "default": "bronze"
+    },
+    "elo": {
+      "type": "number",
+      "default": 1200
+    }
+  },
+  "required": [
+    "league_id",
+    "user_id"
+  ]
+}

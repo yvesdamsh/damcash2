@@ -1,0 +1,48 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "avatar",
+        "avatar_frame",
+        "profile_theme",
+        "board_theme",
+        "theme",
+        "piece_set"
+      ],
+      "description": "Type of cosmetic"
+    },
+    "price": {
+      "type": "number",
+      "default": 0
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string",
+      "description": "The actual value/code/url for the item"
+    },
+    "required_level": {
+      "type": "number",
+      "default": 1
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "price"
+  ]
+}
